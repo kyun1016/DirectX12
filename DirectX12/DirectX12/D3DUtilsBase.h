@@ -5,6 +5,7 @@
 namespace kyun
 {
 	using Microsoft::WRL::ComPtr;
+	using namespace std;
 
 	// Interface for DX11 & DX12
 	class ID3DUtils
