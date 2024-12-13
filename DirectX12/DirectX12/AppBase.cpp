@@ -1,8 +1,8 @@
 #include "AppBase.h"
 #include <iostream>
-// #include <imgui.h>
-// #include <imgui_impl_dx12.h>
-// #include <imgui_impl_win32.h>
+#include "imgui.h"
+#include "imgui_impl_dx12.h"
+#include "imgui_impl_win32.h"
 
 namespace kyun
 {
@@ -165,21 +165,43 @@ namespace kyun
 
     bool AppBase::InitGUI() {
 
-        //IMGUI_CHECKVERSION();
-        //ImGui::CreateContext();
-        //ImGuiIO& io = ImGui::GetIO();
-        //(void)io;
-        //io.DisplaySize = ImVec2(float(m_screenWidth), float(m_screenHeight));
-        //ImGui::StyleColorsLight();
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        (void)io;
+        io.DisplaySize = ImVec2(float(m_screenWidth), float(m_screenHeight));
+        ImGui::StyleColorsLight();
 
-        //// Setup Platform/Renderer backends
-        //if (!ImGui_ImplDX11_Init(m_device.Get(), m_context.Get())) {
-        //    return false;
-        //}
+        // Setup Platform/Renderer backends
+//        struct ImGui_ImplDX12_InitInfo
+//        {
+//            ID3D12Device* Device;
+//            ID3D12CommandQueue* CommandQueue;
+//            int                         NumFramesInFlight;
+//            DXGI_FORMAT                 RTVFormat;          // RenderTarget format.
+//            DXGI_FORMAT                 DSVFormat;          // DepthStencilView format.
+//            void* UserData;
+//
+//            // Allocating SRV descriptors for textures is up to the application, so we provide callbacks.
+//            // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+//            ID3D12DescriptorHeap* SrvDescriptorHeap;
+//            void                        (*SrvDescriptorAllocFn)(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle);
+//            void                        (*SrvDescriptorFreeFn)(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_desc_handle);
+//#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+//            D3D12_CPU_DESCRIPTOR_HANDLE LegacySingleSrvCpuDescriptor; // To facilitate transition from single descriptor to allocator callback, you may use those.
+//            D3D12_GPU_DESCRIPTOR_HANDLE LegacySingleSrvGpuDescriptor;
+//#endif
+//
+//            ImGui_ImplDX12_InitInfo() { memset(this, 0, sizeof(*this)); }
+//        };
 
-        //if (!ImGui_ImplWin32_Init(m_mainWindow)) {
-        //    return false;
-        //}
+        if (!ImGui_ImplDX12_Init(m_device.Get(), m_context.Get())) {
+            return false;
+        }
+
+        if (!ImGui_ImplWin32_Init(m_mainWindow)) {
+            return false;
+        }
 
         return true;
     }
