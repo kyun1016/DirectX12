@@ -154,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppBase.h" />
+    <ClInclude Include="AppBaseHelper.h" />
     <ClInclude Include="D3D12Utils.h" />
     <ClInclude Include="D3DUtilsBase.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx12.h" />
