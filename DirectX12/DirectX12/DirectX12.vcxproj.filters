@@ -39,6 +39,12 @@
     <Filter Include="Header Files\Util\ImGui">
       <UniqueIdentifier>{3c64792f-30da-4a13-bcff-4709357810f7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\App">
+      <UniqueIdentifier>{18af73c7-4ddf-4d22-9e96-71fdd05ad149}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\App">
+      <UniqueIdentifier>{cbd5fbf7-3eaa-4704-960c-4181c96c2a6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -67,6 +73,12 @@
     </ClCompile>
     <ClCompile Include="imgui\backends\imgui_impl_dx12.cpp">
       <Filter>Source Files\Util\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="AppSimple.cpp">
+      <Filter>Source Files\App</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files\Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +119,21 @@
     </ClInclude>
     <ClInclude Include="AppBaseHelper.h">
       <Filter>Header Files\Util\App</Filter>
+    </ClInclude>
+    <ClInclude Include="StepTimer.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="AppSimple.h">
+      <Filter>Header Files\App</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files\Util\D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

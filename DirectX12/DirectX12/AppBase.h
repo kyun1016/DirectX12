@@ -49,6 +49,7 @@ namespace kyun
 		void SetWindowZorderToTopMost(bool setToTopMost);
 
 	protected:
+		wstring GetAssetFullPath(LPCWSTR assetName);
 		void GetHardwareAdapter(
 			_In_ IDXGIFactory1* pFactory,
 			_Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter,

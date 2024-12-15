@@ -32,6 +32,9 @@ namespace kyun
 		m_useWarpDevice(false),
 		m_enableUI(true)
 	{
+		WCHAR assetsPath[512];
+		GetAssetsPath(assetsPath, _countof(assetsPath));
+
 		g_appBase = this;
 
 		UpdateForSizeChange(width, height);
@@ -60,7 +63,11 @@ namespace kyun
 		m_windowRect.bottom = static_cast<LONG>(bottom);
 	}
 
-	_Use_decl_annotations_
+	wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
+	{
+		return m_assetsPath + assetName;
+	}
+
 	void AppBase::GetHardwareAdapter(IDXGIFactory1* pFactory, IDXGIAdapter1** ppAdapter, bool requestHighPerformanceAdapter)
 	{
 		*ppAdapter = nullptr;

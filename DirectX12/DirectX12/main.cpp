@@ -1,7 +1,7 @@
 #include <memory>
 #include <Windows.h>
 #include "AppBase.h"
-#include "AppShading.h"
+#include "AppSimple.h"
 #include <WinUser.h>
 #include <iostream>
 
@@ -12,17 +12,6 @@ int main(int argc, char* argv[]) {
 
 	std::unique_ptr<kyun::AppBase> app;
 
-	app = make_unique<kyun::AppShading>();
-
-	//===================================
-	// Initialize the window class.
-	//===================================
-	if (!app->Initialize()) {
-		cout << "Initialization failed." << endl;
-		return -1;
-	}
-
+	app = make_unique<kyun::AppSimple>();
 	return app->Run();
-
-
 }
