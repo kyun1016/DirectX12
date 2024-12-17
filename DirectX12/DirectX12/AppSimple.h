@@ -4,20 +4,24 @@
 #include <dxgi1_5.h>
 #include "d3dx12.h"
 #include <directxtk/SimpleMath.h>
-
+#include "MathHelper.h"
+#include "UploadBuffer.h"
 
 namespace kyun
 {
-	const wchar_t* c_meshFilename = L"..\\Assets\\Dragon_LOD0.bin";
-	const wchar_t* c_meshShaderFilename = L"MeshletMS.cso";
-	const wchar_t* c_pixelShaderFilename = L"MeshletPS.cso";
-
-	class StepTimer;
-	class Camera;
-	class Model;
-
 	using namespace DirectX;
 	using Microsoft::WRL::ComPtr;
+
+	struct Vertex
+	{
+		XMFLOAT3 Pos;
+		XMFLOAT4 Color;
+	};
+
+	struct ObjectConstants
+	{
+		XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	};
 
 	class AppSimple : public AppBase
 	{
@@ -28,70 +32,34 @@ namespace kyun
 		AppSimple(uint32_t width, uint32_t height, std::wstring name);
 		virtual ~AppSimple();
 
-
-	protected:
-		virtual void OnInit();
-		virtual void OnUpdate() = 0;
-		virtual void OnRender() = 0;
-		virtual void OnSizeChanged(uint32_t width, uint32_t height, bool minimized) = 0;
-		virtual void OnDestroy() = 0;
-		virtual IDXGISwapChain* GetSwapchain() { return m_swapChain.Get(); }
+		virtual bool OnInit() override;
 
 	private:
-		bool InitMainWindow();
-		bool InitCamera();
-		void LoadPipeline();
-		void LoadAssets();
-		void LoadSizeDependentResources();
+		virtual void OnResize()override;
+		virtual void OnUpdate(const StepTimer& dt)override;
+		virtual void OnDraw(const StepTimer& dt)override;
 
-	private:
-		static const UINT FrameCount = 2;
-		
-		_declspec(align(256u)) struct SceneConstantBuffer
-		{
-			XMFLOAT4X4 World;
-			XMFLOAT4X4 WorldView;
-			XMFLOAT4X4 WorldViewProj;
-			uint32_t   DrawMeshlets;
-		};
+		virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
+		virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
+		virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
+		void BuildDescriptorHeaps();
+		void BuildConstantBuffers();
+		void BuildRootSignature();
+		void BuildShadersAndInputLayout();
+		void BuildBoxGeometry();
+		void BuildPSO();
 
-		// Pipeline objects.
-		CD3DX12_VIEWPORT m_viewport;
-		CD3DX12_RECT m_scissorRect;
-		ComPtr<IDXGISwapChain3> m_swapChain;
-		ComPtr<ID3D12Device2> m_device;
-		ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-		ComPtr<ID3D12Resource> m_depthStencil;
-		ComPtr<ID3D12CommandAllocator> m_commandAllocators[FrameCount];
-		ComPtr<ID3D12CommandQueue> m_commandQueue;
-		ComPtr<ID3D12RootSignature> m_rootSignature;
-		ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-		ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
-		ComPtr<ID3D12PipelineState> m_pipelineState;
-		ComPtr<ID3D12Resource> m_constantBuffer;
-		UINT m_rtvDescriptorSize;
-		UINT m_dsvDescriptorSize;
+	private:		
+		ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
+		ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
-		ComPtr<ID3D12GraphicsCommandList6> m_commandList;
-		SceneConstantBuffer m_constantBufferData;
-		UINT8* m_cbvDataBegin;
+		std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB = nullptr;
 
-		unique_ptr<StepTimer> m_timer;
-		unique_ptr<Camera> m_camera;
-		unique_ptr<Model> m_model;
+		ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
-		UINT m_rtvDescriptorSize;
-		UINT m_dsvDescriptorSize;
-
-
-
-		// Synchronization objects.
-		UINT m_frameIndex;
-		UINT m_frameCounter;
-		HANDLE m_fenceEvent;
-		ComPtr<ID3D12Fence> m_fence;
-		UINT64 m_fenceValues[FrameCount];
-
+		XMFLOAT4X4 m_world = MathHelper::Identity4x4();
+		XMFLOAT4X4 m_view = MathHelper::Identity4x4();
+		XMFLOAT4X4 m_proj = MathHelper::Identity4x4();
 	};
 }
 

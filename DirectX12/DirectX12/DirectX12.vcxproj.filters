@@ -111,10 +111,7 @@
     <ClInclude Include="imgui\imstb_textedit.h">
       <Filter>Header Files\Util\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Utils.h">
-      <Filter>Header Files\Util\D3D</Filter>
-    </ClInclude>
-    <ClInclude Include="D3DUtilsBase.h">
+    <ClInclude Include="D3DUtil.h">
       <Filter>Header Files\Util\D3D</Filter>
     </ClInclude>
     <ClInclude Include="AppBaseHelper.h">
@@ -135,5 +132,16 @@
     <ClInclude Include="Mesh.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="MathHelper.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBuffer.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="basic.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
