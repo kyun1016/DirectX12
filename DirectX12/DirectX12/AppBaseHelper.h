@@ -4,18 +4,6 @@
 #include <windows.h>
 #include "AppBase.h"
 
-#pragma comment(lib, "d3d12")
-#pragma comment(lib, "dxgi")
-
-// using Microsoft::WRL::ComPtr;
-
-// Singleton object so that worker threads can share members.
-static AppBase* g_appBase = nullptr;
-
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam);
-}
-
 inline std::string HrToString(HRESULT hr)
 {
 	char s_str[64] = {};

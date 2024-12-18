@@ -13,6 +13,8 @@
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 
+#pragma comment(lib, "dxguid.lib")
+
 inline void ThrowIfFailed(HRESULT hr) {
 	if (FAILED(hr)) {
 		// 디버깅할 때 여기에 breakpoint 설정

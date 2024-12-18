@@ -10,6 +10,10 @@
 //class Camera;
 //class Model;
 
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12")
+#pragma comment(lib, "dxgi")
+
 class AppBase
 {
 public:

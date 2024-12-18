@@ -20,6 +20,13 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd,
 	WPARAM wParam,
 	LPARAM lParam);
 
+// Singleton object so that worker threads can share members.
+static AppBase* g_appBase = nullptr;
+
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam);
+}
+
 //===================================
 // Constructor
 //===================================
@@ -414,7 +421,7 @@ bool AppBase::InitDirect3D()
 		&msQualityLevels,
 		sizeof(msQualityLevels)));
 
-	m4xMsaaState = msQualityLevels.NumQualityLevels;
+	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
 
 #ifdef _DEBUG

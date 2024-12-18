@@ -2,7 +2,6 @@
 #include <wrl/client.h> // ComPtr
 
 #include "AppSimple.h"
-#include "AppBaseHelper.h"
 #include "D3DUtil.h"
 #include "MathHelper.h"
 
