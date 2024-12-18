@@ -86,9 +86,6 @@ public:
 	static DirectX::XMVECTOR RandUnitVec3();
 	static DirectX::XMVECTOR RandHemisphereUnitVec3(DirectX::XMVECTOR n);
 
-	static const float Infinity;
-	static const float Pi;
-
-
+	static constexpr float Infinity = FLT_MAX;
+	static constexpr float Pi = 3.1415926535f;
 };
-

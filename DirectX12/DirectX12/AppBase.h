@@ -1,120 +1,118 @@
 #pragma once
-#include<d3d12.h>
+#include <d3d12.h>
 #include <wrl/client.h> // ComPtr
-#include<dxgi.h>
-#include<string>
+#include <dxgi1_4.h>
+#include <string>
+#include "Camera.h"
+#include "GameTimer.h"
 
-namespace kyun
+//class GameTimer;
+//class Camera;
+//class Model;
+
+class AppBase
 {
-	using Microsoft::WRL::ComPtr;
-	using namespace std;
+public:
+	AppBase();
+	AppBase(uint32_t width, uint32_t height, std::wstring name);
+	virtual ~AppBase();
 
-	class StepTimer;
-	class Camera;
-	class Model;
+	void Set4xMsaaState(bool value);
 
-	class AppBase
-	{
-	public:
-		AppBase();
-		AppBase(uint32_t width, uint32_t height, std::wstring name);
-		virtual ~AppBase();
+	virtual bool OnInit();
+	int Run();
 
-		int Run();
+	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
 
-		virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
+	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
+	void SetWindowBounds(int left, int top, int right, int bottom);
 
-		void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
-		void SetWindowBounds(int left, int top, int right, int bottom);
+	void LogAdapters();
+	void LogAdapterOutputs(IDXGIAdapter* adapter);
+	void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
-		void LogAdapters();
-		void LogAdapterOutputs(IDXGIAdapter* adapter);
-		void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
+protected:
+	virtual void CreateRtvAndDsvDescriptorHeaps();
+	virtual void OnResize();
+	virtual void OnUpdate(const GameTimer dt) = 0;
+	virtual void OnRender(const GameTimer dt) = 0;
 
-	protected:
-		virtual void CreateRtvAndDsvDescriptorHeaps();
-		virtual void OnResize();
-		virtual void OnUpdate(const StepTimer& dt) = 0;
-		virtual void OnDraw(const StepTimer& dt) = 0;
+	// Convenience overrides for handling mouse input.
+	virtual void OnMouseDown(WPARAM btnState, int x, int y) { }
+	virtual void OnMouseUp(WPARAM btnState, int x, int y) { }
+	virtual void OnMouseMove(WPARAM btnState, int x, int y) { }
 
-		// Convenience overrides for handling mouse input.
-		virtual void OnMouseDown(WPARAM btnState, int x, int y) { }
-		virtual void OnMouseUp(WPARAM btnState, int x, int y) { }
-		virtual void OnMouseMove(WPARAM btnState, int x, int y) { }
+protected:
+	bool InitMainWindow();
+	bool InitDirect3D();
+	void CreateCommandObjects();
+	void CreateSwapChain();
 
-	protected:
-		virtual bool OnInit();
-		bool InitMainWindow();
-		bool InitDirect3D();
-		void CreateCommandObjects();
-		void CreateSwapChain();
+	void FlushCommandQueue();
 
-		void FlushCommandQueue();
+	ID3D12Resource* CurrentBackBuffer()const;
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()const;
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView()const;
 
-		ID3D12Resource* CurrentBackBuffer()const;
-		D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()const;
-		D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView()const;
+	void CalculateFrameStats();
 
-		wstring GetAssetFullPath(LPCWSTR assetName);
-	public:
-		// Viewport dimensions.
-		uint32_t m_clientWidth;
-		uint32_t m_clientHeight;
-		float m_aspectRatio;
-		// Window bounds
-		RECT m_windowRect;
-		HWND m_hwnd;
-		// Window title.
-		std::wstring m_title;
-		std::wstring m_wndCaption = L"d3d App";
-		const UINT m_windowStyle = WS_OVERLAPPEDWINDOW;
-	public:
-		// Root assets path.
-		std::wstring m_assetsPath;
+	std::wstring GetAssetFullPath(LPCWSTR assetName);
+public:
+	// Viewport dimensions.
+	uint32_t mClientWidth;
+	uint32_t mClientHeight;
+	float mAspectRatio;
+	// Window bounds
+	RECT mWindowRect;
+	HWND mHwnd;
+	// Window title.
+	std::wstring mTitle;
+	std::wstring mWndCaption = L"d3d App";
+	const UINT mWindowStyle = WS_OVERLAPPEDWINDOW;
+public:
+	// Root assets path.
+	std::wstring mAssetsPath;
 
-		bool m_appPaused		= false;	// is the application paused?
-		bool m_minimized		= false;	// is the application minimized?
-		bool m_maximized		= false;	// is the application maximized?
-		bool m_resizing			= false;	// are the resize bars being dragged?
-		bool m_fullscreenState	= false;	// fullscreen enabled
-		bool m_4xMsaaState		= false;	// 4X MSAA enabled
-		UINT m_4xMsaaQuality	= 0;		// quality level of 4X MSAA
+	bool mAppPaused = false;	// is the application paused?
+	bool mMinimized = false;	// is the application minimized?
+	bool mMaximized = false;	// is the application maximized?
+	bool mResizing = false;	// are the resize bars being dragged?
+	bool mFullscreenState = false;	// fullscreen enabled
+	bool m4xMsaaState = false;	// 4X MSAA enabled
+	UINT m4xMsaaQuality = 0;		// quality level of 4X MSAA
 
-		unique_ptr<StepTimer> m_timer;
-		unique_ptr<Camera> m_camera;
-		unique_ptr<Model> m_model;
+	GameTimer mTimer;
+	// unique_ptr<Camera> mCamera;
+	// unique_ptr<Model> mModel;
 
-		// Pipeline objects.
-		ComPtr<IDXGIFactory4> m_dxgiFactory;
-		ComPtr<IDXGISwapChain> m_swapChain;
-		ComPtr<ID3D12Device> m_device;
+	// Pipeline objects.
+	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
+	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
+	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
 
-		ComPtr<ID3D12Fence> m_fence;
-		UINT64 m_currentfence;
+	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
+	UINT64 mCurrentfence;
 
-		ComPtr<ID3D12CommandQueue> m_commandQueue;
-		ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-		ComPtr<ID3D12GraphicsCommandList6> m_commandList;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
-		static const UINT SwapChainBufferCount = 2;
-		int m_currentBackBuffer;
-		ComPtr<ID3D12Resource> m_swapChainBuffer[SwapChainBufferCount];
-		ComPtr<ID3D12Resource> m_depthStencilBuffer;
+	static const UINT SwapChainBufferCount = 2;
+	int mCurrentBackBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount];
+	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
-		ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-		ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
 
-		D3D12_VIEWPORT m_screenViewport;
-		D3D12_RECT m_scissorRect;
+	D3D12_VIEWPORT mScreenViewport;
+	D3D12_RECT mScissorRect;
 
-		UINT m_rtvDescriptorSize = 0;
-		UINT m_dsvDescriptorSize = 0;
-		UINT m_cbvSrvUavDescriptorSize = 0;
+	UINT mRtvDescriptorSize = 0;
+	UINT mDsvDescriptorSize = 0;
+	UINT mCbvSrvUavDescriptorSize = 0;
 
-		D3D_DRIVER_TYPE m_d3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
-		DXGI_FORMAT m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-		DXGI_FORMAT m_depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	};
-}
-
-
+	D3D_DRIVER_TYPE mD3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
+	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+};

@@ -50,9 +50,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Utils.cpp">
-      <Filter>Source Files\Util\D3D</Filter>
-    </ClCompile>
     <ClCompile Include="AppBase.cpp">
       <Filter>Source Files\Util\App</Filter>
     </ClCompile>
@@ -79,6 +76,9 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DUtil.cpp">
+      <Filter>Source Files\Util\D3D</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -138,9 +138,12 @@
     <ClInclude Include="UploadBuffer.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="GameTimer.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="basic.hlsl">
+    <FxCompile Include="color.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -10,8 +10,12 @@ using namespace std;
 int main(int argc, char* argv[]) {
 	SetConsoleOutputCP(CP_UTF8);
 
-	std::unique_ptr<kyun::AppBase> app;
+	std::unique_ptr<AppBase> app;
 
-	app = make_unique<kyun::AppSimple>();
+	app = make_unique<AppSimple>();
+
+	if (!app->OnInit())
+		return 0;
+
 	return app->Run();
 }
