@@ -65,10 +65,27 @@ public:
 	// Viewport dimensions.
 	uint32_t mClientWidth;
 	uint32_t mClientHeight;
+	uint32_t mViewportWidth;
+	uint32_t mViewportHeight;
 	float mAspectRatio;
 	// Window bounds
+	enum E_HWND_ID
+	{
+		CHILD_VIEWPORT
+	};
+	WNDCLASSEX mWindowClass;
 	RECT mWindowRect;
-	HWND mHwnd;
+	HWND mHwndWindow;
+	HWND mHwndTab;
+	HWND mHwndViewport;
+	HWND mHwndViewport2;
+	HWND mHwndViewport3;
+	HWND mHwndViewport4;
+	
+	HWND mHwndOutliner;
+	HWND mHwndContentBrowser;
+	HWND mHwndOutputLog;
+
 	// Window title.
 	std::wstring mTitle;
 	std::wstring mWndCaption = L"d3d App";

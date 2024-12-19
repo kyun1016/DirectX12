@@ -143,7 +143,7 @@ void AppSimple::OnMouseDown(WPARAM btnState, int x, int y)
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
 
-	SetCapture(mHwnd);
+	SetCapture(mHwndWindow);
 }
 
 void AppSimple::OnMouseUp(WPARAM btnState, int x, int y)

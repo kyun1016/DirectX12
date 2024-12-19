@@ -52,7 +52,7 @@ AppBase::~AppBase()
 {
 	g_appBase = nullptr;
 
-	DestroyWindow(mHwnd);
+	DestroyWindow(mHwndWindow);
 }
 
 void AppBase::Set4xMsaaState(bool value)
@@ -125,7 +125,9 @@ void AppBase::UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight)
 {
 	mClientWidth = clientWidth;
 	mClientHeight = clientHeight;
-	mAspectRatio = static_cast<float>(clientWidth) / static_cast<float>(clientHeight);
+	mViewportWidth = mClientWidth * 0.5;
+	mViewportHeight = mClientHeight * 0.5;
+	mAspectRatio = static_cast<float>(mViewportWidth) / static_cast<float>(mViewportHeight);
 }
 
 void AppBase::SetWindowBounds(int left, int top, int right, int bottom)
@@ -250,7 +252,7 @@ void AppBase::OnResize()
 	// Resize the swap chain.
 	ThrowIfFailed(mSwapChain->ResizeBuffers(
 		SwapChainBufferCount,
-		mClientWidth, mClientHeight,
+		mViewportWidth, mViewportHeight,
 		mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
@@ -265,12 +267,12 @@ void AppBase::OnResize()
 	}
 
 	// Create the depth/stencil buffer and view.
-	D3D12_RESOURCE_DESC depthStencilDesc 
+	D3D12_RESOURCE_DESC depthStencilDesc
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
 		/* UINT64 Alignment						*/	0,
-		/* UINT64 Width							*/	mClientWidth,
-		/* UINT Height							*/	mClientHeight,
+		/* UINT64 Width							*/	mViewportWidth,
+		/* UINT Height							*/	mViewportHeight,
 		/* UINT16 DepthOrArraySize				*/	1,
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R24G8_TYPELESS,
@@ -318,53 +320,62 @@ void AppBase::OnResize()
 	// Update the viewport transform to cover the client area.
 	mScreenViewport.TopLeftX = 0;
 	mScreenViewport.TopLeftY = 0;
-	mScreenViewport.Width = static_cast<float>(mClientWidth);
-	mScreenViewport.Height = static_cast<float>(mClientHeight);
+	mScreenViewport.Width = static_cast<float>(mViewportWidth);
+	mScreenViewport.Height = static_cast<float>(mViewportHeight);
 	mScreenViewport.MinDepth = 0.0f;
 	mScreenViewport.MaxDepth = 1.0f;
 
-	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth), static_cast<LONG>(mClientHeight) };
+	mScissorRect = { 0, 0, static_cast<LONG>(mViewportWidth), static_cast<LONG>(mViewportHeight) };
 }
 
 bool AppBase::InitMainWindow()
 {
-	WNDCLASSEX wc = { sizeof(WNDCLASSEX),
-			 CS_CLASSDC,
-			 WndProc,
-			 0L,
-			 0L,
-			 GetModuleHandle(NULL),
-			 NULL,
-			 NULL,
-			 NULL,
-			 NULL,
-			 mTitle.c_str(), // lpszClassName, L-string
-			 NULL };
+	mWindowClass = {
+		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
+		/*UINT        style			*/	CS_CLASSDC,
+		/*WNDPROC     lpfnWndProc	*/	WndProc,
+		/*int         cbClsExtra	*/	0L,
+		/*int         cbWndExtra	*/	0L,
+		/*HINSTANCE   hInstance		*/	GetModuleHandle(NULL),
+		/*HICON       hIcon			*/	NULL,
+		/*HCURSOR     hCursor		*/	NULL,
+		/*HBRUSH      hbrBackground	*/	NULL,
+		/*LPCWSTR     lpszMenuName	*/	NULL,
+		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
+		/*HICON       hIconSm		*/	NULL
+	};
 
-	if (!RegisterClassEx(&wc)) {
+	if (!RegisterClassEx(&mWindowClass)) {
 		std::cout << "RegisterClassEx() failed." << std::endl;
 		MessageBox(0, L"CreateWindow Failed.", 0, 0);
 		return false;
 	}
 
-	RECT wr = { 0, 0, (LONG)mClientWidth, (LONG)mClientHeight };
-	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, false);
-	mHwnd = CreateWindow(wc.lpszClassName, mWndCaption.c_str(),
-		WS_OVERLAPPEDWINDOW,
-		100, // 윈도우 좌측 상단의 x 좌표
-		100, // 윈도우 좌측 상단의 y 좌표
-		wr.right - wr.left, // 윈도우 가로 방향 해상도
-		wr.bottom - wr.top, // 윈도우 세로 방향 해상도
-		NULL, NULL, wc.hInstance, NULL);
+	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
+	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
+	mHwndWindow = CreateWindow(
+		/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
+		/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
+		/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
+		/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
+		/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
+		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
+		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
+		/* _In_opt_ HWND hWndParent		*/ NULL,
+		/* _In_opt_ HMENU hMenu			*/ NULL,
+		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+		/* _In_opt_ LPVOID lpParam		*/ NULL
+	);
 
-	if (!mHwnd) {
+	if (!mHwndWindow) {
 		std::cout << "CreateWindow() failed." << std::endl;
 		MessageBox(0, L"CreateWindow Failed.", 0, 0);
 		return false;
 	}
 
-	ShowWindow(mHwnd, SW_SHOWDEFAULT);
-	UpdateWindow(mHwnd);
+	ShowWindow(mHwndWindow, SW_SHOWDEFAULT);
+	UpdateWindow(mHwndWindow);
+	// SetBkMode(mHwndWindow, TRANSPARENT); // 뒷배경 투명
 
 	return true;
 }
@@ -465,8 +476,8 @@ void AppBase::CreateSwapChain()
 	mSwapChain.Reset();
 
 	DXGI_SWAP_CHAIN_DESC sd;
-	sd.BufferDesc.Width = mClientWidth;
-	sd.BufferDesc.Height = mClientHeight;
+	sd.BufferDesc.Width = mViewportWidth;
+	sd.BufferDesc.Height = mViewportHeight;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
 	sd.BufferDesc.Format = mBackBufferFormat;
@@ -476,7 +487,7 @@ void AppBase::CreateSwapChain()
 	sd.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = SwapChainBufferCount;
-	sd.OutputWindow = mHwnd;
+	sd.OutputWindow = mHwndViewport;
 	sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -554,7 +565,7 @@ void AppBase::CalculateFrameStats()
 			L"    fps: " + fpsStr +
 			L"   mspf: " + mspfStr;
 
-		SetWindowText(mHwnd, windowText.c_str());
+		SetWindowText(mHwndWindow, windowText.c_str());
 
 		// Reset for next average.
 		frameCnt = 0;
@@ -570,6 +581,27 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	switch (msg)
 	{
+	case WM_CREATE:
+		mHwndViewport = CreateWindow(
+			/* _In_opt_ LPCWSTR lpClassName	*/ L"Button",
+			/* _In_opt_ LPCWSTR lpWindowName*/ L"Viewport1",
+			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_BORDER,
+			/* _In_ int X					*/ 10,
+			/* _In_ int Y					*/ 10,
+			/* _In_ int nWidth				*/ mViewportWidth,
+			/* _In_ int nHeight				*/ mViewportHeight,
+			/* _In_opt_ HWND hWndParent		*/ hwnd,
+			/* _In_opt_ HMENU hMenu			*/ (HMENU)CHILD_VIEWPORT,
+			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+			/* _In_opt_ LPVOID lpParam		*/ NULL
+		);
+
+		if (!mHwndViewport) {
+			std::cout << "CreateViewport failed." << std::endl;
+			MessageBox(0, L"CreateViewport Failed.", 0, 0);
+			return false;
+		}
+		return 0;
 		// WM_ACTIVATE is sent when the window is activated or deactivated.  
 		// We pause the game when the window is deactivated and unpause it 
 		// when it becomes active.  
@@ -591,6 +623,7 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		// Save the new client area dimensions.
 		mClientWidth = (UINT)LOWORD(lParam);
 		mClientHeight = (UINT)HIWORD(lParam);
+		UpdateForSizeChange(mClientWidth, mClientHeight);
 		if (mDevice)
 		{
 			if (wParam == SIZE_MINIMIZED)
@@ -679,15 +712,31 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
-		OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
+		switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
+		{
+		case CHILD_VIEWPORT:
+			std::cout << "CHILD_VIEWPORT OnMouseDown." << std::endl;
+			OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
+			return 0;
+		}
 		return 0;
 	case WM_LBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_RBUTTONUP:
+		std::cout << "CHILD_VIEWPORT OnMouseUp." << std::endl;
 		OnMouseUp(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
 	case WM_MOUSEMOVE:
 		OnMouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
+		return 0;
+	case WM_COMMAND:
+		switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
+		{
+		case CHILD_VIEWPORT:
+			std::cout << "WM_COMMAND CHILD_VIEWPORT OnMouseDown." << std::endl;
+			OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
+			return 0;
+		}
 		return 0;
 	case WM_KEYUP:
 		if (wParam == VK_ESCAPE)
