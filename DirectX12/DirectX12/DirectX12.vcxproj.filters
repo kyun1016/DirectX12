@@ -45,6 +45,12 @@
     <Filter Include="Source Files\App">
       <UniqueIdentifier>{cbd5fbf7-3eaa-4704-960c-4181c96c2a6f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Resource">
+      <UniqueIdentifier>{c69f771a-1290-43ec-b4f2-d2d666abad7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Util\NewFilter1">
+      <UniqueIdentifier>{af6b1663-2686-4b56-8e97-5fc8e7dd686d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -141,10 +147,23 @@
     <ClInclude Include="GameTimer.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files\Resource</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="color.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="bitmap1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

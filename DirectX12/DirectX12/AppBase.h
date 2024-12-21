@@ -5,6 +5,7 @@
 #include <string>
 #include "Camera.h"
 #include "GameTimer.h"
+#include "resource.h"
 
 //class GameTimer;
 //class Camera;
@@ -26,7 +27,7 @@ public:
 	virtual bool OnInit();
 	int Run();
 
-	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
+	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam, const int id);
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
 	void SetWindowBounds(int left, int top, int right, int bottom);
@@ -47,7 +48,9 @@ protected:
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) { }
 
 protected:
+	bool RegisterWindowClass();
 	bool InitMainWindow();
+
 	bool InitDirect3D();
 	void CreateCommandObjects();
 	void CreateSwapChain();
@@ -62,6 +65,7 @@ protected:
 
 	std::wstring GetAssetFullPath(LPCWSTR assetName);
 public:
+	static constexpr uint32_t WND_PADDING = 5;
 	// Viewport dimensions.
 	uint32_t mClientWidth;
 	uint32_t mClientHeight;
@@ -71,13 +75,21 @@ public:
 	// Window bounds
 	enum E_HWND_ID
 	{
-		CHILD_VIEWPORT
+		MAIN_WINDOW,
+		VIEWPORT1,
+		VIEWPORT2,
+		VIEWPORT3,
+		VIEWPORT4,
 	};
+	const std::wstring mClassNamemViewport1 = L"Viewport1";
+	const std::wstring mClassNamemViewport2 = L"Viewport2";
+	const std::wstring mClassNamemViewport3 = L"Viewport3";
+	const std::wstring mClassNamemViewport4 = L"Viewport4";
 	WNDCLASSEX mWindowClass;
 	RECT mWindowRect;
 	HWND mHwndWindow;
 	HWND mHwndTab;
-	HWND mHwndViewport;
+	HWND mHwndViewport1;
 	HWND mHwndViewport2;
 	HWND mHwndViewport3;
 	HWND mHwndViewport4;

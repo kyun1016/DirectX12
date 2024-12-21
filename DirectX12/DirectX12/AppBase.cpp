@@ -23,10 +23,21 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd,
 // Singleton object so that worker threads can share members.
 static AppBase* g_appBase = nullptr;
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam);
+LRESULT WINAPI WndProcMainWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::MAIN_WINDOW);
 }
-
+LRESULT WINAPI WndProcViewport1(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT1);
+}
+LRESULT WINAPI WndProcViewport2(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT2);
+}
+LRESULT WINAPI WndProcViewport3(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT3);
+}
+LRESULT WINAPI WndProcViewport4(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT4);
+}
 //===================================
 // Constructor
 //===================================
@@ -328,28 +339,84 @@ void AppBase::OnResize()
 	mScissorRect = { 0, 0, static_cast<LONG>(mViewportWidth), static_cast<LONG>(mViewportHeight) };
 }
 
-bool AppBase::InitMainWindow()
+bool AppBase::RegisterWindowClass()
 {
 	mWindowClass = {
 		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
 		/*UINT        style			*/	CS_CLASSDC,
-		/*WNDPROC     lpfnWndProc	*/	WndProc,
+		/*WNDPROC     lpfnWndProc	*/	WndProcMainWindow,
 		/*int         cbClsExtra	*/	0L,
 		/*int         cbWndExtra	*/	0L,
 		/*HINSTANCE   hInstance		*/	GetModuleHandle(NULL),
 		/*HICON       hIcon			*/	NULL,
 		/*HCURSOR     hCursor		*/	NULL,
 		/*HBRUSH      hbrBackground	*/	NULL,
-		/*LPCWSTR     lpszMenuName	*/	NULL,
+		/*LPCWSTR     lpszMenuName	*/	MAKEINTRESOURCEW(IDR_MENU1),
 		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
 		/*HICON       hIconSm		*/	NULL
 	};
 
 	if (!RegisterClassEx(&mWindowClass)) {
 		std::cout << "RegisterClassEx() failed." << std::endl;
-		MessageBox(0, L"CreateWindow Failed.", 0, 0);
+		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
 		return false;
 	}
+
+	WNDCLASSEX wcex = {
+		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
+		/*UINT        style			*/	CS_CLASSDC,
+		/*WNDPROC     lpfnWndProc	*/	WndProcViewport1,
+		/*int         cbClsExtra	*/	0L,
+		/*int         cbWndExtra	*/	0L,
+		/*HINSTANCE   hInstance		*/	mWindowClass.hInstance,
+		/*HICON       hIcon			*/	NULL,
+		/*HCURSOR     hCursor		*/	NULL,
+		/*HBRUSH      hbrBackground	*/	NULL,
+		/*LPCWSTR     lpszMenuName	*/	NULL,
+		/*LPCWSTR     lpszClassName	*/	mClassNamemViewport1.c_str(), // lpszClassName, L-string
+		/*HICON       hIconSm		*/	NULL
+	};
+
+	if (!RegisterClassEx(&wcex)) {
+		std::cout << "RegisterClassEx() failed." << std::endl;
+		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
+		return false;
+	}
+
+	wcex.lpfnWndProc = WndProcViewport2;
+	wcex.hbrBackground = CreateSolidBrush(RGB(255, 0, 0));
+	wcex.lpszClassName = mClassNamemViewport2.c_str();
+
+	if (!RegisterClassEx(&wcex)) {
+		std::cout << "RegisterClassEx() failed." << std::endl;
+		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
+		return false;
+	}
+
+	wcex.lpfnWndProc = WndProcViewport3;
+	wcex.hbrBackground = CreateSolidBrush(RGB(255, 255, 0));
+	wcex.lpszClassName = mClassNamemViewport3.c_str();
+
+	if (!RegisterClassEx(&wcex)) {
+		std::cout << "RegisterClassEx() failed." << std::endl;
+		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
+		return false;
+	}
+
+	wcex.lpfnWndProc = WndProcViewport4;
+	wcex.hbrBackground = CreateSolidBrush(RGB(255, 0, 255));
+	wcex.lpszClassName = mClassNamemViewport4.c_str();
+
+	if (!RegisterClassEx(&wcex)) {
+		std::cout << "RegisterClassEx() failed." << std::endl;
+		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
+		return false;
+	}
+}
+
+bool AppBase::InitMainWindow()
+{
+	RegisterWindowClass();
 
 	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
 	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
@@ -362,7 +429,7 @@ bool AppBase::InitMainWindow()
 		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
 		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
 		/* _In_opt_ HWND hWndParent		*/ NULL,
-		/* _In_opt_ HMENU hMenu			*/ NULL,
+		/* _In_opt_ HMENU hMenu			*/ (HMENU)MAIN_WINDOW,
 		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
 		/* _In_opt_ LPVOID lpParam		*/ NULL
 	);
@@ -487,7 +554,7 @@ void AppBase::CreateSwapChain()
 	sd.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = SwapChainBufferCount;
-	sd.OutputWindow = mHwndViewport;
+	sd.OutputWindow = mHwndViewport1;
 	sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -574,31 +641,96 @@ void AppBase::CalculateFrameStats()
 }
 
 
-LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, const int id) {
 
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
+	RECT rect;
 
+	std::cout << "[" << id << "]"  << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 	switch (msg)
 	{
 	case WM_CREATE:
-		mHwndViewport = CreateWindow(
-			/* _In_opt_ LPCWSTR lpClassName	*/ L"Button",
-			/* _In_opt_ LPCWSTR lpWindowName*/ L"Viewport1",
-			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_BORDER,
-			/* _In_ int X					*/ 10,
-			/* _In_ int Y					*/ 10,
-			/* _In_ int nWidth				*/ mViewportWidth,
-			/* _In_ int nHeight				*/ mViewportHeight,
+		if (id != MAIN_WINDOW)
+			return 0;
+		GetClientRect(hwnd, &rect);
+		mHwndViewport1 = CreateWindow(
+			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport1.c_str(),
+			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport1.c_str(),
+			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+			/* _In_ int X					*/ WND_PADDING,
+			/* _In_ int Y					*/ WND_PADDING,
+			/* _In_ int nWidth				*/ mViewportWidth - WND_PADDING,
+			/* _In_ int nHeight				*/ mViewportHeight - WND_PADDING,
 			/* _In_opt_ HWND hWndParent		*/ hwnd,
-			/* _In_opt_ HMENU hMenu			*/ (HMENU)CHILD_VIEWPORT,
+			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT1,
 			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
 			/* _In_opt_ LPVOID lpParam		*/ NULL
 		);
 
-		if (!mHwndViewport) {
-			std::cout << "CreateViewport failed." << std::endl;
-			MessageBox(0, L"CreateViewport Failed.", 0, 0);
+		if (!mHwndViewport1) {
+			std::cout << "Create Viewport1 failed." << std::endl;
+			MessageBox(0, L"Create Viewport1 Failed.", 0, 0);
+			return false;
+		}
+		
+		mHwndViewport2 = CreateWindow(
+			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport2.c_str(),
+			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport2.c_str(),
+			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+			/* _In_ int X					*/ WND_PADDING + mViewportWidth,
+			/* _In_ int Y					*/ WND_PADDING,
+			/* _In_ int nWidth				*/ rect.right - WND_PADDING,
+			/* _In_ int nHeight				*/ mViewportHeight - WND_PADDING,
+			/* _In_opt_ HWND hWndParent		*/ hwnd,
+			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT2,
+			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+			/* _In_opt_ LPVOID lpParam		*/ NULL
+		);
+
+		if (!mHwndViewport2) {
+			std::cout << "Create Viewport2 failed." << std::endl;
+			MessageBox(0, L"Create Viewport2 Failed.", 0, 0);
+			return false;
+		}
+
+		mHwndViewport3 = CreateWindow(
+			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport3.c_str(),
+			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport3.c_str(),
+			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+			/* _In_ int X					*/ WND_PADDING,
+			/* _In_ int Y					*/ WND_PADDING + mViewportHeight,
+			/* _In_ int nWidth				*/ mViewportWidth - WND_PADDING,
+			/* _In_ int nHeight				*/ rect.bottom - WND_PADDING,
+			/* _In_opt_ HWND hWndParent		*/ hwnd,
+			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT3,
+			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+			/* _In_opt_ LPVOID lpParam		*/ NULL
+		);
+
+		if (!mHwndViewport3) {
+			std::cout << "Create Viewport3 failed." << std::endl;
+			MessageBox(0, L"Create Viewport3 Failed.", 0, 0);
+			return false;
+		}
+
+		mHwndViewport4 = CreateWindow(
+			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport4.c_str(),
+			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport4.c_str(),
+			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+			/* _In_ int X					*/ WND_PADDING + mViewportWidth,
+			/* _In_ int Y					*/ WND_PADDING + mViewportHeight,
+			/* _In_ int nWidth				*/ rect.right - WND_PADDING,
+			/* _In_ int nHeight				*/ rect.bottom - WND_PADDING,
+			/* _In_opt_ HWND hWndParent		*/ hwnd,
+			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT4,
+			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+			/* _In_opt_ LPVOID lpParam		*/ NULL
+		);
+
+		if (!mHwndViewport4) {
+			std::cout << "Create Viewport4 failed." << std::endl;
+			MessageBox(0, L"Create Viewport4 Failed.", 0, 0);
 			return false;
 		}
 		return 0;
@@ -624,6 +756,7 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		mClientWidth = (UINT)LOWORD(lParam);
 		mClientHeight = (UINT)HIWORD(lParam);
 		UpdateForSizeChange(mClientWidth, mClientHeight);
+		
 		if (mDevice)
 		{
 			if (wParam == SIZE_MINIMIZED)
@@ -631,6 +764,11 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				mAppPaused = true;
 				mMinimized = true;
 				mMaximized = false;
+				GetClientRect(hwnd, &rect);
+				MoveWindow(mHwndViewport1, WND_PADDING, WND_PADDING, mViewportWidth - WND_PADDING, mViewportHeight - WND_PADDING, true);
+				MoveWindow(mHwndViewport2, WND_PADDING + mViewportWidth, WND_PADDING, rect.right - WND_PADDING, mViewportHeight - WND_PADDING, true);
+				MoveWindow(mHwndViewport3, WND_PADDING, WND_PADDING + mViewportHeight, mViewportWidth - WND_PADDING, rect.bottom - WND_PADDING, true);
+				MoveWindow(mHwndViewport4, WND_PADDING + mViewportWidth, WND_PADDING + mViewportHeight, rect.right - WND_PADDING, rect.bottom - WND_PADDING, true);
 			}
 			else if (wParam == SIZE_MAXIMIZED)
 			{
@@ -712,10 +850,10 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
-		switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
+		switch (id)		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
 		{
-		case CHILD_VIEWPORT:
-			std::cout << "CHILD_VIEWPORT OnMouseDown." << std::endl;
+		case VIEWPORT1:
+			std::cout << "[" << id << "]" << "CHILD_VIEWPORT OnMouseDown." << std::endl;
 			OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
 			return 0;
 		}
@@ -723,21 +861,22 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_LBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_RBUTTONUP:
-		std::cout << "CHILD_VIEWPORT OnMouseUp." << std::endl;
+		std::cout << "[" << id << "]" << "OnMouseUp." << std::endl;
 		OnMouseUp(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
 	case WM_MOUSEMOVE:
+		std::cout << "[" << id << "]" << "OnMouseMove." << std::endl;
 		OnMouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
-	case WM_COMMAND:
-		switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
-		{
-		case CHILD_VIEWPORT:
-			std::cout << "WM_COMMAND CHILD_VIEWPORT OnMouseDown." << std::endl;
-			OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
-			return 0;
-		}
-		return 0;
+		//case WM_COMMAND:
+		//	switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
+		//	{
+		//	case CHILD_VIEWPORT:
+		//		std::cout << "WM_COMMAND CHILD_VIEWPORT OnMouseDown." << std::endl;
+		//		OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
+		//		return 0;
+		//	}
+		//	return 0;
 	case WM_KEYUP:
 		if (wParam == VK_ESCAPE)
 		{

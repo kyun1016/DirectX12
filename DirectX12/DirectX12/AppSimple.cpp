@@ -140,19 +140,23 @@ void AppSimple::OnRender(const GameTimer dt)
 
 void AppSimple::OnMouseDown(WPARAM btnState, int x, int y)
 {
+	mMovable = true;
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
 
-	SetCapture(mHwndWindow);
+	SetCapture(mHwndViewport1);
 }
 
 void AppSimple::OnMouseUp(WPARAM btnState, int x, int y)
 {
+	mMovable = false;
 	ReleaseCapture();
 }
 
 void AppSimple::OnMouseMove(WPARAM btnState, int x, int y)
 {
+	if (!mMovable)
+		return;
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		// Make each pixel correspond to a quarter of a degree.
