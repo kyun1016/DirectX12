@@ -61,9 +61,16 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 
 AppBase::~AppBase()
 {
+	// Cleanup
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+	DestroyWindow(mHwndWindow);
+	::UnregisterClassW(mWindowClass.lpszClassName, mWindowClass.hInstance);
+
 	g_appBase = nullptr;
 
-	DestroyWindow(mHwndWindow);
+	
 }
 
 void AppBase::Set4xMsaaState(bool value)
@@ -91,8 +98,8 @@ bool AppBase::OnInit()
 	if (!InitDirect3D())
 		return false;
 
-	//if (!InitImgui())
-	//	return false;
+	if (!InitImgui())
+		return false;
 
 	// Do the initial resize code.
 	OnResize();
@@ -121,9 +128,87 @@ int AppBase::Run()
 
 			if (!mAppPaused)
 			{
+				//==========================================
+				// ImGui
+				//==========================================
+				// Start the Dear ImGui frame
+				ImGui_ImplDX12_NewFrame();
+				ImGui_ImplWin32_NewFrame();
+				ImGui::NewFrame();
+
+				// Our state
+				bool show_demo_window = true;
+				bool show_another_window = false;
+				ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+				// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+
+				if (show_demo_window)
+					ImGui::ShowDemoWindow(&show_demo_window);
+
+				// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+				{
+					static float f = 0.0f;
+					static int counter = 0;
+
+					ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+					ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+					ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+					ImGui::Checkbox("Another Window", &show_another_window);
+
+					ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+					ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+					if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+						counter++;
+					ImGui::SameLine();
+					ImGui::Text("counter = %d", counter);
+
+					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / mImGuiIO.Framerate, mImGuiIO.Framerate);
+					ImGui::End();
+				}
+
+				// 3. Show another simple window.
+				if (show_another_window)
+				{
+					ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+					ImGui::Text("Hello from another window!");
+					if (ImGui::Button("Close Me"))
+						show_another_window = false;
+					ImGui::End();
+				}
+
+				UpdateImGui();		// override this function
+
+				// Rendering
+				ImGui::Render();
+
+				//==========================================
+				// My Render
+				//==========================================
 				CalculateFrameStats();
 				OnUpdate(mTimer);
 				OnRender(mTimer);
+
+				//==========================================
+				// ImGui
+				//==========================================
+				// Update and Render additional Platform Windows
+				if (mImGuiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+				{
+					ImGui::UpdatePlatformWindows();
+					ImGui::RenderPlatformWindowsDefault();
+				}
+
+				// swap the back and front buffers
+				ThrowIfFailed(mSwapChain->Present(0, 0));
+				mCurrentBackBuffer = (mCurrentBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+
+				// Wait until frame commands are complete.  This waiting is inefficient and is
+				// done for simplicity.  Later we will show how to organize our rendering code
+				// so we do not have to wait per frame.
+				FlushCommandQueue();
 			}
 			else
 			{
@@ -229,22 +314,25 @@ void AppBase::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 
 void AppBase::CreateRtvAndDsvDescriptorHeaps()
 {
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = APP_NUM_BACK_BUFFERS;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	rtvHeapDesc.NodeMask = 0;
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		/* UINT NodeMask					*/0
+	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(
 		&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
 
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
-	dsvHeapDesc.NumDescriptors = 1;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(
-		&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+		/* UINT NumDescriptors				*/1,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		/* UINT NodeMask					*/0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
 }
 
 void AppBase::OnResize()
@@ -479,19 +567,19 @@ bool AppBase::InitDirect3D()
 			IID_PPV_ARGS(&mDevice)));
 	}
 
-//	// [DEBUG] Setup debug interface to break on any warnings/errors
-//#if defined(DEBUG) || defined(_DEBUG) 
-//	if (debugController != nullptr)
-//	{
-//		ID3D12InfoQueue* pInfoQueue = nullptr;
-//		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-//		pInfoQueue->Release();
-//		debugController->Release();
-//	}
-//#endif
+	// [DEBUG] Setup debug interface to break on any warnings/errors
+#if defined(DEBUG) || defined(_DEBUG) 
+	if (debugController != nullptr)
+	{
+		ID3D12InfoQueue* pInfoQueue = nullptr;
+		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+		// pInfoQueue->Release();
+		// debugController->Release();
+	}
+#endif
 
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
@@ -525,6 +613,17 @@ bool AppBase::InitDirect3D()
 	CreateSwapChain();
 	CreateRtvAndDsvDescriptorHeaps();
 
+
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		/* UINT NumDescriptors				*/APP_SRV_HEAP_SIZE,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		/* UINT NodeMask					*/0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescHeap)));
+	mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescHeap);
+
 	return true;
 }
 
@@ -532,11 +631,12 @@ bool AppBase::InitImgui()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+	mImGuiIO = ImGui::GetIO();
+	(void)mImGuiIO;
+	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -546,17 +646,38 @@ bool AppBase::InitImgui()
 	ImGui_ImplWin32_Init(mHwndWindow);
 
 	ImGui_ImplDX12_InitInfo init_info = {};
-	//init_info.Device = mDevice;
-	//init_info.CommandQueue = mCommandQueue;
-	//init_info.NumFramesInFlight = APP_NUM_FRAMES_IN_FLIGHT;
-	//init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	//init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-	//// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-	//// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-	//init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
-	//init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
-	//init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
-	//ImGui_ImplDX12_Init(&init_info);
+	init_info.Device = mDevice.Get();
+	init_info.CommandQueue = mCommandQueue.Get();
+	init_info.NumFramesInFlight = 1; // APP_NUM_FRAMES_IN_FLIGHT;
+	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+	// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+	init_info.SrvDescriptorHeap = mSrvDescHeap;
+	init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+	ImGui_ImplDX12_Init(&init_info);
+
+	    // Load Fonts
+    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+    // - Read 'docs/FONTS.md' for more instructions and details.
+    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+    //io.Fonts->AddFontDefault();
+    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    //IM_ASSERT(font != nullptr);
+
+    // Our state
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	return false;
 }

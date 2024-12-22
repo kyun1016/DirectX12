@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "GameTimer.h"
 #include "resource.h"
+#include "imgui.h"
 
 //class GameTimer;
 //class Camera;
@@ -15,11 +16,63 @@
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 
+struct FrameContext
+{
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	CommandAllocator;
+	UINT64											FenceValue;
+};
+
+// Simple free list based allocator
+struct ExampleDescriptorHeapAllocator
+{
+	ID3D12DescriptorHeap* Heap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_TYPE  HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+	D3D12_CPU_DESCRIPTOR_HANDLE HeapStartCpu;
+	D3D12_GPU_DESCRIPTOR_HANDLE HeapStartGpu;
+	UINT                        HeapHandleIncrement;
+	ImVector<int>               FreeIndices;
+
+	void Create(ID3D12Device* device, ID3D12DescriptorHeap* heap)
+	{
+		IM_ASSERT(Heap == nullptr && FreeIndices.empty());
+		Heap = heap;
+		D3D12_DESCRIPTOR_HEAP_DESC desc = heap->GetDesc();
+		HeapType = desc.Type;
+		HeapStartCpu = Heap->GetCPUDescriptorHandleForHeapStart();
+		HeapStartGpu = Heap->GetGPUDescriptorHandleForHeapStart();
+		HeapHandleIncrement = device->GetDescriptorHandleIncrementSize(HeapType);
+		FreeIndices.reserve((int)desc.NumDescriptors);
+		for (int n = desc.NumDescriptors; n > 0; n--)
+			FreeIndices.push_back(n);
+	}
+	void Destroy()
+	{
+		Heap = nullptr;
+		FreeIndices.clear();
+	}
+	void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
+	{
+		IM_ASSERT(FreeIndices.Size > 0);
+		int idx = FreeIndices.back();
+		FreeIndices.pop_back();
+		out_cpu_desc_handle->ptr = HeapStartCpu.ptr + (idx * HeapHandleIncrement);
+		out_gpu_desc_handle->ptr = HeapStartGpu.ptr + (idx * HeapHandleIncrement);
+	}
+	void Free(D3D12_CPU_DESCRIPTOR_HANDLE out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE out_gpu_desc_handle)
+	{
+		int cpu_idx = (int)((out_cpu_desc_handle.ptr - HeapStartCpu.ptr) / HeapHandleIncrement);
+		int gpu_idx = (int)((out_gpu_desc_handle.ptr - HeapStartGpu.ptr) / HeapHandleIncrement);
+		IM_ASSERT(cpu_idx == gpu_idx);
+		FreeIndices.push_back(cpu_idx);
+	}
+};
+
 class AppBase
 {
 public:
 	static constexpr int APP_NUM_FRAMES_IN_FLIGHT = 3;
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
+	static constexpr int APP_SRV_HEAP_SIZE = 64;
 	static constexpr uint32_t WND_PADDING = 5;
 public:
 	AppBase();
@@ -32,6 +85,7 @@ public:
 	int Run();
 
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam, const int id);
+	virtual void UpdateImGui() {}
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
 	void SetWindowBounds(int left, int top, int right, int bottom);
@@ -39,6 +93,8 @@ public:
 	void LogAdapters();
 	void LogAdapterOutputs(IDXGIAdapter* adapter);
 	void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
+
+	void WaitForLastSubmittedFrame();
 
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
@@ -97,7 +153,7 @@ public:
 	HWND mHwndViewport2;
 	HWND mHwndViewport3;
 	HWND mHwndViewport4;
-	
+
 	HWND mHwndOutliner;
 	HWND mHwndContentBrowser;
 	HWND mHwndOutputLog;
@@ -140,6 +196,9 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
+	ID3D12DescriptorHeap* mSrvDescHeap;
+	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
+	ImGuiIO mImGuiIO;
 
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;

@@ -128,14 +128,14 @@ void AppSimple::OnRender(const GameTimer dt)
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-	// swap the back and front buffers
-	ThrowIfFailed(mSwapChain->Present(0, 0));
-	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+	//// swap the back and front buffers
+	//ThrowIfFailed(mSwapChain->Present(0, 0));
+	//mCurrentBackBuffer = (mCurrentBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
-	// Wait until frame commands are complete.  This waiting is inefficient and is
-	// done for simplicity.  Later we will show how to organize our rendering code
-	// so we do not have to wait per frame.
-	FlushCommandQueue();
+	//// Wait until frame commands are complete.  This waiting is inefficient and is
+	//// done for simplicity.  Later we will show how to organize our rendering code
+	//// so we do not have to wait per frame.
+	//FlushCommandQueue();
 }
 
 void AppSimple::OnMouseDown(WPARAM btnState, int x, int y)
