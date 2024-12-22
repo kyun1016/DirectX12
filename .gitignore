@@ -398,3 +398,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 Ref/*
+DirectX12/DirectX12/vcpkg_installed/*

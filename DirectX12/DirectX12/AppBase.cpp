@@ -91,6 +91,9 @@ bool AppBase::OnInit()
 	if (!InitDirect3D())
 		return false;
 
+	//if (!InitImgui())
+	//	return false;
+
 	// Do the initial resize code.
 	OnResize();
 
@@ -227,7 +230,7 @@ void AppBase::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 void AppBase::CreateRtvAndDsvDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
-	rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
+	rtvHeapDesc.NumDescriptors = APP_NUM_BACK_BUFFERS;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
@@ -256,13 +259,13 @@ void AppBase::OnResize()
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	// Release the previous resources we will be recreating.
-	for (int i = 0; i < SwapChainBufferCount; ++i)
+	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 		mSwapChainBuffer[i].Reset();
 	mDepthStencilBuffer.Reset();
 
 	// Resize the swap chain.
 	ThrowIfFailed(mSwapChain->ResizeBuffers(
-		SwapChainBufferCount,
+		APP_NUM_BACK_BUFFERS,
 		mViewportWidth, mViewportHeight,
 		mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
@@ -270,7 +273,7 @@ void AppBase::OnResize()
 	mCurrentBackBuffer = 0;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-	for (UINT i = 0; i < SwapChainBufferCount; i++)
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
 		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
@@ -449,13 +452,11 @@ bool AppBase::InitMainWindow()
 
 bool AppBase::InitDirect3D()
 {
+	// [DEBUG] Enable debug interface
 #if defined(DEBUG) || defined(_DEBUG) 
-	// Enable the D3D12 debug layer.
-	{
-		Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
-		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-		debugController->EnableDebugLayer();
-	}
+	Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+	debugController->EnableDebugLayer();
 #endif
 
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
@@ -463,7 +464,7 @@ bool AppBase::InitDirect3D()
 	// Try to create hardware device.
 	HRESULT hardwareResult = D3D12CreateDevice(
 		nullptr,             // default adapter
-		D3D_FEATURE_LEVEL_12_0,
+		D3D_FEATURE_LEVEL_11_0,
 		IID_PPV_ARGS(&mDevice));
 
 	// Fallback to WARP device.
@@ -477,6 +478,20 @@ bool AppBase::InitDirect3D()
 			D3D_FEATURE_LEVEL_11_0,
 			IID_PPV_ARGS(&mDevice)));
 	}
+
+//	// [DEBUG] Setup debug interface to break on any warnings/errors
+//#if defined(DEBUG) || defined(_DEBUG) 
+//	if (debugController != nullptr)
+//	{
+//		ID3D12InfoQueue* pInfoQueue = nullptr;
+//		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+//		pInfoQueue->Release();
+//		debugController->Release();
+//	}
+//#endif
 
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
@@ -523,12 +538,37 @@ bool AppBase::InitImgui()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(mHwndWindow);
+
+	ImGui_ImplDX12_InitInfo init_info = {};
+	//init_info.Device = mDevice;
+	//init_info.CommandQueue = mCommandQueue;
+	//init_info.NumFramesInFlight = APP_NUM_FRAMES_IN_FLIGHT;
+	//init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	//init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	//// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+	//// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+	//init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
+	//init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+	//init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+	//ImGui_ImplDX12_Init(&init_info);
+
 	return false;
 }
 
 void AppBase::CreateCommandObjects()
 {
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {
+		/* D3D12_COMMAND_LIST_TYPE Type    */
+		/* INT Priority                    */
+		/* D3D12_COMMAND_QUEUE_FLAGS Flags */
+		/* UINT NodeMask                   */
+	};
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
@@ -566,7 +606,7 @@ void AppBase::CreateSwapChain()
 	sd.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 	sd.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = SwapChainBufferCount;
+	sd.BufferCount = APP_NUM_BACK_BUFFERS;
 	sd.OutputWindow = mHwndViewport1;
 	sd.Windowed = true;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -660,7 +700,7 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 		return true;
 	RECT rect;
 
-	std::cout << "[" << id << "]"  << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
+	std::cout << "[" << id << "]" << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 	switch (msg)
 	{
 	case WM_CREATE:
@@ -686,7 +726,7 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 			MessageBox(0, L"Create Viewport1 Failed.", 0, 0);
 			return false;
 		}
-		
+
 		mHwndViewport2 = CreateWindow(
 			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport2.c_str(),
 			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport2.c_str(),
@@ -769,7 +809,7 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 		mClientWidth = (UINT)LOWORD(lParam);
 		mClientHeight = (UINT)HIWORD(lParam);
 		UpdateForSizeChange(mClientWidth, mClientHeight);
-		
+
 		if (mDevice)
 		{
 			if (wParam == SIZE_MINIMIZED)

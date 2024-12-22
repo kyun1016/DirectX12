@@ -18,6 +18,10 @@
 class AppBase
 {
 public:
+	static constexpr int APP_NUM_FRAMES_IN_FLIGHT = 3;
+	static constexpr int APP_NUM_BACK_BUFFERS = 3;
+	static constexpr uint32_t WND_PADDING = 5;
+public:
 	AppBase();
 	AppBase(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~AppBase();
@@ -66,7 +70,6 @@ protected:
 
 	std::wstring GetAssetFullPath(LPCWSTR assetName);
 public:
-	static constexpr uint32_t WND_PADDING = 5;
 	// Viewport dimensions.
 	uint32_t mClientWidth;
 	uint32_t mClientHeight;
@@ -131,9 +134,8 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
-	static const UINT SwapChainBufferCount = 2;
 	int mCurrentBackBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount];
+	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
