@@ -52,6 +52,7 @@ protected:
 	bool InitMainWindow();
 
 	bool InitDirect3D();
+	bool InitImgui();
 	void CreateCommandObjects();
 	void CreateSwapChain();
 

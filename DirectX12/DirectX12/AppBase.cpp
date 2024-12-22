@@ -347,13 +347,13 @@ bool AppBase::RegisterWindowClass()
 		/*WNDPROC     lpfnWndProc	*/	WndProcMainWindow,
 		/*int         cbClsExtra	*/	0L,
 		/*int         cbWndExtra	*/	0L,
-		/*HINSTANCE   hInstance		*/	GetModuleHandle(NULL),
-		/*HICON       hIcon			*/	NULL,
-		/*HCURSOR     hCursor		*/	NULL,
-		/*HBRUSH      hbrBackground	*/	NULL,
+		/*HINSTANCE   hInstance		*/	GetModuleHandle(nullptr),
+		/*HICON       hIcon			*/	nullptr,
+		/*HCURSOR     hCursor		*/	nullptr,
+		/*HBRUSH      hbrBackground	*/	nullptr,
 		/*LPCWSTR     lpszMenuName	*/	MAKEINTRESOURCEW(IDR_MENU1),
 		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
-		/*HICON       hIconSm		*/	NULL
+		/*HICON       hIconSm		*/	nullptr
 	};
 
 	if (!RegisterClassEx(&mWindowClass)) {
@@ -369,12 +369,12 @@ bool AppBase::RegisterWindowClass()
 		/*int         cbClsExtra	*/	0L,
 		/*int         cbWndExtra	*/	0L,
 		/*HINSTANCE   hInstance		*/	mWindowClass.hInstance,
-		/*HICON       hIcon			*/	NULL,
-		/*HCURSOR     hCursor		*/	NULL,
-		/*HBRUSH      hbrBackground	*/	NULL,
-		/*LPCWSTR     lpszMenuName	*/	NULL,
+		/*HICON       hIcon			*/	nullptr,
+		/*HCURSOR     hCursor		*/	nullptr,
+		/*HBRUSH      hbrBackground	*/	nullptr,
+		/*LPCWSTR     lpszMenuName	*/	nullptr,
 		/*LPCWSTR     lpszClassName	*/	mClassNamemViewport1.c_str(), // lpszClassName, L-string
-		/*HICON       hIconSm		*/	NULL
+		/*HICON       hIconSm		*/	nullptr
 	};
 
 	if (!RegisterClassEx(&wcex)) {
@@ -511,6 +511,19 @@ bool AppBase::InitDirect3D()
 	CreateRtvAndDsvDescriptorHeaps();
 
 	return true;
+}
+
+bool AppBase::InitImgui()
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+	return false;
 }
 
 void AppBase::CreateCommandObjects()
