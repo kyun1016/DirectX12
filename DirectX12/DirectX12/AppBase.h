@@ -121,7 +121,6 @@ public:
 	// Window title.
 	std::wstring mTitle;
 	std::wstring mWndCaption = L"d3d App";
-	const UINT mWindowStyle = WS_OVERLAPPEDWINDOW;
 #pragma endregion Window
 
 protected:
@@ -142,8 +141,14 @@ protected:
 #pragma region ImGui
 protected:
 	bool InitImgui();
+	void CreateImGuiDescriptorHeaps();
 public:
-	ImGuiIO* mImGuiIO;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
+	bool mShowDemoWindow = false;
+	bool mShowAnotherWindow = false;
+	bool mShowViewport = false;
+	ID3D12DescriptorHeap* mSrvDescHeap;
+	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 #pragma endregion ImGui
 
 public:
@@ -182,8 +187,6 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
-	ID3D12DescriptorHeap* mSrvDescHeap;
-	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;

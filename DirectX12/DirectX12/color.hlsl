@@ -15,6 +15,12 @@ struct VertexOut
     float4 Color : COLOR;
 };
 
+struct PS_OUTPUT
+{
+    float4 Scene;
+    float4 Imgui;
+};
+
 VertexOut VS(VertexIn vin)
 {
     VertexOut vout;
@@ -28,7 +34,20 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
+//PS_OUTPUT PS(VertexOut pin) : SV_Target
+//{
+//    PS_OUTPUT ret;
+//    ret.Scene = pin.Color;
+//    ret.Imgui = pin.Color;
+    
+//    return ret;
+//}
+
 float4 PS(VertexOut pin) : SV_Target
 {
+    PS_OUTPUT ret;
+    ret.Scene = pin.Color;
+    ret.Imgui = pin.Color;
+    
     return pin.Color;
 }

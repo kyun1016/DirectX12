@@ -122,9 +122,6 @@ int AppBase::Run()
 				mSwapChainOccluded = false;
 				UpdateImGui();		// override this function
 
-				// Rendering
-				ImGui::Render();
-
 				//==========================================
 				// My Render
 				//==========================================
@@ -132,18 +129,28 @@ int AppBase::Run()
 				OnUpdate(mTimer);
 				OnRender(mTimer);
 
+				// Rendering
+				ImGui::Render();
+
 				//==========================================
 				// ImGui
 				//==========================================
 				// Update and Render additional Platform Windows
-				if (mImGuiIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 				{
 					ImGui::UpdatePlatformWindows();
 					ImGui::RenderPlatformWindowsDefault();
 				}
 
+				// GUI 렌더링
+				// ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+				/*D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				mCommandList->ResourceBarrier(1, &RenderBarrier);*/
+
+
 				// swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(0, 0));
+				ThrowIfFailed(mSwapChain->Present(1, 0)); // Present with vsync
+				// ThrowIfFailed(mSwapChain->Present(0, 0)); // Present without vsync
 				mCurrentBackBuffer = (mCurrentBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 				// Wait until frame commands are complete.  This waiting is inefficient and is
@@ -257,12 +264,11 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS,
+		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		/* UINT NodeMask					*/0
 	};
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(
-		&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
@@ -392,7 +398,7 @@ bool AppBase::RegisterWindowClass()
 		/*HICON       hIcon			*/	nullptr,
 		/*HCURSOR     hCursor		*/	nullptr,
 		/*HBRUSH      hbrBackground	*/	nullptr,
-		/*LPCWSTR     lpszMenuName	*/	MAKEINTRESOURCEW(IDR_MENU1),
+		/*LPCWSTR     lpszMenuName	*/	L"", // MAKEINTRESOURCEW(IDR_MENU1),
 		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
 		/*HICON       hIconSm		*/	nullptr
 	};
@@ -518,15 +524,8 @@ bool AppBase::InitDirect3D()
 	CreateSwapChain();
 	CreateRtvAndDsvDescriptorHeaps();
 
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
-	{
-		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/APP_SRV_HEAP_SIZE,
-		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-		/* UINT NodeMask					*/0
-	};
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescHeap)));
-	mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescHeap);
+	CreateImGuiDescriptorHeaps();
+	
 
 	return true;
 }
@@ -535,13 +534,11 @@ bool AppBase::InitImgui()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	mImGuiIO = &ImGui::GetIO();
-	// ImGui::GImGUI->IO;
-	(void)mImGuiIO;
-	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+	ImGuiIO& imGuiIO = ImGui::GetIO();
+	imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	imGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+	imGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -579,12 +576,20 @@ bool AppBase::InitImgui()
 	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 	//IM_ASSERT(font != nullptr);
 
-	// Our state
-	bool show_demo_window = true;
-	bool show_another_window = false;
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
 	return true;
+}
+
+void AppBase::CreateImGuiDescriptorHeaps()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		/* UINT NumDescriptors				*/APP_SRV_HEAP_SIZE,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		/* UINT NodeMask					*/0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescHeap)));
+	mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescHeap);
 }
 
 void AppBase::CreateCommandObjects()
@@ -866,16 +871,9 @@ void AppBase::UpdateImGui()
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-
 	// Our state
-	bool show_demo_window = true;
-	bool show_another_window = false;
+	
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
 
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
@@ -885,8 +883,9 @@ void AppBase::UpdateImGui()
 		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &show_another_window);
+		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &mShowAnotherWindow);
+		ImGui::Checkbox("Show Viewport", &mShowViewport);
 
 		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
@@ -896,17 +895,33 @@ void AppBase::UpdateImGui()
 		ImGui::SameLine();
 		ImGui::Text("counter = %d", counter);
 
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / mImGuiIO->Framerate, mImGuiIO->Framerate);
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
 	}
 
+	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+	if (mShowDemoWindow)
+		ImGui::ShowDemoWindow(&mShowDemoWindow);
+
 	// 3. Show another simple window.
-	if (show_another_window)
+	if (mShowAnotherWindow)
 	{
-		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Begin("Another Window", &mShowAnotherWindow);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
 		ImGui::Text("Hello from another window!");
 		if (ImGui::Button("Close Me"))
-			show_another_window = false;
+			mShowAnotherWindow = false;
+		ImGui::End();
+	}
+	// 3. Show another simple window.
+	if (mShowViewport)
+	{
+		ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
+		ImGui::Begin("Viewport1", &mShowViewport);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		
+		D3D12_GPU_DESCRIPTOR_HANDLE* my_texture_srv_gpu_handle;
+		// mSrvDescHeapAlloc.Alloc(&CurrentBackBufferView(), my_texture_srv_gpu_handle);
+		//ImGui::Text("Hello from another window! = %s", my_texture_srv_gpu_handle);
+		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, ImVec2((float)mClientWidth, (float)mClientHeight));
 		ImGui::End();
 	}
 }
