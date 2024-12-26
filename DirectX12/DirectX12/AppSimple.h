@@ -27,7 +27,8 @@ public:
 	AppSimple(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~AppSimple();
 
-	virtual bool OnInit() override;
+	virtual bool Initialize() override;
+	virtual void CleanUp() override;
 private:
 	virtual void OnResize()override;
 	virtual void OnUpdate(const GameTimer dt)override;
@@ -45,7 +46,6 @@ private:
 
 private:
 	bool mMovable = false;
-
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 

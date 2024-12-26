@@ -14,13 +14,13 @@ AppSimple::AppSimple(uint32_t width, uint32_t height, std::wstring name)
 AppSimple::~AppSimple()
 {
 }
-bool AppSimple::OnInit()
+bool AppSimple::Initialize()
 {
-	if (!AppBase::OnInit())
+	if (!AppBase::Initialize())
 		return false;
 
 	// Reset the command list to prep for initialization commands.
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), nullptr));
 
 	BuildDescriptorHeaps();
 	BuildConstantBuffers();
@@ -38,6 +38,11 @@ bool AppSimple::OnInit()
 	FlushCommandQueue();
 
 	return true;
+}
+
+void AppSimple::CleanUp()
+{
+	AppBase::CleanUp();
 }
 
 void AppSimple::OnResize()
@@ -77,11 +82,11 @@ void AppSimple::OnRender(const GameTimer dt)
 {
 	// Reuse the memory associated with command recording.
 // We can only reset when the associated command lists have finished execution on the GPU.
-	ThrowIfFailed(mCommandAllocator->Reset());
+	ThrowIfFailed(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT]->Reset());
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), mPSO.Get()));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), mPSO.Get()));
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -144,7 +149,7 @@ void AppSimple::OnMouseDown(WPARAM btnState, int x, int y)
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
 
-	SetCapture(mHwndViewport1);
+	SetCapture(mHwndWindow);
 }
 
 void AppSimple::OnMouseUp(WPARAM btnState, int x, int y)

@@ -16,12 +16,9 @@
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 
-struct FrameContext
-{
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	CommandAllocator;
-	UINT64											FenceValue;
-};
+extern class AppBase* g_appBasse;
 
+#pragma region ImGui
 // Simple free list based allocator
 struct ExampleDescriptorHeapAllocator
 {
@@ -66,11 +63,12 @@ struct ExampleDescriptorHeapAllocator
 		FreeIndices.push_back(cpu_idx);
 	}
 };
+#pragma endregion ImGui
 
 class AppBase
 {
 public:
-	static constexpr int APP_NUM_FRAMES_IN_FLIGHT = 3;
+	static constexpr int APP_NUM_FRAMES_IN_FLIGHT = 3;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
 	static constexpr uint32_t WND_PADDING = 5;
@@ -81,11 +79,12 @@ public:
 
 	void Set4xMsaaState(bool value);
 
-	virtual bool OnInit();
+	virtual bool Initialize();
+	virtual void CleanUp();
 	int Run();
 
-	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam, const int id);
-	virtual void UpdateImGui() {}
+	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
+	virtual void UpdateImGui();
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
 	void SetWindowBounds(int left, int top, int right, int bottom);
@@ -93,8 +92,6 @@ public:
 	void LogAdapters();
 	void LogAdapterOutputs(IDXGIAdapter* adapter);
 	void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
-
-	void WaitForLastSubmittedFrame();
 
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
@@ -107,12 +104,28 @@ protected:
 	virtual void OnMouseUp(WPARAM btnState, int x, int y) { }
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) { }
 
+#pragma region Window
 protected:
 	bool RegisterWindowClass();
+	bool MakeWindowHandle();
 	bool InitMainWindow();
+public:
+	// Viewport dimensions.
+	uint32_t mClientWidth;
+	uint32_t mClientHeight;
+	float mAspectRatio;
+	WNDCLASSEX mWindowClass;
+	RECT mWindowRect;
+	HWND mHwndWindow;
 
+	// Window title.
+	std::wstring mTitle;
+	std::wstring mWndCaption = L"d3d App";
+	const UINT mWindowStyle = WS_OVERLAPPEDWINDOW;
+#pragma endregion Window
+
+protected:
 	bool InitDirect3D();
-	bool InitImgui();
 	void CreateCommandObjects();
 	void CreateSwapChain();
 
@@ -125,69 +138,42 @@ protected:
 	void CalculateFrameStats();
 
 	std::wstring GetAssetFullPath(LPCWSTR assetName);
+
+#pragma region ImGui
+protected:
+	bool InitImgui();
 public:
-	// Viewport dimensions.
-	uint32_t mClientWidth;
-	uint32_t mClientHeight;
-	uint32_t mViewportWidth;
-	uint32_t mViewportHeight;
-	float mAspectRatio;
-	// Window bounds
-	enum E_HWND_ID
-	{
-		MAIN_WINDOW,
-		VIEWPORT1,
-		VIEWPORT2,
-		VIEWPORT3,
-		VIEWPORT4,
-	};
-	const std::wstring mClassNamemViewport1 = L"Viewport1";
-	const std::wstring mClassNamemViewport2 = L"Viewport2";
-	const std::wstring mClassNamemViewport3 = L"Viewport3";
-	const std::wstring mClassNamemViewport4 = L"Viewport4";
-	WNDCLASSEX mWindowClass;
-	RECT mWindowRect;
-	HWND mHwndWindow;
-	HWND mHwndTab;
-	HWND mHwndViewport1;
-	HWND mHwndViewport2;
-	HWND mHwndViewport3;
-	HWND mHwndViewport4;
+	ImGuiIO* mImGuiIO;
+#pragma endregion ImGui
 
-	HWND mHwndOutliner;
-	HWND mHwndContentBrowser;
-	HWND mHwndOutputLog;
-
-	// Window title.
-	std::wstring mTitle;
-	std::wstring mWndCaption = L"d3d App";
-	const UINT mWindowStyle = WS_OVERLAPPEDWINDOW;
 public:
 	// Root assets path.
 	std::wstring mAssetsPath;
 
-	bool mAppPaused = false;	// is the application paused?
-	bool mMinimized = false;	// is the application minimized?
-	bool mMaximized = false;	// is the application maximized?
-	bool mResizing = false;	// are the resize bars being dragged?
+	bool mAppPaused = false;		// is the application paused?
+	bool mMinimized = false;		// is the application minimized?
+	bool mMaximized = false;		// is the application maximized?
+	bool mResizing = false;			// are the resize bars being dragged?
 	bool mFullscreenState = false;	// fullscreen enabled
-	bool m4xMsaaState = false;	// 4X MSAA enabled
+	bool m4xMsaaState = false;		// 4X MSAA enabled
 	UINT m4xMsaaQuality = 0;		// quality level of 4X MSAA
 
 	GameTimer mTimer;
-	// unique_ptr<Camera> mCamera;
-	// unique_ptr<Model> mModel;
 
 	// Pipeline objects.
 	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
-	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
 
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
-	UINT64 mCurrentfence;
+	UINT64 mFrameIndex = 0;
+	// HANDLE mFenceEvent = nullptr;
+
+	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
+	HANDLE mSwapChainWaitableObject;
+	bool mSwapChainOccluded = true;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator[APP_NUM_FRAMES_IN_FLIGHT];
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
 	int mCurrentBackBuffer;
@@ -198,7 +184,6 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
-	ImGuiIO mImGuiIO;
 
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;

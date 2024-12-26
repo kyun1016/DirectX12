@@ -11,32 +11,18 @@
 #include "D3DUtil.h"
 #include "GameTimer.h"
 #include "d3dx12.h"
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
 
 
-// imgui_impl_win32.cpp에 정의된 메시지 처리 함수에 대한 전방 선언
-// Vcpkg를 통해 IMGUI를 사용할 경우 빨간줄로 경고가 뜰 수 있음
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd,
-	UINT msg,
-	WPARAM wParam,
-	LPARAM lParam);
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Singleton object so that worker threads can share members.
 static AppBase* g_appBase = nullptr;
 
-LRESULT WINAPI WndProcMainWindow(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::MAIN_WINDOW);
-}
-LRESULT WINAPI WndProcViewport1(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT1);
-}
-LRESULT WINAPI WndProcViewport2(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT2);
-}
-LRESULT WINAPI WndProcViewport3(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT3);
-}
-LRESULT WINAPI WndProcViewport4(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam, AppBase::VIEWPORT4);
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return g_appBase->MsgProc(hWnd, msg, wParam, lParam);
 }
 //===================================
 // Constructor
@@ -61,16 +47,7 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 
 AppBase::~AppBase()
 {
-	// Cleanup
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-	DestroyWindow(mHwndWindow);
-	::UnregisterClassW(mWindowClass.lpszClassName, mWindowClass.hInstance);
-
 	g_appBase = nullptr;
-
-	
 }
 
 void AppBase::Set4xMsaaState(bool value)
@@ -90,7 +67,7 @@ std::wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
 	return mAssetsPath + assetName;
 }
 
-bool AppBase::OnInit()
+bool AppBase::Initialize()
 {
 	if (!InitMainWindow())
 		return false;
@@ -107,8 +84,20 @@ bool AppBase::OnInit()
 	return true;
 }
 
+void AppBase::CleanUp()
+{
+	// Cleanup
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+	DestroyWindow(mHwndWindow);
+	::UnregisterClassW(mWindowClass.lpszClassName, mWindowClass.hInstance);
+}
+
 int AppBase::Run()
 {
+	Initialize();
+
 	MSG msg{ 0 };
 
 	mTimer.Reset();
@@ -122,63 +111,15 @@ int AppBase::Run()
 			DispatchMessage(&msg);
 		}
 		// Otherwise, do animation/game stuff.
-		else
+		else if (mSwapChainOccluded && mSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED)
 		{
+			::Sleep(10);
+		}
+		else {
 			mTimer.Tick();
-
 			if (!mAppPaused)
 			{
-				//==========================================
-				// ImGui
-				//==========================================
-				// Start the Dear ImGui frame
-				ImGui_ImplDX12_NewFrame();
-				ImGui_ImplWin32_NewFrame();
-				ImGui::NewFrame();
-
-				// Our state
-				bool show_demo_window = true;
-				bool show_another_window = false;
-				ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-				// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-
-				if (show_demo_window)
-					ImGui::ShowDemoWindow(&show_demo_window);
-
-				// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-				{
-					static float f = 0.0f;
-					static int counter = 0;
-
-					ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-					ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-					ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-					ImGui::Checkbox("Another Window", &show_another_window);
-
-					ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-					ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-					if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-						counter++;
-					ImGui::SameLine();
-					ImGui::Text("counter = %d", counter);
-
-					ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / mImGuiIO.Framerate, mImGuiIO.Framerate);
-					ImGui::End();
-				}
-
-				// 3. Show another simple window.
-				if (show_another_window)
-				{
-					ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-					ImGui::Text("Hello from another window!");
-					if (ImGui::Button("Close Me"))
-						show_another_window = false;
-					ImGui::End();
-				}
-
+				mSwapChainOccluded = false;
 				UpdateImGui();		// override this function
 
 				// Rendering
@@ -195,7 +136,7 @@ int AppBase::Run()
 				// ImGui
 				//==========================================
 				// Update and Render additional Platform Windows
-				if (mImGuiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+				if (mImGuiIO->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 				{
 					ImGui::UpdatePlatformWindows();
 					ImGui::RenderPlatformWindowsDefault();
@@ -217,6 +158,7 @@ int AppBase::Run()
 		}
 	}
 
+	CleanUp();
 	return (int)msg.wParam;
 }
 
@@ -224,9 +166,7 @@ void AppBase::UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight)
 {
 	mClientWidth = clientWidth;
 	mClientHeight = clientHeight;
-	mViewportWidth = mClientWidth * 0.5;
-	mViewportHeight = mClientHeight * 0.5;
-	mAspectRatio = static_cast<float>(mViewportWidth) / static_cast<float>(mViewportHeight);
+	mAspectRatio = static_cast<float>(mClientWidth) / static_cast<float>(mClientHeight);
 }
 
 void AppBase::SetWindowBounds(int left, int top, int right, int bottom)
@@ -339,12 +279,12 @@ void AppBase::OnResize()
 {
 	assert(mDevice);
 	assert(mSwapChain);
-	assert(mCommandAllocator);
+	assert(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT]);
 
 	// Flush before changing any resources.
 	FlushCommandQueue();
 
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), nullptr));
 
 	// Release the previous resources we will be recreating.
 	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
@@ -354,7 +294,7 @@ void AppBase::OnResize()
 	// Resize the swap chain.
 	ThrowIfFailed(mSwapChain->ResizeBuffers(
 		APP_NUM_BACK_BUFFERS,
-		mViewportWidth, mViewportHeight,
+		mClientWidth, mClientHeight,
 		mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
@@ -373,8 +313,8 @@ void AppBase::OnResize()
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
 		/* UINT64 Alignment						*/	0,
-		/* UINT64 Width							*/	mViewportWidth,
-		/* UINT Height							*/	mViewportHeight,
+		/* UINT64 Width							*/	mClientWidth,
+		/* UINT Height							*/	mClientHeight,
 		/* UINT16 DepthOrArraySize				*/	1,
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R24G8_TYPELESS,
@@ -388,6 +328,15 @@ void AppBase::OnResize()
 
 	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	D3D12_CLEAR_VALUE optClear;
+	//{
+	//	/* DXGI_FORMAT Format;						*/mDepthStencilFormat,
+	//	/* union									*/
+	//	/* {										*/
+	//	/* FLOAT Color[4];							*/
+	//	/* D3D12_DEPTH_STENCIL_VALUE DepthStencil;	*/
+	//	/* };										*/
+	//};
+
 	optClear.Format = mDepthStencilFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
@@ -422,20 +371,21 @@ void AppBase::OnResize()
 	// Update the viewport transform to cover the client area.
 	mScreenViewport.TopLeftX = 0;
 	mScreenViewport.TopLeftY = 0;
-	mScreenViewport.Width = static_cast<float>(mViewportWidth);
-	mScreenViewport.Height = static_cast<float>(mViewportHeight);
+	mScreenViewport.Width = static_cast<float>(mClientWidth);
+	mScreenViewport.Height = static_cast<float>(mClientHeight);
 	mScreenViewport.MinDepth = 0.0f;
 	mScreenViewport.MaxDepth = 1.0f;
 
-	mScissorRect = { 0, 0, static_cast<LONG>(mViewportWidth), static_cast<LONG>(mViewportHeight) };
+	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth), static_cast<LONG>(mClientHeight) };
 }
 
+#pragma region Window
 bool AppBase::RegisterWindowClass()
 {
 	mWindowClass = {
 		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
 		/*UINT        style			*/	CS_CLASSDC,
-		/*WNDPROC     lpfnWndProc	*/	WndProcMainWindow,
+		/*WNDPROC     lpfnWndProc	*/	WndProc,
 		/*int         cbClsExtra	*/	0L,
 		/*int         cbWndExtra	*/	0L,
 		/*HINSTANCE   hInstance		*/	GetModuleHandle(nullptr),
@@ -452,63 +402,10 @@ bool AppBase::RegisterWindowClass()
 		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
 		return false;
 	}
-
-	WNDCLASSEX wcex = {
-		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
-		/*UINT        style			*/	CS_CLASSDC,
-		/*WNDPROC     lpfnWndProc	*/	WndProcViewport1,
-		/*int         cbClsExtra	*/	0L,
-		/*int         cbWndExtra	*/	0L,
-		/*HINSTANCE   hInstance		*/	mWindowClass.hInstance,
-		/*HICON       hIcon			*/	nullptr,
-		/*HCURSOR     hCursor		*/	nullptr,
-		/*HBRUSH      hbrBackground	*/	nullptr,
-		/*LPCWSTR     lpszMenuName	*/	nullptr,
-		/*LPCWSTR     lpszClassName	*/	mClassNamemViewport1.c_str(), // lpszClassName, L-string
-		/*HICON       hIconSm		*/	nullptr
-	};
-
-	if (!RegisterClassEx(&wcex)) {
-		std::cout << "RegisterClassEx() failed." << std::endl;
-		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
-		return false;
-	}
-
-	wcex.lpfnWndProc = WndProcViewport2;
-	wcex.hbrBackground = CreateSolidBrush(RGB(255, 0, 0));
-	wcex.lpszClassName = mClassNamemViewport2.c_str();
-
-	if (!RegisterClassEx(&wcex)) {
-		std::cout << "RegisterClassEx() failed." << std::endl;
-		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
-		return false;
-	}
-
-	wcex.lpfnWndProc = WndProcViewport3;
-	wcex.hbrBackground = CreateSolidBrush(RGB(255, 255, 0));
-	wcex.lpszClassName = mClassNamemViewport3.c_str();
-
-	if (!RegisterClassEx(&wcex)) {
-		std::cout << "RegisterClassEx() failed." << std::endl;
-		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
-		return false;
-	}
-
-	wcex.lpfnWndProc = WndProcViewport4;
-	wcex.hbrBackground = CreateSolidBrush(RGB(255, 0, 255));
-	wcex.lpszClassName = mClassNamemViewport4.c_str();
-
-	if (!RegisterClassEx(&wcex)) {
-		std::cout << "RegisterClassEx() failed." << std::endl;
-		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
-		return false;
-	}
 }
 
-bool AppBase::InitMainWindow()
+bool AppBase::MakeWindowHandle()
 {
-	RegisterWindowClass();
-
 	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
 	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
 	mHwndWindow = CreateWindow(
@@ -520,7 +417,7 @@ bool AppBase::InitMainWindow()
 		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
 		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
 		/* _In_opt_ HWND hWndParent		*/ NULL,
-		/* _In_opt_ HMENU hMenu			*/ (HMENU)MAIN_WINDOW,
+		/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
 		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
 		/* _In_opt_ LPVOID lpParam		*/ NULL
 	);
@@ -531,12 +428,22 @@ bool AppBase::InitMainWindow()
 		return false;
 	}
 
+	return true;
+}
+
+bool AppBase::InitMainWindow()
+{
+	if (!RegisterWindowClass())
+		return false;
+	if (!MakeWindowHandle())
+		return false;
+
 	ShowWindow(mHwndWindow, SW_SHOWDEFAULT);
 	UpdateWindow(mHwndWindow);
-	// SetBkMode(mHwndWindow, TRANSPARENT); // 뒷배경 투명
 
 	return true;
 }
+#pragma endregion Window
 
 bool AppBase::InitDirect3D()
 {
@@ -571,13 +478,11 @@ bool AppBase::InitDirect3D()
 #if defined(DEBUG) || defined(_DEBUG) 
 	if (debugController != nullptr)
 	{
-		ID3D12InfoQueue* pInfoQueue = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue = nullptr;
 		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
 		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-		// pInfoQueue->Release();
-		// debugController->Release();
 	}
 #endif
 
@@ -613,7 +518,6 @@ bool AppBase::InitDirect3D()
 	CreateSwapChain();
 	CreateRtvAndDsvDescriptorHeaps();
 
-
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
@@ -631,12 +535,13 @@ bool AppBase::InitImgui()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	mImGuiIO = ImGui::GetIO();
+	mImGuiIO = &ImGui::GetIO();
+	// ImGui::GImGUI->IO;
 	(void)mImGuiIO;
-	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-	mImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+	mImGuiIO->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -648,7 +553,7 @@ bool AppBase::InitImgui()
 	ImGui_ImplDX12_InitInfo init_info = {};
 	init_info.Device = mDevice.Get();
 	init_info.CommandQueue = mCommandQueue.Get();
-	init_info.NumFramesInFlight = 1; // APP_NUM_FRAMES_IN_FLIGHT;
+	init_info.NumFramesInFlight = APP_NUM_FRAMES_IN_FLIGHT;
 	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
@@ -658,52 +563,47 @@ bool AppBase::InitImgui()
 	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
 	ImGui_ImplDX12_Init(&init_info);
 
-	    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);
+	// Load Fonts
+	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+	// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+	// - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+	// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+	// - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+	// - Read 'docs/FONTS.md' for more instructions and details.
+	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+	//io.Fonts->AddFontDefault();
+	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+	//IM_ASSERT(font != nullptr);
 
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	// Our state
+	bool show_demo_window = true;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	return false;
+	return true;
 }
 
 void AppBase::CreateCommandObjects()
 {
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {
-		/* D3D12_COMMAND_LIST_TYPE Type    */
-		/* INT Priority                    */
-		/* D3D12_COMMAND_QUEUE_FLAGS Flags */
-		/* UINT NodeMask                   */
+		/* D3D12_COMMAND_LIST_TYPE Type    */D3D12_COMMAND_LIST_TYPE_DIRECT,
+		/* INT Priority                    */0,
+		/* D3D12_COMMAND_QUEUE_FLAGS Flags */D3D12_COMMAND_QUEUE_FLAG_NONE,
+		/* UINT NodeMask                   */0
 	};
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
-	ThrowIfFailed(mDevice->CreateCommandAllocator(
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(mCommandAllocator.GetAddressOf())));
 
-	ThrowIfFailed(mDevice->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		mCommandAllocator.Get(), // Associated command allocator
-		nullptr,                   // Initial PipelineStateObject
-		IID_PPV_ARGS(mCommandList.GetAddressOf())));
+	for (int i = 0; i < APP_NUM_FRAMES_IN_FLIGHT; ++i)
+	{
+		ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mCommandAllocator[i].GetAddressOf())));
+	}
+
+	ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator[0].Get(), nullptr, IID_PPV_ARGS(mCommandList.GetAddressOf())));
 
 	// Start off in a closed state.  This is because the first time we refer 
 	// to the command list we will Reset it, and it needs to be closed before
@@ -716,50 +616,52 @@ void AppBase::CreateSwapChain()
 	// Release the previous swapchain we will be recreating.
 	mSwapChain.Reset();
 
-	DXGI_SWAP_CHAIN_DESC sd;
-	sd.BufferDesc.Width = mViewportWidth;
-	sd.BufferDesc.Height = mViewportHeight;
-	sd.BufferDesc.RefreshRate.Numerator = 60;
-	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferDesc.Format = mBackBufferFormat;
-	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	sd.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-	sd.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = APP_NUM_BACK_BUFFERS;
-	sd.OutputWindow = mHwndViewport1;
-	sd.Windowed = true;
-	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	DXGI_SWAP_CHAIN_DESC sd
+	{
+		/* DXGI_MODE_DESC BufferDesc					*/
+		/* 	UINT Width									*/mClientWidth,
+		/* 	UINT Height									*/mClientHeight,
+		/* 	DXGI_RATIONAL RefreshRate					*/
+		/*		UINT Numerator							*/60,
+		/*		UINT Denominator						*/1,
+		/* 	DXGI_FORMAT Format							*/mBackBufferFormat,
+		/* 	DXGI_MODE_SCANLINE_ORDER ScanlineOrdering	*/DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
+		/* 	DXGI_MODE_SCALING Scaling					*/DXGI_MODE_SCALING_UNSPECIFIED,
+		/* DXGI_SAMPLE_DESC SampleDesc					*/
+		/*	UINT Count									*/m4xMsaaState ? 4 : 1,
+		/*	UINT Quality								*/m4xMsaaState ? (m4xMsaaQuality - 1) : 0,
+		/* DXGI_USAGE BufferUsage						*/DXGI_USAGE_RENDER_TARGET_OUTPUT,
+		/* UINT BufferCount								*/APP_NUM_BACK_BUFFERS,
+		/* HWND OutputWindow							*/mHwndWindow,
+		/* BOOL Windowed								*/true,				// TBD
+		/* DXGI_SWAP_EFFECT SwapEffect					*/DXGI_SWAP_EFFECT_FLIP_DISCARD,
+		/* UINT Flags									*/DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
+	};
 
 	// Note: Swap chain uses queue to perform flush.
-	ThrowIfFailed(mDxgiFactory->CreateSwapChain(
-		mCommandQueue.Get(),
-		&sd,
-		mSwapChain.GetAddressOf()));
+	ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &sd, mSwapChain.GetAddressOf()));
 }
 
 void AppBase::FlushCommandQueue()
 {
 	// Advance the fence value to mark commands up to this fence point.
-	mCurrentfence++;
+	mFrameIndex++;
 
 	// Add an instruction to the command queue to set a new fence point.  Because we 
 	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
 	// processing all the commands prior to this Signal().
-	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentfence));
+	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFrameIndex));
 
 	// Wait until the GPU has completed commands up to this fence point.
-	if (mFence->GetCompletedValue() < mCurrentfence)
+	if (mFence->GetCompletedValue() < mFrameIndex)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, L"", false, EVENT_ALL_ACCESS);
 
 		// Fire event when GPU hits current fence.  
-		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentfence, eventHandle));
+		ThrowIfFailed(mFence->SetEventOnCompletion(mFrameIndex, eventHandle));
 
 		// Wait until the GPU hits current fence event is fired.
-		WaitForSingleObject(eventHandle, INFINITE);
+		WaitForSingleObject(eventHandle, INFINITE);					// TODO: Make More Fast Logic
 		CloseHandle(eventHandle);
 	}
 }
@@ -815,113 +717,30 @@ void AppBase::CalculateFrameStats()
 }
 
 
-LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, const int id) {
+LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
-	RECT rect;
 
-	std::cout << "[" << id << "]" << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
+	std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 	switch (msg)
 	{
 	case WM_CREATE:
-		if (id != MAIN_WINDOW)
-			return 0;
-		GetClientRect(hwnd, &rect);
-		mHwndViewport1 = CreateWindow(
-			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport1.c_str(),
-			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport1.c_str(),
-			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-			/* _In_ int X					*/ WND_PADDING,
-			/* _In_ int Y					*/ WND_PADDING,
-			/* _In_ int nWidth				*/ mViewportWidth - WND_PADDING,
-			/* _In_ int nHeight				*/ mViewportHeight - WND_PADDING,
-			/* _In_opt_ HWND hWndParent		*/ hwnd,
-			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT1,
-			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-			/* _In_opt_ LPVOID lpParam		*/ NULL
-		);
-
-		if (!mHwndViewport1) {
-			std::cout << "Create Viewport1 failed." << std::endl;
-			MessageBox(0, L"Create Viewport1 Failed.", 0, 0);
-			return false;
-		}
-
-		mHwndViewport2 = CreateWindow(
-			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport2.c_str(),
-			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport2.c_str(),
-			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-			/* _In_ int X					*/ WND_PADDING + mViewportWidth,
-			/* _In_ int Y					*/ WND_PADDING,
-			/* _In_ int nWidth				*/ rect.right - WND_PADDING,
-			/* _In_ int nHeight				*/ mViewportHeight - WND_PADDING,
-			/* _In_opt_ HWND hWndParent		*/ hwnd,
-			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT2,
-			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-			/* _In_opt_ LPVOID lpParam		*/ NULL
-		);
-
-		if (!mHwndViewport2) {
-			std::cout << "Create Viewport2 failed." << std::endl;
-			MessageBox(0, L"Create Viewport2 Failed.", 0, 0);
-			return false;
-		}
-
-		mHwndViewport3 = CreateWindow(
-			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport3.c_str(),
-			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport3.c_str(),
-			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-			/* _In_ int X					*/ WND_PADDING,
-			/* _In_ int Y					*/ WND_PADDING + mViewportHeight,
-			/* _In_ int nWidth				*/ mViewportWidth - WND_PADDING,
-			/* _In_ int nHeight				*/ rect.bottom - WND_PADDING,
-			/* _In_opt_ HWND hWndParent		*/ hwnd,
-			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT3,
-			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-			/* _In_opt_ LPVOID lpParam		*/ NULL
-		);
-
-		if (!mHwndViewport3) {
-			std::cout << "Create Viewport3 failed." << std::endl;
-			MessageBox(0, L"Create Viewport3 Failed.", 0, 0);
-			return false;
-		}
-
-		mHwndViewport4 = CreateWindow(
-			/* _In_opt_ LPCWSTR lpClassName	*/ mClassNamemViewport4.c_str(),
-			/* _In_opt_ LPCWSTR lpWindowName*/ mClassNamemViewport4.c_str(),
-			/* _In_ DWORD dwStyle			*/ WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
-			/* _In_ int X					*/ WND_PADDING + mViewportWidth,
-			/* _In_ int Y					*/ WND_PADDING + mViewportHeight,
-			/* _In_ int nWidth				*/ rect.right - WND_PADDING,
-			/* _In_ int nHeight				*/ rect.bottom - WND_PADDING,
-			/* _In_opt_ HWND hWndParent		*/ hwnd,
-			/* _In_opt_ HMENU hMenu			*/ (HMENU)VIEWPORT4,
-			/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-			/* _In_opt_ LPVOID lpParam		*/ NULL
-		);
-
-		if (!mHwndViewport4) {
-			std::cout << "Create Viewport4 failed." << std::endl;
-			MessageBox(0, L"Create Viewport4 Failed.", 0, 0);
-			return false;
-		}
 		return 0;
 		// WM_ACTIVATE is sent when the window is activated or deactivated.  
 		// We pause the game when the window is deactivated and unpause it 
 		// when it becomes active.  
 	case WM_ACTIVATE:
-		if (LOWORD(wParam) == WA_INACTIVE)
-		{
-			mAppPaused = true;
-			mTimer.Stop();
-		}
-		else
-		{
-			mAppPaused = false;
-			mTimer.Start();
-		}
+		//if (LOWORD(wParam) == WA_INACTIVE)
+		//{
+		//	mAppPaused = true;
+		//	mTimer.Stop();
+		//}
+		//else
+		//{
+		//	mAppPaused = false;
+		//	mTimer.Start();
+		//}
 		return 0;
 
 		// WM_SIZE is sent when the user resizes the window.  
@@ -938,11 +757,6 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 				mAppPaused = true;
 				mMinimized = true;
 				mMaximized = false;
-				GetClientRect(hwnd, &rect);
-				MoveWindow(mHwndViewport1, WND_PADDING, WND_PADDING, mViewportWidth - WND_PADDING, mViewportHeight - WND_PADDING, true);
-				MoveWindow(mHwndViewport2, WND_PADDING + mViewportWidth, WND_PADDING, rect.right - WND_PADDING, mViewportHeight - WND_PADDING, true);
-				MoveWindow(mHwndViewport3, WND_PADDING, WND_PADDING + mViewportHeight, mViewportWidth - WND_PADDING, rect.bottom - WND_PADDING, true);
-				MoveWindow(mHwndViewport4, WND_PADDING + mViewportWidth, WND_PADDING + mViewportHeight, rect.right - WND_PADDING, rect.bottom - WND_PADDING, true);
 			}
 			else if (wParam == SIZE_MAXIMIZED)
 			{
@@ -990,7 +804,6 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 
 		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
 	case WM_ENTERSIZEMOVE:
-		mAppPaused = true;
 		mResizing = true;
 		mTimer.Stop();
 		return 0;
@@ -998,7 +811,6 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
 		// Here we reset everything based on the new window dimensions.
 	case WM_EXITSIZEMOVE:
-		mAppPaused = false;
 		mResizing = false;
 		mTimer.Start();
 		OnResize();
@@ -1024,33 +836,16 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
-		switch (id)		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
-		{
-		case VIEWPORT1:
-			std::cout << "[" << id << "]" << "CHILD_VIEWPORT OnMouseDown." << std::endl;
-			OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
-			return 0;
-		}
+		OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
 	case WM_LBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_RBUTTONUP:
-		std::cout << "[" << id << "]" << "OnMouseUp." << std::endl;
 		OnMouseUp(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
 	case WM_MOUSEMOVE:
-		std::cout << "[" << id << "]" << "OnMouseMove." << std::endl;
 		OnMouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
-		//case WM_COMMAND:
-		//	switch (LOWORD(wParam))		//	어떤 자식 윈도우를 건드렸는지를 조사하기 위한 switch문
-		//	{
-		//	case CHILD_VIEWPORT:
-		//		std::cout << "WM_COMMAND CHILD_VIEWPORT OnMouseDown." << std::endl;
-		//		OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
-		//		return 0;
-		//	}
-		//	return 0;
 	case WM_KEYUP:
 		if (wParam == VK_ESCAPE)
 		{
@@ -1063,4 +858,55 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, cons
 	}
 
 	return ::DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+void AppBase::UpdateImGui()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// Our state
+	bool show_demo_window = true;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+
+	if (show_demo_window)
+		ImGui::ShowDemoWindow(&show_demo_window);
+
+	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+	{
+		static float f = 0.0f;
+		static int counter = 0;
+
+		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &show_another_window);
+
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			counter++;
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / mImGuiIO->Framerate, mImGuiIO->Framerate);
+		ImGui::End();
+	}
+
+	// 3. Show another simple window.
+	if (show_another_window)
+	{
+		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Text("Hello from another window!");
+		if (ImGui::Button("Close Me"))
+			show_another_window = false;
+		ImGui::End();
+	}
 }

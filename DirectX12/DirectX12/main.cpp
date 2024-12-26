@@ -14,8 +14,5 @@ int main(int argc, char* argv[]) {
 
 	app = make_unique<AppSimple>();
 
-	if (!app->OnInit())
-		return 0;
-
 	return app->Run();
 }
