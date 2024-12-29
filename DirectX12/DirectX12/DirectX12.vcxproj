@@ -143,6 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AppBase.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="Shapes_App.cpp" />
     <ClCompile Include="AppSimple.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -164,6 +165,7 @@
   <ItemGroup>
     <ClInclude Include="AppBase.h" />
     <ClInclude Include="AppBaseHelper.h" />
+    <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="Shapes_App.h" />
     <ClInclude Include="AppSimple.h" />
     <ClInclude Include="Camera.h" />

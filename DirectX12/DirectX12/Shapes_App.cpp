@@ -1,4 +1,5 @@
 #include "Shapes_App.h"
+#include <DirectXMath.h>
 
 AppShapes::AppShapes()
 	: AppBase()
@@ -57,11 +58,15 @@ void AppShapes::UpdateMainPassCB(const GameTimer& dt)
 {
 	DirectX::XMMATRIX view = DirectX::XMLoadFloat4x4(&mView);
 	DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mProj);
-
 	DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
-	DirectX::XMMATRIX invView = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(view), view);
-	DirectX::XMMATRIX invProj = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(proj), proj);
-	DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewProj), viewProj);
+	
+	DirectX::XMVECTOR viewDeterminant = DirectX::XMMatrixDeterminant(view);
+	DirectX::XMVECTOR projDeterminant = DirectX::XMMatrixDeterminant(proj);
+	DirectX::XMVECTOR viewProjDeterminant = DirectX::XMMatrixDeterminant(viewProj);
+
+	DirectX::XMMATRIX invView = DirectX::XMMatrixInverse(&viewDeterminant, view);
+	DirectX::XMMATRIX invProj = DirectX::XMMatrixInverse(&projDeterminant, proj);
+	DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(&viewProjDeterminant, viewProj);
 
 	DirectX::XMStoreFloat4x4(&mMainPassCB.View, DirectX::XMMatrixTranspose(view));
 	DirectX::XMStoreFloat4x4(&mMainPassCB.InvView, DirectX::XMMatrixTranspose(invView));
@@ -70,8 +75,8 @@ void AppShapes::UpdateMainPassCB(const GameTimer& dt)
 	DirectX::XMStoreFloat4x4(&mMainPassCB.ViewProj, DirectX::XMMatrixTranspose(viewProj));
 	DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewProj));
 	mMainPassCB.EyePosW = mEyePos;
-	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
-	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
+	mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)mClientWidth, (float)mClientHeight);
+	mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = dt.TotalTime();
@@ -114,9 +119,11 @@ void AppShapes::BuildConstantBuffers()
 			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 			handle.Offset(heapIndex, mCbvSrvUavDescriptorSize);
 
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = objCBByteSize;
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc
+			{
+				/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/cbAddress,
+				/* UINT SizeInBytes							*/objCBByteSize
+			};
 
 			mDevice->CreateConstantBufferView(&cbvDesc, handle);
 		}
@@ -135,9 +142,11 @@ void AppShapes::BuildConstantBuffers()
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 		handle.Offset(heapIndex, mCbvSrvUavDescriptorSize);
 
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress;
-		cbvDesc.SizeInBytes = passCBByteSize;
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc
+		{
+			/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/cbAddress,
+			/* UINT SizeInBytes							*/passCBByteSize
+		};
 
 		mDevice->CreateConstantBufferView(&cbvDesc, handle);
 	}
@@ -162,8 +171,8 @@ void AppShapes::BuildRootSignature()
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
 	if (errorBlob != nullptr)

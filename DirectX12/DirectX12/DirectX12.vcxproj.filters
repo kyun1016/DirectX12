@@ -86,6 +86,9 @@
     <ClCompile Include="Shapes_App.cpp">
       <Filter>Source Files\App</Filter>
     </ClCompile>
+    <ClCompile Include="GeometryGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig">
@@ -164,6 +167,9 @@
     </ClInclude>
     <ClInclude Include="Shapes_FrameResource.h">
       <Filter>Header Files\App</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryGenerator.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
