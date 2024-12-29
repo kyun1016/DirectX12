@@ -83,7 +83,7 @@
     <ClCompile Include="imgui\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="AppShapes.cpp">
+    <ClCompile Include="Shapes_App.cpp">
       <Filter>Source Files\App</Filter>
     </ClCompile>
   </ItemGroup>
@@ -91,7 +91,10 @@
     <None Include=".editorconfig">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="Common.hlsli">
+    <None Include="Shapes_Common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Color_Common.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
@@ -156,10 +159,10 @@
     <ClInclude Include="imgui\imstb_rectpack.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="FrameResource.h">
+    <ClInclude Include="Shapes_App.h">
       <Filter>Header Files\App</Filter>
     </ClInclude>
-    <ClInclude Include="AppShapes.h">
+    <ClInclude Include="Shapes_FrameResource.h">
       <Filter>Header Files\App</Filter>
     </ClInclude>
   </ItemGroup>
@@ -167,13 +170,16 @@
     <FxCompile Include="color.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="ShapesColor.hlsl">
+    <FxCompile Include="Shapes_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Color_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Color_VS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shapes_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

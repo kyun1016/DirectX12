@@ -6,9 +6,9 @@
 #include "Camera.h"
 #include "GameTimer.h"
 #include "resource.h"
-#include "FrameResource.h"
 #include <memory>
 #include "imgui.h"
+#include "D3DUtil.h"
 
 //class GameTimer;
 //class Camera;
@@ -181,10 +181,6 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator[gNumFrameResources];
-	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
-	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	FrameResource* mCurrFrameResource = nullptr;
-	int mCurrFrameResourceIndex = 0;
 
 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;

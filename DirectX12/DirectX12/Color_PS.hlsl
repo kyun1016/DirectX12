@@ -1,4 +1,4 @@
-#include "Common.hlsli" // 쉐이더에서도 include 사용 가능
+#include "Color_Common.hlsli" // 쉐이더에서도 include 사용 가능
 
 float4 PS(VertexOut pin) : SV_Target
 {

@@ -5,8 +5,6 @@
 #include "UploadBuffer.h"
 // #include <directxtk/SimpleMath.h>
 
-static constexpr int gNumFrameResources = 3;	// must bigger than 1
-
 struct ObjectConstants
 {
     DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();

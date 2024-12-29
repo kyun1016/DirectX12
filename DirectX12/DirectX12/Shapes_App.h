@@ -6,6 +6,7 @@
 #include <directxtk/SimpleMath.h>
 #include "MathHelper.h"
 #include "UploadBuffer.h"
+#include "Shapes_FrameResource.h"
 
 class AppShapes : public AppBase
 {
@@ -22,8 +23,8 @@ private:
 //	virtual void OnResize()override;
 #pragma region Update
 	virtual void Update(const GameTimer dt)override;
-	void UpdateObjectCBs(const GameTimer& gt);
-	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdateObjectCBs(const GameTimer& dt);
+	void UpdateMainPassCB(const GameTimer& dt);
 
 #pragma endregion Update
 	virtual void Render(const GameTimer dt)override;
@@ -32,8 +33,8 @@ private:
 //	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
 //	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 //	void BuildDescriptorHeaps();
-//	void BuildConstantBuffers();
-//	void BuildRootSignature();
+	void BuildConstantBuffers();
+	void BuildRootSignature();
 //	void BuildShadersAndInputLayout();
 //	void BuildBoxGeometry();
 //	void BuildPSO();
@@ -42,11 +43,25 @@ private:
 private:
 	bool mMovable = false;
 	
+	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
+	FrameResource* mCurrFrameResource = nullptr;
+	int mCurrFrameResourceIndex = 0;
+
+	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	std::vector<RenderItem*> mOpaqueRitems;
+
+	UINT mPassCbvOffset = 0;
+
+	PassConstants mMainPassCB;
+
+	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
+
+	
 
 	Microsoft::WRL::ComPtr<ID3DBlob> mVSByteCode = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> mPSByteCode = nullptr;

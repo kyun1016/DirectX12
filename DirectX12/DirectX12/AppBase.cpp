@@ -8,7 +8,6 @@
 #include "imgui_impl_win32.h"
 #include "AppBase.h"
 #include "AppBaseHelper.h"
-#include "D3DUtil.h"
 #include "GameTimer.h"
 #include "d3dx12.h"
 #include <dxgidebug.h>
@@ -411,7 +410,7 @@ void AppBase::OnResize()
 	mScreenViewport.MinDepth = 0.0f;
 	mScreenViewport.MaxDepth = 1.0f;
 
-	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth/2), static_cast<LONG>(mClientHeight/2) };
+	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth), static_cast<LONG>(mClientHeight) };
 }
 
 #pragma region Window
