@@ -65,6 +65,19 @@ struct ExampleDescriptorHeapAllocator
 };
 #pragma endregion ImGui
 
+struct FrameResource
+{
+public:
+	FrameResource(ID3D12Device* device, UINT pass Count, UINT objectCount);
+	FrameResource(const FrameResource& rhs) = delete;
+	FrameResource& operator=(const FrameResource& rhs) = delete;
+	~FrameResource();
+
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator;
+
+	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+};
+
 class AppBase
 {
 public:
@@ -146,7 +159,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
 	bool mShowDemoWindow = false;
 	bool mShowAnotherWindow = false;
-	bool mShowViewport = false;
+	bool mShowViewport = true;
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 #pragma endregion ImGui

@@ -915,10 +915,16 @@ void AppBase::UpdateImGui()
 	// 3. Show another simple window.
 	if (mShowViewport)
 	{
+		static_assert(sizeof(ImTextureID) >= sizeof(D3D12_CPU_DESCRIPTOR_HANDLE), "D3D12_CPU_DESCRIPTOR_HANDLE is too large to fit in an ImTextureID");
+
+		D3D12_CPU_DESCRIPTOR_HANDLE my_texture_srv_cpu_handle;
+		D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle;
+		mSrvDescHeapAlloc.Alloc(&my_texture_srv_cpu_handle, &my_texture_srv_gpu_handle);
+
 		ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
 		ImGui::Begin("Viewport1", &mShowViewport);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
 		
-		D3D12_GPU_DESCRIPTOR_HANDLE* my_texture_srv_gpu_handle;
+		
 		// mSrvDescHeapAlloc.Alloc(&CurrentBackBufferView(), my_texture_srv_gpu_handle);
 		//ImGui::Text("Hello from another window! = %s", my_texture_srv_gpu_handle);
 		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, ImVec2((float)mClientWidth, (float)mClientHeight));
