@@ -20,7 +20,7 @@ bool AppSimple::Initialize()
 		return false;
 
 	// Reset the command list to prep for initialization commands.
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mCurrentFence % gNumFrameResources].Get(), nullptr));
 
 	BuildDescriptorHeaps();
 	BuildConstantBuffers();
@@ -53,7 +53,7 @@ void AppSimple::OnResize()
 	XMStoreFloat4x4(&mProj, P);
 }
 
-void AppSimple::OnUpdate(const GameTimer dt)
+void AppSimple::Update(const GameTimer dt)
 {
 	// Convert Spherical to Cartesian coordinates.
 	float x = mRadius * sinf(mPhi) * cosf(mTheta);
@@ -73,20 +73,20 @@ void AppSimple::OnUpdate(const GameTimer dt)
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 
 	// Update the constant buffer with the latest worldViewProj matrix.
-	ObjectConstants objConstants;
+	ObjectConstantsSimple objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj));
 	mObjectCB->CopyData(0, objConstants);
 }
 
-void AppSimple::OnRender(const GameTimer dt)
+void AppSimple::Render(const GameTimer dt)
 {
 	// Reuse the memory associated with command recording.
 // We can only reset when the associated command lists have finished execution on the GPU.
-	ThrowIfFailed(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT]->Reset());
+	ThrowIfFailed(mCommandAllocator[mCurrentFence % gNumFrameResources]->Reset());
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), mPSO.Get()));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mCurrentFence % gNumFrameResources].Get(), mPSO.Get()));
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -201,9 +201,9 @@ void AppSimple::BuildDescriptorHeaps()
 }
 void AppSimple::BuildConstantBuffers()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice.Get(), 1, true);
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstantsSimple>>(mDevice.Get(), 1, true);
 
-	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstantsSimple));
 
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
 	// Offset to the ith object constant buffer in the buffer.
@@ -213,7 +213,7 @@ void AppSimple::BuildConstantBuffers()
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc
 	{
 		/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/cbAddress,
-		/* UINT SizeInBytes							*/D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants))
+		/* UINT SizeInBytes							*/D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstantsSimple))
 	};
 
 	mDevice->CreateConstantBufferView(&cbvDesc,	mCbvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -241,28 +241,24 @@ void AppSimple::BuildRootSignature()
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
 	if (errorBlob != nullptr)
 	{
 		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 	}
 	ThrowIfFailed(hr);
-
-	ThrowIfFailed(mDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&mRootSignature)));
+	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 }
 
 void AppSimple::BuildShadersAndInputLayout()
 {
 	HRESULT hr = S_OK;
 
-	mVSByteCode = D3DUtil::CompileShader(L"color.hlsl", nullptr, "VS", "vs_5_0");
-	mPSByteCode = D3DUtil::CompileShader(L"color.hlsl", nullptr, "PS", "ps_5_0");
+	// mVSByteCode = D3DUtil::CompileShader(L"color.hlsl", nullptr, "VS", "vs_5_0");
+	// mPSByteCode = D3DUtil::CompileShader(L"color.hlsl", nullptr, "PS", "ps_5_0");
+	mVSByteCode = D3DUtil::LoadBinary(L"Shaders\\Color_VS.cso");
+	mPSByteCode = D3DUtil::LoadBinary(L"Shaders\\Color_PS.cso");
 
 	mInputLayout =
 	{
@@ -272,16 +268,16 @@ void AppSimple::BuildShadersAndInputLayout()
 }
 void AppSimple::BuildBoxGeometry()
 {
-	std::array<Vertex, 8> vertices
+	std::array<VertexSimple, 8> vertices
 	{
-		Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::White) }),
-		Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Black) }),
-		Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) }),
-		Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) }),
-		Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) }),
-		Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Yellow) }),
-		Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan) }),
-		Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
+		VertexSimple({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::White) }),
+		VertexSimple({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Black) }),
+		VertexSimple({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) }),
+		VertexSimple({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) }),
+		VertexSimple({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) }),
+		VertexSimple({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Yellow) }),
+		VertexSimple({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan) }),
+		VertexSimple({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
 	};
 
 	std::array<std::uint16_t, 36> indices
@@ -311,7 +307,7 @@ void AppSimple::BuildBoxGeometry()
 		4, 3, 7
 	};
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(VertexSimple);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	mBoxGeo = std::make_unique<MeshGeometry>();
@@ -329,7 +325,7 @@ void AppSimple::BuildBoxGeometry()
 	mBoxGeo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
 		mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
 
-	mBoxGeo->VertexByteStride = sizeof(Vertex);
+	mBoxGeo->VertexByteStride = sizeof(VertexSimple);
 	mBoxGeo->VertexBufferByteSize = vbByteSize;
 	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	mBoxGeo->IndexBufferByteSize = ibByteSize;

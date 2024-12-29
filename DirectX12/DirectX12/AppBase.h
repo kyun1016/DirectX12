@@ -6,6 +6,8 @@
 #include "Camera.h"
 #include "GameTimer.h"
 #include "resource.h"
+#include "FrameResource.h"
+#include <memory>
 #include "imgui.h"
 
 //class GameTimer;
@@ -65,23 +67,9 @@ struct ExampleDescriptorHeapAllocator
 };
 #pragma endregion ImGui
 
-struct FrameResource
-{
-public:
-	FrameResource(ID3D12Device* device, UINT pass Count, UINT objectCount);
-	FrameResource(const FrameResource& rhs) = delete;
-	FrameResource& operator=(const FrameResource& rhs) = delete;
-	~FrameResource();
-
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator;
-
-	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
-};
-
 class AppBase
 {
 public:
-	static constexpr int APP_NUM_FRAMES_IN_FLIGHT = 3;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
 	static constexpr uint32_t WND_PADDING = 5;
@@ -109,8 +97,8 @@ public:
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();
-	virtual void OnUpdate(const GameTimer dt) = 0;
-	virtual void OnRender(const GameTimer dt) = 0;
+	virtual void Update(const GameTimer dt) = 0;
+	virtual void Render(const GameTimer dt) = 0;
 
 	// Convenience overrides for handling mouse input.
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) { }
@@ -159,7 +147,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
 	bool mShowDemoWindow = false;
 	bool mShowAnotherWindow = false;
-	bool mShowViewport = true;
+	bool mShowViewport = false;
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 #pragma endregion ImGui
@@ -183,6 +171,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
 
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
+	UINT64 mCurrentFence = 0;
 	UINT64 mFrameIndex = 0;
 	// HANDLE mFenceEvent = nullptr;
 
@@ -191,7 +180,13 @@ public:
 	bool mSwapChainOccluded = true;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator[APP_NUM_FRAMES_IN_FLIGHT];
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator[gNumFrameResources];
+	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
+	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	FrameResource* mCurrFrameResource = nullptr;
+	int mCurrFrameResourceIndex = 0;
+
+
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
 	int mCurrentBackBuffer;

@@ -126,8 +126,8 @@ int AppBase::Run()
 				// My Render
 				//==========================================
 				CalculateFrameStats();
-				OnUpdate(mTimer);
-				OnRender(mTimer);
+				Update(mTimer);
+				Render(mTimer);
 
 				// Rendering
 				ImGui::Render();
@@ -285,12 +285,12 @@ void AppBase::OnResize()
 {
 	assert(mDevice);
 	assert(mSwapChain);
-	assert(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT]);
+	assert(mCommandAllocator[mFrameIndex % gNumFrameResources]);
 
 	// Flush before changing any resources.
 	FlushCommandQueue();
 
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % APP_NUM_FRAMES_IN_FLIGHT].Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % gNumFrameResources].Get(), nullptr));
 
 	// Release the previous resources we will be recreating.
 	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
@@ -324,28 +324,26 @@ void AppBase::OnResize()
 		/* UINT16 DepthOrArraySize				*/	1,
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R24G8_TYPELESS,
-		/* DXGI_SAMPLE_DESC SampleDesc			*/
-		/* UINT Count	*/						{m4xMsaaState ? (UINT)4 : (UINT)1,
-		/* UINT Quality	*/ 						m4xMsaaState ? (m4xMsaaQuality - 1) : 0},
+		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
+		/*		UINT Count						*/	m4xMsaaState ? (UINT)4 : (UINT)1,
+		/*		UINT Quality					*/ 	m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/* }									*/	},
 		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
 		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
 	};
 
-
 	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	D3D12_CLEAR_VALUE optClear;
-	//{
-	//	/* DXGI_FORMAT Format;						*/mDepthStencilFormat,
-	//	/* union									*/
-	//	/* {										*/
-	//	/* FLOAT Color[4];							*/
-	//	/* D3D12_DEPTH_STENCIL_VALUE DepthStencil;	*/
-	//	/* };										*/
-	//};
-
-	optClear.Format = mDepthStencilFormat;
-	optClear.DepthStencil.Depth = 1.0f;
-	optClear.DepthStencil.Stencil = 0;
+	D3D12_CLEAR_VALUE optClear
+	{
+		/* DXGI_FORMAT Format;							*/mDepthStencilFormat,
+		/* union {										*/{
+		/*		FLOAT Color[4];							*/	
+		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/	{
+		/*			FLOAT Depth;						*/		1.0f,
+		/*			UINT8 Stencil;						*/		0
+		/*		}										*/	},
+		/* } 											*/}
+	};
 	ThrowIfFailed(mDevice->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
@@ -355,11 +353,42 @@ void AppBase::OnResize()
 		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
 
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Format = mDepthStencilFormat;
-	dsvDesc.Texture2D.MipSlice = 0;
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc
+	{
+		/* DXGI_FORMAT Format;								*/.Format = mDepthStencilFormat,
+		/* D3D12_DSV_DIMENSION ViewDimension;				*/.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
+		/* D3D12_DSV_FLAGS Flags;							*/.Flags = D3D12_DSV_FLAG_NONE,
+		/* union {											*/
+		/*		D3D12_TEX1D_DSV Texture1D{					*/
+		/*			UINT MipSlice;							*/
+		/*      }											*/
+		/*		D3D12_TEX1D_ARRAY_DSV Texture1DArray{		*/
+		/*			UINT MipSlice;							*/
+		/*			UINT FirstArraySlice;					*/
+		/*			UINT ArraySize;							*/
+		/*		}											*/
+		/*		D3D12_TEX2D_DSV Texture2D{					*/.Texture2D = 0
+		/*			UINT MipSlice;							*/
+		/*		}											*/
+		/*		D3D12_TEX2D_ARRAY_DSV Texture2DArray{		*/
+		/*			UINT MipSlice;							*/
+		/*			UINT FirstArraySlice;					*/
+		/*			UINT ArraySize;							*/
+		/*		}											*/
+		/*		D3D12_TEX2DMS_DSV Texture2DMS{				*/
+		/*			UINT UnusedField_NothingToDefine;		*/
+		/*		}											*/
+		/*		D3D12_TEX2DMS_ARRAY_DSV Texture2DMSArray{	*/
+		/*			UINT FirstArraySlice;					*/
+		/*			UINT ArraySize;							*/
+		/*		}											*/
+		/* } D3D12_DEPTH_STENCIL_VIEW_DESC					*/
+	};
+	// dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	// dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	// dsvDesc.Format = mDepthStencilFormat;
+	// dsvDesc.Texture2D.MipSlice = 0;
+	// dsvDesc.Texture2D.MipSlice = 0;
 	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
 
 	// Transition the resource from its initial state to be used as a depth buffer.
@@ -408,6 +437,8 @@ bool AppBase::RegisterWindowClass()
 		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
 		return false;
 	}
+
+	return true;
 }
 
 bool AppBase::MakeWindowHandle()
@@ -503,15 +534,14 @@ bool AppBase::InitDirect3D()
 	// All Direct3D 11 capable devices support 4X MSAA for all render 
 	// target formats, so we only need to check quality support.
 
-	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-	msQualityLevels.Format = mBackBufferFormat;
-	msQualityLevels.SampleCount = 4;
-	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-	msQualityLevels.NumQualityLevels = 0;
-	ThrowIfFailed(mDevice->CheckFeatureSupport(
-		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-		&msQualityLevels,
-		sizeof(msQualityLevels)));
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
+	{
+		/*_In_  DXGI_FORMAT Format							*/mBackBufferFormat,
+		/*_In_  UINT SampleCount							*/4,
+		/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
+		/*_Out_  UINT NumQualityLevels						*/0
+	};
+	ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 
 	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
@@ -550,7 +580,7 @@ bool AppBase::InitImgui()
 	ImGui_ImplDX12_InitInfo init_info = {};
 	init_info.Device = mDevice.Get();
 	init_info.CommandQueue = mCommandQueue.Get();
-	init_info.NumFramesInFlight = APP_NUM_FRAMES_IN_FLIGHT;
+	init_info.NumFramesInFlight = gNumFrameResources;
 	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
@@ -603,7 +633,7 @@ void AppBase::CreateCommandObjects()
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
 
-	for (int i = 0; i < APP_NUM_FRAMES_IN_FLIGHT; ++i)
+	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mCommandAllocator[i].GetAddressOf())));
 	}
@@ -633,8 +663,8 @@ void AppBase::CreateSwapChain()
 		/* 	DXGI_MODE_SCANLINE_ORDER ScanlineOrdering	*/DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
 		/* 	DXGI_MODE_SCALING Scaling					*/DXGI_MODE_SCALING_UNSPECIFIED,
 		/* DXGI_SAMPLE_DESC SampleDesc					*/
-		/*	UINT Count									*/m4xMsaaState ? 4 : 1,
-		/*	UINT Quality								*/m4xMsaaState ? (m4xMsaaQuality - 1) : 0,
+		/*	UINT Count									*/m4xMsaaState ? 4u : 1u,
+		/*	UINT Quality								*/m4xMsaaState ? (m4xMsaaQuality - 1) : 0u,
 		/* DXGI_USAGE BufferUsage						*/DXGI_USAGE_RENDER_TARGET_OUTPUT,
 		/* UINT BufferCount								*/APP_NUM_BACK_BUFFERS,
 		/* HWND OutputWindow							*/mHwndWindow,
@@ -724,10 +754,11 @@ void AppBase::CalculateFrameStats()
 
 LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
+	std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
+
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
 
-	std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 	switch (msg)
 	{
 	case WM_CREATE:

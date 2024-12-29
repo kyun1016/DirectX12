@@ -12,6 +12,7 @@
 #include <DirectXCollision.h>
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
+#include "d3dx12.h"
 
 #pragma comment(lib, "dxguid.lib")
 
@@ -101,20 +102,24 @@ struct MeshGeometry
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
 	{
-		D3D12_VERTEX_BUFFER_VIEW vbv;
-		vbv.BufferLocation = VertexBufferGPU->GetGPUVirtualAddress();
-		vbv.StrideInBytes = VertexByteStride;
-		vbv.SizeInBytes = VertexBufferByteSize;
+		D3D12_VERTEX_BUFFER_VIEW vbv
+		{
+			/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/ .BufferLocation = VertexBufferGPU->GetGPUVirtualAddress(),
+			/* UINT SizeInBytes							*/ .SizeInBytes = VertexBufferByteSize,
+			/* UINT StrideInBytes						*/ .StrideInBytes = VertexByteStride
+		};
 
 		return vbv;
 	}
 
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
 	{
-		D3D12_INDEX_BUFFER_VIEW ibv;
-		ibv.BufferLocation = IndexBufferGPU->GetGPUVirtualAddress();
-		ibv.Format = IndexFormat;
-		ibv.SizeInBytes = IndexBufferByteSize;
+		D3D12_INDEX_BUFFER_VIEW ibv
+		{
+			/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/ .BufferLocation = IndexBufferGPU->GetGPUVirtualAddress(),
+			/* UINT SizeInBytes							*/ .SizeInBytes = IndexBufferByteSize,
+			/* DXGI_FORMAT Format						*/ .Format = IndexFormat
+		};
 
 		return ibv;
 	}
