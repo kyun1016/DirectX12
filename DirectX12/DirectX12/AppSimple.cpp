@@ -75,6 +75,10 @@ void AppSimple::Update(const GameTimer dt)
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstantsSimple objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj));
+
+	objConstants.PulseColor = DirectX::XMFLOAT4(DirectX::Colors::Green);
+	objConstants.Time = dt.TotalTime();
+
 	mObjectCB->CopyData(0, objConstants);
 }
 
@@ -92,16 +96,17 @@ void AppSimple::Render(const GameTimer dt)
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrentBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
-	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView = CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBackBuffer, mRtvDescriptorSize);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearDepthStencilView(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
-	D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescritor = CurrentBackBufferView();
-	D3D12_CPU_DESCRIPTOR_HANDLE depthStencilDescritor = DepthStencilView();
+	D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescritor = CurrentBackBufferView;
+	D3D12_CPU_DESCRIPTOR_HANDLE depthStencilDescritor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 	mCommandList->OMSetRenderTargets(1, &renderTargetDescritor, true, &depthStencilDescritor);
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.Get() };
@@ -121,7 +126,7 @@ void AppSimple::Render(const GameTimer dt)
 
 	// Indicate a state transition on the resource usage.
 	// 렌더링 이후 원 상태로 복귀
-	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrentBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
 
 	// Done recording commands.
@@ -216,7 +221,7 @@ void AppSimple::BuildConstantBuffers()
 		/* UINT SizeInBytes							*/D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstantsSimple))
 	};
 
-	mDevice->CreateConstantBufferView(&cbvDesc,	mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+	mDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 void AppSimple::BuildRootSignature()
 {
@@ -262,8 +267,8 @@ void AppSimple::BuildShadersAndInputLayout()
 
 	mInputLayout =
 	{
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 void AppSimple::BuildBoxGeometry()
@@ -339,30 +344,44 @@ void AppSimple::BuildBoxGeometry()
 }
 void AppSimple::BuildPSO()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-	psoDesc.pRootSignature = mRootSignature.Get();
-	psoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc
 	{
-		reinterpret_cast<BYTE*>(mVSByteCode->GetBufferPointer()),
-		mVSByteCode->GetBufferSize()
+		/* ID3D12RootSignature* pRootSignature						*/.pRootSignature = mRootSignature.Get(),
+		/* D3D12_SHADER_BYTECODE VS									*/.VS = {reinterpret_cast<BYTE*>(mVSByteCode->GetBufferPointer()), mVSByteCode->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE PS									*/.PS = {reinterpret_cast<BYTE*>(mPSByteCode->GetBufferPointer()), mPSByteCode->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE DS									*/.DS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE HS									*/.HS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE GS									*/.GS = {NULL, 0},
+		/* D3D12_STREAM_OUTPUT_DESC StreamOutput{					*/.StreamOutput = {
+		/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{	*/	NULL,
+		/*			UINT Stream;									*/	
+		/*			LPCSTR SemanticName;							*/
+		/*			UINT SemanticIndex;								*/	
+		/*			BYTE StartComponent;							*/	
+		/*			BYTE ComponentCount;							*/	
+		/*			BYTE OutputSlot;								*/
+		/*		}													*/
+		/*		UINT NumEntries;									*/	0,
+		/*		const UINT* pBufferStrides;							*/	0,
+		/*		UINT NumStrides;									*/	0,
+		/*		UINT RasterizedStream;								*/	0
+		/* }														*/},
+		/* D3D12_BLEND_DESC BlendState								*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+		/* UINT SampleMask											*/.SampleMask = UINT_MAX,
+		/* D3D12_RASTERIZER_DESC RasterizerState					*/.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
+		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState				*/.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+		/* D3D12_INPUT_LAYOUT_DESC InputLayout						*/.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() },
+		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue		*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,		// 0
+		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType		*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+		/* UINT NumRenderTargets									*/.NumRenderTargets = 2,
+		/* DXGI_FORMAT RTVFormats[8]								*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* DXGI_FORMAT DSVFormat									*/.DSVFormat = mDepthStencilFormat,
+		/* DXGI_SAMPLE_DESC SampleDesc								*/.SampleDesc = {m4xMsaaState ? 4u : 1u, m4xMsaaState ? (m4xMsaaQuality - 1) : 0 },
+		/* UINT NodeMask											*/.NodeMask = 0,
+		/* D3D12_CACHED_PIPELINE_STATE CachedPSO					*/.CachedPSO = {NULL, 0},
+		/* D3D12_PIPELINE_STATE_FLAGS Flags							*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE	// 0
 	};
-	psoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mPSByteCode->GetBufferPointer()),
-		mPSByteCode->GetBufferSize()
-	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 2;
-	psoDesc.RTVFormats[0] = mBackBufferFormat;
-	psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-	psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-	psoDesc.DSVFormat = mDepthStencilFormat;
+
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }
 

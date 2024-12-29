@@ -55,6 +55,7 @@ void AppShapes::UpdateObjectCBs(const GameTimer& gt)
 
 void AppShapes::UpdateMainPassCB(const GameTimer& gt)
 {
+
 }
 
 void AppShapes::Render(const GameTimer dt)

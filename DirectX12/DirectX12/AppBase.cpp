@@ -411,7 +411,7 @@ void AppBase::OnResize()
 	mScreenViewport.MinDepth = 0.0f;
 	mScreenViewport.MaxDepth = 1.0f;
 
-	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth), static_cast<LONG>(mClientHeight) };
+	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth/2), static_cast<LONG>(mClientHeight/2) };
 }
 
 #pragma region Window

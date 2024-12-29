@@ -1,6 +1,8 @@
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorldViewProj;
+    float4 gPulseColor;
+    float gTime;
 };
 
 struct VertexIn
