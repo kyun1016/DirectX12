@@ -16,8 +16,6 @@
 
 #pragma comment(lib, "dxguid.lib")
 
-static constexpr int gNumFrameResources = 3;	// must bigger than 1
-
 inline void ThrowIfFailed(HRESULT hr) {
 	if (FAILED(hr)) {
 		// 디버깅할 때 여기에 breakpoint 설정

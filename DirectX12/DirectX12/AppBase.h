@@ -19,6 +19,7 @@
 #pragma comment(lib, "dxgi")
 
 extern class AppBase* g_appBasse;
+static constexpr int gNumFrameResources = 3;	// must bigger than 1
 
 #pragma region ImGui
 // Simple free list based allocator
