@@ -78,7 +78,7 @@ public:
 	/// Creates a box centered at the origin with the given dimensions, where each
 	/// face has m rows and n columns of vertices.
 	///</summary>
-	static MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
+	static MeshData CreateBox(float width = 1.0f, float height = 1.0f, float depth = 1.0f, uint32 numSubdivisions = 3);
 
 	///<summary>
 	/// Creates a sphere centered at the origin with the given radius.  The

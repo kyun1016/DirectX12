@@ -7,6 +7,11 @@
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "Shapes_FrameResource.h"
+#include <string>
+
+static const size_t NUM_MESHES = 4;
+static const std::string gMeshGeometryName = "shapeGeo";
+static const std::string gSubmeshName[NUM_MESHES] = { "box", "grid", "sphere", "cylinder" };
 
 struct RenderItem
 {
@@ -46,7 +51,7 @@ public:
 	AppShapes(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~AppShapes() { };
 
-//	virtual bool Initialize() override;
+	virtual bool Initialize() override;
 //	virtual void CleanUp() override;
 private:
 //	virtual void OnResize()override;
@@ -64,14 +69,15 @@ private:
 //	void BuildDescriptorHeaps();
 	void BuildConstantBuffers();
 	void BuildRootSignature();
-//	void BuildShadersAndInputLayout();
+	void BuildShadersAndInputLayout();
+	void BuildShapeGeometry();
 //	void BuildBoxGeometry();
 //	void BuildPSO();
 	void BuildFrameResources();
 	
 private:
 	bool mMovable = false;
-	
+
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
@@ -89,8 +95,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-
-	
 
 	Microsoft::WRL::ComPtr<ID3DBlob> mVSByteCode = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> mPSByteCode = nullptr;
