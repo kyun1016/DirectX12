@@ -44,14 +44,14 @@ struct RenderItem
 	int BaseVertexLocation = 0;
 };
 
-class Shapes_App : public AppBase
+class ShapesApp : public AppBase
 {
 	using Super = typename AppBase;
 
 public:
-	Shapes_App();
-	Shapes_App(uint32_t width, uint32_t height, std::wstring name);
-	virtual ~Shapes_App() { };
+	ShapesApp();
+	ShapesApp(uint32_t width, uint32_t height, std::wstring name);
+	virtual ~ShapesApp() { };
 
 #pragma region Initialize
 	virtual bool Initialize() override;
@@ -65,16 +65,22 @@ public:
 	void BuildPSO();
 #pragma endregion Initialize
 
-//	virtual void CleanUp() override;
 private:
-//	virtual void OnResize()override;
 #pragma region Update
+	virtual void OnResize()override;
 	virtual void Update(const GameTimer dt)override;
 	void UpdateObjectCBs(const GameTimer& dt);
 	void UpdateMainPassCB(const GameTimer& dt);
 
 	virtual void Render(const GameTimer dt)override;
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+
+	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
+	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
+	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
+
+	void OnKeyboardInput(const GameTimer& gt);
+	void UpdateCamera(const GameTimer& gt);
 #pragma endregion Update
 	
 //

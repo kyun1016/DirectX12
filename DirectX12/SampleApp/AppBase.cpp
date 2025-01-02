@@ -284,11 +284,12 @@ void AppBase::OnResize()
 {
 	assert(mDevice);
 	assert(mSwapChain);
+	assert(mCommandAllocator[mFrameIndex % gNumFrameResources]);
 
 	// Flush before changing any resources.
 	FlushCommandQueue();
 
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator[mFrameIndex % gNumFrameResources].Get(), nullptr));
 
 	// Release the previous resources we will be recreating.
 	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
@@ -630,9 +631,13 @@ void AppBase::CreateCommandObjects()
 	};
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
-	ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mCommandAllocator.GetAddressOf())));
 
-	ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator.Get(), nullptr, IID_PPV_ARGS(mCommandList.GetAddressOf())));
+	for (int i = 0; i < gNumFrameResources; ++i)
+	{
+		ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mCommandAllocator[i].GetAddressOf())));
+	}
+
+	ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator[0].Get(), nullptr, IID_PPV_ARGS(mCommandList.GetAddressOf())));
 
 	// Start off in a closed state.  This is because the first time we refer 
 	// to the command list we will Reset it, and it needs to be closed before

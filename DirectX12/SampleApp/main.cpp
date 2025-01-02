@@ -1,7 +1,7 @@
 #include <memory>
 #include <Windows.h>
 #include "AppBase.h"
-#include "ShapesApp.h"
+#include "AppSimple.h"
 #include <WinUser.h>
 #include <iostream>
 
@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
 
 	std::unique_ptr<AppBase> app;
 
-	app = make_unique<ShapesApp>();
+	app = make_unique<AppSimple>();
 
 	return app->Run();
 }

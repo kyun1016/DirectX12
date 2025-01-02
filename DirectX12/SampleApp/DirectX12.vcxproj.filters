@@ -53,6 +53,9 @@
     <ClCompile Include="AppBase.cpp">
       <Filter>Source Files\Util\App</Filter>
     </ClCompile>
+    <ClCompile Include="AppSimple.cpp">
+      <Filter>Source Files\App</Filter>
+    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Util</Filter>
     </ClCompile>
@@ -80,7 +83,7 @@
     <ClCompile Include="imgui\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ShapesApp.cpp">
+    <ClCompile Include="Shapes_App.cpp">
       <Filter>Source Files\App</Filter>
     </ClCompile>
     <ClCompile Include="GeometryGenerator.cpp">
@@ -123,6 +126,9 @@
     <ClInclude Include="StepTimer.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="AppSimple.h">
+      <Filter>Header Files\App</Filter>
+    </ClInclude>
     <ClInclude Include="d3dx12.h">
       <Filter>Header Files\Util\D3D</Filter>
     </ClInclude>
@@ -156,7 +162,7 @@
     <ClInclude Include="imgui\imstb_rectpack.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ShapesApp.h">
+    <ClInclude Include="Shapes_App.h">
       <Filter>Header Files\App</Filter>
     </ClInclude>
     <ClInclude Include="Shapes_FrameResource.h">

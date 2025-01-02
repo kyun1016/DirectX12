@@ -144,7 +144,8 @@
   <ItemGroup>
     <ClCompile Include="AppBase.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
-    <ClCompile Include="ShapesApp.cpp" />
+    <ClCompile Include="Shapes_App.cpp" />
+    <ClCompile Include="AppSimple.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="D3DUtil.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_dx12.cpp" />
@@ -165,7 +166,8 @@
     <ClInclude Include="AppBase.h" />
     <ClInclude Include="AppBaseHelper.h" />
     <ClInclude Include="GeometryGenerator.h" />
-    <ClInclude Include="ShapesApp.h" />
+    <ClInclude Include="Shapes_App.h" />
+    <ClInclude Include="AppSimple.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="d3dx12.h" />

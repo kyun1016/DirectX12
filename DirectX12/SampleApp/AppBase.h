@@ -5,7 +5,6 @@
 #include <string>
 #include "Camera.h"
 #include "GameTimer.h"
-#include "resource.h"
 #include <memory>
 #include "imgui.h"
 #include "D3DUtil.h"
@@ -182,7 +181,7 @@ public:
 	bool mSwapChainOccluded = true;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator[gNumFrameResources];
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
 	int mCurrBackBuffer;
