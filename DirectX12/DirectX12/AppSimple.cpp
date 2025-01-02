@@ -96,11 +96,11 @@ void AppSimple::Render(const GameTimer dt)
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrentBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 
 	// Clear the back buffer and depth buffer.
-	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView = CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBackBuffer, mRtvDescriptorSize);
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView = CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrBackBuffer, mRtvDescriptorSize);
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
 	mCommandList->ClearDepthStencilView(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
@@ -126,7 +126,7 @@ void AppSimple::Render(const GameTimer dt)
 
 	// Indicate a state transition on the resource usage.
 	// 렌더링 이후 원 상태로 복귀
-	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrentBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
 
 	// Done recording commands.
@@ -373,7 +373,7 @@ void AppSimple::BuildPSO()
 		/* D3D12_INPUT_LAYOUT_DESC InputLayout						*/.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() },
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue		*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,		// 0
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType		*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-		/* UINT NumRenderTargets									*/.NumRenderTargets = 2,
+		/* UINT NumRenderTargets									*/.NumRenderTargets = 1,
 		/* DXGI_FORMAT RTVFormats[8]								*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
 		/* DXGI_FORMAT DSVFormat									*/.DSVFormat = mDepthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc								*/.SampleDesc = {m4xMsaaState ? 4u : 1u, m4xMsaaState ? (m4xMsaaQuality - 1) : 0 },

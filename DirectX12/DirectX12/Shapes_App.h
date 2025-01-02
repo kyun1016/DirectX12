@@ -11,6 +11,8 @@
 
 static const size_t NUM_MESHES = 4;
 static const std::string gMeshGeometryName = "shapeGeo";
+static const std::string VS_NAME = "standardVS";
+static const std::string PS_NAME = "opaquePS";
 static const std::string gSubmeshName[NUM_MESHES] = { "box", "grid", "sphere", "cylinder" };
 
 struct RenderItem
@@ -42,16 +44,27 @@ struct RenderItem
 	int BaseVertexLocation = 0;
 };
 
-class AppShapes : public AppBase
+class Shapes_App : public AppBase
 {
 	using Super = typename AppBase;
 
 public:
-	AppShapes();
-	AppShapes(uint32_t width, uint32_t height, std::wstring name);
-	virtual ~AppShapes() { };
+	Shapes_App();
+	Shapes_App(uint32_t width, uint32_t height, std::wstring name);
+	virtual ~Shapes_App() { };
 
+#pragma region Initialize
 	virtual bool Initialize() override;
+	void BuildRootSignature();
+	void BuildShadersAndInputLayout();
+	void BuildShapeGeometry();
+	void BuildRenderItems();
+	void BuildFrameResources();
+	void BuildDescriptorHeaps();
+	void BuildConstantBufferViews();
+	void BuildPSO();
+#pragma endregion Initialize
+
 //	virtual void CleanUp() override;
 private:
 //	virtual void OnResize()override;
@@ -60,20 +73,14 @@ private:
 	void UpdateObjectCBs(const GameTimer& dt);
 	void UpdateMainPassCB(const GameTimer& dt);
 
-#pragma endregion Update
 	virtual void Render(const GameTimer dt)override;
+	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+#pragma endregion Update
+	
 //
 //	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
 //	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
 //	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
-//	void BuildDescriptorHeaps();
-	void BuildConstantBuffers();
-	void BuildRootSignature();
-	void BuildShadersAndInputLayout();
-	void BuildShapeGeometry();
-//	void BuildBoxGeometry();
-//	void BuildPSO();
-	void BuildFrameResources();
 	
 private:
 	bool mMovable = false;
@@ -86,6 +93,7 @@ private:
 	std::vector<RenderItem*> mOpaqueRitems;
 
 	UINT mPassCbvOffset = 0;
+	bool mIsWireframe = false;
 
 	PassConstants mMainPassCB;
 
@@ -101,9 +109,9 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;		//input layout description
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
-	
-	std::unique_ptr<MeshGeometry> mBoxGeo;
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
 	DirectX::XMFLOAT4X4 mWorld = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();

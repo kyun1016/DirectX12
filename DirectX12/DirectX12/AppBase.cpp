@@ -150,7 +150,7 @@ int AppBase::Run()
 				// swap the back and front buffers
 				ThrowIfFailed(mSwapChain->Present(1, 0)); // Present with vsync
 				// ThrowIfFailed(mSwapChain->Present(0, 0)); // Present without vsync
-				mCurrentBackBuffer = (mCurrentBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 				// Wait until frame commands are complete.  This waiting is inefficient and is
 				// done for simplicity.  Later we will show how to organize our rendering code
@@ -303,7 +303,7 @@ void AppBase::OnResize()
 		mBackBufferFormat,
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
-	mCurrentBackBuffer = 0;
+	mCurrBackBuffer = 0;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
@@ -702,15 +702,12 @@ void AppBase::FlushCommandQueue()
 
 ID3D12Resource* AppBase::CurrentBackBuffer() const
 {
-	return mSwapChainBuffer[mCurrentBackBuffer].Get();
+	return mSwapChainBuffer[mCurrBackBuffer].Get();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE AppBase::CurrentBackBufferView() const
 {
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvHeap->GetCPUDescriptorHandleForHeapStart(),
-		mCurrentBackBuffer,
-		mRtvDescriptorSize);
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(),mCurrBackBuffer, mRtvDescriptorSize);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE AppBase::DepthStencilView() const

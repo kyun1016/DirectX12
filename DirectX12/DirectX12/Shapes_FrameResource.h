@@ -28,12 +28,6 @@ struct PassConstants
     float DeltaTime = 0.0f;
 };
 
-struct Vertex
-{
-    DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT4 Color;
-};
-
 // Stores the resources needed for the CPU to build the command lists
 // for a frame.  
 struct FrameResource
@@ -41,9 +35,7 @@ struct FrameResource
 public:
     FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount)
     {
-        ThrowIfFailed(device->CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_DIRECT,
-            IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
+        ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
         PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
         ObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
