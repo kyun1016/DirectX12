@@ -14,6 +14,7 @@ static const std::string gMeshGeometryName = "shapeGeo";
 static const std::string VS_NAME = "standardVS";
 static const std::string PS_NAME = "opaquePS";
 static const std::string gSubmeshName[NUM_MESHES] = { "box", "grid", "sphere", "cylinder" };
+static const std::string gPSOName[2] = { "opaque", "opaque_wireframe" };
 
 struct RenderItem
 {

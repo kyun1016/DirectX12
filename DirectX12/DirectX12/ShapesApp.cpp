@@ -28,7 +28,15 @@ bool ShapesApp::Initialize()
 	BuildConstantBufferViews();
 	BuildPSO();
 
-	return false;
+	// Execute the initialization commands.
+	ThrowIfFailed(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	// Wait until initialization is complete.
+	FlushCommandQueue();
+
+	return true;
 }
 
 void ShapesApp::BuildRootSignature()
@@ -403,13 +411,13 @@ void ShapesApp::BuildPSO()
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 	};
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[0]])));
 
 	//
 	// PSO for opaque wireframe objects.
 	//
 	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[1]])));
 }
 #pragma endregion Initialize
 
@@ -510,11 +518,11 @@ void ShapesApp::Render(const GameTimer dt)
 	// Reusing the command list reuses memory.
 	if (mIsWireframe)
 	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque_wireframe"].Get()));
+		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs[gPSOName[1]].Get()));
 	}
 	else
 	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque"].Get()));
+		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs[gPSOName[0]].Get()));
 	}
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -556,9 +564,9 @@ void ShapesApp::Render(const GameTimer dt)
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-	// Swap the back and front buffers
-	ThrowIfFailed(mSwapChain->Present(0, 0));
-	mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+	//// Swap the back and front buffers
+	//ThrowIfFailed(mSwapChain->Present(0, 0));
+	//mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 	// Advance the fence value to mark commands up to this fence point.
 	mCurrFrameResource->Fence = ++mCurrentFence;
