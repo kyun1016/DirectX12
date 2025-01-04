@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <windows.h>
-#include "AppBase.h"
 
 inline std::string HrToString(HRESULT hr)
 {

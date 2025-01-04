@@ -10,12 +10,24 @@
 #include <WinUser.h>
 #include <wrl/client.h> // ComPtr
 
-#include <DirectXMath.h>
 #include <d3d12.h>
 #include <DirectXCollision.h>
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
+#include <DirectXMath.h>
+#include <dxgi1_6.h>
+#include <dxgidebug.h>
+#include "DirectX/d3dx12.h"
 
-#include "d3dx12.h"
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "backends/imgui_impl_dx12.h"
+
 #include "MathHelper.h"
-#include "AppBase.h"
+#include "GeometryGenerator.h"
+#include "GameTimer.h"
+
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12")
+#pragma comment(lib, "dxgi")
+#pragma comment(lib, "dxguid.lib")

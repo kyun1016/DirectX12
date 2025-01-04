@@ -63,19 +63,19 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
 		0,2,3,
 
 		4,5,6,
-		4,5,7,
+		4,6,7,
 
 		8,9,10,
-		8,9,11,
+		8,10,11,
 
 		12,13,14,
-		12,13,15,
+		12,14,15,
 
 		16,17,18,
-		16,17,19,
+		16,18,19,
 
 		20,21,22,
-		20,21,23
+		20,22,23
 	};
 
 	meshData.Indices32.assign(&i[0], &i[36]);

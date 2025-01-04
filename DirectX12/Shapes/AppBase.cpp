@@ -1,19 +1,9 @@
 #include "pch.h"
-#include <iostream>
-#include <dxgi1_6.h>
-#include <windows.h>
-#include <wrl/client.h> // ComPtr
-#include <string>
-#include "imgui.h"
-#include "imgui_impl_dx12.h"
-#include "imgui_impl_win32.h"
-#include "AppBase.h"
-#include "AppBaseHelper.h"
-#include "GameTimer.h"
-#include "d3dx12.h"
-#include <dxgidebug.h>
-#pragma comment(lib, "dxguid.lib")
 
+#include "AppBase.h"
+//#include "imgui.h"
+//#include "imgui_impl_win32.h"
+//#include "backends/imgui_impl_dx12.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -36,9 +26,6 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 	mTitle(name),
 	mAspectRatio(0.0f)
 {
-	WCHAR assetsPath[512];
-	GetAssetsPath(assetsPath, _countof(assetsPath));
-
 	g_appBase = this;
 
 	UpdateForSizeChange(width, height);

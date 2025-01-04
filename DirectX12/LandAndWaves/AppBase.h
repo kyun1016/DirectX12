@@ -6,12 +6,9 @@
 #include "Camera.h"
 #include "GameTimer.h"
 #include <memory>
-#include "imgui.h"
 #include "D3DUtil.h"
 
-//class GameTimer;
-//class Camera;
-//class Model;
+#include "imgui.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")
