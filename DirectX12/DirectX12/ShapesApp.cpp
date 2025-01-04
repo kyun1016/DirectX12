@@ -310,7 +310,6 @@ void ShapesApp::BuildConstantBufferViews()
 	{
 		auto objectCB = mFrameResources[frameIndex]->ObjectCB->Resource();
 		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-		
 		for (UINT i = 0; i < objCount; ++i)
 		{
 			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
