@@ -6,8 +6,6 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	cout << "hello!" << endl;
-
 	SetConsoleOutputCP(CP_UTF8);
 
 	std::unique_ptr<AppBase> app;

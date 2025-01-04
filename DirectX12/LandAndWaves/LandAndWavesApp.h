@@ -1,17 +1,24 @@
 #pragma once
 #include "AppBase.h"
+#include "Waves.h"
 #include <dxgi1_5.h>
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "FrameResource.h"
 #include <string>
 
-static const size_t NUM_MESHES = 4;
-static const std::string gMeshGeometryName = "shapeGeo";
+static const size_t NUM_MESHES = 3;
+static const std::string gMeshGeometryName = "Geo";
 static const std::string VS_NAME = "standardVS";
 static const std::string PS_NAME = "opaquePS";
-static const std::string gSubmeshName[NUM_MESHES] = { "box", "grid", "sphere", "cylinder" };
+static const std::string gSubmeshName[NUM_MESHES] = { "box", "grid", "wave" };
 static const std::string gPSOName[2] = { "opaque", "opaque_wireframe" };
+
+enum class RenderLayer : int
+{
+	Opaque = 0,
+	Count
+};
 
 class LandAndWavesApp : public AppBase
 {
@@ -26,20 +33,22 @@ public:
 	virtual bool Initialize() override;
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
-	void BuildShapeGeometry();
+	void BuildGeometry();
+	void BuildWavesGeometryBuffers();
 	void BuildRenderItems();
 	void BuildFrameResources();
-	void BuildDescriptorHeaps();
-	void BuildConstantBufferViews();
 	void BuildPSO();
 #pragma endregion Initialize
 
 private:
+	float GetHillsHeight(float x, float z)const;
+	DirectX::XMFLOAT3 GetHillsNormal(float x, float z)const;
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
 	void UpdateObjectCBs();
 	void UpdateMainPassCB();
+	void UpdateWaves();
 
 	virtual void Render()override;
 	void DrawRenderItems(const std::vector<RenderItem*>& ritems);
@@ -65,7 +74,8 @@ private:
 	int mCurrFrameResourceIndex = 0;
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	std::vector<RenderItem*> mOpaqueRitems;
+	std::vector<RenderItem*> mOpaqueRitems[(int)RenderLayer::Count];
+	std::unique_ptr<Waves> mWaves;
 
 	UINT mPassCbvOffset = 0;
 	bool mIsWireframe = false;

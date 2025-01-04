@@ -1,4 +1,6 @@
-float4 main() : SV_TARGET
+#include "LandAndWaves_Common.hlsli"
+
+float4 main(VertexOut pin) : SV_Target
 {
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+    return pin.Color;
 }
