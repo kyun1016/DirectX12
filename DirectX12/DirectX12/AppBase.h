@@ -99,8 +99,8 @@ public:
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();
-	virtual void Update(const GameTimer dt) = 0;
-	virtual void Render(const GameTimer dt) = 0;
+	virtual void Update() = 0;
+	virtual void Render() = 0;
 
 	// Convenience overrides for handling mouse input.
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) { }
@@ -132,10 +132,6 @@ protected:
 	void CreateSwapChain();
 
 	void FlushCommandQueue();
-
-	ID3D12Resource* CurrentBackBuffer()const;
-	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()const;
-	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView()const;
 
 	void CalculateFrameStats();
 
@@ -174,30 +170,28 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	UINT64 mCurrentFence = 0;
-	UINT64 mFrameIndex = 0;
-	// HANDLE mFenceEvent = nullptr;
+	HANDLE mFenceEvent = nullptr;
 
+	UINT mRtvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-	HANDLE mSwapChainWaitableObject;
-	bool mSwapChainOccluded = true;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
+	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+	int mCurrBackBuffer;
+
+	UINT mDsvDescriptorSize = 0;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
+	D3D12_CPU_DESCRIPTOR_HANDLE mDepthStencilDescriptor;
+
+	UINT mCbvSrvUavDescriptorSize = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 
-	int mCurrBackBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
-	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
-
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
-
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
-
-	UINT mRtvDescriptorSize = 0;
-	UINT mDsvDescriptorSize = 0;
-	UINT mCbvSrvUavDescriptorSize = 0;
 
 	D3D_DRIVER_TYPE mD3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
 	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;

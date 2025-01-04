@@ -69,19 +69,19 @@ public:
 private:
 #pragma region Update
 	virtual void OnResize()override;
-	virtual void Update(const GameTimer dt)override;
-	void UpdateObjectCBs(const GameTimer& dt);
-	void UpdateMainPassCB(const GameTimer& dt);
+	virtual void Update()override;
+	void UpdateObjectCBs();
+	void UpdateMainPassCB();
 
-	virtual void Render(const GameTimer dt)override;
-	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+	virtual void Render()override;
+	void DrawRenderItems(const std::vector<RenderItem*>& ritems);
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 
-	void OnKeyboardInput(const GameTimer& gt);
-	void UpdateCamera(const GameTimer& gt);
+	void OnKeyboardInput();
+	void UpdateCamera();
 #pragma endregion Update
 	
 //

@@ -109,24 +109,18 @@ int AppBase::Run()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		// Otherwise, do animation/game stuff.
-		else if (mSwapChainOccluded && mSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED)
-		{
-			::Sleep(10);
-		}
 		else {
 			mTimer.Tick();
 			if (!mAppPaused)
 			{
-				mSwapChainOccluded = false;
 				UpdateImGui();		// override this function
 
 				//==========================================
 				// My Render
 				//==========================================
 				CalculateFrameStats();
-				Update(mTimer);
-				Render(mTimer);
+				Update();
+				Render();
 
 				// Rendering
 				ImGui::Render();
@@ -147,15 +141,8 @@ int AppBase::Run()
 				mCommandList->ResourceBarrier(1, &RenderBarrier);*/
 
 
-				// swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(1, 0)); // Present with vsync
-				// ThrowIfFailed(mSwapChain->Present(0, 0)); // Present without vsync
-				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
-
-				// Wait until frame commands are complete.  This waiting is inefficient and is
-				// done for simplicity.  Later we will show how to organize our rendering code
-				// so we do not have to wait per frame.
-				FlushCommandQueue();
+				// Swap the back and front buffers
+				ThrowIfFailed(mSwapChain->Present(1, 0));
 			}
 			else
 			{
@@ -263,12 +250,19 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1,
+		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		/* UINT NodeMask					*/0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
+	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+	{
+		mSwapChainDescriptor[i] = rtvHandle;
+		rtvHandle.ptr += mRtvDescriptorSize;
+	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
 	{
@@ -278,6 +272,9 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 		/* UINT NodeMask					*/0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
+
+	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	mDepthStencilDescriptor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void AppBase::OnResize()
@@ -296,20 +293,13 @@ void AppBase::OnResize()
 	mDepthStencilBuffer.Reset();
 
 	// Resize the swap chain.
-	ThrowIfFailed(mSwapChain->ResizeBuffers(
-		APP_NUM_BACK_BUFFERS,
-		mClientWidth, mClientHeight,
-		mBackBufferFormat,
-		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+	ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mClientWidth, mClientHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
 	mCurrBackBuffer = 0;
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
-	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
-		rtvHeapHandle.Offset(1, mRtvDescriptorSize);
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
 	}
 
 	// Create the depth/stencil buffer and view.
@@ -342,13 +332,7 @@ void AppBase::OnResize()
 		/*		}										*/	},
 		/* } 											*/}
 	};
-	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&heapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&depthStencilDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		&optClear,
-		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties,	D3D12_HEAP_FLAG_NONE, &depthStencilDesc, D3D12_RESOURCE_STATE_COMMON, &optClear, IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
 
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc
@@ -387,7 +371,7 @@ void AppBase::OnResize()
 	// dsvDesc.Format = mDepthStencilFormat;
 	// dsvDesc.Texture2D.MipSlice = 0;
 	// dsvDesc.Texture2D.MipSlice = 0;
-	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
+	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mDepthStencilDescriptor);
 
 	// Transition the resource from its initial state to be used as a depth buffer.
 	CD3DX12_RESOURCE_BARRIER ResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -548,9 +532,14 @@ bool AppBase::InitDirect3D()
 	LogAdapters();
 #endif
 
+	mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (mFenceEvent == nullptr)
+		return false;
+
 	CreateCommandObjects();
-	CreateSwapChain();
 	CreateRtvAndDsvDescriptorHeaps();
+	CreateSwapChain();
+	
 
 	CreateImGuiDescriptorHeaps();
 	
@@ -644,7 +633,7 @@ void AppBase::CreateSwapChain()
 {
 	// Release the previous swapchain we will be recreating.
 	mSwapChain.Reset();
-
+	
 	DXGI_SWAP_CHAIN_DESC sd
 	{
 		/* DXGI_MODE_DESC BufferDesc					*/
@@ -669,45 +658,36 @@ void AppBase::CreateSwapChain()
 
 	// Note: Swap chain uses queue to perform flush.
 	ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &sd, mSwapChain.GetAddressOf()));
+
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+	{
+		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
+	}
 }
 
 void AppBase::FlushCommandQueue()
 {
 	// Advance the fence value to mark commands up to this fence point.
-	mFrameIndex++;
+	mCurrentFence++;
 
 	// Add an instruction to the command queue to set a new fence point.  Because we 
 	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
 	// processing all the commands prior to this Signal().
-	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFrameIndex));
+	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
 
 	// Wait until the GPU has completed commands up to this fence point.
-	if (mFence->GetCompletedValue() < mFrameIndex)
+	if (mFence->GetCompletedValue() < mCurrentFence)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, L"", false, EVENT_ALL_ACCESS);
 
 		// Fire event when GPU hits current fence.  
-		ThrowIfFailed(mFence->SetEventOnCompletion(mFrameIndex, eventHandle));
+		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
 
 		// Wait until the GPU hits current fence event is fired.
 		WaitForSingleObject(eventHandle, INFINITE);					// TODO: Make More Fast Logic
 		CloseHandle(eventHandle);
 	}
-}
-
-ID3D12Resource* AppBase::CurrentBackBuffer() const
-{
-	return mSwapChainBuffer[mCurrBackBuffer].Get();
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE AppBase::CurrentBackBufferView() const
-{
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(),mCurrBackBuffer, mRtvDescriptorSize);
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE AppBase::DepthStencilView() const
-{
-	return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void AppBase::CalculateFrameStats()
@@ -747,8 +727,8 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 
-	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
-		return true;
+	/*if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
+		return true;*/
 
 	switch (msg)
 	{
