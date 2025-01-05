@@ -136,7 +136,6 @@ protected:
 	void CreateImGuiDescriptorHeaps();
 	bool InitImgui();
 	virtual void UpdateImGui();
-	virtual void RenderImGui() = 0;
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
 	bool mShowDemoWindow = false;

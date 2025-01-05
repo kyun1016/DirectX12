@@ -531,7 +531,11 @@ void LandAndWavesApp::Render()
 	//====================================
 	// Imgui
 	//====================================
-	RenderImGui();
+	// Rendering
+	ImGui::Render();
+
+	mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
 
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -655,13 +659,4 @@ void LandAndWavesApp::UpdateCamera()
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	DirectX::XMStoreFloat4x4(&mView, view);
-}
-
-void LandAndWavesApp::RenderImGui()
-{
-	// Rendering
-	ImGui::Render();
-
-	mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
 }

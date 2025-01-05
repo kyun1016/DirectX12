@@ -431,7 +431,7 @@ bool AppBase::InitDirect3D()
 {
 	// [DEBUG] Enable debug interface
 #if defined(DEBUG) || defined(_DEBUG) 
-	Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
+	ID3D12Debug* debugController;
 	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 	debugController->EnableDebugLayer();
 #endif
@@ -456,17 +456,19 @@ bool AppBase::InitDirect3D()
 			IID_PPV_ARGS(&mDevice)));
 	}
 
-	// [DEBUG] Setup debug interface to break on any warnings/errors
-#if defined(DEBUG) || defined(_DEBUG) 
-	if (debugController != nullptr)
-	{
-		Microsoft::WRL::ComPtr<ID3D12InfoQueue> pInfoQueue = nullptr;
-		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
-		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-	}
-#endif
+//	// [DEBUG] Setup debug interface to break on any warnings/errors
+//#if defined(DEBUG) || defined(_DEBUG) 
+//	if (debugController != nullptr)
+//	{
+//		ID3D12InfoQueue* pInfoQueue = nullptr;
+//		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+//		pInfoQueue->Release();
+//		debugController->Release();
+//	}
+//#endif
 
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
@@ -840,10 +842,15 @@ void AppBase::UpdateImGui()
 
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
+		// ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y), ImGuiCond_FirstUseEver);
+		// ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight), ImGuiCond_FirstUseEver);
 		static float f = 0.0f;
 		static int counter = 0;
-
-		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+		const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+		// ImGui::PushStyleVar();
+		ImGui::Begin("Root", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+		ImGui::SetWindowPos("Root", ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y));
+		ImGui::SetWindowSize("Root", ImVec2((float)mClientWidth, (float)mClientHeight));
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
@@ -869,6 +876,7 @@ void AppBase::UpdateImGui()
 	// 3. Show another simple window.
 	if (mShowAnotherWindow)
 	{
+		// ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
 		ImGui::Begin("Another Window", &mShowAnotherWindow);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
 		ImGui::Text("Hello from another window!");
 		if (ImGui::Button("Close Me"))
@@ -884,7 +892,7 @@ void AppBase::UpdateImGui()
 		D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle;
 		mSrvDescHeapAlloc.Alloc(&my_texture_srv_cpu_handle, &my_texture_srv_gpu_handle);
 
-		ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
 		ImGui::Begin("Viewport1", &mShowViewport);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
 
 

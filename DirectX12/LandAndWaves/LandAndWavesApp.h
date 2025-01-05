@@ -90,7 +90,7 @@ private:
 	void UpdateCamera();
 #pragma endregion Update
 #pragma region Imgui
-	void RenderImGui() override;
+
 #pragma endregion Imgui
 	//
 	//	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
