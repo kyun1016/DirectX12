@@ -1,9 +1,6 @@
 #include "pch.h"
 
 #include "AppBase.h"
-//#include "imgui.h"
-//#include "imgui_impl_win32.h"
-//#include "backends/imgui_impl_dx12.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -109,28 +106,6 @@ int AppBase::Run()
 				CalculateFrameStats();
 				Update();
 				Render();
-
-				// Rendering
-				ImGui::Render();
-
-				//==========================================
-				// ImGui
-				//==========================================
-				// Update and Render additional Platform Windows
-				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-				{
-					ImGui::UpdatePlatformWindows();
-					ImGui::RenderPlatformWindowsDefault();
-				}
-
-				// GUI ·»´õ¸µ
-				// ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
-				/*D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-				mCommandList->ResourceBarrier(1, &RenderBarrier);*/
-
-
-				// Swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(1, 0));
 			}
 			else
 			{
@@ -528,9 +503,7 @@ bool AppBase::InitDirect3D()
 	CreateRtvAndDsvDescriptorHeaps();
 	CreateSwapChain();
 
-
 	CreateImGuiDescriptorHeaps();
-
 
 	return true;
 }
@@ -555,7 +528,7 @@ bool AppBase::InitImgui()
 	ImGui_ImplDX12_InitInfo init_info = {};
 	init_info.Device = mDevice.Get();
 	init_info.CommandQueue = mCommandQueue.Get();
-	init_info.NumFramesInFlight = gNumFrameResources;
+	init_info.NumFramesInFlight = APP_NUM_FRAME_RESOURCES;
 	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
@@ -715,8 +688,8 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
 
-	/*if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
-		return true;*/
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
+		return true;
 
 	switch (msg)
 	{

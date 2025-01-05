@@ -16,8 +16,6 @@
 
 extern class AppBase* g_appBasse;
 
-static constexpr int gNumFrameResources = 3;	// must bigger than 1
-
 #pragma region ImGui
 // Simple free list based allocator
 struct ExampleDescriptorHeapAllocator
@@ -68,6 +66,7 @@ struct ExampleDescriptorHeapAllocator
 class AppBase
 {
 public:
+	static constexpr int APP_NUM_FRAME_RESOURCES = 2;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
 	static constexpr uint32_t WND_PADDING = 5;
@@ -83,7 +82,6 @@ public:
 	int Run();
 
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
-	virtual void UpdateImGui();
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
 	void SetWindowBounds(int left, int top, int right, int bottom);
@@ -135,8 +133,10 @@ protected:
 
 #pragma region ImGui
 protected:
-	bool InitImgui();
 	void CreateImGuiDescriptorHeaps();
+	bool InitImgui();
+	virtual void UpdateImGui();
+	virtual void RenderImGui() = 0;
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
 	bool mShowDemoWindow = false;

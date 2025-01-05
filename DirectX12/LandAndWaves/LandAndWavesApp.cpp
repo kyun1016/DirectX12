@@ -1,4 +1,5 @@
 #include "pch.h"
+
 #include "LandAndWavesApp.h"
 
 LandAndWavesApp::LandAndWavesApp()
@@ -54,13 +55,12 @@ void LandAndWavesApp::BuildRootSignature()
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf()));
 
 	if (errorBlob != nullptr)
 	{
 		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 	}
-	ThrowIfFailed(hr);
 
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
@@ -82,9 +82,9 @@ void LandAndWavesApp::BuildGeometry()
 	//=========================================================
 	// Part 1. Mesh 积己
 	//=========================================================
-	std::vector<GeometryGenerator::MeshData> meshes(NUM_MESHES);
-	meshes[0] = GeometryGenerator::CreateBox(1.5f, 0.5f, 1.5f, 3);
-	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
+	std::vector<GeometryGenerator::MeshData> meshes(NUM_MESHES-1);
+	meshes[0] = GeometryGenerator::CreateSphere(5.0f, 20, 20);
+	meshes[1] = GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50);
 
 	//=========================================================
 	// Part 2. Sub Mesh 积己 棺 烹钦 vertices & indices 积己
@@ -93,11 +93,11 @@ void LandAndWavesApp::BuildGeometry()
 	for (const auto& a : meshes)
 		totalVertexCount += a.Vertices.size();
 
-	std::vector<SubmeshGeometry> submeshes(NUM_MESHES);
+	std::vector<SubmeshGeometry> submeshes(NUM_MESHES-1);
 	std::vector<Vertex> vertices(totalVertexCount);
 	std::vector<std::uint16_t> indices;
 
-	for (size_t i = 0; i < NUM_MESHES; ++i)
+	for (size_t i = 0; i < NUM_MESHES-1; ++i)
 	{
 		if (i == 0)
 		{
@@ -116,7 +116,7 @@ void LandAndWavesApp::BuildGeometry()
 
 	for (size_t i = 0; i < meshes[0].Vertices.size(); ++i)
 	{
-		vertices[i].Pos = meshes[0].Vertices[0].Position;
+		vertices[i].Pos = meshes[0].Vertices[i].Position;
 		vertices[i].Color = DirectX::XMFLOAT4(DirectX::Colors::DarkGreen);
 	}
 	size_t offset = meshes[0].Vertices.size();
@@ -161,7 +161,7 @@ void LandAndWavesApp::BuildGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName;
+	geo->Name = gMeshGeometryName[0];
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -214,7 +214,7 @@ void LandAndWavesApp::BuildWavesGeometryBuffers()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName;
+	geo->Name = gMeshGeometryName[1];
 
 	// Set dynamically.
 	geo->VertexBufferCPU = nullptr;
@@ -236,9 +236,9 @@ void LandAndWavesApp::BuildWavesGeometryBuffers()
 void LandAndWavesApp::BuildRenderItems()
 {
 	auto boxRitem = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 50.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f) * DirectX::XMMatrixTranslation(10.0f, 10.0f, 10.0f));
 	boxRitem->ObjCBIndex = 0;
-	boxRitem->Geo = mGeometries[gMeshGeometryName].get();
+	boxRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[gSubmeshName[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[gSubmeshName[0]].StartIndexLocation;
@@ -248,7 +248,7 @@ void LandAndWavesApp::BuildRenderItems()
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	gridRitem->ObjCBIndex = 1;
-	gridRitem->Geo = mGeometries[gMeshGeometryName].get();
+	gridRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[gSubmeshName[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[gSubmeshName[1]].StartIndexLocation;
@@ -257,8 +257,8 @@ void LandAndWavesApp::BuildRenderItems()
 
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
-	wavesRitem->ObjCBIndex = 0;
-	wavesRitem->Geo = mGeometries[gMeshGeometryName].get();
+	wavesRitem->ObjCBIndex = 2;
+	wavesRitem->Geo = mGeometries[gMeshGeometryName[1]].get();
 	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[gSubmeshName[2]].IndexCount;
 	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[gSubmeshName[2]].StartIndexLocation;
@@ -267,12 +267,12 @@ void LandAndWavesApp::BuildRenderItems()
 
 	// All the render items are opaque.
 	for (auto& e : mAllRitems)
-		mOpaqueRitems[(int)RenderLayer::Opaque].push_back(e.get());
+		mRitemLayer[(int)RenderLayer::Opaque].push_back(e.get());
 }
 
 void LandAndWavesApp::BuildFrameResources()
 {
-	for (int i = 0; i < gNumFrameResources; ++i)
+	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
 	{
 		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, (UINT)mAllRitems.size(), mWaves->VertexCount()));
 	}
@@ -380,7 +380,7 @@ void LandAndWavesApp::Update()
 	OnKeyboardInput();
 	UpdateCamera();
 
-	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
+	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % APP_NUM_FRAME_RESOURCES;
 	mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
 
 	if (mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
@@ -391,6 +391,7 @@ void LandAndWavesApp::Update()
 
 	UpdateObjectCBs();
 	UpdateMainPassCB();
+	UpdateWaves();
 }
 
 void LandAndWavesApp::UpdateObjectCBs()
@@ -521,11 +522,16 @@ void LandAndWavesApp::Render()
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(mOpaqueRitems[(int)RenderLayer::Opaque]);
+	DrawRenderItems(mRitemLayer[(int)RenderLayer::Opaque]);
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
+
+	//====================================
+	// Imgui
+	//====================================
+	RenderImGui();
 
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -534,6 +540,18 @@ void LandAndWavesApp::Render()
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
+	//====================================
+	// Imgui
+	//====================================
+	// Update and Render additional Platform Windows
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+
+	// Swap the back and front buffers
+	ThrowIfFailed(mSwapChain->Present(1, 0));
 	//// Swap the back and front buffers
 	//ThrowIfFailed(mSwapChain->Present(1, 0));
 	mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
@@ -637,4 +655,13 @@ void LandAndWavesApp::UpdateCamera()
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	DirectX::XMStoreFloat4x4(&mView, view);
+}
+
+void LandAndWavesApp::RenderImGui()
+{
+	// Rendering
+	ImGui::Render();
+
+	mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
 }
