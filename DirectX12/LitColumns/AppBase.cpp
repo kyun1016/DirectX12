@@ -100,6 +100,8 @@ int AppBase::Run()
 			{
 				UpdateImGui();		// override this function
 
+				ImGui::Render();
+
 				//==========================================
 				// My Render
 				//==========================================
@@ -276,9 +278,9 @@ void AppBase::OnResize()
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R24G8_TYPELESS,
 		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
-			/*		UINT Count						*/	m4xMsaaState ? (UINT)4 : (UINT)1,
-			/*		UINT Quality					*/ 	m4xMsaaState ? (m4xMsaaQuality - 1) : 0
-			/* }									*/	},
+		/*		UINT Count						*/	m4xMsaaState ? (UINT)4 : (UINT)1,
+		/*		UINT Quality					*/ 	m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/* }									*/	},
 		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
 		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
 	};
@@ -288,11 +290,11 @@ void AppBase::OnResize()
 	{
 		/* DXGI_FORMAT Format;							*/mDepthStencilFormat,
 		/* union {										*/{
-			/*		FLOAT Color[4];							*/
-			/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/	{
-				/*			FLOAT Depth;						*/		1.0f,
-				/*			UINT8 Stencil;						*/		0
-				/*		}										*/	},
+		/*		FLOAT Color[4];							*/
+		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/	{
+		/*			FLOAT Depth;						*/		1.0f,
+		/*			UINT8 Stencil;						*/		0
+		/*		}										*/	},
 		/* } 											*/}
 	};
 	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &depthStencilDesc, D3D12_RESOURCE_STATE_COMMON, &optClear, IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
@@ -329,11 +331,6 @@ void AppBase::OnResize()
 		/*		}											*/
 		/* } D3D12_DEPTH_STENCIL_VIEW_DESC					*/
 	};
-	// dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-	// dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	// dsvDesc.Format = mDepthStencilFormat;
-	// dsvDesc.Texture2D.MipSlice = 0;
-	// dsvDesc.Texture2D.MipSlice = 0;
 	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mDepthStencilDescriptor);
 
 	// Transition the resource from its initial state to be used as a depth buffer.
@@ -363,7 +360,7 @@ void AppBase::OnResize()
 bool AppBase::RegisterWindowClass()
 {
 	mWindowClass = {
-		/*UINT        cbSize		*/	sizeof(WNDCLASSEX),
+		/*UINT        cbSize		*/	sizeof(mWindowClass),
 		/*UINT        style			*/	CS_CLASSDC,
 		/*WNDPROC     lpfnWndProc	*/	WndProc,
 		/*int         cbClsExtra	*/	0L,
@@ -372,7 +369,7 @@ bool AppBase::RegisterWindowClass()
 		/*HICON       hIcon			*/	nullptr,
 		/*HCURSOR     hCursor		*/	nullptr,
 		/*HBRUSH      hbrBackground	*/	nullptr,
-		/*LPCWSTR     lpszMenuName	*/	L"", // MAKEINTRESOURCEW(IDR_MENU1),
+		/*LPCWSTR     lpszMenuName	*/	nullptr,
 		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
 		/*HICON       hIconSm		*/	nullptr
 	};
@@ -388,37 +385,37 @@ bool AppBase::RegisterWindowClass()
 
 bool AppBase::MakeWindowHandle()
 {
-	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
-	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
-	//mHwndWindow = CreateWindowEx(
-	//	/*_In_ DWORD dwExStyle			*/WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
-	//	/*_In_opt_ LPCWSTR lpClassName	*/mWindowClass.lpszClassName,
-	//	/*_In_opt_ LPCWSTR lpWindowName	*/NULL,
-	//	/*_In_ DWORD dwStyle			*/WS_POPUP,
-	//	/*_In_ int X					*/0,
-	//	/*_In_ int Y					*/0,
-	//	/*_In_ int nWidth				*/mClientWidth,
-	//	/*_In_ int nHeight				*/mClientHeight,
-	//	/*_In_opt_ HWND hWndParent		*/NULL,
-	//	/*_In_opt_ HMENU hMenu			*/NULL,
-	//	/*_In_opt_ HINSTANCE hInstance	*/mWindowClass.hInstance,
-	//	/*_In_opt_ LPVOID lpParam)		*/NULL
-	//);
-	//SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
-
-	mHwndWindow = CreateWindow(
-		/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
-		/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
-		/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
-		/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
-		/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
-		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
-		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
-		/* _In_opt_ HWND hWndParent		*/ NULL,
-		/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
-		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-		/* _In_opt_ LPVOID lpParam		*/ NULL
+	//SetWindowBounds(0, 0, mClientWidth, mClientHeight);
+	//AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
+	mHwndWindow = CreateWindowEx(
+		/*_In_ DWORD dwExStyle			*/WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
+		/*_In_opt_ LPCWSTR lpClassName	*/mWindowClass.lpszClassName,
+		/*_In_opt_ LPCWSTR lpWindowName	*/NULL,
+		/*_In_ DWORD dwStyle			*/WS_POPUP,
+		/*_In_ int X					*/0,
+		/*_In_ int Y					*/0,
+		/*_In_ int nWidth				*/mClientWidth,
+		/*_In_ int nHeight				*/mClientHeight,
+		/*_In_opt_ HWND hWndParent		*/NULL,
+		/*_In_opt_ HMENU hMenu			*/NULL,
+		/*_In_opt_ HINSTANCE hInstance	*/mWindowClass.hInstance,
+		/*_In_opt_ LPVOID lpParam)		*/NULL
 	);
+	// SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
+
+	//mHwndWindow = CreateWindow(
+	//	/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
+	//	/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
+	//	/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
+	//	/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
+	//	/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
+	//	/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
+	//	/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
+	//	/* _In_opt_ HWND hWndParent		*/ NULL,
+	//	/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
+	//	/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+	//	/* _In_opt_ LPVOID lpParam		*/ NULL
+	//);
 
 	if (!mHwndWindow) {
 		std::cout << "CreateWindow() failed." << std::endl;
@@ -903,12 +900,6 @@ void AppBase::UpdateImGui()
 	// 3. Show another simple window.
 	if (mShowViewport)
 	{
-		static_assert(sizeof(ImTextureID) >= sizeof(D3D12_CPU_DESCRIPTOR_HANDLE), "D3D12_CPU_DESCRIPTOR_HANDLE is too large to fit in an ImTextureID");
-
-		D3D12_CPU_DESCRIPTOR_HANDLE my_texture_srv_cpu_handle;
-		D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle;
-		mSrvDescHeapAlloc.Alloc(&my_texture_srv_cpu_handle, &my_texture_srv_gpu_handle);
-
 		// ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight));
 		ImGui::Begin("Viewport1", &mShowViewport);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
 

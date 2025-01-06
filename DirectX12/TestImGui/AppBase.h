@@ -143,6 +143,10 @@ public:
 	bool mShowViewport = false;
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> mRtvTexture;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvTextureHeap;
+	D3D12_CPU_DESCRIPTOR_HANDLE mRtvTextureDescriptor;
 #pragma endregion ImGui
 
 public:
