@@ -42,11 +42,11 @@ bool MyApp::Initialize()
 void MyApp::BuildRootSignature()
 {
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// Create root CBVs.
 	slotRootParameter[0].InitAsConstantBufferView(0);	// obj CB
-	slotRootParameter[1].InitAsConstantBufferView(1);	// pass CB
+	slotRootParameter[1].InitAsConstantBufferView(1);	// Material CB
 	slotRootParameter[2].InitAsConstantBufferView(2);	// pass CB
 
 	// A root signature is an array of root parameters.
@@ -84,8 +84,10 @@ void MyApp::BuildShapeGeometry()
 	// Part 1. Mesh 생성
 	//=========================================================
 	std::vector<GeometryGenerator::MeshData> meshes(NUM_MAIN_MESHES);
-	meshes[0] = GeometryGenerator::CreateSphere(5.0f, 20, 20);
-	meshes[1] = GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50);
+	meshes[0] = GeometryGenerator::CreateBox(1.5f, 0.5f, 1.5f, 3);
+	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
+	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
+	meshes[3] = GeometryGenerator::CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
 	//=========================================================
 	// Part 2. Sub Mesh 생성 및 통합 vertices & indices 생성
@@ -253,7 +255,7 @@ void MyApp::BuildMaterials()
 	skullMat->MatCBIndex = 3;
 	skullMat->DiffuseSrvHeapIndex = 3;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05);
+	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
 
 	mMaterials[gMaterialName[0]] = std::move(bricks0);
@@ -266,35 +268,100 @@ void MyApp::BuildMaterials()
 void MyApp::BuildRenderItems()
 {
 	auto boxRitem = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f) * DirectX::XMMatrixTranslation(10.0f, 10.0f, 10.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	boxRitem->ObjCBIndex = 0;
+	boxRitem->Mat = mMaterials[gMaterialName[1]].get();
 	boxRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[gSubmeshName[0]].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[gSubmeshName[0]].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[gSubmeshName[0]].BaseVertexLocation;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[gMainMeshName[0]].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[gMainMeshName[0]].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[gMainMeshName[0]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(boxRitem));
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
+	DirectX::XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
 	gridRitem->ObjCBIndex = 1;
+	gridRitem->Mat = mMaterials[gMaterialName[2]].get();
 	gridRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[gSubmeshName[1]].IndexCount;
-	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[gSubmeshName[1]].StartIndexLocation;
-	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[gSubmeshName[1]].BaseVertexLocation;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(gridRitem));
 
-	auto wavesRitem = std::make_unique<RenderItem>();
-	wavesRitem->World = MathHelper::Identity4x4();
-	wavesRitem->ObjCBIndex = 2;
-	wavesRitem->Geo = mGeometries[gMeshGeometryName[1]].get();
-	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[gSubmeshName[2]].IndexCount;
-	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[gSubmeshName[2]].StartIndexLocation;
-	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[gSubmeshName[2]].BaseVertexLocation;
-	mAllRitems.push_back(std::move(wavesRitem));
+	auto skullRitem = std::make_unique<RenderItem>();
+	skullRitem->World = MathHelper::Identity4x4();
+	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	skullRitem->ObjCBIndex = 2;
+	skullRitem->Mat = mMaterials[gMaterialName[3]].get();
+	skullRitem->Geo = mGeometries[gMeshGeometryName[1]].get();
+	skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[gSubMeshName[0]].IndexCount;
+	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[gSubMeshName[0]].StartIndexLocation;
+	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[gSubMeshName[0]].BaseVertexLocation;
+	mAllRitems.push_back(std::move(skullRitem));
 
+	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+	UINT objCBIndex = 3;
+	for (int i = 0; i < 5; ++i)
+	{
+		auto leftCylRitem = std::make_unique<RenderItem>();
+		auto rightCylRitem = std::make_unique<RenderItem>();
+		auto leftSphereRitem = std::make_unique<RenderItem>();
+		auto rightSphereRitem = std::make_unique<RenderItem>();
+
+		DirectX::XMMATRIX leftCylWorld = DirectX::XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX rightCylWorld = DirectX::XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX leftSphereWorld = DirectX::XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
+
+		DirectX::XMStoreFloat4x4(&leftCylRitem->World, leftCylWorld);
+		DirectX::XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
+		leftCylRitem->ObjCBIndex = objCBIndex++;
+		leftCylRitem->Mat = mMaterials[gMaterialName[0]].get();
+		leftCylRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[gSubMeshName[3]].IndexCount;
+		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs[gSubMeshName[3]].StartIndexLocation;
+		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs[gSubMeshName[3]].BaseVertexLocation;
+
+		DirectX::XMStoreFloat4x4(&rightCylRitem->World, rightCylWorld);
+		DirectX::XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
+		rightCylRitem->ObjCBIndex = objCBIndex++;
+		rightCylRitem->Mat = mMaterials[gMaterialName[0]].get();
+		rightCylRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[gSubMeshName[3]].IndexCount;
+		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs[gSubMeshName[3]].StartIndexLocation;
+		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs[gSubMeshName[3]].BaseVertexLocation;
+
+		DirectX::XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
+		leftSphereRitem->TexTransform = MathHelper::Identity4x4();
+		leftSphereRitem->ObjCBIndex = objCBIndex++;
+		leftSphereRitem->Mat = mMaterials[gMaterialName[1]].get();
+		leftSphereRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs[gSubMeshName[2]].IndexCount;
+		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs[gSubMeshName[2]].StartIndexLocation;
+		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs[gSubMeshName[2]].BaseVertexLocation;
+
+		DirectX::XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
+		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
+		rightSphereRitem->ObjCBIndex = objCBIndex++;
+		rightSphereRitem->Mat = mMaterials[gMaterialName[1]].get();
+		rightSphereRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs[gSubMeshName[2]].IndexCount;
+		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[gSubMeshName[2]].StartIndexLocation;
+		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[gSubMeshName[2]].BaseVertexLocation;
+
+		mAllRitems.push_back(std::move(leftCylRitem));
+		mAllRitems.push_back(std::move(leftSphereRitem));
+		mAllRitems.push_back(std::move(rightCylRitem));
+		mAllRitems.push_back(std::move(rightSphereRitem));
+	}
 	// All the render items are opaque.
 	for (auto& e : mAllRitems)
 		mRitemLayer[(int)RenderLayer::Opaque].push_back(e.get());
@@ -304,7 +371,7 @@ void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, (UINT)mAllRitems.size(), mWaves->VertexCount()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, (UINT)mAllRitems.size(), (UINT)mMaterials.size()));
 	}
 }
 
@@ -338,7 +405,7 @@ void MyApp::BuildPSO()
 		/*		D3D12_RENDER_TARGET_BLEND_DESC RenderTarget[8]				*/
 		/* }																*/
 		/* UINT SampleMask													*/.SampleMask = UINT_MAX,
-		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = {
+		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
 		/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
 		/*		BOOL FrontCounterClockwise									*/		false,
@@ -351,10 +418,29 @@ void MyApp::BuildPSO()
 		/*		UINT ForcedSampleCount										*/		0,
 		/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
 		/* }																*/},
-		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState						*/.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		/*		BOOL DepthEnable											*/		.DepthEnable = true,
+		/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+		/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+		/*		BOOL StencilEnable											*/		.StencilEnable = false,
+		/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+		/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+		/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/* }																*/ },
 		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
-		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		mInputLayout.data(),
-		/*		UINT NumElements											*/		(UINT)mInputLayout.size()
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mInputLayout.data(),
+		/*		UINT NumElements											*/		.NumElements = (UINT)mInputLayout.size()
 		/*	}																*/ },
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
@@ -362,8 +448,8 @@ void MyApp::BuildPSO()
 		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
 		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mDepthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
-		/*		UINT Count;													*/		m4xMsaaState ? 4u : 1u,
-		/*		UINT Quality;												*/		m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
+		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
 		/*	}																*/},
 		/* UINT NodeMask													*/.NodeMask = 0,
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
@@ -380,23 +466,6 @@ void MyApp::BuildPSO()
 #pragma endregion Initialize
 
 #pragma region Update
-float MyApp::GetHillsHeight(float x, float z) const
-{
-	return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
-}
-DirectX::XMFLOAT3 MyApp::GetHillsNormal(float x, float z) const
-{
-	// n = (-df/dx, 1, -df/dz)
-	DirectX::XMFLOAT3 n(
-		-0.03f * z * cosf(0.1f * x) - 0.3f * cosf(0.1f * z),
-		1.0f,
-		-0.3f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
-
-	DirectX::XMVECTOR unitNormal = DirectX::XMVector3Normalize(XMLoadFloat3(&n));
-	DirectX::XMStoreFloat3(&n, unitNormal);
-
-	return n;
-}
 void MyApp::OnResize()
 {
 	AppBase::OnResize();
@@ -419,9 +488,14 @@ void MyApp::Update()
 		WaitForSingleObject(mFenceEvent, INFINITE);
 	}
 
+	AnimateMaterials();
 	UpdateObjectCBs();
+	UpdateMaterialCBs();
 	UpdateMainPassCB();
-	UpdateWaves();
+}
+
+void MyApp::AnimateMaterials()
+{
 }
 
 void MyApp::UpdateObjectCBs()
@@ -429,8 +503,8 @@ void MyApp::UpdateObjectCBs()
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for (auto& e : mAllRitems)
 	{
-		// 상수들이 바뀌었을 때만 cbuffer 자료를 갱신
-		// 갱신은 Frame 마다 적용
+		// Only update the cbuffer data if the constants have changed.  If the cbuffer
+		// data changes, it needs to be updated for each FrameResource.
 		if (e->NumFramesDirty > 0)
 		{
 			DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->World);
@@ -440,8 +514,34 @@ void MyApp::UpdateObjectCBs()
 
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
-			// 다음 프레임 자원으로 넘어간다.
+			// Next FrameResource need to be updated too.
 			e->NumFramesDirty--;
+		}
+	}
+}
+
+void MyApp::UpdateMaterialCBs()
+{
+	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
+	for (auto& e : mMaterials)
+	{
+		// Only update the cbuffer data if the constants have changed.  If the cbuffer
+		// data changes, it needs to be updated for each FrameResource.
+		Material* mat = e.second.get();
+		if (mat->NumFramesDirty > 0)
+		{
+			DirectX::XMMATRIX matTransform = DirectX::XMLoadFloat4x4(&mat->MatTransform);
+
+			MaterialConstants matConstants;
+			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
+			matConstants.FresnelR0 = mat->FresnelR0;
+			matConstants.Roughness = mat->Roughness;
+			DirectX::XMStoreFloat4x4(&matConstants.MatTransform, DirectX::XMMatrixTranspose(matTransform));
+
+			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
+
+			// Next FrameResource need to be updated too.
+			mat->NumFramesDirty--;
 		}
 	}
 }
@@ -473,63 +573,34 @@ void MyApp::UpdateMainPassCB()
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = mTimer.TotalTime();
 	mMainPassCB.DeltaTime = mTimer.DeltaTime();
+	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
-}
-void MyApp::UpdateWaves()
-{
-	// Every quarter second, generate a random wave.
-	static float t_base = 0.0f;
-	if ((mTimer.TotalTime() - t_base) >= 0.25f)
-	{
-		t_base += 0.25f;
-
-		int i = MathHelper::Rand(4, mWaves->RowCount() - 5);
-		int j = MathHelper::Rand(4, mWaves->ColumnCount() - 5);
-
-		float r = MathHelper::RandF(0.2f, 0.5f);
-
-		mWaves->Disturb(i, j, r);
-	}
-
-	// Update the wave simulation.
-	mWaves->Update(mTimer.DeltaTime());
-
-	// Update the wave vertex buffer with the new solution.
-	auto currWavesVB = mCurrFrameResource->WavesVB.get();
-	for (int i = 0; i < mWaves->VertexCount(); ++i)
-	{
-		Vertex v;
-
-		v.Pos = mWaves->Position(i);
-		v.Color = DirectX::XMFLOAT4(DirectX::Colors::Blue);
-
-		currWavesVB->CopyData(i, v);
-	}
-
-	// Set the dynamic VB of the wave renderitem to the current frame VB.
-	mAllRitems[2]->Geo->VertexBufferGPU = currWavesVB->Resource();
 }
 #pragma endregion Update
 
 void MyApp::Render()
 {
-	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
-
 	// Reuse the memory associated with command recording.
 	// We can only reset when the associated command lists have finished execution on the GPU.
-	ThrowIfFailed(cmdListAlloc->Reset());
+	ThrowIfFailed(mCurrFrameResource->CmdListAlloc->Reset());
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
 	if (mIsWireframe)
 	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs[gPSOName[1]].Get()));
+		ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[1]].Get()));
 	}
 	else
 	{
-		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs[gPSOName[0]].Get()));
+		ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[0]].Get()));
 	}
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -550,7 +621,7 @@ void MyApp::Render()
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
-	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	DrawRenderItems(mRitemLayer[(int)RenderLayer::Opaque]);
 
@@ -558,25 +629,12 @@ void MyApp::Render()
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
 
-	mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
-
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
 
 	// Add the command list to the queue for execution.
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	//====================================
-	// Imgui
-	//====================================
-	// Update and Render additional Platform Windows
-	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-	}
 
 	// Swap the back and front buffers
 	ThrowIfFailed(mSwapChain->Present(1, 0));
@@ -596,7 +654,9 @@ void MyApp::Render()
 void MyApp::DrawRenderItems(const std::vector<RenderItem*>& ritems)
 {
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
+	auto materialCB = mCurrFrameResource->MaterialCB->Resource();
 
 	// For each render item...
 	for (const auto& ri: ritems)
@@ -607,10 +667,11 @@ void MyApp::DrawRenderItems(const std::vector<RenderItem*>& ritems)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-		objCBAddress += ri->ObjCBIndex * objCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
 
 		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+		mCommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 		mCommandList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}

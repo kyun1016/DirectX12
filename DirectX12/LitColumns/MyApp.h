@@ -47,7 +47,7 @@ class MyApp : public AppBase
 		// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
 		UINT ObjCBIndex = -1;
 
-		Material* Geo = nullptr;
+		Material* Mat = nullptr;
 		MeshGeometry* Geo = nullptr;
 
 		// Primitive topology.
@@ -79,14 +79,13 @@ public:
 #pragma endregion Initialize
 
 private:
-	float GetHillsHeight(float x, float z)const;
-	DirectX::XMFLOAT3 GetHillsNormal(float x, float z)const;
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
+	void AnimateMaterials();
 	void UpdateObjectCBs();
+	void UpdateMaterialCBs();
 	void UpdateMainPassCB();
-	void UpdateWaves();
 
 	virtual void Render()override;
 	void DrawRenderItems(const std::vector<RenderItem*>& ritems);

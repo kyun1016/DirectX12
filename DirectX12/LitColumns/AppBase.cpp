@@ -102,6 +102,16 @@ int AppBase::Run()
 
 				ImGui::Render();
 
+				mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
+				ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+
+				// Update and Render additional Platform Windows
+				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+				{
+					ImGui::UpdatePlatformWindows();
+					ImGui::RenderPlatformWindowsDefault();
+				}
+
 				//==========================================
 				// My Render
 				//==========================================
@@ -863,8 +873,8 @@ void AppBase::UpdateImGui()
 		// ImGui::PushStyleVar();
 		ImGui::Begin("Root");
 		// ImGui::Begin("Root", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		//ImGui::SetWindowPos("Root", ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y));
-		//ImGui::SetWindowSize("Root", ImVec2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::SetWindowPos("Root", ImVec2(main_viewport->WorkPos.x + 100.0f, main_viewport->WorkPos.y + 100.0f));
+		// ImGui::SetWindowSize("Root", ImVec2((float)mClientWidth, (float)mClientHeight));
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
