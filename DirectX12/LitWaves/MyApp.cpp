@@ -19,10 +19,14 @@ bool MyApp::Initialize()
 
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
+	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
 	BuildSkullGeometry();
+	BuildLandGeometry();
+	BuildWavesGeometryBuffers();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -74,8 +78,103 @@ void MyApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
+}
+
+void MyApp::BuildLandGeometry()
+{
+	GeometryGenerator::MeshData grid = GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50);
+
+	std::vector<Vertex> vertices(grid.Vertices.size());
+	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		auto& p = grid.Vertices[i].Position;
+		vertices[i].Pos = p;
+		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
+		vertices[i].Normal = GetHillsNormal(p.x, p.z);
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = gMeshGeometryName[2];
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[gMainMeshName[1]] = submesh;
+	mGeometries[geo->Name] = std::move(geo);
+}
+
+
+void MyApp::BuildWavesGeometryBuffers()
+{
+	std::vector<std::uint16_t> indices(3 * mWaves->TriangleCount()); // 3 indices per face
+	assert(mWaves->VertexCount() < 0x0000ffff);
+
+	// Iterate over each quad.
+	int m = mWaves->RowCount();
+	int n = mWaves->ColumnCount();
+	int k = 0;
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			indices[k] = i * n + j;
+			indices[k + 1] = i * n + j + 1;
+			indices[k + 2] = (i + 1) * n + j;
+
+			indices[k + 3] = (i + 1) * n + j;
+			indices[k + 4] = i * n + j + 1;
+			indices[k + 5] = (i + 1) * n + j + 1;
+
+			k += 6; // next quad
+		}
+	}
+	const UINT vbByteSize = mWaves->VertexCount() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = gMeshGeometryName[3];
+
+	// Set dynamically.
+	geo->VertexBufferCPU = nullptr;
+	geo->VertexBufferGPU = nullptr;
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[gMainMeshName[1]] = submesh;
+
+	mGeometries[geo->Name] = std::move(geo);
 }
 
 void MyApp::BuildShapeGeometry()
@@ -258,19 +357,39 @@ void MyApp::BuildMaterials()
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
 
+	auto grass = std::make_unique<Material>();
+	grass->Name = gMaterialName[4];
+	grass->MatCBIndex = 4;
+	grass->DiffuseSrvHeapIndex = 4;
+	grass->DiffuseAlbedo = DirectX::XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
+	grass->FresnelR0 = DirectX::XMFLOAT3(0.01f, 0.01f, 0.01f);
+	grass->Roughness = 0.125f;
+
+	auto water = std::make_unique<Material>();
+	water->Name = gMaterialName[5];
+	water->MatCBIndex = 5;
+	water->DiffuseSrvHeapIndex = 5;
+	water->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
+	water->Roughness = 0.0f;
+
 	mMaterials[gMaterialName[0]] = std::move(bricks0);
 	mMaterials[gMaterialName[1]] = std::move(stone0);
 	mMaterials[gMaterialName[2]] = std::move(tile0);
 	mMaterials[gMaterialName[3]] = std::move(skullMat);
+	mMaterials[gMaterialName[4]] = std::move(grass);
+	mMaterials[gMaterialName[5]] = std::move(water);
 }
 
 
 void MyApp::BuildRenderItems()
 {
+	UINT objCBIndex = 0;
+
 	auto boxRitem = std::make_unique<RenderItem>();
 	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
 	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	boxRitem->ObjCBIndex = 0;
+	boxRitem->ObjCBIndex = objCBIndex++;
 	boxRitem->Mat = mMaterials[gMaterialName[1]].get();
 	boxRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -282,7 +401,7 @@ void MyApp::BuildRenderItems()
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	DirectX::XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	gridRitem->ObjCBIndex = 1;
+	gridRitem->ObjCBIndex = objCBIndex++;
 	gridRitem->Mat = mMaterials[gMaterialName[2]].get();
 	gridRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
 	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -294,7 +413,7 @@ void MyApp::BuildRenderItems()
 	auto skullRitem = std::make_unique<RenderItem>();
 	skullRitem->World = MathHelper::Identity4x4();
 	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	skullRitem->ObjCBIndex = 2;
+	skullRitem->ObjCBIndex = objCBIndex++;
 	skullRitem->Mat = mMaterials[gMaterialName[3]].get();
 	skullRitem->Geo = mGeometries[gMeshGeometryName[1]].get();
 	skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -304,7 +423,6 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(skullRitem));
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
-	UINT objCBIndex = 3;
 	for (int i = 0; i < 5; ++i)
 	{
 		auto leftCylRitem = std::make_unique<RenderItem>();
@@ -362,6 +480,30 @@ void MyApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(rightCylRitem));
 		mAllRitems.push_back(std::move(rightSphereRitem));
 	}
+
+	auto wavesRitem = std::make_unique<RenderItem>();
+	wavesRitem->World = MathHelper::Identity4x4();
+	wavesRitem->ObjCBIndex = objCBIndex++;
+	wavesRitem->Mat = mMaterials[gMaterialName[5]].get();
+	wavesRitem->Geo = mGeometries[gMeshGeometryName[3]].get();
+	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
+	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
+	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
+	mWavesRitem = wavesRitem.get();
+	mAllRitems.push_back(std::move(wavesRitem));
+
+	auto landRitem = std::make_unique<RenderItem>();
+	landRitem->World = MathHelper::Identity4x4();
+	landRitem->ObjCBIndex = objCBIndex++;
+	landRitem->Mat = mMaterials[gMaterialName[4]].get();
+	landRitem->Geo = mGeometries[gMeshGeometryName[2]].get();
+	landRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	landRitem->IndexCount = landRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
+	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
+	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
+	mAllRitems.push_back(std::move(landRitem));
+
 	// All the render items are opaque.
 	for (auto& e : mAllRitems)
 		mRitemLayer[(int)RenderLayer::Opaque].push_back(e.get());
@@ -370,7 +512,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, (UINT)mAllRitems.size(), (UINT)mMaterials.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1, (UINT)mAllRitems.size(), (UINT)mMaterials.size(), mWaves->VertexCount()));
 }
 
 void MyApp::BuildPSO()
@@ -490,6 +632,7 @@ void MyApp::Update()
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
 	UpdateMainPassCB();
+	UpdateWaves();
 }
 
 void MyApp::AnimateMaterials()
@@ -581,6 +724,40 @@ void MyApp::UpdateMainPassCB()
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
+}
+void MyApp::UpdateWaves()
+{
+	// Every quarter second, generate a random wave.
+	static float t_base = 0.0f;
+	if ((mTimer.TotalTime() - t_base) >= 0.25f)
+	{
+		t_base += 0.25f;
+
+		int i = MathHelper::Rand(4, mWaves->RowCount() - 5);
+		int j = MathHelper::Rand(4, mWaves->ColumnCount() - 5);
+
+		float r = MathHelper::RandF(0.2f, 0.5f);
+
+		mWaves->Disturb(i, j, r);
+	}
+
+	// Update the wave simulation.
+	mWaves->Update(mTimer.DeltaTime());
+
+	// Update the wave vertex buffer with the new solution.
+	auto currWavesVB = mCurrFrameResource->WavesVB.get();
+	for (int i = 0; i < mWaves->VertexCount(); ++i)
+	{
+		Vertex v;
+
+		v.Pos = mWaves->Position(i);
+		v.Normal = mWaves->Normal(i);
+
+		currWavesVB->CopyData(i, v);
+	}
+
+	// Set the dynamic VB of the wave renderitem to the current frame VB.
+	mWavesRitem->Geo->VertexBufferGPU = currWavesVB->Resource();
 }
 #pragma endregion Update
 
@@ -742,4 +919,23 @@ void MyApp::UpdateCamera()
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	DirectX::XMStoreFloat4x4(&mView, view);
+}
+
+float MyApp::GetHillsHeight(const float x, const float z) const
+{
+	return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
+}
+
+DirectX::XMFLOAT3 MyApp::GetHillsNormal(const float x, const float z) const
+{
+	// n = (-df/dx, 1, -df/dz)
+	DirectX::XMFLOAT3 n(
+		-0.03f * z * cosf(0.1f * x) - 0.3f * cosf(0.1f * z),
+		1.0f,
+		-0.3f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
+
+	DirectX::XMVECTOR unitNormal = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&n));
+	DirectX::XMStoreFloat3(&n, unitNormal);
+
+	return n;
 }
