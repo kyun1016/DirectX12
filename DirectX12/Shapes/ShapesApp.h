@@ -2,8 +2,8 @@
 
 #include "AppBase.h"
 #include <dxgi1_5.h>
-#include "MathHelper.h"
-#include "UploadBuffer.h"
+#include "../EngineCore/MathHelper.h"
+#include "../EngineCore/UploadBuffer.h"
 #include "FrameResource.h"
 #include <string>
 

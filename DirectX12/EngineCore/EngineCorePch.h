@@ -23,6 +23,7 @@
 #include "MathHelper.h"
 #include "GeometryGenerator.h"
 #include "GameTimer.h"
+#include "DDSTextureLoader.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")

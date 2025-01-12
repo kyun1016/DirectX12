@@ -3,12 +3,12 @@
 #include <wrl/client.h> // ComPtr
 #include <dxgi1_4.h>
 #include <string>
-#include "Camera.h"
-#include "GameTimer.h"
 #include <memory>
-#include "D3DUtil.h"
 
-#include "imgui.h"
+#include "../EngineCore/Camera.h"
+#include "../EngineCore/GameTimer.h"
+#include "../EngineCore/D3DUtil.h"
+#include "../ImGuiCore/imgui.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")

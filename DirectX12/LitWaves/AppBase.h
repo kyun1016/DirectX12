@@ -8,7 +8,7 @@
 #include "../EngineCore/GameTimer.h"
 #include "../EngineCore/D3DUtil.h"
 
-#include "imgui.h"
+#include "../ImGuiCore/imgui.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")
