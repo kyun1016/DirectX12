@@ -1,8 +1,0 @@
-{
-  "dependencies": [
-    "directxtk",
-    "directxtex",
-    "directxmesh",
-    "directxmath"
-  ]
-}
