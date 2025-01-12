@@ -1,6 +1,6 @@
 #pragma once
 
-#include <directxtk/SimpleMath.h>
+#include "SimpleMath.h"
 
 class Camera {
 public:

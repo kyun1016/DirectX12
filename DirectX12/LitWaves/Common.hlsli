@@ -59,6 +59,7 @@ cbuffer cbPass : register(b2)
     float2 gInvRenderTargetSize;
     float gNearZ;
     float gFarZ;
+    
     float gTotalTime;
     float gDeltaTime;
     float4 gAmbientLight;

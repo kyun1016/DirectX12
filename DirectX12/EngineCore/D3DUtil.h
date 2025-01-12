@@ -12,7 +12,7 @@
 #include <DirectXCollision.h>
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
-#include "DirectX/d3dx12.h"
+#include "d3dx12.h"
 
 #pragma comment(lib, "dxguid.lib")
 
