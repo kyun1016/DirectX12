@@ -180,7 +180,7 @@ void MyApp::BuildWavesGeometryBuffers()
 void MyApp::BuildShapeGeometry()
 {
 	//=========================================================
-	// Part 1. Mesh »ı¼º
+	// Part 1. Mesh ìƒì„±
 	//=========================================================
 	std::vector<GeometryGenerator::MeshData> meshes(NUM_MAIN_MESHES);
 	meshes[0] = GeometryGenerator::CreateBox(1.5f, 0.5f, 1.5f, 3);
@@ -189,7 +189,7 @@ void MyApp::BuildShapeGeometry()
 	meshes[3] = GeometryGenerator::CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
 	//=========================================================
-	// Part 2. Sub Mesh »ı¼º ¹× ÅëÇÕ vertices & indices »ı¼º
+	// Part 2. Sub Mesh ìƒì„± ë° í†µí•© vertices & indices ìƒì„±
 	//=========================================================
 	size_t totalVertexCount = 0;
 	for (const auto& a : meshes)
@@ -222,7 +222,7 @@ void MyApp::BuildShapeGeometry()
 	}
 
 	//=========================================================
-	// Part 3. Indices ÇÒ´ç (16bit)
+	// Part 3. Indices í• ë‹¹ (16bit)
 	//=========================================================
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);

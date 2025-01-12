@@ -6,20 +6,39 @@
 #include "FrameResource.h"
 #include "Waves.h"
 #include <string>
+#include <array>
 
-static const size_t NUM_MAIN_MESHES = 4;
-static const size_t NUM_SUB_MESHES = 1;
-static const std::string gMeshGeometryName[4] = { "ShapeGeo", "SkullGeo", "LandGeo", "WaterGeo"};
-static const std::string gMainMeshName[NUM_MAIN_MESHES] = { "box", "grid", "sphere", "cylinder" };
-static const std::string gSubMeshName[NUM_SUB_MESHES] = { "skull" };
+#pragma region Define
 
-static const size_t NUM_MATERIALS = 6;
-static const std::string gMaterialName[NUM_MATERIALS] = { "bricks0", "stone0", "tile0", "skullMat", "grass", "water"};
 
-static const std::string VS_NAME = "standardVS";
-static const std::string PS_NAME = "opaquePS";
 
-static const std::string gPSOName[2] = { "opaque", "opaque_wireframe" };
+static const std::wstring	TEXTUER_DIR = L"../Data/Textures/";
+static const size_t			TEXTURE_NUM = 6;
+static const std::wstring	TEXTUER_FILE_NAMES[TEXTURE_NUM] = { L"WoodCrate01.dds", L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds", L"water1.dds"};
+static const std::string	TEXTURE_NAMES[TEXTURE_NUM] = { "woodCrateTex", "bricksTex", "stoneTex", "tileTex", "grassTex", "waterTex" };
+
+static const std::string	MESH_GEOMETRY_NAMES[4] = { "ShapeGeo", "SkullGeo", "LandGeo", "WaterGeo"};
+
+static const size_t			MESH_MAIN_NUM = 4;
+static const std::string	MESH_MAIN_NAMES[MESH_MAIN_NUM] = { "box", "grid", "sphere", "cylinder" };
+
+static const std::wstring	MESH_MODEL_DIR = L"../Data/Models/";
+static const size_t			MESH_MODEL_NUM = 1;
+static const std::wstring	MESH_MODEL_FILE_NAMES[MESH_MODEL_NUM] = { L"skull.txt" };
+static const std::string	MESH_MODEL_NAMES[MESH_MODEL_NUM] = { "skull" };
+
+static const size_t			MATERIAL_NUM = 6;
+static const std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "skullMat", "grass", "water"};
+
+static const std::wstring	VS_DIR = L"Shaders\\MainVS.cso";
+static const std::string	VS_NAME = "standardVS";
+
+static const std::wstring	PS_DIR = L"Shaders\\MainPS.cso";
+static const std::string	PS_NAME = "opaquePS";
+
+static const std::string	gPSOName[2] = { "opaque", "opaque_wireframe" };
+
+#pragma endregion Define
 
 enum class RenderLayer : int
 {
@@ -69,7 +88,9 @@ public:
 
 #pragma region Initialize
 	virtual bool Initialize() override;
+	void LoadTextures();
 	void BuildRootSignature();
+	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
 	void BuildWavesGeometryBuffers();
@@ -79,6 +100,8 @@ public:
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildPSO();
+
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 #pragma endregion Initialize
 
 private:
@@ -132,6 +155,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;		//input layout description
+
+
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;

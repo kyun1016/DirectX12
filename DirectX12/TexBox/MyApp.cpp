@@ -21,10 +21,12 @@ bool MyApp::Initialize()
 
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
+	LoadTextures();
 	BuildRootSignature();
+	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
-	BuildSkullGeometry();
+	// BuildSkullGeometry();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
 	BuildMaterials();
@@ -43,42 +45,115 @@ bool MyApp::Initialize()
 	return true;
 }
 
+void MyApp::LoadTextures()
+{
+	for (size_t i = 0; i < TEXTURE_NUM; ++i)
+	{
+		auto texture = std::make_unique<Texture>();
+		texture->Name = TEXTURE_NAMES[i];
+		texture->Filename = TEXTUER_DIR + TEXTUER_FILE_NAMES[i];
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
+
+		mTextures[texture->Name] = std::move(texture);
+	}
+}
+
 void MyApp::BuildRootSignature()
 {
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-
 	// Create root CBVs.
-	slotRootParameter[0].InitAsConstantBufferView(0);	// obj CB
-	slotRootParameter[1].InitAsConstantBufferView(1);	// Material CB
-	slotRootParameter[2].InitAsConstantBufferView(2);	// pass CB
+	CD3DX12_DESCRIPTOR_RANGE texTable;
+	texTable.Init(
+        D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 
+        1,  // number of descriptors
+        0); // register t0
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0); // register b0
+	slotRootParameter[2].InitAsConstantBufferView(1); // register b1
+	slotRootParameter[3].InitAsConstantBufferView(2); // register b2
+
+	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf()));
-
 	if (errorBlob != nullptr)
-	{
 		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	}
 
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
+void MyApp::BuildDescriptorHeaps()
+{
+	//
+	// Create the SRV heap.
+	//
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		/* UINT NumDescriptors				*/.NumDescriptors = TEXTURE_NUM,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		/* UINT NodeMask					*/.NodeMask = 0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
+
+	//
+	// Fill out the heap with actual descriptors.
+	//
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
+	{
+		/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_UNKNOWN,
+		/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+		/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+		/* union {																		*/
+		/* 	D3D12_BUFFER_SRV Buffer														*/
+		/* 	D3D12_TEX1D_SRV Texture1D													*/
+		/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
+		/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
+		/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+		/*		UINT MipLevels															*/	.MipLevels = 0,
+		/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+		/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
+		/*	}																			*/}
+		/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+		/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+		/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+		/* 	D3D12_TEX3D_SRV Texture3D													*/
+		/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+		/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+		/* }																			*/
+	};
+	for (size_t i = 0; i < TEXTURE_NUM; ++i)
+	{
+		auto texture = mTextures[TEXTURE_NAMES[i]]->Resource;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
+		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	}
+}
+
 void MyApp::BuildShadersAndInputLayout()
 {
-	mShaders[VS_NAME] = D3DUtil::LoadBinary(L"Shaders\\MainVS.cso");
-	mShaders[PS_NAME] = D3DUtil::LoadBinary(L"Shaders\\MainPS.cso");
+	mShaders[VS_NAME] = D3DUtil::LoadBinary(VS_DIR);
+	mShaders[PS_NAME] = D3DUtil::LoadBinary(PS_DIR);
 
 	mInputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		// { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -101,7 +176,7 @@ void MyApp::BuildLandGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName[2];
+	geo->Name = MESH_GEOMETRY_NAMES[2];
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -119,7 +194,7 @@ void MyApp::BuildLandGeometry()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs[gMainMeshName[1]] = submesh;
+	geo->DrawArgs[MESH_MAIN_NAMES[1]] = submesh;
 	mGeometries[geo->Name] = std::move(geo);
 }
 
@@ -152,7 +227,7 @@ void MyApp::BuildWavesGeometryBuffers()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName[3];
+	geo->Name = MESH_GEOMETRY_NAMES[3];
 
 	// Set dynamically.
 	geo->VertexBufferCPU = nullptr;
@@ -172,7 +247,7 @@ void MyApp::BuildWavesGeometryBuffers()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs[gMainMeshName[1]] = submesh;
+	geo->DrawArgs[MESH_MAIN_NAMES[1]] = submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -180,26 +255,26 @@ void MyApp::BuildWavesGeometryBuffers()
 void MyApp::BuildShapeGeometry()
 {
 	//=========================================================
-	// Part 1. Mesh ª˝º∫
+	// Part 1. Mesh ÏÉùÏÑ±
 	//=========================================================
-	std::vector<GeometryGenerator::MeshData> meshes(NUM_MAIN_MESHES);
+	std::vector<GeometryGenerator::MeshData> meshes(MESH_MAIN_NUM);
 	meshes[0] = GeometryGenerator::CreateBox(1.5f, 0.5f, 1.5f, 3);
 	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
 	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
 	meshes[3] = GeometryGenerator::CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
 	//=========================================================
-	// Part 2. Sub Mesh ª˝º∫ π◊ ≈Î«’ vertices & indices ª˝º∫
+	// Part 2. Sub Mesh ÏÉùÏÑ± Î∞è ÌÜµÌï© vertices & indices ÏÉùÏÑ±
 	//=========================================================
 	size_t totalVertexCount = 0;
 	for (const auto& a : meshes)
 		totalVertexCount += a.Vertices.size();
 
-	std::vector<SubmeshGeometry> submeshes(NUM_MAIN_MESHES);
+	std::vector<SubmeshGeometry> submeshes(MESH_MAIN_NUM);
 	std::vector<Vertex> vertices(totalVertexCount);
 	std::vector<std::uint16_t> indices;
 	UINT k = 0;
-	for (size_t i = 0; i < NUM_MAIN_MESHES; ++i)
+	for (size_t i = 0; i < MESH_MAIN_NUM; ++i)
 	{
 		if (i == 0)
 		{
@@ -217,18 +292,19 @@ void MyApp::BuildShapeGeometry()
 		for (size_t j = 0; j < meshes[i].Vertices.size();++j)
 		{
 			vertices[k].Pos = meshes[i].Vertices[j].Position;
-			vertices[k++].Normal = meshes[i].Vertices[j].Normal;
+			vertices[k].Normal = meshes[i].Vertices[j].Normal;
+			vertices[k++].TexC = meshes[i].Vertices[j].TexC;
 		}
 	}
 
 	//=========================================================
-	// Part 3. Indices «“¥Á (16bit)
+	// Part 3. Indices Ìï†Îãπ (16bit)
 	//=========================================================
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName[0];
+	geo->Name = MESH_GEOMETRY_NAMES[0];
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -241,20 +317,20 @@ void MyApp::BuildShapeGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	for (size_t i = 0; i < NUM_MAIN_MESHES; ++i)
+	for (size_t i = 0; i < MESH_MAIN_NUM; ++i)
 	{
-		geo->DrawArgs[gMainMeshName[i]] = submeshes[i];
+		geo->DrawArgs[MESH_MAIN_NAMES[i]] = submeshes[i];
 	}
 	mGeometries[geo->Name] = std::move(geo);
 }
 
 void MyApp::BuildSkullGeometry()
 {
-	std::ifstream fin("Models/skull.txt");
+	std::ifstream fin(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]);
 
 	if (!fin)
 	{
-		MessageBox(0, L"Models/skull.txt not found.", 0, 0);
+		MessageBox(0, L"../Data/Models/skull.txt not found.", 0, 0);
 		return;
 	}
 
@@ -294,7 +370,7 @@ void MyApp::BuildSkullGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::int32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = gMeshGeometryName[1];
+	geo->Name = MESH_GEOMETRY_NAMES[1];
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -318,7 +394,7 @@ void MyApp::BuildSkullGeometry()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs[gSubMeshName[0]] = submesh;
+	geo->DrawArgs[MESH_MODEL_NAMES[0]] = submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -326,7 +402,7 @@ void MyApp::BuildSkullGeometry()
 void MyApp::BuildMaterials()
 {
 	auto bricks0 = std::make_unique<Material>();
-	bricks0->Name = gMaterialName[0];
+	bricks0->Name = MATERIAL_NAMES[0];
 	bricks0->MatCBIndex = 0;
 	bricks0->DiffuseSrvHeapIndex = 0;
 	bricks0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::ForestGreen);
@@ -334,7 +410,7 @@ void MyApp::BuildMaterials()
 	bricks0->Roughness = 0.1f;
 
 	auto stone0 = std::make_unique<Material>();
-	stone0->Name = gMaterialName[1];
+	stone0->Name = MATERIAL_NAMES[1];
 	stone0->MatCBIndex = 1;
 	stone0->DiffuseSrvHeapIndex = 1;
 	stone0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightSteelBlue);
@@ -342,7 +418,7 @@ void MyApp::BuildMaterials()
 	stone0->Roughness = 0.3f;
 
 	auto tile0 = std::make_unique<Material>();
-	tile0->Name = gMaterialName[2];
+	tile0->Name = MATERIAL_NAMES[2];
 	tile0->MatCBIndex = 2;
 	tile0->DiffuseSrvHeapIndex = 2;
 	tile0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightGray);
@@ -350,7 +426,7 @@ void MyApp::BuildMaterials()
 	tile0->Roughness = 0.2f;
 
 	auto skullMat = std::make_unique<Material>();
-	skullMat->Name = gMaterialName[3];
+	skullMat->Name = MATERIAL_NAMES[3];
 	skullMat->MatCBIndex = 3;
 	skullMat->DiffuseSrvHeapIndex = 3;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -358,7 +434,7 @@ void MyApp::BuildMaterials()
 	skullMat->Roughness = 0.3f;
 
 	auto grass = std::make_unique<Material>();
-	grass->Name = gMaterialName[4];
+	grass->Name = MATERIAL_NAMES[4];
 	grass->MatCBIndex = 4;
 	grass->DiffuseSrvHeapIndex = 4;
 	grass->DiffuseAlbedo = DirectX::XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
@@ -366,19 +442,19 @@ void MyApp::BuildMaterials()
 	grass->Roughness = 0.125f;
 
 	auto water = std::make_unique<Material>();
-	water->Name = gMaterialName[5];
+	water->Name = MATERIAL_NAMES[5];
 	water->MatCBIndex = 5;
 	water->DiffuseSrvHeapIndex = 5;
 	water->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 	water->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->Roughness = 0.0f;
 
-	mMaterials[gMaterialName[0]] = std::move(bricks0);
-	mMaterials[gMaterialName[1]] = std::move(stone0);
-	mMaterials[gMaterialName[2]] = std::move(tile0);
-	mMaterials[gMaterialName[3]] = std::move(skullMat);
-	mMaterials[gMaterialName[4]] = std::move(grass);
-	mMaterials[gMaterialName[5]] = std::move(water);
+	mMaterials[MATERIAL_NAMES[0]] = std::move(bricks0);
+	mMaterials[MATERIAL_NAMES[1]] = std::move(stone0);
+	mMaterials[MATERIAL_NAMES[2]] = std::move(tile0);
+	mMaterials[MATERIAL_NAMES[3]] = std::move(skullMat);
+	mMaterials[MATERIAL_NAMES[4]] = std::move(grass);
+	mMaterials[MATERIAL_NAMES[5]] = std::move(water);
 }
 
 
@@ -390,37 +466,37 @@ void MyApp::BuildRenderItems()
 	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
 	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	boxRitem->ObjCBIndex = objCBIndex++;
-	boxRitem->Mat = mMaterials[gMaterialName[1]].get();
-	boxRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+	boxRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
+	boxRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[gMainMeshName[0]].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[gMainMeshName[0]].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[gMainMeshName[0]].BaseVertexLocation;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(boxRitem));
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	DirectX::XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
-	gridRitem->Mat = mMaterials[gMaterialName[2]].get();
-	gridRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+	gridRitem->Mat = mMaterials[MATERIAL_NAMES[2]].get();
+	gridRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
-	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
-	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(gridRitem));
 
-	auto skullRitem = std::make_unique<RenderItem>();
-	skullRitem->World = MathHelper::Identity4x4();
-	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	skullRitem->ObjCBIndex = objCBIndex++;
-	skullRitem->Mat = mMaterials[gMaterialName[3]].get();
-	skullRitem->Geo = mGeometries[gMeshGeometryName[1]].get();
-	skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[gSubMeshName[0]].IndexCount;
-	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[gSubMeshName[0]].StartIndexLocation;
-	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[gSubMeshName[0]].BaseVertexLocation;
-	mAllRitems.push_back(std::move(skullRitem));
+	//auto skullRitem = std::make_unique<RenderItem>();
+	//skullRitem->World = MathHelper::Identity4x4();
+	//DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	//skullRitem->ObjCBIndex = objCBIndex++;
+	//skullRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
+	//skullRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[1]].get();
+	//skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	//skullRitem->IndexCount = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].IndexCount;
+	//skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].StartIndexLocation;
+	//skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].BaseVertexLocation;
+	//mAllRitems.push_back(std::move(skullRitem));
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	for (int i = 0; i < 5; ++i)
@@ -438,42 +514,42 @@ void MyApp::BuildRenderItems()
 		DirectX::XMStoreFloat4x4(&leftCylRitem->World, leftCylWorld);
 		DirectX::XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
 		leftCylRitem->ObjCBIndex = objCBIndex++;
-		leftCylRitem->Mat = mMaterials[gMaterialName[0]].get();
-		leftCylRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		leftCylRitem->Mat = mMaterials[MATERIAL_NAMES[0]].get();
+		leftCylRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[gMainMeshName[3]].IndexCount;
-		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs[gMainMeshName[3]].StartIndexLocation;
-		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs[gMainMeshName[3]].BaseVertexLocation;
+		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].IndexCount;
+		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].StartIndexLocation;
+		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].BaseVertexLocation;
 
 		DirectX::XMStoreFloat4x4(&rightCylRitem->World, rightCylWorld);
 		DirectX::XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
 		rightCylRitem->ObjCBIndex = objCBIndex++;
-		rightCylRitem->Mat = mMaterials[gMaterialName[0]].get();
-		rightCylRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		rightCylRitem->Mat = mMaterials[MATERIAL_NAMES[0]].get();
+		rightCylRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[gMainMeshName[3]].IndexCount;
-		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs[gMainMeshName[3]].StartIndexLocation;
-		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs[gMainMeshName[3]].BaseVertexLocation;
+		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].IndexCount;
+		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].StartIndexLocation;
+		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].BaseVertexLocation;
 
 		DirectX::XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
 		leftSphereRitem->TexTransform = MathHelper::Identity4x4();
 		leftSphereRitem->ObjCBIndex = objCBIndex++;
-		leftSphereRitem->Mat = mMaterials[gMaterialName[1]].get();
-		leftSphereRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		leftSphereRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
+		leftSphereRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs[gMainMeshName[2]].IndexCount;
-		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs[gMainMeshName[2]].StartIndexLocation;
-		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs[gMainMeshName[2]].BaseVertexLocation;
+		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].IndexCount;
+		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].StartIndexLocation;
+		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].BaseVertexLocation;
 
 		DirectX::XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
 		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
 		rightSphereRitem->ObjCBIndex = objCBIndex++;
-		rightSphereRitem->Mat = mMaterials[gMaterialName[1]].get();
-		rightSphereRitem->Geo = mGeometries[gMeshGeometryName[0]].get();
+		rightSphereRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
+		rightSphereRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs[gMainMeshName[2]].IndexCount;
-		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[gMainMeshName[2]].StartIndexLocation;
-		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[gMainMeshName[2]].BaseVertexLocation;
+		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].IndexCount;
+		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].StartIndexLocation;
+		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].BaseVertexLocation;
 
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(leftSphereRitem));
@@ -484,24 +560,24 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
 	wavesRitem->ObjCBIndex = objCBIndex++;
-	wavesRitem->Mat = mMaterials[gMaterialName[5]].get();
-	wavesRitem->Geo = mGeometries[gMeshGeometryName[3]].get();
+	wavesRitem->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	wavesRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[3]].get();
 	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
-	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
-	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
+	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
+	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
+	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
 	mWavesRitem = wavesRitem.get();
 	mAllRitems.push_back(std::move(wavesRitem));
 
 	auto landRitem = std::make_unique<RenderItem>();
 	landRitem->World = MathHelper::Identity4x4();
 	landRitem->ObjCBIndex = objCBIndex++;
-	landRitem->Mat = mMaterials[gMaterialName[4]].get();
-	landRitem->Geo = mGeometries[gMeshGeometryName[2]].get();
+	landRitem->Mat = mMaterials[MATERIAL_NAMES[4]].get();
+	landRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[2]].get();
 	landRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	landRitem->IndexCount = landRitem->Geo->DrawArgs[gMainMeshName[1]].IndexCount;
-	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[gMainMeshName[1]].StartIndexLocation;
-	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[gMainMeshName[1]].BaseVertexLocation;
+	landRitem->IndexCount = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
+	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
+	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(landRitem));
 
 	// All the render items are opaque.
@@ -602,6 +678,62 @@ void MyApp::BuildPSO()
 	//
 	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[1]])));
+}
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
+{
+	// Applications usually only need a handful of samplers.  So just define them all up front
+	// and keep them available as part of the root signature.  
+
+	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
+		0, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
+		1, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+		2, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
+		3, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
+		4, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
+		0.0f,                             // mipLODBias
+		8);                               // maxAnisotropy
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
+		5, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+		0.0f,                              // mipLODBias
+		8);                                // maxAnisotropy
+
+	return { 
+		pointWrap, pointClamp,
+		linearWrap, linearClamp, 
+		anisotropicWrap, anisotropicClamp };
 }
 #pragma endregion Initialize
 
@@ -792,6 +924,9 @@ void MyApp::Render()
 	// Specify the buffers we are going to render to.
 	mCommandList->OMSetRenderTargets(1, &mSwapChainDescriptor[mCurrBackBuffer], true, &mDepthStencilDescriptor);
 
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
@@ -842,11 +977,15 @@ void MyApp::DrawRenderItems(const std::vector<RenderItem*>& ritems)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(ri->Mat->DiffuseSrvHeapIndex, mCbvSrvUavDescriptorSize);
+
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
 
-		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		mCommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+		mCommandList->SetGraphicsRootDescriptorTable(0, tex);
+		mCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		mCommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		mCommandList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}

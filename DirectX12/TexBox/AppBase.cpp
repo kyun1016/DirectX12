@@ -417,10 +417,10 @@ bool AppBase::MakeWindowHandle()
 	//	/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
 	//	/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
 	//	/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
-	//	/* _In_ int X					*/ 100, // À©µµ¿ì ÁÂÃø »ó´ÜÀÇ x ÁÂÇ¥
-	//	/* _In_ int Y					*/ 100, // À©µµ¿ì ÁÂÃø »ó´ÜÀÇ y ÁÂÇ¥
-	//	/* _In_ int nWidth				*/ mClientWidth, // À©µµ¿ì °¡·Î ¹æÇâ ÇØ»óµµ
-	//	/* _In_ int nHeight				*/ mClientHeight, // À©µµ¿ì ¼¼·Î ¹æÇâ ÇØ»óµµ
+	//	/* _In_ int X					*/ 100, // ìœˆë„ìš° ì¢Œì¸¡ ìƒë‹¨ì˜ x ì¢Œí‘œ
+	//	/* _In_ int Y					*/ 100, // ìœˆë„ìš° ì¢Œì¸¡ ìƒë‹¨ì˜ y ì¢Œí‘œ
+	//	/* _In_ int nWidth				*/ mClientWidth, // ìœˆë„ìš° ê°€ë¡œ ë°©í–¥ í•´ìƒë„
+	//	/* _In_ int nHeight				*/ mClientHeight, // ìœˆë„ìš° ì„¸ë¡œ ë°©í–¥ í•´ìƒë„
 	//	/* _In_opt_ HWND hWndParent		*/ NULL,
 	//	/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
 	//	/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
