@@ -14,22 +14,7 @@
 
 #define MaxLights 16
 
-struct Light
-{
-    float3 Strength;
-    float FalloffStart; // point/spot light only
-    float3 Direction; // directional/spot light only
-    float FalloffEnd; // point/spot light only
-    float3 Position; // point light only
-    float SpotPower; // spot light only
-};
-
-struct Material
-{
-    float4 DiffuseAlbedo;
-    float3 FresnelR0;
-    float Shininess;
-};
+#include "LightingUtil.hlsli"
 
 Texture2D gDiffuseMap : register(t0);
 
@@ -61,11 +46,17 @@ cbuffer cbPass : register(b1)
     float2 gInvRenderTargetSize;
     float gNearZ;
     float gFarZ;
-    
     float gTotalTime;
     float gDeltaTime;
     float4 gAmbientLight;
 
+    	// Allow application to change fog parameters once per frame.
+	// For example, we may only use fog for certain times of day.
+    float4 gFogColor;
+    float gFogStart;
+    float gFogRange;
+    float2 cbPerObjectPad2;
+    
     // Indices [0, NUM_DIR_LIGHTS) are directional lights;
     // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)

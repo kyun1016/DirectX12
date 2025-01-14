@@ -24,6 +24,9 @@
     <FxCompile Include="MainVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="alphaTestedPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyApp.cpp">
@@ -62,6 +65,9 @@
   <ItemGroup>
     <None Include="imgui.ini" />
     <None Include="Common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="LightingUtil.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

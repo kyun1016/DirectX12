@@ -30,19 +30,21 @@ static const std::string	MESH_MODEL_NAMES[MESH_MODEL_NUM] = { "skull" };
 static const size_t			MATERIAL_NUM = 6;
 static const std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "skullMat", "grass", "water"};
 
-static const std::wstring	VS_DIR = L"Shaders\\MainVS.cso";
-static const std::string	VS_NAME = "standardVS";
+static const std::wstring	VS_DIR[1] = { L"Shaders\\MainVS.cso" };
+static const std::string	VS_NAME[1] = { "standardVS" };
 
-static const std::wstring	PS_DIR = L"Shaders\\MainPS.cso";
-static const std::string	PS_NAME = "opaquePS";
+static const std::wstring	PS_DIR[2] = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
+static const std::string	PS_NAME[2] = { "opaquePS" , "alphaTestedPS"};
 
-static const std::string	gPSOName[2] = { "opaque", "opaque_wireframe" };
+static const std::string	gPSOName[6] = { "opaque", "opaque_wireframe", "transparent", "transparent_wireframe", "alphaTested", "alphaTested_wireframe" };
 
 #pragma endregion Define
 
 enum class RenderLayer : int
 {
 	Opaque = 0,
+	Transparent,
+	AlphaTested,
 	Count
 };
 

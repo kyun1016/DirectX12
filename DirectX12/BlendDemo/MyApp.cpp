@@ -143,8 +143,22 @@ void MyApp::BuildDescriptorHeaps()
 
 void MyApp::BuildShadersAndInputLayout()
 {
-	mShaders[VS_NAME] = D3DUtil::LoadBinary(VS_DIR);
-	mShaders[PS_NAME] = D3DUtil::LoadBinary(PS_DIR);
+	const D3D_SHADER_MACRO defines[] =
+	{
+		"FOG", "1",
+		NULL, NULL
+	};
+
+	const D3D_SHADER_MACRO alphaTestDefines[] =
+	{
+		"FOG", "1",
+		"ALPHA_TEST", "1",
+		NULL, NULL
+	};
+
+	mShaders[VS_NAME[0]] = D3DUtil::LoadBinary(VS_DIR[0]);
+	mShaders[PS_NAME[1]] = D3DUtil::LoadBinary(PS_DIR[1]);
+	mShaders[PS_NAME[2]] = D3DUtil::LoadBinary(PS_DIR[2]);
 
 	mInputLayout =
 	{
@@ -435,7 +449,7 @@ void MyApp::BuildMaterials()
 	grass->Name = MATERIAL_NAMES[4];
 	grass->MatCBIndex = 4;
 	grass->DiffuseSrvHeapIndex = 4;
-	grass->DiffuseAlbedo = DirectX::XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
+	grass->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	grass->FresnelR0 = DirectX::XMFLOAT3(0.01f, 0.01f, 0.01f);
 	grass->Roughness = 0.125f;
 
@@ -443,7 +457,7 @@ void MyApp::BuildMaterials()
 	water->Name = MATERIAL_NAMES[5];
 	water->MatCBIndex = 5;
 	water->DiffuseSrvHeapIndex = 5;
-	water->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	water->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->Roughness = 0.0f;
 
@@ -594,8 +608,8 @@ void MyApp::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc
 	{
 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
-		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mShaders[VS_NAME]->GetBufferPointer()), mShaders[VS_NAME]->GetBufferSize()},
-		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mShaders[PS_NAME]->GetBufferPointer()), mShaders[PS_NAME]->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mShaders[VS_NAME[0]]->GetBufferPointer()), mShaders[VS_NAME[0]]->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mShaders[PS_NAME[0]]->GetBufferPointer()), mShaders[PS_NAME[0]]->GetBufferSize()},
 		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
 		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
 		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
@@ -676,6 +690,29 @@ void MyApp::BuildPSO()
 	//
 	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[1]])));
+
+	
+	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[5]])));
+	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[4]])));
+	
+	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	psoDesc.BlendState.RenderTarget[0] =
+	{
+		/* BOOL BlendEnable				*/true,
+		/* BOOL LogicOpEnable			*/false,
+		/* D3D12_BLEND SrcBlend			*/D3D12_BLEND_SRC_ALPHA,
+		/* D3D12_BLEND DestBlend		*/D3D12_BLEND_INV_SRC_ALPHA,
+		/* D3D12_BLEND_OP BlendOp		*/D3D12_BLEND_OP_ADD,
+		/* D3D12_BLEND SrcBlendAlpha	*/D3D12_BLEND_ONE,
+		/* D3D12_BLEND DestBlendAlpha	*/D3D12_BLEND_ZERO,
+		/* D3D12_BLEND_OP BlendOpAlpha	*/D3D12_BLEND_OP_ADD,
+		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
+		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
+	};
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[2]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[3]])));
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
