@@ -24,7 +24,7 @@
     <FxCompile Include="MainVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="alphaTestedPS.hlsl">
+    <FxCompile Include="AlphaTestedPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
