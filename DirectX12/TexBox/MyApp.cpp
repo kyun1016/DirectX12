@@ -461,7 +461,7 @@ void MyApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 
 	auto boxRitem = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 5.5f, 0.0f));
 	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	boxRitem->ObjCBIndex = objCBIndex++;
 	boxRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
@@ -473,7 +473,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(boxRitem));
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	gridRitem->World = MathHelper::Identity4x4();
+	DirectX::XMStoreFloat4x4(&gridRitem->World, DirectX::XMMatrixTranslation(0.0f, 5.0f, 0.0f));
 	DirectX::XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
 	gridRitem->Mat = mMaterials[MATERIAL_NAMES[2]].get();
@@ -485,7 +485,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(gridRitem));
 
 	auto skullRitem = std::make_unique<RenderItem>();
-	skullRitem->World = MathHelper::Identity4x4();
+	DirectX::XMStoreFloat4x4(&skullRitem->World, DirectX::XMMatrixTranslation(0.0f, 7.0f, 0.0f));
 	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
 	skullRitem->ObjCBIndex = objCBIndex++;
 	skullRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
@@ -504,10 +504,10 @@ void MyApp::BuildRenderItems()
 		auto leftSphereRitem = std::make_unique<RenderItem>();
 		auto rightSphereRitem = std::make_unique<RenderItem>();
 
-		DirectX::XMMATRIX leftCylWorld = DirectX::XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-		DirectX::XMMATRIX rightCylWorld = DirectX::XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-		DirectX::XMMATRIX leftSphereWorld = DirectX::XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-		DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX leftCylWorld = DirectX::XMMatrixTranslation(-5.0f, 6.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX rightCylWorld = DirectX::XMMatrixTranslation(+5.0f, 6.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX leftSphereWorld = DirectX::XMMatrixTranslation(-5.0f, 8.5f, -10.0f + i * 5.0f);
+		DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(+5.0f, 8.5f, -10.0f + i * 5.0f);
 
 		DirectX::XMStoreFloat4x4(&leftCylRitem->World, leftCylWorld);
 		DirectX::XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
