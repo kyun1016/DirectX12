@@ -26,7 +26,7 @@ bool MyApp::Initialize()
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
-	// BuildSkullGeometry();
+	BuildSkullGeometry();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
 	BuildMaterials();
@@ -62,10 +62,7 @@ void MyApp::BuildRootSignature()
 {
 	// Create root CBVs.
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(
-        D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 
-        1,  // number of descriptors
-        0); // register t0
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
@@ -163,13 +160,14 @@ void MyApp::BuildLandGeometry()
 
 	std::vector<Vertex> vertices(grid.Vertices.size());
 	std::vector<std::uint16_t> indices = grid.GetIndices16();
-	
+
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
 		auto& p = grid.Vertices[i].Position;
 		vertices[i].Pos = p;
 		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
 		vertices[i].Normal = GetHillsNormal(p.x, p.z);
+		vertices[i].TexC = grid.Vertices[i].TexC;
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -289,11 +287,11 @@ void MyApp::BuildShapeGeometry()
 			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 		}
 		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-		for (size_t j = 0; j < meshes[i].Vertices.size();++j)
+		for (const auto& ver: meshes[i].Vertices)
 		{
-			vertices[k].Pos = meshes[i].Vertices[j].Position;
-			vertices[k].Normal = meshes[i].Vertices[j].Normal;
-			vertices[k++].TexC = meshes[i].Vertices[j].TexC;
+			vertices[k].Pos = ver.Position;
+			vertices[k].Normal = ver.Normal;
+			vertices[k++].TexC = ver.TexC;
 		}
 	}
 
@@ -404,7 +402,7 @@ void MyApp::BuildMaterials()
 	auto bricks0 = std::make_unique<Material>();
 	bricks0->Name = MATERIAL_NAMES[0];
 	bricks0->MatCBIndex = 0;
-	bricks0->DiffuseSrvHeapIndex = 0;
+	bricks0->DiffuseSrvHeapIndex = 1;
 	bricks0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::ForestGreen);
 	bricks0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	bricks0->Roughness = 0.1f;
@@ -412,7 +410,7 @@ void MyApp::BuildMaterials()
 	auto stone0 = std::make_unique<Material>();
 	stone0->Name = MATERIAL_NAMES[1];
 	stone0->MatCBIndex = 1;
-	stone0->DiffuseSrvHeapIndex = 1;
+	stone0->DiffuseSrvHeapIndex = 2;
 	stone0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightSteelBlue);
 	stone0->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	stone0->Roughness = 0.3f;
@@ -420,7 +418,7 @@ void MyApp::BuildMaterials()
 	auto tile0 = std::make_unique<Material>();
 	tile0->Name = MATERIAL_NAMES[2];
 	tile0->MatCBIndex = 2;
-	tile0->DiffuseSrvHeapIndex = 2;
+	tile0->DiffuseSrvHeapIndex = 3;
 	tile0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightGray);
 	tile0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	tile0->Roughness = 0.2f;
@@ -428,7 +426,7 @@ void MyApp::BuildMaterials()
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[3];
 	skullMat->MatCBIndex = 3;
-	skullMat->DiffuseSrvHeapIndex = 3;
+	skullMat->DiffuseSrvHeapIndex = 0;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
@@ -486,17 +484,17 @@ void MyApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(gridRitem));
 
-	//auto skullRitem = std::make_unique<RenderItem>();
-	//skullRitem->World = MathHelper::Identity4x4();
-	//DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	//skullRitem->ObjCBIndex = objCBIndex++;
-	//skullRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
-	//skullRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[1]].get();
-	//skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//skullRitem->IndexCount = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].IndexCount;
-	//skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].StartIndexLocation;
-	//skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].BaseVertexLocation;
-	//mAllRitems.push_back(std::move(skullRitem));
+	auto skullRitem = std::make_unique<RenderItem>();
+	skullRitem->World = MathHelper::Identity4x4();
+	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	skullRitem->ObjCBIndex = objCBIndex++;
+	skullRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
+	skullRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[1]].get();
+	skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].IndexCount;
+	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].StartIndexLocation;
+	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].BaseVertexLocation;
+	mAllRitems.push_back(std::move(skullRitem));
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	for (int i = 0; i < 5; ++i)
@@ -730,9 +728,9 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 		0.0f,                              // mipLODBias
 		8);                                // maxAnisotropy
 
-	return { 
+	return {
 		pointWrap, pointClamp,
-		linearWrap, linearClamp, 
+		linearWrap, linearClamp,
 		anisotropicWrap, anisotropicClamp };
 }
 #pragma endregion Initialize
@@ -769,6 +767,26 @@ void MyApp::Update()
 
 void MyApp::AnimateMaterials()
 {
+	// Scroll the water material texture coordinates.
+	auto waterMat = mMaterials[MATERIAL_NAMES[5]].get();
+
+	float& tu = waterMat->MatTransform(3, 0);
+	float& tv = waterMat->MatTransform(3, 1);
+
+	tu += 0.1f * mTimer.DeltaTime();
+	tv += 0.02f * mTimer.DeltaTime();
+
+	if (tu >= 1.0f)
+		tu -= 1.0f;
+
+	if (tv >= 1.0f)
+		tv -= 1.0f;
+
+	waterMat->MatTransform(3, 0) = tu;
+	waterMat->MatTransform(3, 1) = tv;
+
+	// Material has changed, so need to update cbuffer.
+	waterMat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 }
 
 void MyApp::UpdateObjectCBs()
@@ -781,9 +799,11 @@ void MyApp::UpdateObjectCBs()
 		if (e->NumFramesDirty > 0)
 		{
 			DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->World);
+			DirectX::XMMATRIX texTransform = DirectX::XMLoadFloat4x4(&e->TexTransform);
 
 			ObjectConstants objConstants;
 			DirectX::XMStoreFloat4x4(&objConstants.World, DirectX::XMMatrixTranspose(world));
+			DirectX::XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -885,6 +905,11 @@ void MyApp::UpdateWaves()
 		v.Pos = mWaves->Position(i);
 		v.Normal = mWaves->Normal(i);
 
+		// Derive tex-coords from position by 
+		// mapping [-w/2,w/2] --> [0,1]
+		v.TexC.x = 0.5f + v.Pos.x / mWaves->Width();
+		v.TexC.y = 0.5f - v.Pos.z / mWaves->Depth();
+
 		currWavesVB->CopyData(i, v);
 	}
 
@@ -969,7 +994,7 @@ void MyApp::DrawRenderItems(const std::vector<RenderItem*>& ritems)
 	auto materialCB = mCurrFrameResource->MaterialCB->Resource();
 
 	// For each render item...
-	for (const auto& ri: ritems)
+	for (const auto& ri : ritems)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv = ri->Geo->VertexBufferView();
 		D3D12_INDEX_BUFFER_VIEW ibv = ri->Geo->IndexBufferView();
