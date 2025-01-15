@@ -3,7 +3,7 @@
 #include "MyApp.h"
 
 MyApp::MyApp()
-	: AppBase()
+	: MyApp(1080, 720, L"AppBase")
 {
 }
 
@@ -22,6 +22,8 @@ bool MyApp::Initialize()
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
 	LoadTextures();
+	BuildMaterials();
+
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
@@ -29,7 +31,6 @@ bool MyApp::Initialize()
 	BuildSkullGeometry();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
-	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
@@ -407,6 +408,119 @@ void MyApp::BuildSkullGeometry()
 	submesh.BaseVertexLocation = 0;
 
 	geo->DrawArgs[MESH_MODEL_NAMES[0]] = submesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+}
+
+void MyApp::BuildRoomGeometry()
+{
+	// Create and specify geometry.  For this sample we draw a floor
+// and a wall with a mirror on it.  We put the floor, wall, and
+// mirror geometry in one vertex buffer.
+//
+//   |--------------|
+//   |              |
+//   |----|----|----|
+//   |Wall|Mirr|Wall|
+//   |    | or |    |
+//   /--------------/
+//  /   Floor      /
+// /--------------/
+
+	std::array<Vertex, 20> vertices =
+	{
+		// Floor: Observe we tile texture coordinates.
+		Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
+		Vertex(-3.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
+		Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
+
+		// Wall: Observe we tile texture coordinates, and that we
+		// leave a gap in the middle for the mirror.
+		Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 4
+		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
+		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
+
+		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
+		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
+		Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
+
+		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 12
+		Vertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 0.0f),
+		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 1.0f),
+
+		// Mirror
+		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 16
+		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f),
+		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f)
+	};
+
+	std::array<std::int16_t, 30> indices =
+	{
+		// Floor
+		0, 1, 2,
+		0, 2, 3,
+
+		// Walls
+		4, 5, 6,
+		4, 6, 7,
+
+		8, 9, 10,
+		8, 10, 11,
+
+		12, 13, 14,
+		12, 14, 15,
+
+		// Mirror
+		16, 17, 18,
+		16, 18, 19
+	};
+
+	SubmeshGeometry floorSubmesh;
+	floorSubmesh.IndexCount = 6;
+	floorSubmesh.StartIndexLocation = 0;
+	floorSubmesh.BaseVertexLocation = 0;
+
+	SubmeshGeometry wallSubmesh;
+	wallSubmesh.IndexCount = 18;
+	wallSubmesh.StartIndexLocation = 6;
+	wallSubmesh.BaseVertexLocation = 0;
+
+	SubmeshGeometry mirrorSubmesh;
+	mirrorSubmesh.IndexCount = 6;
+	mirrorSubmesh.StartIndexLocation = 24;
+	mirrorSubmesh.BaseVertexLocation = 0;
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = MESH_GEOMETRY_NAMES[4];
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	geo->DrawArgs["floor"] = floorSubmesh;
+	geo->DrawArgs["wall"] = wallSubmesh;
+	geo->DrawArgs["mirror"] = mirrorSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }

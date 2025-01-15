@@ -8,38 +8,6 @@
 #include <string>
 #include <array>
 
-#pragma region Define
-
-
-
-static const std::wstring	TEXTUER_DIR = L"../Data/Textures/";
-static const size_t			TEXTURE_NUM = 7;
-static const std::wstring	TEXTUER_FILE_NAMES[TEXTURE_NUM] = { L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds", L"water1.dds", L"WireFence.dds",L"WoodCrate01.dds"};
-static const std::string	TEXTURE_NAMES[TEXTURE_NUM] = { "bricksTex", "stoneTex", "tileTex", "grassTex", "waterTex", "fenceTex", "woodCrateTex"};
-
-static const std::string	MESH_GEOMETRY_NAMES[4] = { "ShapeGeo", "SkullGeo", "LandGeo", "WaterGeo"};
-
-static const size_t			MESH_MAIN_NUM = 4;
-static const std::string	MESH_MAIN_NAMES[MESH_MAIN_NUM] = { "box", "grid", "sphere", "cylinder" };
-
-static const std::wstring	MESH_MODEL_DIR = L"../Data/Models/";
-static const size_t			MESH_MODEL_NUM = 1;
-static const std::wstring	MESH_MODEL_FILE_NAMES[MESH_MODEL_NUM] = { L"skull.txt" };
-static const std::string	MESH_MODEL_NAMES[MESH_MODEL_NUM] = { "skull" };
-
-static const size_t			MATERIAL_NUM = 8;
-static const std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "grass", "water", "fence", "woodCrate", "skullMat" };
-
-static const std::wstring	VS_DIR[1] = { L"Shaders\\MainVS.cso" };
-static const std::string	VS_NAME[1] = { "standardVS" };
-
-static const std::wstring	PS_DIR[2] = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
-static const std::string	PS_NAME[2] = { "opaquePS" , "alphaTestedPS"};
-
-static const std::string	gPSOName[6] = { "opaque", "transparent", "alphaTested", "opaque_wireframe", "transparent_wireframe", "alphaTested_wireframe" };
-
-#pragma endregion Define
-
 enum class RenderLayer : int
 {
 	Opaque = 0,
@@ -98,6 +66,7 @@ public:
 	void BuildWavesGeometryBuffers();
 	void BuildShapeGeometry();
 	void BuildSkullGeometry();
+	void BuildRoomGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
@@ -138,6 +107,47 @@ private:
 	float GetHillsHeight(const float x, const float z) const;
 	DirectX::XMFLOAT3 GetHillsNormal(const float x, const float z) const;
 #pragma endregion Land
+
+
+private:
+	static constexpr size_t	TEXTURE_NUM = 11;
+
+	static const inline std::wstring	TEXTUER_DIR = L"../Data/Textures/";
+
+	static const inline std::wstring	TEXTUER_FILE_NAMES[TEXTURE_NUM]
+		= { L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds"
+		, L"water1.dds", L"WireFence.dds",L"WoodCrate01.dds", L"bricks3.dds"
+		, L"checkboard.dds", L"ice.dds", L"white1x1.dds"
+		};
+	static const inline std::string	TEXTURE_NAMES[TEXTURE_NUM]
+		= { "bricksTex", "stoneTex", "tileTex", "grassTex"
+		, "waterTex", "fenceTex", "woodCrateTex", "bricks3Tex"
+		, "checkboardTex", "iceTex", "white1x1Tex"
+		};
+
+	static const inline std::string	MESH_GEOMETRY_NAMES[5] = { "ShapeGeo", "SkullGeo", "LandGeo", "WaterGeo", "RoomGeo" };
+
+	static constexpr size_t	MESH_MAIN_NUM = 4;
+	static const inline std::string	MESH_MAIN_NAMES[MESH_MAIN_NUM] = { "box", "grid", "sphere", "cylinder" };
+
+	static const inline std::wstring	MESH_MODEL_DIR = L"../Data/Models/";
+	static constexpr size_t		MESH_MODEL_NUM = 1;
+	static const inline std::wstring	MESH_MODEL_FILE_NAMES[MESH_MODEL_NUM] = { L"skull.txt" };
+	static const inline std::string	MESH_MODEL_NAMES[MESH_MODEL_NUM] = { "skull" };
+
+	static constexpr size_t		MATERIAL_NUM = 8;
+	static const inline std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "grass", "water", "fence", "woodCrate", "skullMat" };
+
+	static const inline std::wstring	VS_DIR[1] = { L"Shaders\\MainVS.cso" };
+	static const inline std::string	VS_NAME[1] = { "standardVS" };
+
+	static const inline std::wstring	PS_DIR[2] = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
+	static const inline std::string	PS_NAME[2] = { "opaquePS" , "alphaTestedPS" };
+
+	static const inline std::string	gPSOName[6] = { "opaque", "transparent", "alphaTested", "opaque_wireframe", "transparent_wireframe", "alphaTested_wireframe" };
+
+
+
 private:
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
