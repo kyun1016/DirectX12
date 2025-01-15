@@ -13,9 +13,9 @@
 
 
 static const std::wstring	TEXTUER_DIR = L"../Data/Textures/";
-static const size_t			TEXTURE_NUM = 6;
-static const std::wstring	TEXTUER_FILE_NAMES[TEXTURE_NUM] = { L"WoodCrate01.dds", L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds", L"water1.dds"};
-static const std::string	TEXTURE_NAMES[TEXTURE_NUM] = { "woodCrateTex", "bricksTex", "stoneTex", "tileTex", "grassTex", "waterTex" };
+static const size_t			TEXTURE_NUM = 7;
+static const std::wstring	TEXTUER_FILE_NAMES[TEXTURE_NUM] = { L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds", L"water1.dds", L"WireFence.dds",L"WoodCrate01.dds"};
+static const std::string	TEXTURE_NAMES[TEXTURE_NUM] = { "bricksTex", "stoneTex", "tileTex", "grassTex", "waterTex", "fenceTex", "woodCrateTex"};
 
 static const std::string	MESH_GEOMETRY_NAMES[4] = { "ShapeGeo", "SkullGeo", "LandGeo", "WaterGeo"};
 
@@ -27,8 +27,8 @@ static const size_t			MESH_MODEL_NUM = 1;
 static const std::wstring	MESH_MODEL_FILE_NAMES[MESH_MODEL_NUM] = { L"skull.txt" };
 static const std::string	MESH_MODEL_NAMES[MESH_MODEL_NUM] = { "skull" };
 
-static const size_t			MATERIAL_NUM = 6;
-static const std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "skullMat", "grass", "water"};
+static const size_t			MATERIAL_NUM = 8;
+static const std::string	MATERIAL_NAMES[MATERIAL_NUM] = { "bricks0", "stone0", "tile0", "grass", "water", "fence", "woodCrate", "skullMat" };
 
 static const std::wstring	VS_DIR[1] = { L"Shaders\\MainVS.cso" };
 static const std::string	VS_NAME[1] = { "standardVS" };
@@ -36,7 +36,7 @@ static const std::string	VS_NAME[1] = { "standardVS" };
 static const std::wstring	PS_DIR[2] = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
 static const std::string	PS_NAME[2] = { "opaquePS" , "alphaTestedPS"};
 
-static const std::string	gPSOName[6] = { "opaque", "opaque_wireframe", "transparent", "transparent_wireframe", "alphaTested", "alphaTested_wireframe" };
+static const std::string	gPSOName[6] = { "opaque", "transparent", "alphaTested", "opaque_wireframe", "transparent_wireframe", "alphaTested_wireframe" };
 
 #pragma endregion Define
 

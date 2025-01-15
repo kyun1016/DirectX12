@@ -157,8 +157,8 @@ void MyApp::BuildShadersAndInputLayout()
 	};
 
 	mShaders[VS_NAME[0]] = D3DUtil::LoadBinary(VS_DIR[0]);
+	mShaders[PS_NAME[0]] = D3DUtil::LoadBinary(PS_DIR[0]);
 	mShaders[PS_NAME[1]] = D3DUtil::LoadBinary(PS_DIR[1]);
-	mShaders[PS_NAME[2]] = D3DUtil::LoadBinary(PS_DIR[2]);
 
 	mInputLayout =
 	{
@@ -416,57 +416,74 @@ void MyApp::BuildMaterials()
 	auto bricks0 = std::make_unique<Material>();
 	bricks0->Name = MATERIAL_NAMES[0];
 	bricks0->MatCBIndex = 0;
-	bricks0->DiffuseSrvHeapIndex = 1;
+	bricks0->DiffuseSrvHeapIndex = 0;
 	bricks0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::ForestGreen);
 	bricks0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	bricks0->Roughness = 0.1f;
+	mMaterials[bricks0->Name] = std::move(bricks0);
 
 	auto stone0 = std::make_unique<Material>();
 	stone0->Name = MATERIAL_NAMES[1];
 	stone0->MatCBIndex = 1;
-	stone0->DiffuseSrvHeapIndex = 2;
+	stone0->DiffuseSrvHeapIndex = 1;
 	stone0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightSteelBlue);
 	stone0->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	stone0->Roughness = 0.3f;
+	mMaterials[stone0->Name] = std::move(stone0);
 
 	auto tile0 = std::make_unique<Material>();
 	tile0->Name = MATERIAL_NAMES[2];
 	tile0->MatCBIndex = 2;
-	tile0->DiffuseSrvHeapIndex = 3;
+	tile0->DiffuseSrvHeapIndex = 2;
 	tile0->DiffuseAlbedo = DirectX::XMFLOAT4(DirectX::Colors::LightGray);
 	tile0->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 	tile0->Roughness = 0.2f;
-
-	auto skullMat = std::make_unique<Material>();
-	skullMat->Name = MATERIAL_NAMES[3];
-	skullMat->MatCBIndex = 3;
-	skullMat->DiffuseSrvHeapIndex = 0;
-	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
-	skullMat->Roughness = 0.3f;
+	mMaterials[tile0->Name] = std::move(tile0);
 
 	auto grass = std::make_unique<Material>();
-	grass->Name = MATERIAL_NAMES[4];
-	grass->MatCBIndex = 4;
-	grass->DiffuseSrvHeapIndex = 4;
+	grass->Name = MATERIAL_NAMES[3];
+	grass->MatCBIndex = 3;
+	grass->DiffuseSrvHeapIndex = 3;
 	grass->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	grass->FresnelR0 = DirectX::XMFLOAT3(0.01f, 0.01f, 0.01f);
 	grass->Roughness = 0.125f;
+	mMaterials[grass->Name] = std::move(grass);
 
 	auto water = std::make_unique<Material>();
-	water->Name = MATERIAL_NAMES[5];
-	water->MatCBIndex = 5;
-	water->DiffuseSrvHeapIndex = 5;
+	water->Name = MATERIAL_NAMES[4];
+	water->MatCBIndex = 4;
+	water->DiffuseSrvHeapIndex = 4;
 	water->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	water->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->Roughness = 0.0f;
+	mMaterials[water->Name] = std::move(water);
+	
+	auto wirefence = std::make_unique<Material>();
+	wirefence->Name = MATERIAL_NAMES[5];
+	wirefence->MatCBIndex = 5;
+	wirefence->DiffuseSrvHeapIndex = 5;
+	wirefence->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	wirefence->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
+	wirefence->Roughness = 0.3f;
+	mMaterials[wirefence->Name] = std::move(wirefence);
 
-	mMaterials[MATERIAL_NAMES[0]] = std::move(bricks0);
-	mMaterials[MATERIAL_NAMES[1]] = std::move(stone0);
-	mMaterials[MATERIAL_NAMES[2]] = std::move(tile0);
-	mMaterials[MATERIAL_NAMES[3]] = std::move(skullMat);
-	mMaterials[MATERIAL_NAMES[4]] = std::move(grass);
-	mMaterials[MATERIAL_NAMES[5]] = std::move(water);
+	auto woodCrate = std::make_unique<Material>();
+	woodCrate->Name = MATERIAL_NAMES[6];
+	woodCrate->MatCBIndex = 6;
+	woodCrate->DiffuseSrvHeapIndex = 6;
+	woodCrate->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	woodCrate->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
+	woodCrate->Roughness = 0.3f;
+	mMaterials[woodCrate->Name] = std::move(woodCrate);
+
+	auto skullMat = std::make_unique<Material>();
+	skullMat->Name = MATERIAL_NAMES[7];
+	skullMat->MatCBIndex = 7;
+	skullMat->DiffuseSrvHeapIndex = 3;
+	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
+	skullMat->Roughness = 0.3f;
+	mMaterials[skullMat->Name] = std::move(skullMat);
 }
 
 
@@ -474,17 +491,44 @@ void MyApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 
-	auto boxRitem = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 5.5f, 0.0f));
-	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	boxRitem->ObjCBIndex = objCBIndex++;
-	boxRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
-	boxRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[MESH_MAIN_NAMES[0]].BaseVertexLocation;
-	mAllRitems.push_back(std::move(boxRitem));
+	auto boxRitem0 = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem0->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(-5.0f, 5.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem0->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem0->ObjCBIndex = objCBIndex++;
+	boxRitem0->Mat = mMaterials[MATERIAL_NAMES[0]].get();
+	boxRitem0->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
+	boxRitem0->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem0->IndexCount = boxRitem0->Geo->DrawArgs[MESH_MAIN_NAMES[0]].IndexCount;
+	boxRitem0->StartIndexLocation = boxRitem0->Geo->DrawArgs[MESH_MAIN_NAMES[0]].StartIndexLocation;
+	boxRitem0->BaseVertexLocation = boxRitem0->Geo->DrawArgs[MESH_MAIN_NAMES[0]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(boxRitem0.get());
+	mAllRitems.push_back(std::move(boxRitem0));
+
+	auto boxRitem1 = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem1->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 5.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem1->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem1->ObjCBIndex = objCBIndex++;
+	boxRitem1->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	boxRitem1->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
+	boxRitem1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem1->IndexCount = boxRitem1->Geo->DrawArgs[MESH_MAIN_NAMES[0]].IndexCount;
+	boxRitem1->StartIndexLocation = boxRitem1->Geo->DrawArgs[MESH_MAIN_NAMES[0]].StartIndexLocation;
+	boxRitem1->BaseVertexLocation = boxRitem1->Geo->DrawArgs[MESH_MAIN_NAMES[0]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem1.get());
+	mAllRitems.push_back(std::move(boxRitem1));
+
+	auto boxRitem2 = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem2->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(5.0f, 5.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem2->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem2->ObjCBIndex = objCBIndex++;
+	boxRitem2->Mat = mMaterials[MATERIAL_NAMES[6]].get();
+	boxRitem2->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
+	boxRitem2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem2->IndexCount = boxRitem2->Geo->DrawArgs[MESH_MAIN_NAMES[0]].IndexCount;
+	boxRitem2->StartIndexLocation = boxRitem2->Geo->DrawArgs[MESH_MAIN_NAMES[0]].StartIndexLocation;
+	boxRitem2->BaseVertexLocation = boxRitem2->Geo->DrawArgs[MESH_MAIN_NAMES[0]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(boxRitem2.get());
+	mAllRitems.push_back(std::move(boxRitem2));
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	DirectX::XMStoreFloat4x4(&gridRitem->World, DirectX::XMMatrixTranslation(0.0f, 5.0f, 0.0f));
@@ -496,18 +540,20 @@ void MyApp::BuildRenderItems()
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
 	auto skullRitem = std::make_unique<RenderItem>();
 	DirectX::XMStoreFloat4x4(&skullRitem->World, DirectX::XMMatrixTranslation(0.0f, 7.0f, 0.0f));
 	DirectX::XMStoreFloat4x4(&skullRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
 	skullRitem->ObjCBIndex = objCBIndex++;
-	skullRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
+	skullRitem->Mat = mMaterials[MATERIAL_NAMES[7]].get();
 	skullRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[1]].get();
 	skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].IndexCount;
 	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].StartIndexLocation;
 	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[MESH_MODEL_NAMES[0]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(skullRitem.get());
 	mAllRitems.push_back(std::move(skullRitem));
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
@@ -526,7 +572,7 @@ void MyApp::BuildRenderItems()
 		DirectX::XMStoreFloat4x4(&leftCylRitem->World, leftCylWorld);
 		DirectX::XMStoreFloat4x4(&leftCylRitem->TexTransform, brickTexTransform);
 		leftCylRitem->ObjCBIndex = objCBIndex++;
-		leftCylRitem->Mat = mMaterials[MATERIAL_NAMES[0]].get();
+		leftCylRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
 		leftCylRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].IndexCount;
@@ -536,7 +582,7 @@ void MyApp::BuildRenderItems()
 		DirectX::XMStoreFloat4x4(&rightCylRitem->World, rightCylWorld);
 		DirectX::XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
 		rightCylRitem->ObjCBIndex = objCBIndex++;
-		rightCylRitem->Mat = mMaterials[MATERIAL_NAMES[0]].get();
+		rightCylRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
 		rightCylRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[0]].get();
 		rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[MESH_MAIN_NAMES[3]].IndexCount;
@@ -563,6 +609,10 @@ void MyApp::BuildRenderItems()
 		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].StartIndexLocation;
 		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[MESH_MAIN_NAMES[2]].BaseVertexLocation;
 
+		mRitemLayer[(int)RenderLayer::Opaque].push_back(leftCylRitem.get());
+		mRitemLayer[(int)RenderLayer::Opaque].push_back(leftSphereRitem.get());
+		mRitemLayer[(int)RenderLayer::Opaque].push_back(rightCylRitem.get());
+		mRitemLayer[(int)RenderLayer::Opaque].push_back(rightSphereRitem.get());
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(leftSphereRitem));
 		mAllRitems.push_back(std::move(rightCylRitem));
@@ -572,29 +622,31 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
 	wavesRitem->ObjCBIndex = objCBIndex++;
-	wavesRitem->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	wavesRitem->Mat = mMaterials[MATERIAL_NAMES[4]].get();
 	wavesRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[3]].get();
 	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
 	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
 	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
 	mWavesRitem = wavesRitem.get();
+	mRitemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
 	mAllRitems.push_back(std::move(wavesRitem));
 
 	auto landRitem = std::make_unique<RenderItem>();
 	landRitem->World = MathHelper::Identity4x4();
 	landRitem->ObjCBIndex = objCBIndex++;
-	landRitem->Mat = mMaterials[MATERIAL_NAMES[4]].get();
+	landRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
 	landRitem->Geo = mGeometries[MESH_GEOMETRY_NAMES[2]].get();
 	landRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].IndexCount;
 	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].StartIndexLocation;
 	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[MESH_MAIN_NAMES[1]].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(landRitem.get());
 	mAllRitems.push_back(std::move(landRitem));
 
-	// All the render items are opaque.
-	for (auto& e : mAllRitems)
-		mRitemLayer[(int)RenderLayer::Opaque].push_back(e.get());
+	//// All the render items are opaque.
+	//for (auto& e : mAllRitems)
+	//	mRitemLayer[(int)RenderLayer::Opaque].push_back(e.get());
 }
 
 void MyApp::BuildFrameResources()
@@ -605,7 +657,7 @@ void MyApp::BuildFrameResources()
 
 void MyApp::BuildPSO()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc
 	{
 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
 		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mShaders[VS_NAME[0]]->GetBufferPointer()), mShaders[VS_NAME[0]]->GetBufferSize()},
@@ -683,22 +735,11 @@ void MyApp::BuildPSO()
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 	};
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[0]])));
 
-	//
-	// PSO for opaque wireframe objects.
-	//
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[1]])));
+	// PSO for transparent objects
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = opaquePsoDesc;
 
-	
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[5]])));
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[4]])));
-	
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-	psoDesc.BlendState.RenderTarget[0] =
+	transparentPsoDesc.BlendState.RenderTarget[0] =
 	{
 		/* BOOL BlendEnable				*/true,
 		/* BOOL LogicOpEnable			*/false,
@@ -711,8 +752,27 @@ void MyApp::BuildPSO()
 		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
 		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
 	};
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[2]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[3]])));
+
+	// PSO for alpha tested objects
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
+	alphaTestedPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders[PS_NAME[1]]->GetBufferPointer()),
+			mShaders[PS_NAME[1]]->GetBufferSize()
+	};
+	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[0]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[1]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[2]])));
+
+	// PSO for wireframe objects.
+	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	transparentPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	alphaTestedPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[3]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[4]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[5]])));
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
@@ -963,14 +1023,8 @@ void MyApp::Render()
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-	if (mIsWireframe)
-	{
-		ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[1]].Get()));
-	}
-	else
-	{
-		ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[0]].Get()));
-	}
+	int offset = mIsWireframe ? 3 : 0;
+	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[offset]].Get()));
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -980,7 +1034,7 @@ void MyApp::Render()
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], DirectX::Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
@@ -996,6 +1050,10 @@ void MyApp::Render()
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	DrawRenderItems(mRitemLayer[(int)RenderLayer::Opaque]);
+	mCommandList->SetPipelineState(mPSOs[gPSOName[offset+2]].Get());
+	DrawRenderItems(mRitemLayer[(int)RenderLayer::AlphaTested]);
+	mCommandList->SetPipelineState(mPSOs[gPSOName[offset+1]].Get());
+	DrawRenderItems(mRitemLayer[(int)RenderLayer::Transparent]);
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
