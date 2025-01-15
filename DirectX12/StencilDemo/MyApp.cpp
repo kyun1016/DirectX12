@@ -48,11 +48,14 @@ bool MyApp::Initialize()
 
 void MyApp::LoadTextures()
 {
-	for (size_t i = 0; i < TEXTURE_NUM; ++i)
+	
+	for (const auto& a : TEXTUER_FILE_NAMES)
 	{
 		auto texture = std::make_unique<Texture>();
-		texture->Name = TEXTURE_NAMES[i];
-		texture->Filename = TEXTUER_DIR + TEXTUER_FILE_NAMES[i];
+		texture->Name = D3DUtil::WstrToStr(a);
+		texture->Filename = TEXTUER_DIR + a;
+		std::cout << texture->Name << std::endl;
+		std::wcout << texture->Filename << std::endl;
 		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
 
 		mTextures[texture->Name] = std::move(texture);
@@ -131,9 +134,9 @@ void MyApp::BuildDescriptorHeaps()
 		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 		/* }																			*/
 	};
-	for (size_t i = 0; i < TEXTURE_NUM; ++i)
+	for (const auto& a : TEXTUER_FILE_NAMES)
 	{
-		auto texture = mTextures[TEXTURE_NAMES[i]]->Resource;
+		auto texture = mTextures[D3DUtil::WstrToStr(a)]->Resource;
 
 		srvDesc.Format = texture->GetDesc().Format;
 		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;

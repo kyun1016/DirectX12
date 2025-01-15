@@ -40,7 +40,7 @@ public:
 		// 0x0200
 		// 512
 		return (byteSize + 255) & ~255;
-	}
+	};
 
 	static Microsoft::WRL::ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
 
@@ -56,6 +56,16 @@ public:
 		const D3D_SHADER_MACRO* defines,
 		const std::string& entrypoint,
 		const std::string& target);
+
+	static std::string WstrToStr(const std::wstring& source)
+	{
+		return std::string().assign(source.begin(), source.end());
+	}
+
+	static std::wstring StrToWstr(const std::string& source)
+	{
+		return std::wstring().assign(source.begin(), source.end());
+	}
 };
 
 // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
