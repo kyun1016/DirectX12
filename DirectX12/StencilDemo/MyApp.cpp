@@ -539,6 +539,7 @@ void MyApp::BuildMaterials()
 		mat->Roughness = 0.1f;
 		mMaterials[mat->Name] = std::move(mat);
 	}
+	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 
 	UINT offset = TEXTURE_FILENAMES.size();
 	auto skullMat = std::make_unique<Material>();
@@ -571,7 +572,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
 	{
 		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i*3.0f, 5.5f, 0.0f));
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i*5.0f, 25.5f, 0.0f));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -582,6 +583,19 @@ void MyApp::BuildRenderItems()
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 		mAllRitems.push_back(std::move(boxRitem));
 	}
+	auto boxRitem1 = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem1->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 5.5f, 0.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem1->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem1->ObjCBIndex = objCBIndex++;
+	boxRitem1->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	boxRitem1->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	boxRitem1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem1->IndexCount = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	boxRitem1->StartIndexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	boxRitem1->BaseVertexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	boxRitem1->LayerFlag = (1 << (int)RenderLayer::AlphaTested);
+	mAllRitems.push_back(std::move(boxRitem1));
+
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	DirectX::XMStoreFloat4x4(&gridRitem->World, DirectX::XMMatrixTranslation(0.0f, 5.0f, 0.0f));
@@ -705,7 +719,7 @@ void MyApp::BuildRenderItems()
 	floorRitem->World = MathHelper::Identity4x4();
 	floorRitem->TexTransform = MathHelper::Identity4x4();
 	floorRitem->ObjCBIndex = objCBIndex++;
-	floorRitem->Mat = mMaterials[MATERIAL_NAMES[8]].get();
+	floorRitem->Mat = mMaterials[MATERIAL_NAMES[7]].get();
 	floorRitem->Geo = mGeometries[GEO_MESH_NAMES[4].first].get();
 	floorRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	floorRitem->IndexCount = floorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[0]].IndexCount;
@@ -717,25 +731,25 @@ void MyApp::BuildRenderItems()
 	wallsRitem->World = MathHelper::Identity4x4();
 	wallsRitem->TexTransform = MathHelper::Identity4x4();
 	wallsRitem->ObjCBIndex = objCBIndex++;
-	wallsRitem->Mat = mMaterials["bricks"].get();
-	wallsRitem->Geo = mGeometries["roomGeo"].get();
+	wallsRitem->Mat = mMaterials[MATERIAL_NAMES[8]].get();
+	wallsRitem->Geo = mGeometries[GEO_MESH_NAMES[4].first].get();
 	wallsRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wallsRitem->IndexCount = wallsRitem->Geo->DrawArgs["wall"].IndexCount;
-	wallsRitem->StartIndexLocation = wallsRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].StartIndexLocation;
-	wallsRitem->BaseVertexLocation = wallsRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].BaseVertexLocation;
+	wallsRitem->IndexCount = wallsRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[1]].IndexCount;
+	wallsRitem->StartIndexLocation = wallsRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[1]].StartIndexLocation;
+	wallsRitem->BaseVertexLocation = wallsRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[1]].BaseVertexLocation;
 	mAllRitems.push_back(std::move(wallsRitem));
 
-	auto skullRitem = std::make_unique<RenderItem>();
-	skullRitem->World = MathHelper::Identity4x4();
-	skullRitem->TexTransform = MathHelper::Identity4x4();
-	skullRitem->ObjCBIndex = objCBIndex++;
-	skullRitem->Mat = mMaterials["skullMat"].get();
-	skullRitem->Geo = mGeometries["skullGeo"].get();
-	skullRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skullRitem->IndexCount = skullRitem->Geo->DrawArgs["skull"].IndexCount;
-	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs["skull"].StartIndexLocation;
-	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs["skull"].BaseVertexLocation;
-	mAllRitems.push_back(std::move(skullRitem));
+	//auto skullRitem = std::make_unique<RenderItem>();
+	//skullRitem->World = MathHelper::Identity4x4();
+	//skullRitem->TexTransform = MathHelper::Identity4x4();
+	//skullRitem->ObjCBIndex = objCBIndex++;
+	//skullRitem->Mat = mMaterials["skullMat"].get();
+	//skullRitem->Geo = mGeometries["skullGeo"].get();
+	//skullRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	//skullRitem->IndexCount = skullRitem->Geo->DrawArgs["skull"].IndexCount;
+	//skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs["skull"].StartIndexLocation;
+	//skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs["skull"].BaseVertexLocation;
+	//mAllRitems.push_back(std::move(skullRitem));
 
 
 	//// All the render items are opaque.
@@ -1197,7 +1211,7 @@ void MyApp::Render()
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-	int offset = mIsWireframe ? 3 : 0;
+	int offset = mIsWireframe ? 6 : 0;
 	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[gPSOName[offset]].Get()));
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -1225,7 +1239,7 @@ void MyApp::Render()
 
 	DrawRenderItems(RenderLayer::Opaque);
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset+2]].Get());
-	DrawRenderItems(RenderLayer::AlphaTested];
+	DrawRenderItems(RenderLayer::AlphaTested);
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset+1]].Get());
 	DrawRenderItems(RenderLayer::Transparent);
 

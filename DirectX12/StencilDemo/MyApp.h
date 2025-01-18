@@ -156,7 +156,7 @@ private:
 	static const inline std::string					PS_NAME[2] = { "opaquePS" , "alphaTestedPS" };
 
 	static const inline std::vector<std::string>	gPSOName = {
-		"opaque", "transparent", "alphaTested","markStencilMirrors","drawStencilReflections", "shadow"
+		"opaque", "transparent", "alphaTested", "markStencilMirrors", "drawStencilReflections", "shadow",
 		"opaque_wireframe", "transparent_wireframe", "alphaTested_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "shadow_wireframe"
 	};
 
