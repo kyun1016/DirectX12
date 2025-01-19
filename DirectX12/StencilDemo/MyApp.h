@@ -13,8 +13,9 @@ enum class RenderLayer : int
 	Opaque = 0,
 	Mirror,
 	Reflected,
-	Transparent,
 	AlphaTested,
+	Transparent,
+	Shadow,
 	Count
 };
 
@@ -50,14 +51,13 @@ class MyApp : public AppBase
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
 
-		int LayerFlag 
-			= (1 << (int)RenderLayer::Opaque) 
-			| (1 << (int)RenderLayer::Mirror)
-			| (1 << (int)RenderLayer::Reflected);
+		int LayerFlag
+			= (1 << (int)RenderLayer::Opaque)
+			| (1 << (int)RenderLayer::Reflected)
+			| (1 << (int)RenderLayer::Shadow);
 		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
 		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
 		float OffsetX = 0.0f, OffsetY = 0.0f, OffsetZ = 0.0f;
-		bool IsShadow = true;
 	};
 
 	using Super = typename AppBase;
@@ -90,14 +90,15 @@ private:
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
+	virtual void Render()override;
+
 	void AnimateMaterials();
 	void UpdateObjectCBs();
 	void UpdateMaterialCBs();
 	void UpdateMainPassCB();
-	void UpdateWaves();
 	void UpdateReflectedPassCB();
-
-	virtual void Render()override;
+	void UpdateWaves();
+	
 	void DrawRenderItems(const RenderLayer ritems);
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
@@ -110,17 +111,13 @@ private:
 #pragma region Imgui
 
 #pragma endregion Imgui
-	//
-	//	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
-	//	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
-	//	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 
 #pragma region Land
 	float GetHillsHeight(const float x, const float z) const;
 	DirectX::XMFLOAT3 GetHillsNormal(const float x, const float z) const;
 #pragma endregion Land
 
-
+#pragma region Constant
 private:
 	static const inline std::wstring				TEXTURE_DIR = L"../Data/Textures/";
 	static const inline std::vector<std::wstring>	TEXTURE_FILENAMES = {
@@ -156,9 +153,10 @@ private:
 	static const inline std::string					PS_NAME[2] = { "opaquePS" , "alphaTestedPS" };
 
 	static const inline std::vector<std::string>	gPSOName = {
-		"opaque", "transparent", "alphaTested", "markStencilMirrors", "drawStencilReflections", "shadow",
-		"opaque_wireframe", "transparent_wireframe", "alphaTested_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "shadow_wireframe"
+		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow",
+		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe"
 	};
+#pragma endregion Constant
 
 private:
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
