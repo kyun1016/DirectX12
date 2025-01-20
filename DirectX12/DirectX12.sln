@@ -37,6 +37,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "11.  Stenciling", "11.  Ste
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StencilDemo", "StencilDemo\StencilDemo.vcxproj", "{649CC779-F4CD-4948-AAEE-4F5213A87A74}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImGuiImageTest", "ImGuiImageTest\ImGuiImageTest.vcxproj", "{0832DCCB-FF03-44E8-B473-241D80DEF760}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -125,6 +127,14 @@ Global
 		{649CC779-F4CD-4948-AAEE-4F5213A87A74}.Release|x64.Build.0 = Release|x64
 		{649CC779-F4CD-4948-AAEE-4F5213A87A74}.Release|x86.ActiveCfg = Release|Win32
 		{649CC779-F4CD-4948-AAEE-4F5213A87A74}.Release|x86.Build.0 = Release|Win32
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Debug|x64.ActiveCfg = Debug|x64
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Debug|x64.Build.0 = Debug|x64
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Debug|x86.ActiveCfg = Debug|Win32
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Debug|x86.Build.0 = Debug|Win32
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Release|x64.ActiveCfg = Release|x64
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Release|x64.Build.0 = Release|x64
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Release|x86.ActiveCfg = Release|Win32
+		{0832DCCB-FF03-44E8-B473-241D80DEF760}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -140,6 +150,7 @@ Global
 		{87638851-101A-4FFE-BF63-BC21CC9DFCEE} = {7351FB27-F415-4AE2-AAB5-F99B0E59083F}
 		{544192B3-AD8E-4146-BEA4-479A65D3C444} = {238298A8-FB15-4024-8286-366B8C3FFD5B}
 		{649CC779-F4CD-4948-AAEE-4F5213A87A74} = {0B737264-DC37-4947-AE0C-8FF96F623545}
+		{0832DCCB-FF03-44E8-B473-241D80DEF760} = {0B737264-DC37-4947-AE0C-8FF96F623545}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}
