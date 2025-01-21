@@ -175,7 +175,7 @@ public:
 	UINT mRtvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
-	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];
+	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS+1];
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
 	int mCurrBackBuffer;

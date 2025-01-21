@@ -244,7 +244,7 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS,
+		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		/* UINT NodeMask					*/0
 	};
@@ -252,7 +252,7 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 
 	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS + 1; i++)
 	{
 		mSwapChainDescriptor[i] = rtvHandle;
 		rtvHandle.ptr += mRtvDescriptorSize;
@@ -276,6 +276,43 @@ void AppBase::OnResize()
 	assert(mDevice);
 	assert(mSwapChain);
 
+
+	//=====================================
+	// RTV Render in a Texture
+	D3D12_RESOURCE_DESC rtvTexDesc
+	{
+		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+		/* UINT64 Alignment						*/	0,
+		/* UINT64 Width							*/	mClientWidth,
+		/* UINT Height							*/	mClientHeight,
+		/* UINT16 DepthOrArraySize				*/	1,
+		/* UINT16 MipLevels						*/	1,
+		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R8G8B8A8_UNORM,
+		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
+			/*		UINT Count						*/		1,
+			/*		UINT Quality					*/ 		0
+			/* }									*/	},
+		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
+		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+	};
+
+	D3D12_CLEAR_VALUE clearValue
+	{
+		/* DXGI_FORMAT Format;							*/rtvTexDesc.Format,
+		/* union {										*/{
+			/*		FLOAT Color[4];							*/	{0.0f, 0.0f, 0.0f, 1.0f}
+			/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
+			/*			FLOAT Depth;						*/
+			/*			UINT8 Stencil;						*/
+			/*		}										*/
+		/* } 											*/}
+	};
+
+	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mRTVTexBuffer.GetAddressOf())));
+	// RTV Render in a Texture
+	//=====================================
+
 	// Flush before changing any resources.
 	FlushCommandQueue();
 
@@ -296,43 +333,30 @@ void AppBase::OnResize()
 		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
 	}
 
-	//=====================================
 	// RTV Render in a Texture
-	D3D12_RESOURCE_DESC rtvTexDesc
-	{
-		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-		/* UINT64 Alignment						*/	0,
-		/* UINT64 Width							*/	mClientWidth,
-		/* UINT Height							*/	mClientHeight,
-		/* UINT16 DepthOrArraySize				*/	1,
-		/* UINT16 MipLevels						*/	1,
-		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R8G8B8A8_UNORM,
-		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
-		/*		UINT Count						*/		1,
-		/*		UINT Quality					*/ 		0
-		/* }									*/	},
-		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
-		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {
+		/* DXGI_FORMAT Format						*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+		/* D3D12_RTV_DIMENSION ViewDimension		*/.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D,
+		/* union									*/
+		/* 	{										*/
+		/* 	D3D12_BUFFER_RTV Buffer					*/
+		/* 	D3D12_TEX1D_RTV Texture1D				*/
+		/* 	D3D12_TEX1D_ARRAY_RTV Texture1DArray	*/
+		/* 	D3D12_TEX2D_RTV Texture2D{				*/.Texture2D = {
+		/*		UINT MipSlice						*/	0,
+		/*		UINT PlaneSlice						*/	0
+		/*  }										*/}
+		/* 	D3D12_TEX2D_ARRAY_RTV Texture2DArray	*/
+		/* 	D3D12_TEX2DMS_RTV Texture2DMS			*/
+		/* 	D3D12_TEX2DMS_ARRAY_RTV Texture2DMSArray*/
+		/* 	D3D12_TEX3D_RTV Texture3D				*/
+		/* 	}										*/
 	};
-
-	D3D12_CLEAR_VALUE clearValue
-	{
-		/* DXGI_FORMAT Format;							*/rtvTexDesc.Format,
-		/* union {										*/{
-		/*		FLOAT Color[4];							*/	{0.0f, 0.0f, 0.0f, 1.0f}
-		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
-		/*			FLOAT Depth;						*/
-		/*			UINT8 Stencil;						*/
-		/*		}										*/	
-		/* } 											*/}
-	};
-
-	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mRTVTexBuffer.GetAddressOf())));
-	// RTV Render in a Texture
-	//=====================================
-	
-
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.Texture2D.PlaneSlice = 0;
+	mDevice->CreateRenderTargetView(mRTVTexBuffer.Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
 
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc
