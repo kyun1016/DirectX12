@@ -109,7 +109,9 @@ private:
 	void UpdateCamera();
 #pragma endregion Update
 #pragma region Imgui
-
+	virtual void UpdateImGui() override;
+	void ShowMainWindow();
+	int mIdxTexture = 0;
 #pragma endregion Imgui
 
 #pragma region Land
@@ -159,10 +161,6 @@ private:
 #pragma endregion Constant
 
 private:
-	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
-	FrameResource* mCurrFrameResource = nullptr;
-	int mCurrFrameResourceIndex = 0;
-
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
@@ -177,7 +175,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;		//input layout description
-
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 

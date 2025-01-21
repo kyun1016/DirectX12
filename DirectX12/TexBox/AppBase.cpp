@@ -98,6 +98,13 @@ int AppBase::Run()
 			mTimer.Tick();
 			if (!mAppPaused)
 			{
+				//==========================================
+				// My Render
+				//==========================================
+				CalculateFrameStats();
+				Update();
+				Render();
+
 				UpdateImGui();		// override this function
 
 				ImGui::Render();
@@ -111,13 +118,6 @@ int AppBase::Run()
 					ImGui::UpdatePlatformWindows();
 					ImGui::RenderPlatformWindowsDefault();
 				}
-
-				//==========================================
-				// My Render
-				//==========================================
-				CalculateFrameStats();
-				Update();
-				Render();
 			}
 			else
 			{

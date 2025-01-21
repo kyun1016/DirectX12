@@ -98,6 +98,13 @@ int AppBase::Run()
 			mTimer.Tick();
 			if (!mAppPaused)
 			{
+				//==========================================
+				// My Render
+				//==========================================
+				CalculateFrameStats();
+				Update();
+				Render();
+
 				UpdateImGui();		// override this function
 
 				ImGui::Render();
@@ -112,12 +119,24 @@ int AppBase::Run()
 					ImGui::RenderPlatformWindowsDefault();
 				}
 
-				//==========================================
-				// My Render
-				//==========================================
-				CalculateFrameStats();
-				Update();
-				Render();
+				// Done recording commands.
+				ThrowIfFailed(mCommandList->Close());
+
+				// Add the command list to the queue for execution.
+				ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+				mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+				// Swap the back and front buffers
+				ThrowIfFailed(mSwapChain->Present(1, 0));
+				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+
+				// Advance the fence value to mark commands up to this fence point.
+				mCurrFrameResource->Fence = ++mCurrentFence;
+
+				// Add an instruction to the command queue to set a new fence point. 
+				// Because we are on the GPU timeline, the new fence point won't be 
+				// set until the GPU finishes processing all the commands prior to this Signal().
+				mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 			}
 			else
 			{
@@ -277,6 +296,44 @@ void AppBase::OnResize()
 		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
 	}
 
+	//=====================================
+	// RTV Render in a Texture
+	D3D12_RESOURCE_DESC rtvTexDesc
+	{
+		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+		/* UINT64 Alignment						*/	0,
+		/* UINT64 Width							*/	mClientWidth,
+		/* UINT Height							*/	mClientHeight,
+		/* UINT16 DepthOrArraySize				*/	1,
+		/* UINT16 MipLevels						*/	1,
+		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R8G8B8A8_UNORM,
+		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
+		/*		UINT Count						*/		1,
+		/*		UINT Quality					*/ 		0
+		/* }									*/	},
+		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
+		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+	};
+
+	D3D12_CLEAR_VALUE clearValue
+	{
+		/* DXGI_FORMAT Format;							*/rtvTexDesc.Format,
+		/* union {										*/{
+		/*		FLOAT Color[4];							*/	{0.0f, 0.0f, 0.0f, 1.0f}
+		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
+		/*			FLOAT Depth;						*/
+		/*			UINT8 Stencil;						*/
+		/*		}										*/	
+		/* } 											*/}
+	};
+
+	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mRTVTexBuffer.GetAddressOf())));
+	// RTV Render in a Texture
+	//=====================================
+	
+
+
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc
 	{
@@ -295,7 +352,7 @@ void AppBase::OnResize()
 		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
 	};
 
-	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	
 	D3D12_CLEAR_VALUE optClear
 	{
 		/* DXGI_FORMAT Format;							*/mDepthStencilFormat,
@@ -928,15 +985,17 @@ void AppBase::ShowImguiViewport(bool* p_open)
 	}
 
 	// ImTextureID my_tex_id = gpu ptr;
-	float my_tex_w = (float)io.Fonts->TexWidth;
-	float my_tex_h = (float)io.Fonts->TexHeight;
+	//float my_tex_w = (float)io.Fonts->TexWidth;
+	//float my_tex_h = (float)io.Fonts->TexHeight;
 
-	{
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
-		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
-		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
-	}
+	//{
+	//	ImVec2 pos = ImGui::GetCursorScreenPos();
+	//	ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
+	//	ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+	//	ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+
+	//	ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+	//}
 	
 
 }

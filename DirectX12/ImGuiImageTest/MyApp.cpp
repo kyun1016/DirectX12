@@ -1094,27 +1094,6 @@ void MyApp::Render()
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
-
-	// Done recording commands.
-	ThrowIfFailed(mCommandList->Close());
-
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	// Swap the back and front buffers
-	ThrowIfFailed(mSwapChain->Present(1, 0));
-	//// Swap the back and front buffers
-	//ThrowIfFailed(mSwapChain->Present(1, 0));
-	mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
-
-	// Advance the fence value to mark commands up to this fence point.
-	mCurrFrameResource->Fence = ++mCurrentFence;
-
-	// Add an instruction to the command queue to set a new fence point. 
-	// Because we are on the GPU timeline, the new fence point won't be 
-	// set until the GPU finishes processing all the commands prior to this Signal().
-	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
 void MyApp::AnimateMaterials()
@@ -1447,6 +1426,57 @@ void MyApp::UpdateCamera()
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	DirectX::XMStoreFloat4x4(&mView, view);
+}
+
+void MyApp::UpdateImGui()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	ShowMainWindow();
+
+	if (mShowDemoWindow)
+		ImGui::ShowDemoWindow(&mShowDemoWindow);
+}
+
+void MyApp::ShowMainWindow()
+{
+	ImGui::Begin("Root");
+
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mIdxTexture;
+	ImTextureID my_tex_id2 = (ImTextureID)mRtvHeap->GetGPUDescriptorHandleForHeapStart().ptr + mRtvDescriptorSize * mCurrBackBuffer;
+	float my_tex_w = (float)mClientWidth;
+	float my_tex_h = (float)mClientHeight;
+	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
+	ImGui::Text("size: %d x %d", mClientWidth, mClientHeight);
+	ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
+	ImGui::Text("GPU handle = %p", my_tex_id);
+	ImGui::Text("GPU handle = %p", my_tex_id2);
+	{
+		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+		int width = mClientWidth;
+		int height = mClientHeight;
+		ImGui::SliderInt("Width (1 ~ 500)", &width, 1, 500, "%d", flags);
+		ImGui::SliderInt("Height (1 ~ 500)", &height, 1, 500, "%d", flags);
+		ImGui::SliderInt("Height (0 ~ Texture Size)", &mIdxTexture, 0, TEXTURE_FILENAMES.size()-1, "%d", flags);
+		
+		mClientWidth = width;
+		mClientHeight = height;
+	}
+
+	{
+		ImVec2 pos = ImGui::GetCursorScreenPos();
+		
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+		// ImGui::Image(my_tex_id2, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+	}
+	ImGui::End();
 }
 
 float MyApp::GetHillsHeight(const float x, const float z) const

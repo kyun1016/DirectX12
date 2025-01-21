@@ -7,8 +7,8 @@
 #include "../EngineCore/Camera.h"
 #include "../EngineCore/GameTimer.h"
 #include "../EngineCore/D3DUtil.h"
-
 #include "../ImGuiCore/imgui.h"
+#include "FrameResource.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")
@@ -139,7 +139,7 @@ protected:
 	void ShowImguiViewport(bool* open);
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
-	bool mShowDemoWindow = false;
+	bool mShowDemoWindow = true;
 	bool mShowAnotherWindow = false;
 	bool mShowViewport = false;
 	ID3D12DescriptorHeap* mSrvDescHeap;
@@ -177,6 +177,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
 	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
 	int mCurrBackBuffer;
 
 	UINT mDsvDescriptorSize = 0;
@@ -189,6 +190,11 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
+
+	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
+	FrameResource* mCurrFrameResource = nullptr;
+	int mCurrFrameResourceIndex = 0;
+
 
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
