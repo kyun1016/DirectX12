@@ -888,6 +888,19 @@ void MyApp::BuildPSO()
 		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
 		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
 	};
+	transparentPsoDesc.BlendState.RenderTarget[1] =
+	{
+		/* BOOL BlendEnable				*/true,
+		/* BOOL LogicOpEnable			*/false,
+		/* D3D12_BLEND SrcBlend			*/D3D12_BLEND_SRC_ALPHA,
+		/* D3D12_BLEND DestBlend		*/D3D12_BLEND_INV_SRC_ALPHA,
+		/* D3D12_BLEND_OP BlendOp		*/D3D12_BLEND_OP_ADD,
+		/* D3D12_BLEND SrcBlendAlpha	*/D3D12_BLEND_ONE,
+		/* D3D12_BLEND DestBlendAlpha	*/D3D12_BLEND_ZERO,
+		/* D3D12_BLEND_OP BlendOpAlpha	*/D3D12_BLEND_OP_ADD,
+		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
+		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
+	};
 	//=====================================================
 	// PSO for alpha tested objects
 	//=====================================================

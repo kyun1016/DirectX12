@@ -86,9 +86,3 @@ struct VertexOut
     float3 NormalW : NORMAL;
 	float2 TexC    : TEXCOORD;
 };
-
-struct PixelOut
-{
-    float4 color0 : SV_Target0;
-    float4 color1 : SV_Target1;
-};
