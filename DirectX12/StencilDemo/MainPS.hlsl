@@ -2,7 +2,7 @@
 
 #define FOG
 
-float4 main(VertexOut pin) : SV_Target
+PixelOut main(VertexOut pin) : SV_Target
 {
     float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
 	
@@ -40,5 +40,8 @@ float4 main(VertexOut pin) : SV_Target
     // Common convention to take alpha from diffuse albedo.
     litColor.a = diffuseAlbedo.a;
 
-    return litColor;
+    PixelOut ret;
+    ret.color0 = litColor;
+    ret.color1 = litColor;
+    return ret;
 }

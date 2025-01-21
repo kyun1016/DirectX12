@@ -98,7 +98,7 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = (UINT) TEXTURE_FILENAMES.size(),
+		/* UINT NumDescriptors				*/.NumDescriptors = (UINT) TEXTURE_FILENAMES.size() + 1,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -141,6 +141,10 @@ void MyApp::BuildDescriptorHeaps()
 		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
 		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
+
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MipLevels = 1;
+	mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
 }
 
 void MyApp::BuildShadersAndInputLayout()
@@ -1051,13 +1055,18 @@ void MyApp::Render()
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
+	D3D12_RESOURCE_BARRIER RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
 
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &mSwapChainDescriptor[mCurrBackBuffer], true, &mDepthStencilDescriptor);
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
+	rtvs[0] = mSwapChainDescriptor[mCurrBackBuffer];		// 기존
+	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
+	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -1094,6 +1103,8 @@ void MyApp::Render()
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &DefaultBarrier);
+	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
 }
 
 void MyApp::AnimateMaterials()
@@ -1446,21 +1457,19 @@ void MyApp::ShowMainWindow()
 	ImGui::Begin("Root");
 
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mIdxTexture;
-	ImTextureID my_tex_id2 = (ImTextureID)mRtvHeap->GetGPUDescriptorHandleForHeapStart().ptr + mRtvDescriptorSize * mCurrBackBuffer;
 	float my_tex_w = (float)mClientWidth;
 	float my_tex_h = (float)mClientHeight;
 	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
 	ImGui::Text("size: %d x %d", mClientWidth, mClientHeight);
 	ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
 	ImGui::Text("GPU handle = %p", my_tex_id);
-	ImGui::Text("GPU handle = %p", my_tex_id2);
 	{
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 		int width = mClientWidth;
 		int height = mClientHeight;
 		ImGui::SliderInt("Width (1 ~ 500)", &width, 1, 500, "%d", flags);
 		ImGui::SliderInt("Height (1 ~ 500)", &height, 1, 500, "%d", flags);
-		ImGui::SliderInt("Height (0 ~ Texture Size)", &mIdxTexture, 0, TEXTURE_FILENAMES.size()-1, "%d", flags);
+		ImGui::SliderInt("Height (0 ~ Texture Size)", &mIdxTexture, 0, TEXTURE_FILENAMES.size(), "%d", flags);
 		
 		mClientWidth = width;
 		mClientHeight = height;
@@ -1474,7 +1483,6 @@ void MyApp::ShowMainWindow()
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
-		// ImGui::Image(my_tex_id2, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
 	}
 	ImGui::End();
 }

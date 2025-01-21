@@ -145,9 +145,6 @@ public:
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> mRtvTexture;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvTextureHeap;
-	D3D12_CPU_DESCRIPTOR_HANDLE mRtvTextureDescriptor;
 #pragma endregion ImGui
 
 public:
@@ -177,8 +174,9 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
 	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS+1];
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
 	int mCurrBackBuffer;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
 
 	UINT mDsvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;

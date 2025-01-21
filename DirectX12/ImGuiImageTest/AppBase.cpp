@@ -276,9 +276,9 @@ void AppBase::OnResize()
 	assert(mDevice);
 	assert(mSwapChain);
 
-
 	//=====================================
 	// RTV Render in a Texture
+	mRTVTexBuffer.Reset();
 	D3D12_RESOURCE_DESC rtvTexDesc
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -352,10 +352,6 @@ void AppBase::OnResize()
 		/* 	D3D12_TEX3D_RTV Texture3D				*/
 		/* 	}										*/
 	};
-	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	rtvDesc.Texture2D.MipSlice = 0;
-	rtvDesc.Texture2D.PlaneSlice = 0;
 	mDevice->CreateRenderTargetView(mRTVTexBuffer.Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
 
 	// Create the depth/stencil buffer and view.
