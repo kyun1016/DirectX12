@@ -17,6 +17,7 @@ enum class RenderLayer : int
 	Transparent,
 	Shadow,
 	Subdivision,
+	Normal,
 	Count
 };
 
@@ -55,7 +56,8 @@ class MyApp : public AppBase
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
 			| (1 << (int)RenderLayer::Reflected)
-			| (1 << (int)RenderLayer::Shadow);
+			| (1 << (int)RenderLayer::Shadow)
+			| (1 << (int)RenderLayer::Normal);
 		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
 		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
 		float OffsetX = 0.0f, OffsetY = 0.0f, OffsetZ = 0.0f;
@@ -151,16 +153,16 @@ private:
 		L"skull.txt"
 	};
 
-	static const inline std::vector<std::wstring>	VS_DIR  = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso" };
-	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS"};
-	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso" };
-	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS" };
-	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
-	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS" };
+	static const inline std::vector<std::wstring>	VS_DIR  = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso", L"Shaders\\NormalVS.cso" };
+	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS", "normalVS"};
+	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso", L"Shaders\\NormalGS.cso" };
+	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS", "normalGS" };
+	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso", L"Shaders\\NormalPS.cso" };
+	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS", "normalPS"};
 
 	static const inline std::vector<std::string>	gPSOName = {
-		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision",
-		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe", "subdivision_wireframe"
+		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision", "normal",
+		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe", "subdivision_wireframe", "normal_wireframe"
 	};
 #pragma endregion Constant
 

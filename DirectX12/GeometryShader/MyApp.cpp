@@ -605,7 +605,7 @@ void MyApp::BuildRenderItems()
 		boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-		boxRitem->LayerFlag = (1 << (int)RenderLayer::Subdivision);
+		boxRitem->LayerFlag = (1 << (int)RenderLayer::Subdivision) | (1 << (int)RenderLayer::Normal);
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 
@@ -961,6 +961,15 @@ void MyApp::BuildPSO()
 	subdivisionDesc.GS = { reinterpret_cast<BYTE*>(mShaders[GS_NAME[0]]->GetBufferPointer()), mShaders[GS_NAME[0]]->GetBufferSize() };
 
 	//=====================================================
+	// PSO for Normal
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC normalDesc = opaquePsoDesc;
+	normalDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	normalDesc.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[2]]->GetBufferPointer()), mShaders[VS_NAME[2]]->GetBufferSize() };
+	normalDesc.GS = { reinterpret_cast<BYTE*>(mShaders[GS_NAME[1]]->GetBufferPointer()), mShaders[GS_NAME[1]]->GetBufferSize() };
+	normalDesc.PS = { reinterpret_cast<BYTE*>(mShaders[PS_NAME[2]]->GetBufferPointer()), mShaders[PS_NAME[2]]->GetBufferSize() };
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Opaque]])));
@@ -970,6 +979,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::AlphaTested]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Shadow]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Subdivision]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Normal]])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -981,6 +991,8 @@ void MyApp::BuildPSO()
 	alphaTestedPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	shadowPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	subdivisionDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	normalDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Opaque]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Mirror]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Reflected]])));
@@ -988,6 +1000,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::AlphaTested]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Shadow]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Subdivision]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Normal]])));
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
@@ -1173,6 +1186,9 @@ void MyApp::Render()
 
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Shadow]].Get());
 	DrawRenderItems(RenderLayer::Shadow);
+
+	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Normal]].Get());
+	DrawRenderItems(RenderLayer::Normal);
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -1535,7 +1551,7 @@ void MyApp::ShowMainWindow()
 
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mImguiIdxTexture;
 	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
-	ImGui::Text("size: %d x %d", mImguiHeight, mImguiHeight);
+	ImGui::Text("size: %d x %d", mImguiWidth, mImguiHeight);
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
