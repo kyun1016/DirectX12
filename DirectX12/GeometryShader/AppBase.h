@@ -139,7 +139,7 @@ protected:
 	void ShowImguiViewport(bool* open);
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
-	bool mShowDemoWindow = true;
+	bool mShowDemoWindow = false;
 	bool mShowAnotherWindow = false;
 	bool mShowViewport = false;
 	ID3D12DescriptorHeap* mSrvDescHeap;

@@ -114,6 +114,13 @@ private:
 #pragma region Imgui
 	virtual void UpdateImGui() override;
 	void ShowMainWindow();
+	void ShowTextureWindow();
+	void ShowMaterialWindow();
+	void ShowViewportWindow();
+	bool mShowDemoWindow = false;
+	bool mShowTextureWindow = false;
+	bool mShowMaterialWindow = false;
+	bool mShowViewportWindow = false;
 	int mImguiIdxTexture = 0;
 	int mImguiWidth = 0;
 	int mImguiHeight = 0;
@@ -137,7 +144,7 @@ private:
 		"bricks", "stone", "tile", "grass", "water1",
 		"WireFence", "WoodCrate01", "bricks3", "checkboard", "ice",
 		"white1x1", 
-		"skullMat", "shadowMat"
+		"skullMat", "shadowMat", "viewport"
 	};
 
 	static const inline std::vector<std::pair<std::string, std::vector<std::string>>> GEO_MESH_NAMES = {

@@ -554,7 +554,7 @@ void MyApp::BuildMaterials()
 	UINT offset = TEXTURE_FILENAMES.size();
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[offset];
-	skullMat->MatCBIndex = offset;
+	skullMat->MatCBIndex = offset++;
 	skullMat->DiffuseSrvHeapIndex = 0;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
@@ -562,13 +562,22 @@ void MyApp::BuildMaterials()
 	mMaterials[skullMat->Name] = std::move(skullMat);
 
 	auto shadowMat = std::make_unique<Material>();
-	shadowMat->Name = MATERIAL_NAMES[offset+1];
-	shadowMat->MatCBIndex = offset + 1;
+	shadowMat->Name = MATERIAL_NAMES[offset];
+	shadowMat->MatCBIndex = offset++;
 	shadowMat->DiffuseSrvHeapIndex = 0;
 	shadowMat->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	shadowMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	shadowMat->Roughness = 0.0f;
 	mMaterials[shadowMat->Name] = std::move(shadowMat);
+
+	auto viewportMat = std::make_unique<Material>();
+	viewportMat->Name = MATERIAL_NAMES[offset];
+	viewportMat->MatCBIndex = offset++;
+	viewportMat->DiffuseSrvHeapIndex = TEXTURE_FILENAMES.size();
+	viewportMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	viewportMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
+	viewportMat->Roughness = 0.0f;
+	mMaterials[viewportMat->Name] = std::move(viewportMat);
 }
 
 
@@ -579,10 +588,11 @@ void MyApp::BuildRenderItems()
 	//=========================================================
 	// GEO_MESH_NAMES[0]: ShapeGeo
 	//=========================================================
-	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
+	auto boxRitem = std::make_unique<RenderItem>();
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
-		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 0.0f));
+		boxRitem = std::make_unique<RenderItem>();
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation((i % 5) * 5.0f, 15.5f, -5.0 + -5.0 * (i / 5)));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -593,10 +603,10 @@ void MyApp::BuildRenderItems()
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 		mAllRitems.push_back(std::move(boxRitem));
 	}
-	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
-		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 5.0f));
+		boxRitem = std::make_unique<RenderItem>();
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation((i % 5) * 5.0f, 15.5f, 5.0f * (i/5)));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -609,18 +619,18 @@ void MyApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 
-	auto boxRitem1 = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem1->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
-	DirectX::XMStoreFloat4x4(&boxRitem1->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	boxRitem1->ObjCBIndex = objCBIndex++;
-	boxRitem1->Mat = mMaterials[MATERIAL_NAMES[5]].get();
-	boxRitem1->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	boxRitem1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem1->IndexCount = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	boxRitem1->StartIndexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	boxRitem1->BaseVertexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	boxRitem1->LayerFlag = (1 << (int)RenderLayer::AlphaTested);
-	mAllRitems.push_back(std::move(boxRitem1));
+	boxRitem = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem->ObjCBIndex = objCBIndex++;
+	boxRitem->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	boxRitem->LayerFlag = (1 << (int)RenderLayer::AlphaTested);
+	mAllRitems.push_back(std::move(boxRitem));
 
 
 	auto gridRitem = std::make_unique<RenderItem>();
@@ -1543,35 +1553,83 @@ void MyApp::UpdateImGui()
 
 	if (mShowDemoWindow)
 		ImGui::ShowDemoWindow(&mShowDemoWindow);
+	if (mShowTextureWindow)
+		ShowTextureWindow();
+	if (mShowMaterialWindow)
+		ShowMaterialWindow();
+	if (mShowViewportWindow)
+		ShowViewportWindow();
 }
 
 void MyApp::ShowMainWindow()
 {
 	ImGui::Begin("Root");
 
-	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mImguiIdxTexture;
-	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
-	ImGui::Text("size: %d x %d", mImguiWidth, mImguiHeight);
+	{
+		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Texture", &mShowTextureWindow);
+		ImGui::Checkbox("Material", &mShowMaterialWindow);
+		ImGui::Checkbox("Viewport", &mShowViewportWindow);
+	}
+	
+	ImGui::End();
+}
+
+void MyApp::ShowTextureWindow()
+{
+	ImGui::Begin("texture", &mShowTextureWindow);
+
+	static int texIdx;
+	
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(TEXTURE_FILENAMES.size()-1) + "]").c_str(), &texIdx, 0, TEXTURE_FILENAMES.size() - 1, "%d", flags);
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
-		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-		ImGui::SliderInt("Width [1, 1920]", &mImguiWidth, 1, 1920, "%d", flags);
-		ImGui::SliderInt("Height [1, 1080]", &mImguiHeight, 1, 1080, "%d", flags);
-
-		ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(TEXTURE_FILENAMES.size()) + "]").c_str(), &mImguiIdxTexture, 0, TEXTURE_FILENAMES.size(), "%d", flags);
-		
-		if (mClientWidth != mImguiWidth || mClientHeight != mImguiHeight)
-		{
-			mClientWidth = mImguiWidth;
-			mClientHeight = mImguiHeight;
-			
-			// mOnResizeDirty = true;
-		}
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
 	}
+	ImGui::End();
+}
 
+void MyApp::ShowMaterialWindow()
+{
+	ImGui::Begin("material", &mShowMaterialWindow);
+
+	static int matIdx;
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	ImGui::SliderInt((std::string("Material [0, ") + std::to_string(MATERIAL_NAMES.size() - 1) + "]").c_str(), &matIdx, 0, MATERIAL_NAMES.size() - 1, "%d", flags);
 	{
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		
+		Material* mat = mMaterials[MATERIAL_NAMES[matIdx]].get();
+		int flag = 0;
+		flag += ImGui::SliderFloat("DiffuseR", &mat->DiffuseAlbedo.x, 0.0, 1.0);
+		flag += ImGui::SliderFloat("DiffuseG", &mat->DiffuseAlbedo.y, 0.0, 1.0);
+		flag += ImGui::SliderFloat("DiffuseB", &mat->DiffuseAlbedo.z, 0.0, 1.0);
+		flag += ImGui::SliderFloat("DiffuseA", &mat->DiffuseAlbedo.w, 0.0, 1.0);
+		flag += ImGui::SliderFloat("FresnelX", &mat->FresnelR0.x, 0.0, 1.0);
+		flag += ImGui::SliderFloat("FresnelY", &mat->FresnelR0.y, 0.0, 1.0);
+		flag += ImGui::SliderFloat("FresnelZ", &mat->FresnelR0.z, 0.0, 1.0);
+		flag += ImGui::SliderFloat("Roughness", &mat->Roughness, 0.0, 1.0);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(TEXTURE_FILENAMES.size()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, TEXTURE_FILENAMES.size(), "%d", flags);
+		if (flag)
+			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mat->DiffuseSrvHeapIndex;
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+	}
+	ImGui::End();
+}
+
+void MyApp::ShowViewportWindow()
+{
+	ImGui::Begin("viewport1", &mShowViewportWindow);
+
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * TEXTURE_FILENAMES.size();
+	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
