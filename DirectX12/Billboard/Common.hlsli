@@ -29,6 +29,7 @@ cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
     float4x4 gTexTransform;
+    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
 };
 
 // Constant data that varies per material.
@@ -87,6 +88,15 @@ struct VertexOut
 	float2 TexC    : TEXCOORD;
 };
 
+// Geometry
+struct GeoOut
+{
+    float4 PosH : SV_POSITION;
+    float3 PosW : POSITION;
+    float3 NormalW : NORMAL;
+    float2 TexC : TEXCOORD;
+    uint PrimID : SV_PrimitiveID;
+};
 
 struct PixelOut
 {

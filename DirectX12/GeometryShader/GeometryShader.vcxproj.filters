@@ -70,9 +70,6 @@
     <FxCompile Include="MainVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="TreeSpriteGS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="SubdivisionGS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

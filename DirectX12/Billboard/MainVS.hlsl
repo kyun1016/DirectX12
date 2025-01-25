@@ -1,5 +1,7 @@
 #include "Common.hlsli"
 
+
+
 VertexOut main(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;

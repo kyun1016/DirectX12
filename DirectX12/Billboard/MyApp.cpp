@@ -167,9 +167,9 @@ void MyApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mShaders[VS_NAME[0]] = D3DUtil::LoadBinary(VS_DIR[0]);
-	mShaders[PS_NAME[0]] = D3DUtil::LoadBinary(PS_DIR[0]);
-	mShaders[PS_NAME[1]] = D3DUtil::LoadBinary(PS_DIR[1]);
+	for (size_t i = 0; i < VS_DIR.size(); ++i) mShaders[VS_NAME[i]] = D3DUtil::LoadBinary(VS_DIR[i]);
+	for (size_t i = 0; i < GS_DIR.size(); ++i) mShaders[GS_NAME[i]] = D3DUtil::LoadBinary(GS_DIR[i]);
+	for (size_t i = 0; i < PS_DIR.size(); ++i) mShaders[PS_NAME[i]] = D3DUtil::LoadBinary(PS_DIR[i]);
 
 	mInputLayout =
 	{
@@ -582,7 +582,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
 	{
 		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i*5.0f, 15.5f, 0.0f));
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 0.0f));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -593,6 +593,22 @@ void MyApp::BuildRenderItems()
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 		mAllRitems.push_back(std::move(boxRitem));
 	}
+	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
+	{
+		auto boxRitem = std::make_unique<RenderItem>();
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 5.0f));
+		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		boxRitem->ObjCBIndex = objCBIndex++;
+		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
+		boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+		boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+		boxRitem->LayerFlag = (1 << (int)RenderLayer::Subdivision);
+		mAllRitems.push_back(std::move(boxRitem));
+	}
+
 	auto boxRitem1 = std::make_unique<RenderItem>();
 	DirectX::XMStoreFloat4x4(&boxRitem1->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
 	DirectX::XMStoreFloat4x4(&boxRitem1->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
@@ -910,11 +926,7 @@ void MyApp::BuildPSO()
 	// PSO for alpha tested objects
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
-	alphaTestedPsoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mShaders[PS_NAME[1]]->GetBufferPointer()),
-			mShaders[PS_NAME[1]]->GetBufferSize()
-	};
+	alphaTestedPsoDesc.PS = {reinterpret_cast<BYTE*>(mShaders[PS_NAME[1]]->GetBufferPointer()),	mShaders[PS_NAME[1]]->GetBufferSize()};
 	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	
@@ -942,6 +954,13 @@ void MyApp::BuildPSO()
 	shadowPsoDesc.DepthStencilState.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
 
 	//=====================================================
+	// PSO for Subdivision
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC subdivisionDesc = opaquePsoDesc;
+	subdivisionDesc.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[1]]->GetBufferPointer()), mShaders[VS_NAME[1]]->GetBufferSize() };
+	subdivisionDesc.GS = { reinterpret_cast<BYTE*>(mShaders[GS_NAME[0]]->GetBufferPointer()), mShaders[GS_NAME[0]]->GetBufferSize() };
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Opaque]])));
@@ -950,6 +969,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Transparent]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::AlphaTested]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Shadow]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Subdivision]])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -960,12 +980,14 @@ void MyApp::BuildPSO()
 	transparentPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	alphaTestedPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	shadowPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	subdivisionDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Opaque]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Mirror]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Reflected]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Transparent]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::AlphaTested]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Shadow]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Subdivision]])));
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
@@ -1127,8 +1149,9 @@ void MyApp::Render()
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-
 	DrawRenderItems(RenderLayer::Opaque);
+	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Subdivision]].Get());
+	DrawRenderItems(RenderLayer::Subdivision);
 
 	mCommandList->OMSetStencilRef(1);
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Mirror]].Get());
@@ -1197,6 +1220,9 @@ void MyApp::UpdateObjectCBs()
 			ObjectConstants objConstants;
 			DirectX::XMStoreFloat4x4(&objConstants.World, DirectX::XMMatrixTranspose(world));
 			DirectX::XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+			
+			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+			DirectX::XMStoreFloat4x4(&objConstants.WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
 
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 		}

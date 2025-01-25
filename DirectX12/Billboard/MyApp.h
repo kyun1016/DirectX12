@@ -16,6 +16,7 @@ enum class RenderLayer : int
 	AlphaTested,
 	Transparent,
 	Shadow,
+	Subdivision,
 	Count
 };
 
@@ -150,15 +151,16 @@ private:
 		L"skull.txt"
 	};
 
-	static const inline std::wstring				VS_DIR[1] = { L"Shaders\\MainVS.cso" };
-	static const inline std::string					VS_NAME[1] = { "standardVS" };
-
-	static const inline std::wstring				PS_DIR[2] = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
-	static const inline std::string					PS_NAME[2] = { "opaquePS" , "alphaTestedPS" };
+	static const inline std::vector<std::wstring>	VS_DIR  = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso" };
+	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS"};
+	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso" };
+	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS" };
+	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
+	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS" };
 
 	static const inline std::vector<std::string>	gPSOName = {
-		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow",
-		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe"
+		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision",
+		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe", "subdivision_wireframe"
 	};
 #pragma endregion Constant
 
