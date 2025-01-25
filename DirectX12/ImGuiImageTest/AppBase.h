@@ -148,6 +148,7 @@ public:
 #pragma endregion ImGui
 
 public:
+	bool mOnResizeDirty = false;
 	// Root assets path.
 	std::wstring mAssetsPath;
 

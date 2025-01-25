@@ -275,7 +275,8 @@ void AppBase::OnResize()
 {
 	assert(mDevice);
 	assert(mSwapChain);
-
+	mOnResizeDirty = false;
+	UpdateForSizeChange(mClientWidth, mClientHeight);
 	//=====================================
 	// RTV Render in a Texture
 	mRTVTexBuffer.Reset();
@@ -289,9 +290,9 @@ void AppBase::OnResize()
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R8G8B8A8_UNORM,
 		/* DXGI_SAMPLE_DESC SampleDesc{			*/	{
-			/*		UINT Count						*/		1,
-			/*		UINT Quality					*/ 		0
-			/* }									*/	},
+		/*		UINT Count						*/		1,
+		/*		UINT Quality					*/ 		0
+		/* }									*/	},
 		/* D3D12_TEXTURE_LAYOUT Layout			*/	D3D12_TEXTURE_LAYOUT_UNKNOWN,
 		/* D3D12_RESOURCE_FLAGS Flags			*/	D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
 	};
@@ -300,7 +301,7 @@ void AppBase::OnResize()
 	{
 		/* DXGI_FORMAT Format;							*/rtvTexDesc.Format,
 		/* union {										*/{
-			/*		FLOAT Color[4];							*/	{0.0f, 0.0f, 0.0f, 1.0f}
+			/*		FLOAT Color[4];							*/	{ 0.7f, 0.7f, 0.7f, 1.0f }
 			/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
 			/*			FLOAT Depth;						*/
 			/*			UINT8 Stencil;						*/
@@ -472,37 +473,38 @@ bool AppBase::RegisterWindowClass()
 
 bool AppBase::MakeWindowHandle()
 {
-	//SetWindowBounds(0, 0, mClientWidth, mClientHeight);
-	//AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
-	mHwndWindow = CreateWindowEx(
-		/*_In_ DWORD dwExStyle			*/WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
-		/*_In_opt_ LPCWSTR lpClassName	*/mWindowClass.lpszClassName,
-		/*_In_opt_ LPCWSTR lpWindowName	*/NULL,
-		/*_In_ DWORD dwStyle			*/WS_POPUP,
-		/*_In_ int X					*/0,
-		/*_In_ int Y					*/0,
-		/*_In_ int nWidth				*/mClientWidth,
-		/*_In_ int nHeight				*/mClientHeight,
-		/*_In_opt_ HWND hWndParent		*/NULL,
-		/*_In_opt_ HMENU hMenu			*/NULL,
-		/*_In_opt_ HINSTANCE hInstance	*/mWindowClass.hInstance,
-		/*_In_opt_ LPVOID lpParam)		*/NULL
-	);
-	// SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
 
-	//mHwndWindow = CreateWindow(
-	//	/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
-	//	/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
-	//	/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
-	//	/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
-	//	/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
-	//	/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
-	//	/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
-	//	/* _In_opt_ HWND hWndParent		*/ NULL,
-	//	/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
-	//	/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
-	//	/* _In_opt_ LPVOID lpParam		*/ NULL
+	//mHwndWindow = CreateWindowEx(
+	//	/*_In_ DWORD dwExStyle			*/WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
+	//	/*_In_opt_ LPCWSTR lpClassName	*/mWindowClass.lpszClassName,
+	//	/*_In_opt_ LPCWSTR lpWindowName	*/NULL,
+	//	/*_In_ DWORD dwStyle			*/WS_POPUP,
+	//	/*_In_ int X					*/100,
+	//	/*_In_ int Y					*/100,
+	//	/*_In_ int nWidth				*/mClientWidth,
+	//	/*_In_ int nHeight				*/mClientHeight,
+	//	/*_In_opt_ HWND hWndParent		*/NULL,
+	//	/*_In_opt_ HMENU hMenu			*/NULL,
+	//	/*_In_opt_ HINSTANCE hInstance	*/mWindowClass.hInstance,
+	//	/*_In_opt_ LPVOID lpParam)		*/NULL
 	//);
+	//SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
+
+	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
+	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
+	mHwndWindow = CreateWindow(
+		/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
+		/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
+		/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
+		/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
+		/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
+		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
+		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
+		/* _In_opt_ HWND hWndParent		*/ NULL,
+		/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
+		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
+		/* _In_opt_ LPVOID lpParam		*/ NULL
+	);
 
 	if (!mHwndWindow) {
 		std::cout << "CreateWindow() failed." << std::endl;
@@ -793,6 +795,9 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
 
+	if (mOnResizeDirty)
+		OnResize();
+
 	switch (msg)
 	{
 	case WM_CREATE:
@@ -818,7 +823,6 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		// Save the new client area dimensions.
 		mClientWidth = (UINT)LOWORD(lParam);
 		mClientHeight = (UINT)HIWORD(lParam);
-		UpdateForSizeChange(mClientWidth, mClientHeight);
 
 		if (mDevice)
 		{

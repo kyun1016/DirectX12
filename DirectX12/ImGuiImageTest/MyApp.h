@@ -111,7 +111,9 @@ private:
 #pragma region Imgui
 	virtual void UpdateImGui() override;
 	void ShowMainWindow();
-	int mIdxTexture = 0;
+	int mImguiIdxTexture = 0;
+	int mImguiWidth = 0;
+	int mImguiHeight = 0;
 #pragma endregion Imgui
 
 #pragma region Land

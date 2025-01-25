@@ -9,6 +9,8 @@ MyApp::MyApp()
 
 MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	: AppBase(width, height, name)
+	, mImguiWidth(width)
+	, mImguiHeight(height)
 {
 }
 #pragma region Initialize
@@ -107,7 +109,7 @@ void MyApp::BuildDescriptorHeaps()
 	//
 	// Fill out the heap with actual descriptors.
 	//
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
 	{
 		/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_UNKNOWN,
@@ -132,6 +134,9 @@ void MyApp::BuildDescriptorHeaps()
 		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 		/* }																			*/
 	};
+	
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	for (const auto& a : TEXTURE_FILENAMES)
 	{
 		auto texture = mTextures[a]->Resource;
@@ -141,10 +146,10 @@ void MyApp::BuildDescriptorHeaps()
 		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
 		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
-
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDesc.Texture2D.MipLevels = 1;
 	mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 }
 
 void MyApp::BuildShadersAndInputLayout()
@@ -1028,6 +1033,38 @@ void MyApp::OnResize()
 	// The window resized, so update the aspect ratio and recompute the projection matrix.
 	DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, mAspectRatio, 1.0f, 1000.0f);
 	DirectX::XMStoreFloat4x4(&mProj, P);
+
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	//hDescriptor.Offset(TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
+	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
+	//{
+	//	/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+	//	/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+	//	/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+	//	/* union {																		*/
+	//	/* 	D3D12_BUFFER_SRV Buffer														*/
+	//	/* 	D3D12_TEX1D_SRV Texture1D													*/
+	//	/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
+	//	/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
+	//	/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+	//	/*		UINT MipLevels															*/	.MipLevels = 1,
+	//	/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+	//	/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
+	//	/*	}																			*/}
+	//	/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+	//	/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+	//	/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+	//	/* 	D3D12_TEX3D_SRV Texture3D													*/
+	//	/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+	//	/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+	//	/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+	//	/* }																			*/
+	//};
+	//mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	//BuildRootSignature();
+	//BuildDescriptorHeaps();
+	//BuildFrameResources();
 }
 void MyApp::Update()
 {
@@ -1470,23 +1507,24 @@ void MyApp::ShowMainWindow()
 {
 	ImGui::Begin("Root");
 
-	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mIdxTexture;
-	float my_tex_w = (float)mClientWidth;
-	float my_tex_h = (float)mClientHeight;
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mImguiIdxTexture;
 	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
-	ImGui::Text("size: %d x %d", mClientWidth, mClientHeight);
-	ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
+	ImGui::Text("size: %d x %d", mImguiHeight, mImguiHeight);
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-		int width = mClientWidth;
-		int height = mClientHeight;
-		ImGui::SliderInt("Width (1 ~ 500)", &width, 1, 500, "%d", flags);
-		ImGui::SliderInt("Height (1 ~ 500)", &height, 1, 500, "%d", flags);
-		ImGui::SliderInt("Height (0 ~ Texture Size)", &mIdxTexture, 0, TEXTURE_FILENAMES.size(), "%d", flags);
+		ImGui::SliderInt("Width [1, 1920]", &mImguiWidth, 1, 1920, "%d", flags);
+		ImGui::SliderInt("Height [1, 1080]", &mImguiHeight, 1, 1080, "%d", flags);
+
+		ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(TEXTURE_FILENAMES.size()) + "]").c_str(), &mImguiIdxTexture, 0, TEXTURE_FILENAMES.size(), "%d", flags);
 		
-		mClientWidth = width;
-		mClientHeight = height;
+		if (mClientWidth != mImguiWidth || mClientHeight != mImguiHeight)
+		{
+			mClientWidth = mImguiWidth;
+			mClientHeight = mImguiHeight;
+			
+			// mOnResizeDirty = true;
+		}
 	}
 
 	{
@@ -1496,7 +1534,7 @@ void MyApp::ShowMainWindow()
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
-		ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
 	}
 	ImGui::End();
 }
