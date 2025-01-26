@@ -1,5 +1,4 @@
 #include "pch.h"
-
 #include "AppBase.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
@@ -31,6 +30,9 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 
 AppBase::~AppBase()
 {
+#if defined(DEBUG) || defined(_DEBUG) 
+	ShutdownDebugLayer();
+#endif
 	g_appBase = nullptr;
 }
 
@@ -55,11 +57,7 @@ bool AppBase::Initialize()
 {
 	if (!InitMainWindow())
 		return false;
-
 	if (!InitDirect3D())
-		return false;
-
-	if (!InitImgui())
 		return false;
 
 	// Do the initial resize code.
@@ -76,6 +74,7 @@ void AppBase::CleanUp()
 	ImGui::DestroyContext();
 	DestroyWindow(mHwndWindow);
 	::UnregisterClassW(mWindowClass.lpszClassName, mWindowClass.hInstance);
+
 }
 
 int AppBase::Run()
@@ -102,25 +101,11 @@ int AppBase::Run()
 				// My Render
 				//==========================================
 				CalculateFrameStats();
+
 				Update();
 				Render();
 
-				UpdateImGui();		// override this function
-
-				ImGui::Render();
-
-				mCommandList->SetDescriptorHeaps(1, &mSrvDescHeap);
-				ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
-
-				// Update and Render additional Platform Windows
-				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-				{
-					ImGui::UpdatePlatformWindows();
-					ImGui::RenderPlatformWindowsDefault();
-				}
-
-				// Done recording commands.
-				ThrowIfFailed(mCommandList->Close());
+				RenderImGui();
 
 				// Add the command list to the queue for execution.
 				ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -144,6 +129,7 @@ int AppBase::Run()
 			}
 		}
 	}
+	FlushCommandQueue();
 
 	CleanUp();
 	return (int)msg.wParam;
@@ -270,16 +256,37 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	mDepthStencilDescriptor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
-
+// DX12 Debug Layer <- GPU에서 에러나는 걸 로그로 출력
 void AppBase::OnResize()
 {
 	assert(mDevice);
 	assert(mSwapChain);
 	mOnResizeDirty = false;
 	UpdateForSizeChange(mClientWidth, mClientHeight);
+
+	// Flush before changing any resources.
+	FlushCommandQueue();
+
+	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+
+	// Release the previous resources we will be recreating.
+	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
+		mSwapChainBuffer[i].Reset();
+	mRTVTexBuffer.Reset();
+	mDepthStencilBuffer.Reset();
+
+	// Resize the swap chain.
+	ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mClientWidth, mClientHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+
+	mCurrBackBuffer = 0;
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
+	{
+		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
+	}
+
 	//=====================================
 	// RTV Render in a Texture
-	mRTVTexBuffer.Reset();
 	D3D12_RESOURCE_DESC rtvTexDesc
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -301,40 +308,17 @@ void AppBase::OnResize()
 	{
 		/* DXGI_FORMAT Format;							*/rtvTexDesc.Format,
 		/* union {										*/{
-			/*		FLOAT Color[4];							*/	{ 0.7f, 0.7f, 0.7f, 1.0f }
-			/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
-			/*			FLOAT Depth;						*/
-			/*			UINT8 Stencil;						*/
-			/*		}										*/
+		/*		FLOAT Color[4];							*/	{ 0.7f, 0.7f, 0.7f, 1.0f }
+		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/
+		/*			FLOAT Depth;						*/
+		/*			UINT8 Stencil;						*/
+		/*		}										*/
 		/* } 											*/}
 	};
 
 	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mRTVTexBuffer.GetAddressOf())));
-	// RTV Render in a Texture
-	//=====================================
 
-	// Flush before changing any resources.
-	FlushCommandQueue();
-
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
-
-	// Release the previous resources we will be recreating.
-	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
-		mSwapChainBuffer[i].Reset();
-	mDepthStencilBuffer.Reset();
-
-	// Resize the swap chain.
-	ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mClientWidth, mClientHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
-
-	mCurrBackBuffer = 0;
-	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
-	{
-		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
-	}
-
-	// RTV Render in a Texture
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {
 		/* DXGI_FORMAT Format						*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
 		/* D3D12_RTV_DIMENSION ViewDimension		*/.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D,
@@ -354,6 +338,8 @@ void AppBase::OnResize()
 		/* 	}										*/
 	};
 	mDevice->CreateRenderTargetView(mRTVTexBuffer.Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
+	// RTV Render in a Texture
+	//=====================================
 
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc
@@ -514,7 +500,7 @@ bool AppBase::MakeWindowHandle()
 
 	return true;
 }
-
+// Render Doc + PIX tool
 bool AppBase::InitMainWindow()
 {
 	if (!RegisterWindowClass())
@@ -531,11 +517,8 @@ bool AppBase::InitMainWindow()
 
 bool AppBase::InitDirect3D()
 {
-	// [DEBUG] Enable debug interface
 #if defined(DEBUG) || defined(_DEBUG) 
-	ID3D12Debug* debugController;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-	debugController->EnableDebugLayer();
+	InitDebugLayer();
 #endif
 
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
@@ -557,20 +540,6 @@ bool AppBase::InitDirect3D()
 			D3D_FEATURE_LEVEL_11_0,
 			IID_PPV_ARGS(&mDevice)));
 	}
-
-//	// [DEBUG] Setup debug interface to break on any warnings/errors
-//#if defined(DEBUG) || defined(_DEBUG) 
-//	if (debugController != nullptr)
-//	{
-//		ID3D12InfoQueue* pInfoQueue = nullptr;
-//		mDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-//		pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-//		pInfoQueue->Release();
-//		debugController->Release();
-//	}
-//#endif
 
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
@@ -607,8 +576,6 @@ bool AppBase::InitDirect3D()
 	CreateRtvAndDsvDescriptorHeaps();
 	CreateSwapChain();
 
-	CreateImGuiDescriptorHeaps();
-
 	return true;
 }
 
@@ -637,7 +604,8 @@ bool AppBase::InitImgui()
 	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
 	// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-	init_info.SrvDescriptorHeap = mSrvDescHeap;
+	mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescriptorHeap.Get());
+	init_info.SrvDescriptorHeap = mSrvDescriptorHeap.Get();
 	init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
 	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
 	ImGui_ImplDX12_Init(&init_info);
@@ -671,7 +639,6 @@ void AppBase::CreateImGuiDescriptorHeaps()
 		/* UINT NodeMask					*/0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescHeap)));
-	mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescHeap);
 }
 
 void AppBase::CreateCommandObjects()
@@ -1000,6 +967,39 @@ void AppBase::UpdateImGui()
 	}
 }
 
+void AppBase::RenderImGui()
+{
+	UpdateImGui();		// override this function
+	ImGui::Render();
+
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = mSwapChainBuffer[mCurrBackBuffer].Get();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	mCommandList->ResourceBarrier(1, &barrier);
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	mCommandList->ResourceBarrier(1, &barrier);
+
+	// Done recording commands.
+	ThrowIfFailed(mCommandList->Close());
+
+	// Update and Render additional Platform Windows
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+}
+
 void AppBase::ShowImguiViewport(bool* p_open)
 {
 	if (!ImGui::Begin("Viewport", p_open))
@@ -1023,3 +1023,43 @@ void AppBase::ShowImguiViewport(bool* p_open)
 	
 
 }
+
+bool AppBase::InitDebugLayer()
+{
+	// [DEBUG] Enable debug interface
+#if defined(DEBUG) || defined(_DEBUG) 
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+	OutputDebugStringW(L"*Info, EnableDebugLayer\n");
+	mD12Debug->EnableDebugLayer();
+	// Init DXGI Debug
+	ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+	OutputDebugStringW(L"*Info, EnableLeakTrackingForThread\n");
+	mDxgiDebug->EnableLeakTrackingForThread();
+#endif
+
+	return true;
+}
+
+bool AppBase::ShutdownDebugLayer()
+{
+#if defined(DEBUG) || defined(_DEBUG) 
+	if (mDxgiDebug)
+	{
+		OutputDebugStringW(L"*Info, DXGI Reports living device objects:\n");
+		mDxgiDebug->ReportLiveObjects(
+			DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL
+		);
+	}
+	if (mD12Debug)
+	{
+
+	}
+	if(mDxgiDebug)
+		mDxgiDebug->Release();
+	if(mD12Debug)
+		mD12Debug->Release();
+#endif
+	return true;
+}
+
+

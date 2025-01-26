@@ -17,6 +17,8 @@ enum class RenderLayer : int
 	Transparent,
 	Shadow,
 	Subdivision,
+	Normal,
+	TreeSprites,
 	Count
 };
 
@@ -55,7 +57,8 @@ class MyApp : public AppBase
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
 			| (1 << (int)RenderLayer::Reflected)
-			| (1 << (int)RenderLayer::Shadow);
+			| (1 << (int)RenderLayer::Shadow)
+			| (1 << (int)RenderLayer::Normal);
 		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
 		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
 		float OffsetX = 0.0f, OffsetY = 0.0f, OffsetZ = 0.0f;
@@ -73,6 +76,7 @@ public:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
+	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
 	void BuildModelGeometry();
@@ -112,6 +116,15 @@ private:
 #pragma region Imgui
 	virtual void UpdateImGui() override;
 	void ShowMainWindow();
+	void ShowTextureWindow();
+	void ShowMaterialWindow();
+	void ShowViewportWindow();
+	bool mShowDemoWindow = false;
+	bool mShowTextureWindow = false;
+	bool mShowMaterialWindow = false;
+	bool mShowViewportWindow = false;
+	bool mIsWireframe = false;
+	bool mIsDrawNormal = false;
 	int mImguiIdxTexture = 0;
 	int mImguiWidth = 0;
 	int mImguiHeight = 0;
@@ -124,18 +137,36 @@ private:
 
 #pragma region Constant
 private:
+	static constexpr int SRV_IMGUI_OFFSET = 64;
 	static const inline std::wstring				TEXTURE_DIR = L"../Data/Textures/";
+	static constexpr int SIZE_STD_TEX = 16;
+	static constexpr int SIZE_ARY_TEX = SIZE_STD_TEX + 2;
 	static const inline std::vector<std::wstring>	TEXTURE_FILENAMES = {
-		L"bricks.dds", L"stone.dds", L"tile.dds", L"grass.dds", L"water1.dds",
-		L"WireFence.dds",L"WoodCrate01.dds", L"bricks3.dds"	, L"checkboard.dds", L"ice.dds",
-		L"white1x1.dds"
+		// STD TEX
+		L"bricks.dds",L"bricks2.dds",L"bricks3.dds", L"checkboard.dds", L"grass.dds",
+		L"ice.dds", L"stone.dds", L"tile.dds", L"WireFence.dds", L"WoodCrate01.dds",
+		L"WoodCrate02.dds", L"water1.dds", L"white1x1.dds", L"tree01S.dds", L"tree02S.dds",
+		L"tree35S.dds",
+		
+		// Array Tex (for Billboard Shader)
+		L"treearray.dds", L"treeArray2.dds",
 	};
 
+	static constexpr int SIZE_STD_MAT = SIZE_STD_TEX;
+	static constexpr int SIZE_ARY_MAT = SIZE_STD_MAT + 2;
+	static constexpr int SIZE_USR_MAT = SIZE_ARY_MAT + 3;
 	static const inline std::vector<std::string>	MATERIAL_NAMES = { 
-		"bricks", "stone", "tile", "grass", "water1",
-		"WireFence", "WoodCrate01", "bricks3", "checkboard", "ice",
-		"white1x1", 
-		"skullMat", "shadowMat"
+		// STD TEX Material
+		"bricks", "bricks2", "bricks3", "checkboard", "grass",
+		"ice", "stone", "tile", "WireFence", "WoodCrate01",
+		"WoodCrate02", "water1", "white1x1", "tree01S", "tree02S",
+		"tree35S",
+
+		// Array TEX Material
+		"treearray", "treeArray2",
+		
+		// User Define Material
+		"skullMat", "shadowMat", "viewport"
 	};
 
 	static const inline std::vector<std::pair<std::string, std::vector<std::string>>> GEO_MESH_NAMES = {
@@ -151,16 +182,16 @@ private:
 		L"skull.txt"
 	};
 
-	static const inline std::vector<std::wstring>	VS_DIR  = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso" };
-	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS"};
-	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso" };
-	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS" };
-	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso" };
-	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS" };
+	static const inline std::vector<std::wstring>	VS_DIR  = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso", L"Shaders\\NormalVS.cso", L"Shaders\\BillboardVS.cso"};
+	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS", "normalVS", "billboardVS"};
+	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso", L"Shaders\\NormalGS.cso", L"Shaders\\BillboardGS.cso" };
+	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS", "normalGS", "billboardGS" };
+	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso", L"Shaders\\NormalPS.cso", L"Shaders\\BillboardPS.cso" };
+	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS", "normalPS", "billboardPS" };
 
 	static const inline std::vector<std::string>	gPSOName = {
-		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision",
-		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe", "subdivision_wireframe"
+		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision", "normal", "treeSprites",
+		"opaque_wireframe","markStencilMirrors_wireframe","drawStencilReflections_wireframe", "alphaTested_wireframe", "transparent_wireframe", "shadow_wireframe", "subdivision_wireframe", "normal_wireframe", "treeSprites_wireframe"
 	};
 #pragma endregion Constant
 
@@ -169,7 +200,7 @@ private:
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
 
-	bool mIsWireframe = false;
+	
 
 	PassConstants mMainPassCB;
 	PassConstants mReflectedPassCB;
@@ -178,9 +209,8 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;		//input layout description
-
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;

@@ -25,6 +25,7 @@
     <None Include="LightingUtil.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="BillboardCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -57,6 +58,24 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="SubdivisionVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="NormalGS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="NormalPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="NormalVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BillboardVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BillboardGS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BillboardPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

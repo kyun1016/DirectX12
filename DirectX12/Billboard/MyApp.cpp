@@ -38,6 +38,9 @@ bool MyApp::Initialize()
 	BuildFrameResources();
 	BuildPSO();
 
+	if (!InitImgui())
+		return false;
+
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -100,16 +103,17 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = (UINT) TEXTURE_FILENAMES.size() + 1,
+		/* UINT NumDescriptors				*/.NumDescriptors = (UINT) TEXTURE_FILENAMES.size() + 1 + SRV_IMGUI_OFFSET,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
 
-	//
-	// Fill out the heap with actual descriptors.
-	//
-	
+	BuildShaderResourceViews();
+}
+
+void MyApp::BuildShaderResourceViews()
+{
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
 	{
 		/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_UNKNOWN,
@@ -134,48 +138,78 @@ void MyApp::BuildDescriptorHeaps()
 		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 		/* }																			*/
 	};
-	
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	for (const auto& a : TEXTURE_FILENAMES)
+	hDescriptor.Offset(SRV_IMGUI_OFFSET, mCbvSrvUavDescriptorSize);
+	for (int i = 0; i < SIZE_STD_TEX; ++i)
 	{
-		auto texture = mTextures[a]->Resource;
+		auto texture = mTextures[TEXTURE_FILENAMES[i]]->Resource;
 
 		srvDesc.Format = texture->GetDesc().Format;
 		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
 		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
 		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
+
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.MipLevels = -1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	for (int i = SIZE_STD_TEX; i < TEXTURE_FILENAMES.size(); ++i)
+	{
+		auto texture = mTextures[TEXTURE_FILENAMES[i]]->Resource;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.Texture2DArray.ArraySize = texture->GetDesc().DepthOrArraySize;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
+		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	}
+
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 }
 
 void MyApp::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO defines[] =
-	{
-		"FOG", "1",
-		NULL, NULL
-	};
+	//const D3D_SHADER_MACRO defines[] =
+	//{
+	//	"FOG", "1",
+	//	NULL, NULL
+	//};
 
-	const D3D_SHADER_MACRO alphaTestDefines[] =
-	{
-		"FOG", "1",
-		"ALPHA_TEST", "1",
-		NULL, NULL
-	};
+	//const D3D_SHADER_MACRO alphaTestDefines[] =
+	//{
+	//	"FOG", "1",
+	//	"ALPHA_TEST", "1",
+	//	NULL, NULL
+	//};
+	//mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	//mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
+	//mShaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+
+	//mShaders["treeSpriteVS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
+	//mShaders["treeSpriteGS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
+	//mShaders["treeSpritePS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
 	for (size_t i = 0; i < VS_DIR.size(); ++i) mShaders[VS_NAME[i]] = D3DUtil::LoadBinary(VS_DIR[i]);
 	for (size_t i = 0; i < GS_DIR.size(); ++i) mShaders[GS_NAME[i]] = D3DUtil::LoadBinary(GS_DIR[i]);
 	for (size_t i = 0; i < PS_DIR.size(); ++i) mShaders[PS_NAME[i]] = D3DUtil::LoadBinary(PS_DIR[i]);
 
-	mInputLayout =
+	mMainInputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+
+	mTreeSpriteInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -542,7 +576,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<Material>();
 		mat->Name = MATERIAL_NAMES[i];
 		mat->MatCBIndex = i;
-		mat->DiffuseSrvHeapIndex = i;
+		mat->DiffuseSrvHeapIndex = i + SRV_IMGUI_OFFSET;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
@@ -554,21 +588,30 @@ void MyApp::BuildMaterials()
 	UINT offset = TEXTURE_FILENAMES.size();
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[offset];
-	skullMat->MatCBIndex = offset;
-	skullMat->DiffuseSrvHeapIndex = 0;
+	skullMat->MatCBIndex = offset++;
+	skullMat->DiffuseSrvHeapIndex = SRV_IMGUI_OFFSET;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
 	mMaterials[skullMat->Name] = std::move(skullMat);
 
 	auto shadowMat = std::make_unique<Material>();
-	shadowMat->Name = MATERIAL_NAMES[offset+1];
-	shadowMat->MatCBIndex = offset + 1;
-	shadowMat->DiffuseSrvHeapIndex = 0;
+	shadowMat->Name = MATERIAL_NAMES[offset];
+	shadowMat->MatCBIndex = offset++;
+	shadowMat->DiffuseSrvHeapIndex = SRV_IMGUI_OFFSET;
 	shadowMat->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	shadowMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	shadowMat->Roughness = 0.0f;
 	mMaterials[shadowMat->Name] = std::move(shadowMat);
+
+	auto viewportMat = std::make_unique<Material>();
+	viewportMat->Name = MATERIAL_NAMES[offset];
+	viewportMat->MatCBIndex = offset++;
+	viewportMat->DiffuseSrvHeapIndex = SRV_IMGUI_OFFSET + TEXTURE_FILENAMES.size();
+	viewportMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	viewportMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
+	viewportMat->Roughness = 0.0f;
+	mMaterials[viewportMat->Name] = std::move(viewportMat);
 }
 
 
@@ -579,10 +622,11 @@ void MyApp::BuildRenderItems()
 	//=========================================================
 	// GEO_MESH_NAMES[0]: ShapeGeo
 	//=========================================================
-	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
+	auto boxRitem = std::make_unique<RenderItem>();
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
-		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 0.0f));
+		boxRitem = std::make_unique<RenderItem>();
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation((i % 5) * 5.0f, 15.5f, -5.0 + -5.0 * (i / 5)));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -593,10 +637,10 @@ void MyApp::BuildRenderItems()
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 		mAllRitems.push_back(std::move(boxRitem));
 	}
-	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
-		auto boxRitem = std::make_unique<RenderItem>();
-		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(i * 5.0f, 15.5f, 5.0f));
+		boxRitem = std::make_unique<RenderItem>();
+		DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation((i % 5) * 5.0f, 15.5f, 5.0f * (i/5)));
 		DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
 		boxRitem->ObjCBIndex = objCBIndex++;
 		boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
@@ -605,22 +649,22 @@ void MyApp::BuildRenderItems()
 		boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-		boxRitem->LayerFlag = (1 << (int)RenderLayer::Subdivision);
+		boxRitem->LayerFlag = (1 << (int)RenderLayer::Subdivision) | (1 << (int)RenderLayer::Normal);
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 
-	auto boxRitem1 = std::make_unique<RenderItem>();
-	DirectX::XMStoreFloat4x4(&boxRitem1->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
-	DirectX::XMStoreFloat4x4(&boxRitem1->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	boxRitem1->ObjCBIndex = objCBIndex++;
-	boxRitem1->Mat = mMaterials[MATERIAL_NAMES[5]].get();
-	boxRitem1->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	boxRitem1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem1->IndexCount = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	boxRitem1->StartIndexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	boxRitem1->BaseVertexLocation = boxRitem1->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	boxRitem1->LayerFlag = (1 << (int)RenderLayer::AlphaTested);
-	mAllRitems.push_back(std::move(boxRitem1));
+	boxRitem = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&boxRitem->World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
+	DirectX::XMStoreFloat4x4(&boxRitem->TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	boxRitem->ObjCBIndex = objCBIndex++;
+	boxRitem->Mat = mMaterials[MATERIAL_NAMES[5]].get();
+	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	boxRitem->LayerFlag = (1 << (int)RenderLayer::AlphaTested);
+	mAllRitems.push_back(std::move(boxRitem));
 
 
 	auto gridRitem = std::make_unique<RenderItem>();
@@ -765,6 +809,8 @@ void MyApp::BuildFrameResources()
 
 void MyApp::BuildPSO()
 {
+
+	// Mesh Shader(2018) <- Compute Shader (고착화)
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc
 	{
 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
@@ -827,13 +873,13 @@ void MyApp::BuildPSO()
 		/*		}															*/		},
 		/* }																*/ },
 		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
-		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mInputLayout.data(),
-		/*		UINT NumElements											*/		.NumElements = (UINT)mInputLayout.size()
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mMainInputLayout.data(),
+		/*		UINT NumElements											*/		.NumElements = (UINT)mMainInputLayout.size()
 		/*	}																*/ },
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-		/* UINT NumRenderTargets											*/.NumRenderTargets = 1,
-		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
+		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_R8G8B8A8_UNORM,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
 		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mDepthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
 		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
@@ -928,7 +974,6 @@ void MyApp::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
 	alphaTestedPsoDesc.PS = {reinterpret_cast<BYTE*>(mShaders[PS_NAME[1]]->GetBufferPointer()),	mShaders[PS_NAME[1]]->GetBufferSize()};
 	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-
 	
 	//=====================================================
 	// PSO for shadow objects
@@ -961,15 +1006,38 @@ void MyApp::BuildPSO()
 	subdivisionDesc.GS = { reinterpret_cast<BYTE*>(mShaders[GS_NAME[0]]->GetBufferPointer()), mShaders[GS_NAME[0]]->GetBufferSize() };
 
 	//=====================================================
+	// PSO for Normal
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC normalDesc = opaquePsoDesc;
+	normalDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	// normalDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	normalDesc.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[2]]->GetBufferPointer()), mShaders[VS_NAME[2]]->GetBufferSize() };
+	normalDesc.GS = { reinterpret_cast<BYTE*>(mShaders[GS_NAME[1]]->GetBufferPointer()), mShaders[GS_NAME[1]]->GetBufferSize() };
+	normalDesc.PS = { reinterpret_cast<BYTE*>(mShaders[PS_NAME[2]]->GetBufferPointer()), mShaders[PS_NAME[2]]->GetBufferSize() };
+
+	//=====================================================
+	// PSO for tree sprites
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePsoDesc = opaquePsoDesc;
+	treeSpritePsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["billboardVS"]->GetBufferPointer()), mShaders["billboardVS"]->GetBufferSize() };
+	treeSpritePsoDesc.GS = { reinterpret_cast<BYTE*>(mShaders["billboardGS"]->GetBufferPointer()), mShaders["billboardGS"]->GetBufferSize() };
+	treeSpritePsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["billboardPS"]->GetBufferPointer()), mShaders["billboardPS"]->GetBufferSize() };
+	treeSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	treeSpritePsoDesc.InputLayout = { mTreeSpriteInputLayout.data(), (UINT)mTreeSpriteInputLayout.size() };
+	treeSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Opaque]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Mirror]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Reflected]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Transparent]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::AlphaTested]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Shadow]])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Subdivision]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc			, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Opaque]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc		, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Mirror]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc	, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Reflected]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc		, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Transparent]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc		, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::AlphaTested]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc			, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Shadow]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc			, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Subdivision]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc				, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Normal]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc		, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::TreeSprites]])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -981,6 +1049,9 @@ void MyApp::BuildPSO()
 	alphaTestedPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	shadowPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	subdivisionDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	normalDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	treeSpritePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Opaque]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Mirror]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Reflected]])));
@@ -988,6 +1059,8 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::AlphaTested]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Shadow]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Subdivision]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Normal]])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::TreeSprites]])));
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
@@ -1056,37 +1129,41 @@ void MyApp::OnResize()
 	DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, mAspectRatio, 1.0f, 1000.0f);
 	DirectX::XMStoreFloat4x4(&mProj, P);
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	//hDescriptor.Offset(TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
-	//{
-	//	/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-	//	/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
-	//	/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-	//	/* union {																		*/
-	//	/* 	D3D12_BUFFER_SRV Buffer														*/
-	//	/* 	D3D12_TEX1D_SRV Texture1D													*/
-	//	/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
-	//	/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
-	//	/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-	//	/*		UINT MipLevels															*/	.MipLevels = 1,
-	//	/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
-	//	/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
-	//	/*	}																			*/}
-	//	/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
-	//	/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
-	//	/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
-	//	/* 	D3D12_TEX3D_SRV Texture3D													*/
-	//	/* 	D3D12_TEXCUBE_SRV TextureCube												*/
-	//	/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
-	//	/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
-	//	/* }																			*/
-	//};
-	//mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	if (mSrvDescriptorHeap)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
+		{
+			/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+			/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+			/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+			/* union {																		*/
+			/* 	D3D12_BUFFER_SRV Buffer														*/
+			/* 	D3D12_TEX1D_SRV Texture1D													*/
+			/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
+			/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
+			/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+			/*		UINT MipLevels															*/	.MipLevels = 1,
+			/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+			/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
+			/*	}																			*/}
+			/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+			/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+			/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+			/* 	D3D12_TEX3D_SRV Texture3D													*/
+			/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+			/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+			/* }																			*/
+		};
 
-	//BuildRootSignature();
-	//BuildDescriptorHeaps();
-	//BuildFrameResources();
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		hDescriptor.Offset(SRV_IMGUI_OFFSET + TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
+
+		mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
+		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	}
+	else
+		OutputDebugStringW(L"mSrvDescriptorHeap is nullptr! \n");
 }
 void MyApp::Update()
 {
@@ -1132,6 +1209,7 @@ void MyApp::Render()
 
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
@@ -1141,10 +1219,11 @@ void MyApp::Render()
 	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
 	// mCommandList->OMSetRenderTargets(1, &mSwapChainDescriptor[mCurrBackBuffer], true, &mDepthStencilDescriptor);
 
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
@@ -1173,6 +1252,12 @@ void MyApp::Render()
 
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Shadow]].Get());
 	DrawRenderItems(RenderLayer::Shadow);
+
+	if (mIsDrawNormal)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Normal]].Get());
+		DrawRenderItems(RenderLayer::Normal);
+	}
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -1419,10 +1504,16 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 	auto materialCB = mCurrFrameResource->MaterialCB->Resource();
 
 	// For each render item...
-	for (const auto& ri : mAllRitems)
+	for (auto& ri : mAllRitems)
 	{
 		if (!(ri->LayerFlag & (1 << (int) flag)))
 			continue;
+
+		if (flag == RenderLayer::Normal
+			|| flag == RenderLayer::TreeSprites)
+			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+		else
+			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		
 		D3D12_VERTEX_BUFFER_VIEW vbv = ri->Geo->VertexBufferView();
 		D3D12_INDEX_BUFFER_VIEW ibv = ri->Geo->IndexBufferView();
@@ -1437,7 +1528,6 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
 		if(flag == RenderLayer::Shadow)
 			matCBAddress = materialCB->GetGPUVirtualAddress() + (MATERIAL_NAMES.size() - 1) * matCBByteSize;
-
 
 		mCommandList->SetGraphicsRootDescriptorTable(0, tex);
 		mCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
@@ -1495,9 +1585,7 @@ void MyApp::OnMouseMove(WPARAM btnState, int x, int y)
 void MyApp::OnKeyboardInput()
 {
 	if (GetAsyncKeyState('1') & 0x8000)
-		mIsWireframe = true;
-	else
-		mIsWireframe = false;
+		mIsWireframe = !mIsWireframe;
 }
 
 void MyApp::UpdateCamera()
@@ -1527,35 +1615,102 @@ void MyApp::UpdateImGui()
 
 	if (mShowDemoWindow)
 		ImGui::ShowDemoWindow(&mShowDemoWindow);
+	if (mShowTextureWindow)
+		ShowTextureWindow();
+	if (mShowMaterialWindow)
+		ShowMaterialWindow();
+	if (mShowViewportWindow)
+		ShowViewportWindow();
 }
 
 void MyApp::ShowMainWindow()
 {
 	ImGui::Begin("Root");
 
-	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mImguiIdxTexture;
-	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
-	ImGui::Text("size: %d x %d", mImguiHeight, mImguiHeight);
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Window")) {
+		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Texture", &mShowTextureWindow);
+		ImGui::Checkbox("Material", &mShowMaterialWindow);
+		ImGui::Checkbox("Viewport", &mShowViewportWindow);
+
+		ImGui::TreePop();
+	} 
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Select PSO")) {
+		ImGui::Checkbox("Wireframe", &mIsWireframe);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Draw Normal", &mIsDrawNormal);      // Edit bools storing our window open/close state
+
+		ImGui::TreePop();
+	} 
+
+	
+	ImGui::End();
+}
+
+void MyApp::ShowTextureWindow()
+{
+	ImGui::Begin("texture", &mShowTextureWindow);
+
+	static int texIdx;
+	
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size(), "%d", flags);
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
-		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-		ImGui::SliderInt("Width [1, 1920]", &mImguiWidth, 1, 1920, "%d", flags);
-		ImGui::SliderInt("Height [1, 1080]", &mImguiHeight, 1, 1080, "%d", flags);
-
-		ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(TEXTURE_FILENAMES.size()) + "]").c_str(), &mImguiIdxTexture, 0, TEXTURE_FILENAMES.size(), "%d", flags);
-		
-		if (mClientWidth != mImguiWidth || mClientHeight != mImguiHeight)
-		{
-			mClientWidth = mImguiWidth;
-			mClientHeight = mImguiHeight;
-			
-			// mOnResizeDirty = true;
-		}
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
 	}
+	ImGui::End();
+}
 
+void MyApp::ShowMaterialWindow()
+{
+	ImGui::Begin("material", &mShowMaterialWindow);
+
+	static int matIdx;
+	static float diff4f[4];
+	static float fres3f[3];
+
+	ImGui::LabelText("label", "Value");
+	ImGui::SeparatorText("Inputs");
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	ImGui::SliderInt((std::string("Material [0, ") + std::to_string(MATERIAL_NAMES.size() - 1) + "]").c_str(), &matIdx, 0, MATERIAL_NAMES.size() - 1, "%d", flags);
 	{
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		
+		int flag = 0;
+		Material* mat = mMaterials[MATERIAL_NAMES[matIdx]].get();
+
+		// flag += ImGui::InputFloat4("DiffuseAlbedo R/G/B/A", diff4f);
+		flag += ImGui::SliderFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.0f, 1.0f);
+		flag += ImGui::SliderFloat3("Fresne R/G/B", fres3f, 0.0f, 1.0f);
+		flag += ImGui::SliderFloat("Roughness", &mat->Roughness, 0.0, 1.0);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size(), "%d", flags);
+		if (flag)
+		{
+			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
+			mat->FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
+			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+		}
+			
+		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mat->DiffuseSrvHeapIndex;
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+	}
+	ImGui::End();
+}
+
+void MyApp::ShowViewportWindow()
+{
+	ImGui::Begin("viewport1", &mShowViewportWindow);
+
+	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * (SRV_IMGUI_OFFSET + TEXTURE_FILENAMES.size());
+	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint

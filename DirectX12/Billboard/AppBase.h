@@ -136,10 +136,11 @@ protected:
 	void CreateImGuiDescriptorHeaps();
 	bool InitImgui();
 	virtual void UpdateImGui();
+	void RenderImGui();
 	void ShowImguiViewport(bool* open);
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
-	bool mShowDemoWindow = true;
+	bool mShowDemoWindow = false;
 	bool mShowAnotherWindow = false;
 	bool mShowViewport = false;
 	ID3D12DescriptorHeap* mSrvDescHeap;
@@ -175,6 +176,8 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
 	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS+1];
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
+
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	int mCurrBackBuffer;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
@@ -201,4 +204,12 @@ public:
 	D3D_DRIVER_TYPE mD3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
 	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	bool InitDebugLayer();
+	bool ShutdownDebugLayer();
+#if defined(DEBUG) || defined(_DEBUG) 
+	// Debug
+	Microsoft::WRL::ComPtr<ID3D12Debug> mD12Debug;
+	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
+#endif
 };
