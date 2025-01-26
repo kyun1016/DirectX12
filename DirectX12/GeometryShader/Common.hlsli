@@ -95,7 +95,7 @@ struct GeoOut
     float3 PosW : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
-    uint PrimID : SV_PrimitiveID;
+    // uint PrimID : SV_PrimitiveID;
 };
 
 struct PixelOut

@@ -201,4 +201,12 @@ public:
 	D3D_DRIVER_TYPE mD3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
 	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	bool InitDebugLayer();
+	bool ShutdownDebugLayer();
+#if defined(DEBUG) || defined(_DEBUG) 
+	// Debug
+	Microsoft::WRL::ComPtr<ID3D12Debug5> mD12Debug;
+	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
+#endif
 };

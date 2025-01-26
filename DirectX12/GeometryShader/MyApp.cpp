@@ -106,10 +106,11 @@ void MyApp::BuildDescriptorHeaps()
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
 
-	//
-	// Fill out the heap with actual descriptors.
-	//
-	
+	BuildShaderResourceViews();
+}
+
+void MyApp::BuildShaderResourceViews()
+{
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
 	{
 		/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_UNKNOWN,
@@ -134,7 +135,6 @@ void MyApp::BuildDescriptorHeaps()
 		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 		/* }																			*/
 	};
-	
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	for (const auto& a : TEXTURE_FILENAMES)
@@ -775,6 +775,8 @@ void MyApp::BuildFrameResources()
 
 void MyApp::BuildPSO()
 {
+
+	// Mesh Shader(2018) <- Compute Shader (고착화)
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc
 	{
 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
@@ -1079,37 +1081,9 @@ void MyApp::OnResize()
 	DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, mAspectRatio, 1.0f, 1000.0f);
 	DirectX::XMStoreFloat4x4(&mProj, P);
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	//hDescriptor.Offset(TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
-	//{
-	//	/* DXGI_FORMAT Format															*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-	//	/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
-	//	/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-	//	/* union {																		*/
-	//	/* 	D3D12_BUFFER_SRV Buffer														*/
-	//	/* 	D3D12_TEX1D_SRV Texture1D													*/
-	//	/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
-	//	/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
-	//	/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-	//	/*		UINT MipLevels															*/	.MipLevels = 1,
-	//	/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
-	//	/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
-	//	/*	}																			*/}
-	//	/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
-	//	/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
-	//	/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
-	//	/* 	D3D12_TEX3D_SRV Texture3D													*/
-	//	/* 	D3D12_TEXCUBE_SRV TextureCube												*/
-	//	/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
-	//	/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
-	//	/* }																			*/
-	//};
-	//mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	//BuildRootSignature();
-	//BuildDescriptorHeaps();
-	//BuildFrameResources();
+	if (mSrvDescriptorHeap == nullptr)
+		return;
+	BuildShaderResourceViews();
 }
 void MyApp::Update()
 {
@@ -1565,12 +1539,24 @@ void MyApp::ShowMainWindow()
 {
 	ImGui::Begin("Root");
 
-	{
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Window")) {
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Texture", &mShowTextureWindow);
 		ImGui::Checkbox("Material", &mShowMaterialWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
-	}
+		
+	} ImGui::TreePop();
+
+	//ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	//if (ImGui::TreeNode("Select PSO")) {
+	//	ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
+	//	ImGui::Checkbox("Texture", &mShowTextureWindow);
+	//	ImGui::Checkbox("Material", &mShowMaterialWindow);
+	//	ImGui::Checkbox("Viewport", &mShowViewportWindow);
+
+	//} ImGui::TreePop();
+
 	
 	ImGui::End();
 }

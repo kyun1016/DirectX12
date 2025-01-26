@@ -75,6 +75,7 @@ public:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
+	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
 	void BuildModelGeometry();
