@@ -965,12 +965,14 @@ void MyApp::BuildPSO()
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 	};
+	opaquePsoDesc.BlendState.IndependentBlendEnable = true;
 
 	//=====================================================
 	// PSO for marking stencil mirrors.
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC markMirrorsPsoDesc = opaquePsoDesc;
 	markMirrorsPsoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+	markMirrorsPsoDesc.BlendState.RenderTarget[1].RenderTargetWriteMask = 0;
 	markMirrorsPsoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 	markMirrorsPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	markMirrorsPsoDesc.DepthStencilState.StencilEnable = true;
