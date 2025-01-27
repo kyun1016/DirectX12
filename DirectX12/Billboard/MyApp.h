@@ -128,7 +128,15 @@ private:
 	bool mShowRenderItemWindow = false;
 	bool mShowViewportWindow = false;
 	bool mIsWireframe = false;
-	bool mIsDrawNormal = false;
+	bool mIsDrawPSOOpaque = true;
+	bool mIsDrawPSOMirror = true;
+	bool mIsDrawPSOReflected = true;
+	bool mIsDrawPSOAlphaTested = true;
+	bool mIsDrawPSOTransparent = true;
+	bool mIsDrawPSOShadow = true;
+	bool mIsDrawPSOSubdivision = true;
+	bool mIsDrawPSONormal = true;
+	bool mIsDrawPSOTreeSprites = true;
 	int mImguiIdxTexture = 0;
 	int mImguiWidth = 0;
 	int mImguiHeight = 0;

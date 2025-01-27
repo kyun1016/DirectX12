@@ -1304,35 +1304,61 @@ void MyApp::Render()
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-	DrawRenderItems(RenderLayer::Opaque);
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Subdivision]].Get());
-	DrawRenderItems(RenderLayer::Subdivision);
 
-	mCommandList->OMSetStencilRef(1);
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Mirror]].Get());
-	DrawRenderItems(RenderLayer::Mirror);
+	if (mIsDrawPSOOpaque)
+	{
+		DrawRenderItems(RenderLayer::Opaque);
+	}
 
-	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + 1 * passCBByteSize);
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Reflected]].Get());
-	DrawRenderItems(RenderLayer::Reflected);
-	// Restore main pass constants and stencil ref.
-	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-	mCommandList->OMSetStencilRef(0);
+	if (mIsDrawPSOSubdivision)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Subdivision]].Get());
+		DrawRenderItems(RenderLayer::Subdivision);
+	}
 
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::AlphaTested]].Get());
-	DrawRenderItems(RenderLayer::AlphaTested);
+	if (mIsDrawPSOMirror)
+	{
+		mCommandList->OMSetStencilRef(1);
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Mirror]].Get());
+		DrawRenderItems(RenderLayer::Mirror);
 
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::TreeSprites]].Get());
-	DrawRenderItems(RenderLayer::TreeSprites);
+		if (mIsDrawPSOReflected)
+		{
+			UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
+			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + 1 * passCBByteSize);
+			mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Reflected]].Get());
+			DrawRenderItems(RenderLayer::Reflected);
+		}
+		// Restore main pass constants and stencil ref.
+		mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+		mCommandList->OMSetStencilRef(0);
+	}
 
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Transparent]].Get());
-	DrawRenderItems(RenderLayer::Transparent);
+	if (mIsDrawPSOAlphaTested)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::AlphaTested]].Get());
+		DrawRenderItems(RenderLayer::AlphaTested);
+	}
 
-	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Shadow]].Get());
-	DrawRenderItems(RenderLayer::Shadow);
+	if (mIsDrawPSOTreeSprites)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::TreeSprites]].Get());
+		DrawRenderItems(RenderLayer::TreeSprites);
+	}
 
-	if (mIsDrawNormal)
+	if (mIsDrawPSOTransparent)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Transparent]].Get());
+		DrawRenderItems(RenderLayer::Transparent);
+	}
+
+	if (mIsDrawPSOShadow)
+	{
+		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Shadow]].Get());
+		DrawRenderItems(RenderLayer::Shadow);
+	}
+
+	if (mIsDrawPSONormal)
 	{
 		mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Normal]].Get());
 		DrawRenderItems(RenderLayer::Normal);
@@ -1720,8 +1746,17 @@ void MyApp::ShowMainWindow()
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if (ImGui::TreeNode("Select PSO")) {
+
 		ImGui::Checkbox("Wireframe", &mIsWireframe);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Draw Normal", &mIsDrawNormal);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Draw Opaque", &mIsDrawPSOOpaque);
+		ImGui::Checkbox("Draw Mirror", &mIsDrawPSOMirror);
+		ImGui::Checkbox("Draw Reflected", &mIsDrawPSOReflected);
+		ImGui::Checkbox("Draw AlphaTested", &mIsDrawPSOAlphaTested);
+		ImGui::Checkbox("Draw Transparent", &mIsDrawPSOTransparent);
+		ImGui::Checkbox("Draw Shadow", &mIsDrawPSOShadow);
+		ImGui::Checkbox("Draw Subdivision", &mIsDrawPSOSubdivision);
+		ImGui::Checkbox("Draw Normal", &mIsDrawPSONormal);
+		ImGui::Checkbox("Draw TreeSprites", &mIsDrawPSOTreeSprites);
 
 		ImGui::TreePop();
 	} 
