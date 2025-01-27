@@ -34,6 +34,7 @@ bool MyApp::Initialize()
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
 	BuildRoomGeometry();
+	BuildTreeSpritesGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
@@ -569,6 +570,64 @@ void MyApp::BuildRoomGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+void MyApp::BuildTreeSpritesGeometry()
+{
+	struct TreeSpriteVertex
+	{
+		DirectX::XMFLOAT3 Pos;
+		DirectX::XMFLOAT2 Size;
+	};
+
+	static const int treeCount = 10;
+	std::array<TreeSpriteVertex, treeCount> vertices;
+	std::array<std::int16_t, treeCount> indices;
+	for (int i = 0; i < treeCount; ++i)
+	{
+		float x = MathHelper::RandF(-45.0f, 45.0f);
+		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float y = GetHillsHeight(x, z);
+
+		// Move tree slightly above land height.
+		y += 8.0f;
+
+		vertices[i].Pos = DirectX::XMFLOAT3(x, y, z);
+		vertices[i].Size = DirectX::XMFLOAT2(20.0f, 20.0f);
+		indices[i] = i;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(TreeSpriteVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = GEO_MESH_NAMES[5].first;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(TreeSpriteVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[GEO_MESH_NAMES[5].second[0]] = submesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+}
+
 void MyApp::BuildMaterials()
 {
 	for (size_t i = 0; i < TEXTURE_FILENAMES.size(); ++i)
@@ -799,6 +858,23 @@ void MyApp::BuildRenderItems()
 		= (1 << (int)RenderLayer::Mirror) 
 		| (1 << (int)RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(mirrorRitem));
+
+	//=========================================================
+	// GEO_MESH_NAMES[5]: TreeSpritesGeo
+	//=========================================================
+	auto treeSpritesRitem = std::make_unique<RenderItem>();
+	treeSpritesRitem->World = MathHelper::Identity4x4();
+	treeSpritesRitem->ObjCBIndex = objCBIndex++;
+	treeSpritesRitem->Mat = mMaterials["treearray"].get();
+	treeSpritesRitem->Geo = mGeometries[GEO_MESH_NAMES[5].first].get();
+	treeSpritesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].IndexCount;
+	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].StartIndexLocation;
+	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
+	treeSpritesRitem->LayerFlag
+		= (1 << (int)RenderLayer::TreeSprites)
+		| (1 << (int)RenderLayer::Normal);
+	mAllRitems.push_back(std::move(treeSpritesRitem));
 }
 
 void MyApp::BuildFrameResources()
@@ -1247,6 +1323,9 @@ void MyApp::Render()
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::AlphaTested]].Get());
 	DrawRenderItems(RenderLayer::AlphaTested);
 
+	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::TreeSprites]].Get());
+	DrawRenderItems(RenderLayer::TreeSprites);
+
 	mCommandList->SetPipelineState(mPSOs[gPSOName[offset + (int)RenderLayer::Transparent]].Get());
 	DrawRenderItems(RenderLayer::Transparent);
 
@@ -1619,6 +1698,8 @@ void MyApp::UpdateImGui()
 		ShowTextureWindow();
 	if (mShowMaterialWindow)
 		ShowMaterialWindow();
+	if (mShowRenderItemWindow)
+		ShowRenderItemWindow();
 	if (mShowViewportWindow)
 		ShowViewportWindow();
 }
@@ -1632,8 +1713,8 @@ void MyApp::ShowMainWindow()
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Texture", &mShowTextureWindow);
 		ImGui::Checkbox("Material", &mShowMaterialWindow);
+		ImGui::Checkbox("Render Item", &mShowRenderItemWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
-
 		ImGui::TreePop();
 	} 
 
@@ -1686,9 +1767,9 @@ void MyApp::ShowMaterialWindow()
 		Material* mat = mMaterials[MATERIAL_NAMES[matIdx]].get();
 
 		// flag += ImGui::InputFloat4("DiffuseAlbedo R/G/B/A", diff4f);
-		flag += ImGui::SliderFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.0f, 1.0f);
-		flag += ImGui::SliderFloat3("Fresne R/G/B", fres3f, 0.0f, 1.0f);
-		flag += ImGui::SliderFloat("Roughness", &mat->Roughness, 0.0, 1.0);
+		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
+		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
+		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_OFFSET+TEXTURE_FILENAMES.size(), "%d", flags);
 		if (flag)
 		{
@@ -1702,6 +1783,70 @@ void MyApp::ShowMaterialWindow()
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 	}
+	ImGui::End();
+}
+
+void MyApp::ShowRenderItemWindow()
+{
+	ImGui::Begin("render item", &mShowRenderItemWindow);
+	static int ritmIdx;
+
+	static float world3f[3];
+	static float scale3f[3];
+	static float angle3f[3];
+
+	RenderItem* ritm = mAllRitems[ritmIdx].get();
+
+	ImGui::LabelText("label", "Value");
+	ImGui::SeparatorText("Inputs");
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	
+	int flag = 0;
+	flag += ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(mAllRitems.size() - 1) + "]").c_str(), &ritmIdx, 0, mAllRitems.size() - 1, "%d", flags);
+
+	//const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
+	//static int item_selected_idx = 0; // Here we store our selected data as an index.
+	//ImGui::Text("Full-width:");
+	//if (ImGui::BeginListBox("##listbox 2", ImVec2(-FLT_MIN, 5 * ImGui::GetTextLineHeightWithSpacing())))
+	//{
+	//	for (int n = 0; n < mAllRitems.size(); n++)
+	//	{
+	//		bool is_selected = (item_selected_idx == n);
+	//		if (ImGui::Selectable(items[n], is_selected))
+	//			item_selected_idx = n;
+
+	//		// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+	//		if (is_selected)
+	//			ImGui::SetItemDefaultFocus();
+	//	}
+	//	ImGui::EndListBox();
+	//}
+	if(flag)
+	{
+		ritm = mAllRitems[ritmIdx].get();
+		world3f[0] = ritm->WorldX;
+		world3f[1] = ritm->WorldY;
+		world3f[2] = ritm->WorldZ;
+		scale3f[0] = ritm->ScaleX;
+		scale3f[1] = ritm->ScaleY;
+		scale3f[2] = ritm->ScaleZ;
+		angle3f[0] = ritm->AngleX;
+		angle3f[1] = ritm->AngleY;
+		angle3f[2] = ritm->AngleZ;
+	};
+	{
+		flag = 0;
+		
+		flag += ImGui::DragFloat3("world x/y/z", world3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+		flag += ImGui::DragFloat3("scale x/y/z", scale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+		flag += ImGui::DragFloat3("angle x/y/z", angle3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+
+		if (flag)
+		{
+			ritm->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+		}
+	}
+
 	ImGui::End();
 }
 

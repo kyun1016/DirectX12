@@ -59,6 +59,7 @@ class MyApp : public AppBase
 			| (1 << (int)RenderLayer::Reflected)
 			| (1 << (int)RenderLayer::Shadow)
 			| (1 << (int)RenderLayer::Normal);
+		float WorldX = 0.0f, WorldY = 0.0f, WorldZ = 0.0f;
 		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
 		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
 		float OffsetX = 0.0f, OffsetY = 0.0f, OffsetZ = 0.0f;
@@ -83,6 +84,7 @@ public:
 	void BuildLandGeometry();
 	void BuildWavesGeometryBuffers();
 	void BuildRoomGeometry();
+	void BuildTreeSpritesGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
@@ -118,10 +120,12 @@ private:
 	void ShowMainWindow();
 	void ShowTextureWindow();
 	void ShowMaterialWindow();
+	void ShowRenderItemWindow();
 	void ShowViewportWindow();
 	bool mShowDemoWindow = false;
 	bool mShowTextureWindow = false;
 	bool mShowMaterialWindow = false;
+	bool mShowRenderItemWindow = false;
 	bool mShowViewportWindow = false;
 	bool mIsWireframe = false;
 	bool mIsDrawNormal = false;
@@ -174,7 +178,8 @@ private:
 		{"ModelGeo", std::vector<std::string>({"skull"})},
 		{"LandGeo",	std::vector<std::string>({"land"})},
 		{"WaterGeo", std::vector<std::string>({"water"})},
-		{"RoomGeo", std::vector<std::string>({"floor", "wall", "mirror"})}
+		{"RoomGeo", std::vector<std::string>({"floor", "wall", "mirror"})},
+		{"TreeSpritesGeo", std::vector<std::string>({"points"})}
 	};
 
 	static const inline std::wstring				MESH_MODEL_DIR = L"../Data/Models/";
