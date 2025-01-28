@@ -90,9 +90,6 @@ public:
 	void BuildFrameResources();
 	void BuildPSO();
 
-	void BuildCSBuffer();
-	void DoComputeWork();
-
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 #pragma endregion Initialize
 
@@ -202,11 +199,8 @@ private:
 	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS", "normalVS", "billboardVS"};
 	static const inline std::vector<std::wstring>	GS_DIR  = { L"Shaders\\SubdivisionGS.cso", L"Shaders\\NormalGS.cso", L"Shaders\\BillboardGS.cso" };
 	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS", "normalGS", "billboardGS" };
-	static const inline std::vector<std::wstring>	CS_DIR = { L"Shaders\\AddCS.cso" };
-	static const inline std::vector<std::string>	CS_NAME = { "AddCS" };
-	static const inline std::vector<std::wstring>	PS_DIR = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso", L"Shaders\\NormalPS.cso", L"Shaders\\BillboardPS.cso" };
+	static const inline std::vector<std::wstring>	PS_DIR  = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso", L"Shaders\\NormalPS.cso", L"Shaders\\BillboardPS.cso" };
 	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS", "normalPS", "billboardPS" };
-	
 
 	static const inline std::vector<std::string>	gPSOName = {
 		"opaque","markStencilMirrors", "drawStencilReflections", "alphaTested", "transparent", "shadow", "subdivision", "normal", "treeSprites",
@@ -218,6 +212,8 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
+
+	
 
 	PassConstants mMainPassCB;
 	PassConstants mReflectedPassCB;
@@ -244,21 +240,4 @@ private:
 	float mRadius = 5.0f;
 
 	POINT mLastMousePos;
-
-#pragma region ComputeShader
-	static constexpr int NumDataElements = 32;
-
-	struct Data
-	{
-		DirectX::XMFLOAT3 v1;
-		DirectX::XMFLOAT2 v2;
-	};
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputBufferA = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputUploadBufferA = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputBufferB = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputUploadBufferB = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mOutputBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mReadBackBuffer = nullptr;
-#pragma endregion ComputeShader
 };

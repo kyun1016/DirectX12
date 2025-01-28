@@ -47,6 +47,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GeometryShader", "GeometryS
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "13. Compute Shader", "13. Compute Shader", "{898502C1-F438-406F-BB24-349815C50748}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeFilter", "ComputeFilter\ComputeFilter.vcxproj", "{ABBC4AF3-0081-415E-88AC-8757A037D400}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -159,6 +161,14 @@ Global
 		{E8070A53-8A90-4F20-9C33-DDA9C6A6D40B}.Release|x64.Build.0 = Release|x64
 		{E8070A53-8A90-4F20-9C33-DDA9C6A6D40B}.Release|x86.ActiveCfg = Release|Win32
 		{E8070A53-8A90-4F20-9C33-DDA9C6A6D40B}.Release|x86.Build.0 = Release|Win32
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Debug|x64.ActiveCfg = Debug|x64
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Debug|x64.Build.0 = Debug|x64
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Debug|x86.ActiveCfg = Debug|Win32
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Debug|x86.Build.0 = Debug|Win32
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Release|x64.ActiveCfg = Release|x64
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Release|x64.Build.0 = Release|x64
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Release|x86.ActiveCfg = Release|Win32
+		{ABBC4AF3-0081-415E-88AC-8757A037D400}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -177,6 +187,7 @@ Global
 		{0832DCCB-FF03-44E8-B473-241D80DEF760} = {0B737264-DC37-4947-AE0C-8FF96F623545}
 		{F2176F77-50CB-4BE4-B0C0-153D6C16CE0C} = {FFDA2D26-0756-4AF4-94E5-39A407C25BFA}
 		{E8070A53-8A90-4F20-9C33-DDA9C6A6D40B} = {FFDA2D26-0756-4AF4-94E5-39A407C25BFA}
+		{ABBC4AF3-0081-415E-88AC-8757A037D400} = {898502C1-F438-406F-BB24-349815C50748}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}

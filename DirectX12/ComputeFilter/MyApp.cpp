@@ -72,11 +72,6 @@ void MyApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
 
-	CD3DX12_DESCRIPTOR_RANGE srvTable;
-	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
-	CD3DX12_DESCRIPTOR_RANGE uavTable;
-	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); // register t0
-
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
@@ -195,17 +190,16 @@ void MyApp::BuildShadersAndInputLayout()
 	//	"ALPHA_TEST", "1",
 	//	NULL, NULL
 	//};
-	//mShaders["standardVS"] = D3DUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
-	//mShaders["opaquePS"] = D3DUtil::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
-	//mShaders["alphaTestedPS"] = D3DUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+	//mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	//mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
+	//mShaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
-	//mShaders["treeSpriteVS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
-	//mShaders["treeSpriteGS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
-	// mShaders["treeSpritePS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
+	//mShaders["treeSpriteVS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
+	//mShaders["treeSpriteGS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
+	//mShaders["treeSpritePS"] = d3dUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
 	for (size_t i = 0; i < VS_DIR.size(); ++i) mShaders[VS_NAME[i]] = D3DUtil::LoadBinary(VS_DIR[i]);
 	for (size_t i = 0; i < GS_DIR.size(); ++i) mShaders[GS_NAME[i]] = D3DUtil::LoadBinary(GS_DIR[i]);
-	for (size_t i = 0; i < CS_DIR.size(); ++i) mShaders[CS_NAME[i]] = D3DUtil::LoadBinary(CS_DIR[i]);
 	for (size_t i = 0; i < PS_DIR.size(); ++i) mShaders[PS_NAME[i]] = D3DUtil::LoadBinary(PS_DIR[i]);
 
 	mMainInputLayout =
@@ -1147,114 +1141,6 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Subdivision]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::Normal]])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[gPSOName[(int)RenderLayer::Count + (int)RenderLayer::TreeSprites]])));
-
-	//=====================================================
-	// PSO for ComputeShader
-	//=====================================================
-	D3D12_COMPUTE_PIPELINE_STATE_DESC computePsoDesc = {};
-	computePsoDesc.pRootSignature = mRootSignature.Get();
-	computePsoDesc.CS =
-	{
-		reinterpret_cast<BYTE*>(mShaders[CS_NAME[0]]->GetBufferPointer()),
-		mShaders[CS_NAME[0]]->GetBufferSize()
-	};
-	computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&computePsoDesc, IID_PPV_ARGS(&mPSOs[CS_NAME[0]])));
-}
-void MyApp::BuildCSBuffer()
-{
-	// Generate some data.
-	std::vector<Data> dataA(NumDataElements);
-	std::vector<Data> dataB(NumDataElements);
-	for (int i = 0; i < NumDataElements; ++i)
-	{
-		dataA[i].v1 = DirectX::XMFLOAT3(i, i, i);
-		dataA[i].v2 = DirectX::XMFLOAT2(i, 0);
-
-		dataB[i].v1 = DirectX::XMFLOAT3(-i, i, 0.0f);
-		dataB[i].v2 = DirectX::XMFLOAT2(0, -i);
-	}
-
-	UINT64 byteSize = dataA.size() * sizeof(Data);
-
-	// Create some buffers to be used as SRVs.
-	mInputBufferA = D3DUtil::CreateDefaultBuffer(
-		mDevice.Get(),
-		mCommandList.Get(),
-		dataA.data(),
-		byteSize,
-		mInputUploadBufferA);
-
-	mInputBufferB = D3DUtil::CreateDefaultBuffer(
-		mDevice.Get(),
-		mCommandList.Get(),
-		dataB.data(),
-		byteSize,
-		mInputUploadBufferB);
-
-	// Create the buffer that will be a UAV.
-	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		nullptr,
-		IID_PPV_ARGS(&mOutputBuffer)));
-
-	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&mReadBackBuffer)));
-}
-void MyApp::DoComputeWork()
-{
-	ThrowIfFailed(mCommandAllocator->Reset());
-
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), mPSOs[CS_NAME[0]].Get()));
-
-	mCommandList->SetComputeRootSignature(mRootSignature.Get());
-
-	mCommandList->SetComputeRootShaderResourceView(0, mInputBufferA->GetGPUVirtualAddress());
-	mCommandList->SetComputeRootShaderResourceView(1, mInputBufferB->GetGPUVirtualAddress());
-	mCommandList->SetComputeRootUnorderedAccessView(2, mOutputBuffer->GetGPUVirtualAddress());
-
-	mCommandList->Dispatch(1, 1, 1);
-
-	// Schedule to copy the data to the default buffer to the readback buffer.
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffer.Get(),
-		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE));
-
-	mCommandList->CopyResource(mReadBackBuffer.Get(), mOutputBuffer.Get());
-
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffer.Get(),
-		D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON));
-
-	// Done recording commands.
-	ThrowIfFailed(mCommandList->Close());
-
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	// Wait for the work to finish.
-	FlushCommandQueue();
-
-	// Map the data so we can read it on CPU.
-	Data* mappedData = nullptr;
-	ThrowIfFailed(mReadBackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
-
-	std::ofstream fout("results.txt");
-
-	for (int i = 0; i < NumDataElements; ++i)
-	{
-		fout << "(" << mappedData[i].v1.x << ", " << mappedData[i].v1.y << ", " << mappedData[i].v1.z <<
-			", " << mappedData[i].v2.x << ", " << mappedData[i].v2.y << ")" << std::endl;
-	}
-
-	mReadBackBuffer->Unmap(0, nullptr);
 }
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
