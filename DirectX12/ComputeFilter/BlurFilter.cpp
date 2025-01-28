@@ -69,20 +69,18 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 	cmdList->SetComputeRoot32BitConstants(0, 1, &blurRadius, 0);
 	cmdList->SetComputeRoot32BitConstants(0, (UINT)weights.size(), weights.data(), 1);
 
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	cmdList->ResourceBarrier(1, &barrier);
-
-	barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-	cmdList->ResourceBarrier(1, &barrier);
-
+	D3D12_RESOURCE_BARRIER barrierInput = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	D3D12_RESOURCE_BARRIER barrierMap0 = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	D3D12_RESOURCE_BARRIER barrierMap1 = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap1.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	cmdList->ResourceBarrier(1, &barrierInput);
+	cmdList->ResourceBarrier(1, &barrierMap0);
 	// Copy the input (back-buffer in this example) to BlurMap0.
 	cmdList->CopyResource(mBlurMap0.Get(), input);
 
-	barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-	cmdList->ResourceBarrier(1, &barrier);
-
-	barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap1.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	cmdList->ResourceBarrier(1, &barrier);
+	barrierMap0.Transition.StateBefore = barrierMap0.Transition.StateAfter;
+	barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	cmdList->ResourceBarrier(1, &barrierMap0);
+	cmdList->ResourceBarrier(1, &barrierMap1);
 
 	for (int i = 0; i < blurCount; ++i)
 	{
@@ -95,16 +93,18 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 		cmdList->SetComputeRootDescriptorTable(1, mBlur0GpuSrv);
 		cmdList->SetComputeRootDescriptorTable(2, mBlur1GpuUav);
 
+
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
 		UINT numGroupsX = (UINT)ceilf(mWidth / 256.0f);
 		cmdList->Dispatch(numGroupsX, mHeight, 1);
+		barrierMap0.Transition.StateBefore = barrierMap0.Transition.StateAfter;
+		barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		barrierMap1.Transition.StateBefore = barrierMap1.Transition.StateAfter;
+		barrierMap1.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+		cmdList->ResourceBarrier(1, &barrierMap0);
+		cmdList->ResourceBarrier(1, &barrierMap1);
 
-		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		cmdList->ResourceBarrier(1, &barrier);
-
-		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap1.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		cmdList->ResourceBarrier(1, &barrier);
 
 		//
 		// Vertical Blur pass.
@@ -115,17 +115,30 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 		cmdList->SetComputeRootDescriptorTable(1, mBlur1GpuSrv);
 		cmdList->SetComputeRootDescriptorTable(2, mBlur0GpuUav);
 
+
+
 		// How many groups do we need to dispatch to cover a column of pixels, where each
 		// group covers 256 pixels  (the 256 is defined in the ComputeShader).
 		UINT numGroupsY = (UINT)ceilf(mHeight / 256.0f);
 		cmdList->Dispatch(mWidth, numGroupsY, 1);
 
-		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		cmdList->ResourceBarrier(1, &barrier);
-
-		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap1.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		cmdList->ResourceBarrier(1, &barrier);
+		barrierMap0.Transition.StateBefore = barrierMap0.Transition.StateAfter;
+		barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+		barrierMap1.Transition.StateBefore = barrierMap1.Transition.StateAfter;
+		barrierMap1.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		cmdList->ResourceBarrier(1, &barrierMap0);
+		cmdList->ResourceBarrier(1, &barrierMap1);
 	}
+
+	barrierInput.Transition.StateBefore = barrierInput.Transition.StateAfter;
+	barrierInput.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrierMap0.Transition.StateBefore = barrierMap0.Transition.StateAfter;
+	barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	barrierMap1.Transition.StateBefore = barrierMap1.Transition.StateAfter;
+	barrierMap1.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	cmdList->ResourceBarrier(1, &barrierInput);
+	cmdList->ResourceBarrier(1, &barrierMap0);
+	cmdList->ResourceBarrier(1, &barrierMap1);
 }
 
 std::vector<float> BlurFilter::CalcGaussWeights(float sigma)

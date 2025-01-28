@@ -1506,6 +1506,9 @@ void MyApp::OnResize()
 	}
 	else
 		OutputDebugStringW(L"mSrvDescriptorHeap is nullptr! \n");
+
+	if (mBlurFilter)
+		mBlurFilter->OnResize(mClientWidth, mClientHeight);
 }
 void MyApp::Update()
 {
@@ -1579,11 +1582,23 @@ void MyApp::Render()
 		DrawRenderItems(mLayerType[i]);
 	}
 
-	// Indicate a state transition on the resource usage.
-	D3D12_RESOURCE_BARRIER DefaultBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	mCommandList->ResourceBarrier(1, &DefaultBarrier);
-	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+	mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
+	mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mRTVTexBuffer.Get(), 4);
+	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
+	
+	mCommandList->CopyResource(mSwapChainBuffer[mCurrBackBuffer].Get(), mBlurFilter->Output());
+	mCommandList->CopyResource(mRTVTexBuffer.Get(), mBlurFilter->Output());
+
+	// Indicate a state transition on the resource usage.
+	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
+	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+	mCommandList->ResourceBarrier(1, &RenderBarrier);
+	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
+	
+
 }
 
 void MyApp::AnimateMaterials()
@@ -1813,9 +1828,9 @@ void MyApp::UpdateWaves()
 void MyApp::DrawRenderItems(const RenderLayer flag)
 {
 	UINT offset
-		= (flag == RenderLayer::Reflected)
+		= (flag == RenderLayer::Reflected || flag == RenderLayer::ReflectedWireframe)
 		? mAllRitems.size()
-		: (flag == RenderLayer::Shadow)
+		: (flag == RenderLayer::Shadow || flag == RenderLayer::ShadowWireframe)
 		? mAllRitems.size() * 2
 		: 0;
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
