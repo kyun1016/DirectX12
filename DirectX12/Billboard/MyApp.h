@@ -76,6 +76,7 @@ public:
 	virtual bool Initialize() override;
 	void LoadTextures();
 	void BuildRootSignature();
+	void BuildPostProcessRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
@@ -225,6 +226,7 @@ private:
 	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mPostProcessRootSignature = nullptr;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;

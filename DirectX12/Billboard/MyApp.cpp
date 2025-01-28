@@ -72,11 +72,6 @@ void MyApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
 
-	CD3DX12_DESCRIPTOR_RANGE srvTable;
-	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
-	CD3DX12_DESCRIPTOR_RANGE uavTable;
-	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); // register t0
-
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
@@ -99,6 +94,46 @@ void MyApp::BuildRootSignature()
 		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+}
+
+void MyApp::BuildPostProcessRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable;
+	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable;
+	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsConstants(12, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
+		0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(mDevice->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mPostProcessRootSignature.GetAddressOf())));
 }
 
 void MyApp::BuildDescriptorHeaps()
@@ -1163,6 +1198,29 @@ void MyApp::BuildPSO()
 }
 void MyApp::BuildCSBuffer()
 {
+	//D3D12_RESOURCE_DESC srvDesc
+	//{
+	//	/* D3D12_RESOURCE_DIMENSION Dimension	*/.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+	//	/* UINT64 Alignment						*/.Alignment = 0,
+	//	/* UINT64 Width							*/.Width = mClientWidth,
+	//	/* UINT Height							*/.Height = mClientHeight,
+	//	/* UINT16 DepthOrArraySize				*/.DepthOrArraySize = 1,
+	//	/* UINT16 MipLevels						*/.MipLevels = 1,
+	//	/* DXGI_FORMAT Format					*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+	//	/* DXGI_SAMPLE_DESC SampleDesc{			*/.SampleDesc = {
+	//	/*	UINT Count							*/		.Count = 1,
+	//	/*	UINT Quality}						*/		.Quality = 0},
+	//	/* D3D12_TEXTURE_LAYOUT Layout			*/.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+	//	/* D3D12_RESOURCE_FLAGS Flags			*/.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+	//};
+	//ThrowIfFailed(mDevice->CreateCommittedResource(
+	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+	//	D3D12_HEAP_FLAG_NONE,
+	//	&srvDesc,
+	//	D3D12_RESOURCE_STATE_COMMON,
+	//	nullptr,
+	//	IID_PPV_ARGS(&mReadBackBuffer)));
+
 	// Generate some data.
 	std::vector<Data> dataA(NumDataElements);
 	std::vector<Data> dataB(NumDataElements);
