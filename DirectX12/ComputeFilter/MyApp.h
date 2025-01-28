@@ -182,6 +182,8 @@ private:
 	virtual void Update()override;
 	virtual void Render()override;
 
+	void ApplyBlurFilter(ID3D12Resource* input);
+
 	void AnimateMaterials();
 	void UpdateObjectCBs();
 	void UpdateMaterialCBs();

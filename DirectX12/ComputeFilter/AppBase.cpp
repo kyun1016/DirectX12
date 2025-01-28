@@ -259,6 +259,10 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps()
 // DX12 Debug Layer <- GPU에서 에러나는 걸 로그로 출력
 void AppBase::OnResize()
 {
+	if ((mClientWidth == mLastClientWidth) && (mClientHeight == mLastClientHeight))
+		return;
+	mLastClientHeight = mClientHeight;
+	mLastClientWidth = mClientWidth;
 	assert(mDevice);
 	assert(mSwapChain);
 	mOnResizeDirty = false;

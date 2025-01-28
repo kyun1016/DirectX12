@@ -1557,6 +1557,7 @@ void MyApp::Render()
 	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
 	for(int i=0; i<SRV_USER_SIZE; ++i)
 		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	for (int i = 0; i < SRV_USER_SIZE; ++i)
 		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
@@ -1586,13 +1587,19 @@ void MyApp::Render()
 	{
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
-		mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
-		mCommandList->OMSetStencilRef(mLayerStencil[i]);
-		mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
-		DrawRenderItems(mLayerType[i]);
+		else if (mLayerType[i] == RenderLayer::BlurVerCS || mLayerType[i] == RenderLayer::BlurHorCS)
+		{
+			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
+		}
+		else {
+			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+			mCommandList->OMSetStencilRef(mLayerStencil[i]);
+			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
+			DrawRenderItems(mLayerType[i]);
+		}
 	}
 
-	{
+	{	// Test Render Copy
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
@@ -1601,21 +1608,13 @@ void MyApp::Render()
 		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
 
 		mCommandList->CopyResource(mSRVUserBuffer[1].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
-	}
-
-	{
-		mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
-		mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSRVUserBuffer[0].Get(), 4);
 
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
-		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-		SRVUserBufBarrier[0].Transition.StateBefore = SRVUserBufBarrier[0].Transition.StateAfter;
-		SRVUserBufBarrier[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
+		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[0]);
-
-		mCommandList->CopyResource(mSwapChainBuffer[mCurrBackBuffer].Get(), mBlurFilter->Output());
-		mCommandList->CopyResource(mSRVUserBuffer[0].Get(), mBlurFilter->Output());
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
 	}
 
 	// Indicate a state transition on the resource usage.
@@ -1626,11 +1625,23 @@ void MyApp::Render()
 		SRVUserBufBarrier[i].Transition.StateBefore = SRVUserBufBarrier[i].Transition.StateAfter;
 		SRVUserBufBarrier[i].Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
 	}
+
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	for (int i = 0; i < SRV_USER_SIZE; ++i)
 		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
-	
+}
 
+void MyApp::ApplyBlurFilter(ID3D12Resource* input)
+{
+	mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), input, 4);
+
+	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+	mCommandList->ResourceBarrier(1, &RenderBarrier);
+
+	mCommandList->CopyResource(input, mBlurFilter->Output());
+
+	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	mCommandList->ResourceBarrier(1, &RenderBarrier);
 }
 
 void MyApp::AnimateMaterials()

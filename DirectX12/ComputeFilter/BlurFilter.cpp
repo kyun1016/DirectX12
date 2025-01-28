@@ -70,7 +70,7 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 	cmdList->SetComputeRoot32BitConstants(0, (UINT)weights.size(), weights.data(), 1);
 
 	D3D12_RESOURCE_BARRIER barrierInput = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	D3D12_RESOURCE_BARRIER barrierMap0 = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	D3D12_RESOURCE_BARRIER barrierMap0 = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap0.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 	D3D12_RESOURCE_BARRIER barrierMap1 = CD3DX12_RESOURCE_BARRIER::Transition(mBlurMap1.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	cmdList->ResourceBarrier(1, &barrierInput);
 	cmdList->ResourceBarrier(1, &barrierMap0);
@@ -133,7 +133,7 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 	barrierInput.Transition.StateBefore = barrierInput.Transition.StateAfter;
 	barrierInput.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrierMap0.Transition.StateBefore = barrierMap0.Transition.StateAfter;
-	barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	barrierMap0.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 	barrierMap1.Transition.StateBefore = barrierMap1.Transition.StateAfter;
 	barrierMap1.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
 	cmdList->ResourceBarrier(1, &barrierInput);

@@ -111,6 +111,8 @@ public:
 	// Viewport dimensions.
 	uint32_t mClientWidth;
 	uint32_t mClientHeight;
+	uint32_t mLastClientWidth = 0;
+	uint32_t mLastClientHeight = 0;
 	float mAspectRatio;
 	WNDCLASSEXW mWindowClass;
 	RECT mWindowRect;
