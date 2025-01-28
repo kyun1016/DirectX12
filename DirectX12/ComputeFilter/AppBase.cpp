@@ -272,7 +272,8 @@ void AppBase::OnResize()
 	// Release the previous resources we will be recreating.
 	for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 		mSwapChainBuffer[i].Reset();
-	mRTVTexBuffer.Reset();
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+		mSRVUserBuffer[i].Reset();
 	mDepthStencilBuffer.Reset();
 
 	// Resize the swap chain.
@@ -317,7 +318,8 @@ void AppBase::OnResize()
 	};
 
 	D3D12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mRTVTexBuffer.GetAddressOf())));
+	for(int i=0; i<SRV_USER_SIZE;++i)
+		ThrowIfFailed(mDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &rtvTexDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(mSRVUserBuffer[i].GetAddressOf())));
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {
 		/* DXGI_FORMAT Format						*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -337,7 +339,7 @@ void AppBase::OnResize()
 		/* 	D3D12_TEX3D_RTV Texture3D				*/
 		/* 	}										*/
 	};
-	mDevice->CreateRenderTargetView(mRTVTexBuffer.Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
+	mDevice->CreateRenderTargetView(mSRVUserBuffer[0].Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
 	// RTV Render in a Texture
 	//=====================================
 

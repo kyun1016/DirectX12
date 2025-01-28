@@ -69,6 +69,7 @@ public:
 	static constexpr int APP_NUM_FRAME_RESOURCES = 3;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
+	static constexpr int SRV_USER_SIZE = 2;
 	static constexpr uint32_t WND_PADDING = 5;
 public:
 	AppBase();
@@ -180,7 +181,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	int mCurrBackBuffer;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> mRTVTexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> mSRVUserBuffer[SRV_USER_SIZE];
 
 	UINT mDsvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;

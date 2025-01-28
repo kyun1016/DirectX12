@@ -42,8 +42,8 @@ void BlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
 
 void BlurFilter::OnResize(UINT newWidth, UINT newHeight)
 {
-	if ((mWidth != newWidth) || (mHeight != newHeight))
-	{
+	// if ((mWidth != newWidth) || (mHeight != newHeight))
+	// {
 		mWidth = newWidth;
 		mHeight = newHeight;
 
@@ -51,7 +51,7 @@ void BlurFilter::OnResize(UINT newWidth, UINT newHeight)
 
 		// New resource, so we need new descriptors to that resource.
 		BuildDescriptors();
-	}
+	// }
 }
 
 void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,

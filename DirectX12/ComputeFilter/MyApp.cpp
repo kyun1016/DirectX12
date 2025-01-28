@@ -169,10 +169,15 @@ void MyApp::BuildDescriptorHeaps()
 	//
 	// Create the SRV heap.
 	//
+	// 현재 SRV Heap은 4가지 데이터를 종합하여 관리하고있다.
+	// 1. Imgui Data (SRV_IMGUI_SIZE(64))
+	// 2. Texture Data (TEXTURE_FILENAMES.size())
+	// 3. Viewport Buffer (SRV_USER_SIZE)
+	// 4. CS Blar Buffer (SRV_CS_BLAR_SIZE(4))
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + 1 + SRV_CS_BLAR_SIZE,
+		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -241,8 +246,11 @@ void MyApp::BuildShaderResourceViews()
 	srvDesc.Texture2D.MipLevels = 1;
 	srvDesc.Texture2D.PlaneSlice = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
-	hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+	{
+		mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hDescriptor);
+		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	}
 }
 
 void MyApp::BuildPostProcessShaderResourceViews()
@@ -251,8 +259,8 @@ void MyApp::BuildPostProcessShaderResourceViews()
 	// Fill out the heap with the descriptors to the BlurFilter resources.
 	//
 	mBlurFilter->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + 1, mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + 1, mCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
 		mCbvSrvUavDescriptorSize);
 }
 
@@ -1483,29 +1491,28 @@ void MyApp::OnResize()
 			/* 	D3D12_TEX1D_SRV Texture1D													*/
 			/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
 			/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
-				/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-				/*		UINT MipLevels															*/	.MipLevels = 1,
-				/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
-				/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
-				/*	}																			*/}
-				/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
-				/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
-				/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
-				/* 	D3D12_TEX3D_SRV Texture3D													*/
-				/* 	D3D12_TEXCUBE_SRV TextureCube												*/
-				/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
-				/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
-				/* }																			*/
+			/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+			/*		UINT MipLevels															*/	.MipLevels = 1,
+			/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+			/*		FLOAT ResourceMinLODClamp}												*/	.ResourceMinLODClamp = 0.0f}
+			/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+			/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+			/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+			/* 	D3D12_TEX3D_SRV Texture3D													*/
+			/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+			/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+			/* }																			*/
 		};
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-		hDescriptor.Offset(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
 
-		mDevice->CreateShaderResourceView(mRTVTexBuffer.Get(), &srvDesc, hDescriptor);
-		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		for (int i = 0; i < SRV_USER_SIZE; ++i)
+		{
+			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hDescriptor);
+			hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		}
 	}
-	else
-		OutputDebugStringW(L"mSrvDescriptorHeap is nullptr! \n");
 
 	if (mBlurFilter)
 		mBlurFilter->OnResize(mClientWidth, mClientHeight);
@@ -1547,9 +1554,12 @@ void MyApp::Render()
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
+	for(int i=0; i<SRV_USER_SIZE; ++i)
+		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	D3D12_RESOURCE_BARRIER RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
 
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
@@ -1582,21 +1592,43 @@ void MyApp::Render()
 		DrawRenderItems(mLayerType[i]);
 	}
 
-	mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
-	mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mRTVTexBuffer.Get(), 4);
-	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
-	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
-	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
-	
-	mCommandList->CopyResource(mSwapChainBuffer[mCurrBackBuffer].Get(), mBlurFilter->Output());
-	mCommandList->CopyResource(mRTVTexBuffer.Get(), mBlurFilter->Output());
+	{
+		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
+		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
+		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		mCommandList->ResourceBarrier(1, &RenderBarrier);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
+
+		mCommandList->CopyResource(mSRVUserBuffer[1].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
+	}
+
+	{
+		mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
+		mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), mSRVUserBuffer[0].Get(), 4);
+
+		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
+		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		SRVUserBufBarrier[0].Transition.StateBefore = SRVUserBufBarrier[0].Transition.StateAfter;
+		SRVUserBufBarrier[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		mCommandList->ResourceBarrier(1, &RenderBarrier);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[0]);
+
+		mCommandList->CopyResource(mSwapChainBuffer[mCurrBackBuffer].Get(), mBlurFilter->Output());
+		mCommandList->CopyResource(mSRVUserBuffer[0].Get(), mBlurFilter->Output());
+	}
 
 	// Indicate a state transition on the resource usage.
-	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
-	RTVTexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mRTVTexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+	RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
+	RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+	{
+		SRVUserBufBarrier[i].Transition.StateBefore = SRVUserBufBarrier[i].Transition.StateAfter;
+		SRVUserBufBarrier[i].Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	}
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	mCommandList->ResourceBarrier(1, &RTVTexBarrier);
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
 	
 
 }
@@ -2062,7 +2094,7 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size(), "%d", flags);
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE - 1, "%d", flags);
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
@@ -2095,7 +2127,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size(), "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };

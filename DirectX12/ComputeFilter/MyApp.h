@@ -14,6 +14,7 @@ class MyApp : public AppBase
 #pragma region Constant
 private:
 	static constexpr int MAX_LAYER_DEPTH = 64;
+
 	static constexpr int SRV_IMGUI_SIZE = 64;
 	static constexpr int SRV_CS_BLAR_SIZE = 4;
 	static const inline std::wstring				TEXTURE_DIR = L"../Data/Textures/";
