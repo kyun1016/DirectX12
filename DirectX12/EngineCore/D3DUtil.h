@@ -66,6 +66,13 @@ public:
 	{
 		return std::wstring().assign(source.begin(), source.end());
 	}
+
+	static void UpdateBarrier(ID3D12GraphicsCommandList* cmdList, D3D12_RESOURCE_BARRIER& barrier, D3D12_RESOURCE_STATES nextState)
+	{
+		barrier.Transition.StateBefore = barrier.Transition.StateAfter;
+		barrier.Transition.StateAfter = nextState;
+		cmdList->ResourceBarrier(1, &barrier);
+	}
 };
 
 // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
