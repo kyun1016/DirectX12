@@ -33,7 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "10. Blending", "10. Blendin
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BlendDemo", "BlendDemo\BlendDemo.vcxproj", "{544192B3-AD8E-4146-BEA4-479A65D3C444}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "11.  Stenciling", "11.  Stenciling", "{0B737264-DC37-4947-AE0C-8FF96F623545}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "11. Stenciling", "11. Stenciling", "{0B737264-DC37-4947-AE0C-8FF96F623545}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StencilDemo", "StencilDemo\StencilDemo.vcxproj", "{649CC779-F4CD-4948-AAEE-4F5213A87A74}"
 EndProject

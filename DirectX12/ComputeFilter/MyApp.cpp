@@ -12,6 +12,39 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	, mImguiWidth(width)
 	, mImguiHeight(height)
 {
+	mLayerType[0] = RenderLayer::Opaque;
+	mLayerType[1] = RenderLayer::AlphaTested;
+	mLayerType[2] = RenderLayer::Mirror;
+	mLayerType[3] = RenderLayer::Reflected;
+	mLayerType[4] = RenderLayer::Subdivision;
+	mLayerType[5] = RenderLayer::Transparent;
+	mLayerType[6] = RenderLayer::TreeSprites;
+	mLayerType[7] = RenderLayer::Normal;
+
+	mLayerStencil[0] = 0;
+	mLayerStencil[1] = 0;
+	mLayerStencil[2] = 1;
+	mLayerStencil[3] = 1;
+	mLayerStencil[4] = 0;
+	mLayerStencil[5] = 0;
+	mLayerStencil[6] = 0;
+	mLayerStencil[7] = 0;
+
+	mLayerCBIdx[0] = 0;
+	mLayerCBIdx[1] = 0;
+	mLayerCBIdx[2] = 1;
+	mLayerCBIdx[3] = 1;
+	mLayerCBIdx[4] = 0;
+	mLayerCBIdx[5] = 0;
+	mLayerCBIdx[6] = 0;
+	mLayerCBIdx[7] = 0;
+
+	for (int i = 8; i < MAX_LAYER_DEPTH; ++i)
+	{
+		mLayerType[i] = RenderLayer::None;
+		mLayerStencil[i] = 0;
+		mLayerCBIdx[i] = 0;
+	}
 }
 #pragma region Initialize
 bool MyApp::Initialize()
@@ -744,10 +777,6 @@ void MyApp::BuildRenderItems()
 		boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-		boxRitem->LayerFlag[0] = RenderLayer::Opaque;
-		boxRitem->LayerFlag[1] = RenderLayer::Reflected;
-		boxRitem->LayerFlag[2] = RenderLayer::Shadow;
-		boxRitem->LayerFlag[3] = RenderLayer::Normal;
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
@@ -762,8 +791,11 @@ void MyApp::BuildRenderItems()
 		boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-		boxRitem->LayerFlag[0] = RenderLayer::Subdivision;
-		boxRitem->LayerFlag[1] = RenderLayer::Normal;
+		boxRitem->LayerFlag
+			= (1 << (int)RenderLayer::Subdivision)
+			| (1 << (int)RenderLayer::Normal)
+			| (1 << (int)RenderLayer::SubdivisionWireframe)
+			| (1 << (int)RenderLayer::NormalWireframe);
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 
@@ -777,7 +809,9 @@ void MyApp::BuildRenderItems()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	boxRitem->LayerFlag[0] = RenderLayer::AlphaTested;
+	boxRitem->LayerFlag 
+		= (1 << (int)RenderLayer::AlphaTested)
+		| (1 << (int)RenderLayer::AlphaTestedWireframe);
 	mAllRitems.push_back(std::move(boxRitem));
 
 
@@ -791,10 +825,6 @@ void MyApp::BuildRenderItems()
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
-	gridRitem->LayerFlag[0] = RenderLayer::Opaque;
-	gridRitem->LayerFlag[1] = RenderLayer::Reflected;
-	gridRitem->LayerFlag[2] = RenderLayer::Shadow;
-	gridRitem->LayerFlag[3] = RenderLayer::Normal;
 	mAllRitems.push_back(std::move(gridRitem));
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
@@ -819,10 +849,6 @@ void MyApp::BuildRenderItems()
 		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
 		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
 		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
-		leftCylRitem->LayerFlag[0] = RenderLayer::Opaque;
-		leftCylRitem->LayerFlag[1] = RenderLayer::Reflected;
-		leftCylRitem->LayerFlag[2] = RenderLayer::Shadow;
-		leftCylRitem->LayerFlag[3] = RenderLayer::Normal;
 
 		DirectX::XMStoreFloat4x4(&rightCylRitem->World, rightCylWorld);
 		DirectX::XMStoreFloat4x4(&rightCylRitem->TexTransform, brickTexTransform);
@@ -833,10 +859,6 @@ void MyApp::BuildRenderItems()
 		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
 		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
 		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
-		rightCylRitem->LayerFlag[0] = RenderLayer::Opaque;
-		rightCylRitem->LayerFlag[1] = RenderLayer::Reflected;
-		rightCylRitem->LayerFlag[2] = RenderLayer::Shadow;
-		rightCylRitem->LayerFlag[3] = RenderLayer::Normal;
 
 		DirectX::XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
 		leftSphereRitem->TexTransform = MathHelper::Identity4x4();
@@ -847,10 +869,6 @@ void MyApp::BuildRenderItems()
 		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
-		leftSphereRitem->LayerFlag[0] = RenderLayer::Opaque;
-		leftSphereRitem->LayerFlag[1] = RenderLayer::Reflected;
-		leftSphereRitem->LayerFlag[2] = RenderLayer::Shadow;
-		leftSphereRitem->LayerFlag[3] = RenderLayer::Normal;
 
 		DirectX::XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
 		rightSphereRitem->TexTransform = MathHelper::Identity4x4();
@@ -861,10 +879,6 @@ void MyApp::BuildRenderItems()
 		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
-		rightSphereRitem->LayerFlag[0] = RenderLayer::Opaque;
-		rightSphereRitem->LayerFlag[1] = RenderLayer::Reflected;
-		rightSphereRitem->LayerFlag[2] = RenderLayer::Shadow;
-		rightSphereRitem->LayerFlag[3] = RenderLayer::Normal;
 
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(leftSphereRitem));
@@ -884,10 +898,6 @@ void MyApp::BuildRenderItems()
 	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
 	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
 	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
-	skullRitem->LayerFlag[0] = RenderLayer::Opaque;
-	skullRitem->LayerFlag[1] = RenderLayer::Reflected;
-	skullRitem->LayerFlag[2] = RenderLayer::Shadow;
-	skullRitem->LayerFlag[3] = RenderLayer::Normal;
 	mAllRitems.push_back(std::move(skullRitem));
 
 	//=========================================================
@@ -902,10 +912,6 @@ void MyApp::BuildRenderItems()
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
 	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
 	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].BaseVertexLocation;
-	landRitem->LayerFlag[0] = RenderLayer::Opaque;
-	landRitem->LayerFlag[1] = RenderLayer::Reflected;
-	landRitem->LayerFlag[2] = RenderLayer::Shadow;
-	landRitem->LayerFlag[3] = RenderLayer::Normal;
 	mAllRitems.push_back(std::move(landRitem));
 
 	//=========================================================
@@ -920,7 +926,7 @@ void MyApp::BuildRenderItems()
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
 	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].StartIndexLocation;
 	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].BaseVertexLocation;
-	wavesRitem->LayerFlag[0] = RenderLayer::Transparent;
+	wavesRitem->LayerFlag = (1 << (int)RenderLayer::Transparent);
 	mWavesRitem = wavesRitem.get();
 	
 	mAllRitems.push_back(std::move(wavesRitem));
@@ -938,8 +944,9 @@ void MyApp::BuildRenderItems()
 	mirrorRitem->IndexCount = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].IndexCount;
 	mirrorRitem->StartIndexLocation = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].StartIndexLocation;
 	mirrorRitem->BaseVertexLocation = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].BaseVertexLocation;
-	mirrorRitem->LayerFlag[0] = RenderLayer::Mirror;
-	mirrorRitem->LayerFlag[1] = RenderLayer::Transparent;
+	mirrorRitem->LayerFlag
+		= (1 << (int)RenderLayer::Mirror)
+		| (1 << (int)RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(mirrorRitem));
 
 	//=========================================================
@@ -954,8 +961,9 @@ void MyApp::BuildRenderItems()
 	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].IndexCount;
 	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].StartIndexLocation;
 	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
-	treeSpritesRitem->LayerFlag[0] = RenderLayer::TreeSprites;
-	treeSpritesRitem->LayerFlag[1] = RenderLayer::Normal;
+	treeSpritesRitem->LayerFlag
+		= (1 << (int)RenderLayer::TreeSprites)
+		| (1 << (int)RenderLayer::Normal);
 	mAllRitems.push_back(std::move(treeSpritesRitem));
 }
 
@@ -1559,138 +1567,16 @@ void MyApp::Render()
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
-	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 
-	if (mIsDrawPSOOpaque)
+	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
-		if (mIsDrawPSOOpaqueWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::OpaqueWireframe].Get());
-			DrawRenderItems(RenderLayer::OpaqueWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Opaque].Get());
-			DrawRenderItems(RenderLayer::Opaque);
-		}
-	}
-
-	if (mIsDrawPSOSubdivision)
-	{
-		if (mIsDrawPSOSubdivisionWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::SubdivisionWireframe].Get());
-			DrawRenderItems(RenderLayer::SubdivisionWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Subdivision].Get());
-			DrawRenderItems(RenderLayer::Subdivision);
-		}
-	}
-
-	if (mIsDrawPSOMirror)
-	{
-		mCommandList->OMSetStencilRef(1);
-		if (mIsDrawPSOMirrorWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::MirrorWireframe].Get());
-			DrawRenderItems(RenderLayer::MirrorWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Mirror].Get());
-			DrawRenderItems(RenderLayer::Mirror);
-		}
-
-		if (mIsDrawPSOReflected)
-		{
-			UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + 1 * passCBByteSize);
-			if (mIsDrawPSOReflectedWireframe)
-			{
-				mCommandList->SetPipelineState(mPSOs[RenderLayer::ReflectedWireframe].Get());
-				DrawRenderItems(RenderLayer::ReflectedWireframe);
-			}
-			else
-			{
-				mCommandList->SetPipelineState(mPSOs[RenderLayer::Reflected].Get());
-				DrawRenderItems(RenderLayer::Reflected);
-			}
-		}
-		// Restore main pass constants and stencil ref.
-		mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-		mCommandList->OMSetStencilRef(0);
-	}
-
-	if (mIsDrawPSOAlphaTested)
-	{
-		if (mIsDrawPSOAlphaTestedWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::AlphaTestedWireframe].Get());
-			DrawRenderItems(RenderLayer::AlphaTestedWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::AlphaTested].Get());
-			DrawRenderItems(RenderLayer::AlphaTested);
-		}
-	}
-
-	if (mIsDrawPSOTreeSprites)
-	{
-		if (mIsDrawPSOTreeSpritesWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::TreeSpritesWireframe].Get());
-			DrawRenderItems(RenderLayer::TreeSpritesWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::TreeSprites].Get());
-			DrawRenderItems(RenderLayer::TreeSprites);
-		}
-	}
-
-	if (mIsDrawPSOTransparent)
-	{
-		if (mIsDrawPSOTransparentWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::TransparentWireframe].Get());
-			DrawRenderItems(RenderLayer::TransparentWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Transparent].Get());
-			DrawRenderItems(RenderLayer::Transparent);
-		}
-	}
-
-	if (mIsDrawPSOShadow)
-	{
-		if (mIsDrawPSOShadowWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::ShadowWireframe].Get());
-			DrawRenderItems(RenderLayer::ShadowWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Shadow].Get());
-			DrawRenderItems(RenderLayer::Shadow);
-		}
-	}
-
-	if (mIsDrawPSONormal)
-	{
-		if (mIsDrawPSONormalWireframe)
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::NormalWireframe].Get());
-			DrawRenderItems(RenderLayer::NormalWireframe);
-		}
-		else
-		{
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::Normal].Get());
-			DrawRenderItems(RenderLayer::Normal);
-		}
+		if (mLayerType[i] == RenderLayer::None)
+			continue;
+		mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+		mCommandList->OMSetStencilRef(mLayerStencil[i]);
+		mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
+		DrawRenderItems(mLayerType[i]);
 	}
 
 	// Indicate a state transition on the resource usage.
@@ -2075,24 +1961,61 @@ void MyApp::ShowMainWindow()
 		ImGui::TreePop();
 	}
 
+	static int layerIdx = 0;
+	static int item_selected_idx = (int)mLayerType[0];
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-	if (ImGui::TreeNode("Select PSO")) {
+	if (ImGui::TreeNode("Select Layer")) {
 
-		if (ImGui::BeginTable("split", 2))
+		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+		if (ImGui::SliderInt((std::string("Render Layer [0, ") + std::to_string(MAX_LAYER_DEPTH - 1) + "]").c_str(), &layerIdx, 0, MAX_LAYER_DEPTH - 1, "%d", flags))
+			item_selected_idx = (int)mLayerType[layerIdx];
 		{
-			MakePSOCheckbox("Opaque", mIsDrawPSOOpaque, mIsDrawPSOOpaqueWireframe);
-			MakePSOCheckbox("Mirror", mIsDrawPSOMirror, mIsDrawPSOMirrorWireframe);
-			MakePSOCheckbox("Reflected", mIsDrawPSOReflected, mIsDrawPSOReflectedWireframe);
-			MakePSOCheckbox("AlphaTested", mIsDrawPSOAlphaTested, mIsDrawPSOAlphaTestedWireframe);
-			MakePSOCheckbox("Transparent", mIsDrawPSOTransparent, mIsDrawPSOTransparentWireframe);
-			MakePSOCheckbox("Shadow", mIsDrawPSOShadow, mIsDrawPSOShadowWireframe);
-			MakePSOCheckbox("Subdivision", mIsDrawPSOSubdivision, mIsDrawPSOSubdivisionWireframe);
-			MakePSOCheckbox("Normal", mIsDrawPSONormal, mIsDrawPSONormalWireframe);
-			MakePSOCheckbox("TreeSprites", mIsDrawPSOTreeSprites, mIsDrawPSOTreeSpritesWireframe);
+			ImGui::LabelText("label", "Value");
+			// ImGui::SliderInt("Shader Type [0, 1]", &mLayerType[layerIdx], 0, 1, "%d", flags);
 
-			ImGui::EndTable();
+			const char* items[] = { 
+				"None",
+				"Opaque",
+				"Mirror",
+				"Reflected",
+				"AlphaTested",
+				"Transparent",
+				"Shadow",
+				"Subdivision",
+				"Normal",
+				"TreeSprites",
+				"OpaqueWireframe",
+				"MirrorWireframe",
+				"ReflectedWireframe",
+				"AlphaTestedWireframe",
+				"TransparentWireframe",
+				"ShadowWireframe",
+				"SubdivisionWireframe",
+				"NormalWireframe",
+				"TreeSpritesWireframe",
+				"AddCS",
+				"BlurHorCS",
+				"BlurVerCS"
+			};
+			if (ImGui::BeginListBox("Shader Type"))
+			{
+				for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+				{
+					const bool is_selected = (item_selected_idx == n);
+					if (ImGui::Selectable(items[n], is_selected))
+						item_selected_idx = n;
+
+					// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				mLayerType[layerIdx] = (RenderLayer) item_selected_idx;
+				ImGui::EndListBox();
+			}
+
+			ImGui::SliderInt("Stencli [0, 7]", &mLayerStencil[layerIdx], 0, 7, "%d", flags);
+			ImGui::SliderInt("Constant Buffer [0, 1]", &mLayerCBIdx[layerIdx], 0, 1, "%d", flags);
 		}
-
 		ImGui::TreePop();
 	}
 

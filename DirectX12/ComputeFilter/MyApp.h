@@ -11,7 +11,6 @@
 
 class MyApp : public AppBase
 {
-
 #pragma region Constant
 private:
 	static constexpr int MAX_LAYER_DEPTH = 64;
@@ -98,8 +97,6 @@ private:
 		Count
 	};
 #pragma endregion Constant
-
-
 	struct RenderItem
 	{
 		RenderItem() = default;
@@ -130,10 +127,15 @@ private:
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
 
-		RenderLayer LayerFlag[MAX_LAYER_DEPTH] =
-		{
-			RenderLayer::Opaque
-		};
+		int LayerFlag
+			= (1 << (int)RenderLayer::Opaque)
+			| (1 << (int)RenderLayer::Reflected)
+			| (1 << (int)RenderLayer::Shadow)
+			| (1 << (int)RenderLayer::Normal)
+			| (1 << (int)RenderLayer::OpaqueWireframe)
+			| (1 << (int)RenderLayer::ReflectedWireframe)
+			| (1 << (int)RenderLayer::ShadowWireframe)
+			| (1 << (int)RenderLayer::NormalWireframe);
 		float WorldX = 0.0f, WorldY = 0.0f, WorldZ = 0.0f;
 		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
 		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
@@ -227,6 +229,7 @@ private:
 	bool mIsDrawPSOSubdivisionWireframe = false;
 	bool mIsDrawPSONormalWireframe = false;
 	bool mIsDrawPSOTreeSpritesWireframe = false;
+
 	int mImguiIdxTexture = 0;
 	int mImguiWidth = 0;
 	int mImguiHeight = 0;
@@ -238,6 +241,10 @@ private:
 #pragma endregion Land
 
 private:
+	RenderLayer mLayerType[MAX_LAYER_DEPTH];
+	int mLayerStencil[MAX_LAYER_DEPTH];
+	int mLayerCBIdx[MAX_LAYER_DEPTH];
+
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
