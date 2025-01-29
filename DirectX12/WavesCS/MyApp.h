@@ -14,10 +14,8 @@ class MyApp : public AppBase
 {
 #pragma region Constant
 private:
-	static constexpr int MAX_LAYER_DEPTH = 64;
-
+	static constexpr int MAX_LAYER_DEPTH = 20;
 	static constexpr int SRV_IMGUI_SIZE = 64;
-	static constexpr int SRV_CS_BLAR_SIZE = 4;
 	static const inline std::wstring				TEXTURE_DIR = L"../Data/Textures/";
 	static constexpr int SIZE_STD_TEX = 16;
 	static constexpr int SIZE_ARY_TEX = SIZE_STD_TEX + 2;
@@ -63,12 +61,12 @@ private:
 		L"skull.txt"
 	};
 
-	static const inline std::vector<std::wstring>	VS_DIR = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso", L"Shaders\\NormalVS.cso", L"Shaders\\BillboardVS.cso" };
-	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS", "normalVS", "billboardVS" };
+	static const inline std::vector<std::wstring>	VS_DIR = { L"Shaders\\MainVS.cso", L"Shaders\\SubdivisionVS.cso", L"Shaders\\NormalVS.cso", L"Shaders\\BillboardVS.cso", L"Shaders\\WaveVS.cso" };
+	static const inline std::vector<std::string>	VS_NAME = { "standardVS", "subdivisionVS", "normalVS", "billboardVS", "waveVS" };
 	static const inline std::vector<std::wstring>	GS_DIR = { L"Shaders\\SubdivisionGS.cso", L"Shaders\\NormalGS.cso", L"Shaders\\BillboardGS.cso" };
 	static const inline std::vector<std::string>	GS_NAME = { "subdivisionGS", "normalGS", "billboardGS" };
-	static const inline std::vector<std::wstring>	CS_DIR = { L"Shaders\\AddCS.cso", L"Shaders\\BlurHorCS.cso", L"Shaders\\BlurVerCS.cso" };
-	static const inline std::vector<std::string>	CS_NAME = { "AddCS", "BlurHorCS", "BlurVerCS" };
+	static const inline std::vector<std::wstring>	CS_DIR = { L"Shaders\\AddCS.cso", L"Shaders\\BlurHorCS.cso", L"Shaders\\BlurVerCS.cso", L"Shaders\\WaveDisturbCS.cso", L"Shaders\\WaveUpdateCS.cso"};
+	static const inline std::vector<std::string>	CS_NAME = { "AddCS", "BlurHorCS", "BlurVerCS", "WaveDisturbCS", "WaveUpdateCS"};
 	static const inline std::vector<std::wstring>	PS_DIR = { L"Shaders\\MainPS.cso", L"Shaders\\AlphaTestedPS.cso", L"Shaders\\NormalPS.cso", L"Shaders\\BillboardPS.cso" };
 	static const inline std::vector<std::string>	PS_NAME = { "opaquePS" , "alphaTestedPS", "normalPS", "billboardPS" };
 
@@ -84,7 +82,6 @@ private:
 		Subdivision,
 		Normal,
 		TreeSprites,
-		GpuWaves,
 		OpaqueWireframe,
 		MirrorWireframe,
 		ReflectedWireframe,
@@ -97,6 +94,9 @@ private:
 		AddCS,
 		BlurHorCS,
 		BlurVerCS,
+		WaveVS,
+		WaveDisturbCS,
+		WaveUpdateCS,
 		Count
 	};
 #pragma endregion Constant
@@ -161,7 +161,7 @@ public:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildCSBlurRootSignature();
-	void BuildWavesRootSignature();
+	void BuildCSWavesRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShaderResourceViews();
 	void BuildCSBlurShaderResourceViews();
@@ -170,6 +170,7 @@ public:
 	void BuildShapeGeometry();
 	void BuildModelGeometry();
 	void BuildLandGeometry();
+	void BuildCSWavesGeometry();
 	void BuildWavesGeometryBuffers();
 	void BuildRoomGeometry();
 	void BuildTreeSpritesGeometry();
@@ -198,6 +199,7 @@ private:
 	void UpdateMainPassCB();
 	void UpdateReflectedPassCB();
 	void UpdateWaves();
+	void UpdateCSWaves();
 
 	void DrawRenderItems(const RenderLayer ritems);
 
@@ -242,7 +244,7 @@ private:
 	RenderItem* mWavesRitem = nullptr;
 
 	std::unique_ptr<BlurFilter> mBlurFilter;
-	std::unique_ptr<GpuWaves> mGpuWaves;
+	std::unique_ptr<GpuWaves> mCSWaves;
 
 	PassConstants mMainPassCB;
 	PassConstants mReflectedPassCB;

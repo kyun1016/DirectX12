@@ -56,12 +56,14 @@ bool MyApp::Initialize()
 
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 	mBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
+	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 
 	LoadTextures();
 	BuildMaterials();
 
 	BuildRootSignature();
 	BuildCSBlurRootSignature();
+	BuildCSWavesRootSignature();
 
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
@@ -108,19 +110,23 @@ void MyApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // register t0
 
+	CD3DX12_DESCRIPTOR_RANGE displacementMapTable;
+	displacementMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0); // register b0
 	slotRootParameter[2].InitAsConstantBufferView(1); // register b1
 	slotRootParameter[3].InitAsConstantBufferView(2); // register b2
+	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -164,7 +170,7 @@ void MyApp::BuildCSBlurRootSignature()
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mCSBlurRootSignature.GetAddressOf())));
 }
 
-void MyApp::BuildWavesRootSignature()
+void MyApp::BuildCSWavesRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -219,7 +225,7 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE,
+		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -309,6 +315,10 @@ void MyApp::BuildCSBlurShaderResourceViews()
 
 void MyApp::BuildCSWavesShaderResourceViews()
 {
+	mCSWaves->BuildDescriptors(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		mCbvSrvUavDescriptorSize);
 }
 
 void MyApp::BuildShadersAndInputLayout()
@@ -391,6 +401,53 @@ void MyApp::BuildLandGeometry()
 	submesh.BaseVertexLocation = 0;
 
 	geo->DrawArgs[GEO_MESH_NAMES[2].second[0]] = submesh;
+	mGeometries[geo->Name] = std::move(geo);
+}
+
+void MyApp::BuildCSWavesGeometry()
+{
+	GeometryGenerator::MeshData grid = GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount());
+
+	std::vector<Vertex> vertices(grid.Vertices.size());
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		vertices[i].Pos = grid.Vertices[i].Position;
+		vertices[i].Normal = grid.Vertices[i].Normal;
+		vertices[i].TexC = grid.Vertices[i].TexC;
+	}
+
+	std::vector<std::uint32_t> indices = grid.Indices32;
+
+	UINT vbByteSize = mCSWaves->VertexCount() * sizeof(Vertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = GEO_MESH_NAMES[3].first;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[GEO_MESH_NAMES[3].second[0]] = submesh;
+
 	mGeometries[geo->Name] = std::move(geo);
 }
 
@@ -961,7 +1018,7 @@ void MyApp::BuildRenderItems()
 	auto landRitem = std::make_unique<RenderItem>();
 	landRitem->World = MathHelper::Identity4x4();
 	landRitem->ObjCBIndex = objCBIndex++;
-	landRitem->Mat = mMaterials[MATERIAL_NAMES[3]].get();
+	landRitem->Mat = mMaterials["grass"].get();
 	landRitem->Geo = mGeometries[GEO_MESH_NAMES[2].first].get();
 	landRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
@@ -975,17 +1032,33 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
 	wavesRitem->ObjCBIndex = objCBIndex++;
-	wavesRitem->Mat = mMaterials[MATERIAL_NAMES[4]].get();
+	wavesRitem->Mat = mMaterials["water1"].get();
 	wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
 	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
 	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].StartIndexLocation;
 	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].BaseVertexLocation;
-	wavesRitem->LayerFlag = (1 << (int)RenderLayer::Transparent);
+	wavesRitem->LayerFlag 
+		= (1 << (int)RenderLayer::Transparent);
 	mWavesRitem = wavesRitem.get();
-	
 	mAllRitems.push_back(std::move(wavesRitem));
 
+	wavesRitem = std::make_unique<RenderItem>();
+	wavesRitem->World = MathHelper::Identity4x4();
+	XMStoreFloat4x4(&wavesRitem->TexTransform, DirectX::XMMatrixScaling(5.0f, 5.0f, 1.0f));
+	wavesRitem->DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
+	wavesRitem->DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
+	wavesRitem->GridSpatialStep = mCSWaves->SpatialStep();
+	wavesRitem->ObjCBIndex = objCBIndex++;
+	wavesRitem->Mat = mMaterials["water1"].get();
+	wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
+	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
+	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].StartIndexLocation;
+	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].BaseVertexLocation;
+	wavesRitem->LayerFlag
+		= (1 << (int)RenderLayer::WaveVS);
+	mAllRitems.push_back(std::move(wavesRitem));
 	//=========================================================
 	// GEO_MESH_NAMES[4]: RoomGeo
 	//=========================================================
@@ -1030,7 +1103,6 @@ void MyApp::BuildFrameResources()
 
 void MyApp::BuildPSO()
 {
-
 	// Mesh Shader(2018) <- Compute Shader (고착화)
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc
 	{
@@ -1295,25 +1367,42 @@ void MyApp::BuildPSO()
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO	*/.CachedPSO = 0,
 		/* D3D12_PIPELINE_STATE_FLAGS Flags			*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
 	};
-	
+	//ThrowIfFailed(mDevice->CreateComputePipelineState(&addCSPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AddCS])));
+
+	//=====================================================
+	// PSO for Gaussian blur
 	//=====================================================
 	// PSO for horizontal blur
-	//=====================================================
 	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurHorPSO = addCSPsoDesc;
 	BlurHorPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[1]]->GetBufferPointer()), mShaders[CS_NAME[1]]->GetBufferSize() };
 
-	//=====================================================
 	// PSO for vertical blur
-	//=====================================================
 	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurVerPSO = addCSPsoDesc;
 	BlurVerPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[2]]->GetBufferPointer()), mShaders[CS_NAME[2]]->GetBufferSize() };
 
+	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurHorPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurHorCS])));
+	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurVerPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurVerCS])));
+	//=====================================================
+	// PSO for drawing waves
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
+	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[4]]->GetBufferPointer()), mShaders[VS_NAME[4]]->GetBufferSize() };
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesDisturbPSO = addCSPsoDesc;
+	wavesDisturbPSO.pRootSignature = mCSWavesRootSignature.Get();
+	wavesDisturbPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[3]]->GetBufferPointer()), mShaders[CS_NAME[3]]->GetBufferSize() };
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesUpdatePSO = wavesDisturbPSO;
+	wavesUpdatePSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[4]]->GetBufferPointer()), mShaders[CS_NAME[4]]->GetBufferSize() };
+
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS])));
+	ThrowIfFailed(mDevice->CreateComputePipelineState(&wavesDisturbPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveDisturbCS])));
+	ThrowIfFailed(mDevice->CreateComputePipelineState(&wavesUpdatePSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveUpdateCS])));
 	//=====================================================
 	// Create ComputeShader PSO
 	//=====================================================
-	//ThrowIfFailed(mDevice->CreateComputePipelineState(&addCSPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AddCS])));
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurHorPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurHorCS])));
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurVerPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurVerCS])));
+	
+	
 }
 void MyApp::BuildCSBuffer()
 {
@@ -1596,6 +1685,11 @@ void MyApp::Render()
 	// Reusing the command list reuses memory.
 	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[RenderLayer::Opaque].Get()));
 
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	UpdateCSWaves();
+
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
@@ -1620,15 +1714,12 @@ void MyApp::Render()
 	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
 	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
 
+
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
+	mCommandList->SetGraphicsRootDescriptorTable(4, mCSWaves->DisplacementMap());
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -1637,6 +1728,11 @@ void MyApp::Render()
 		else if (mLayerType[i] == RenderLayer::BlurVerCS || mLayerType[i] == RenderLayer::BlurHorCS)
 		{
 			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
+		}
+		else if (mLayerType[i] == RenderLayer::WaveDisturbCS || mLayerType[i] == RenderLayer::WaveUpdateCS)
+		{
+			UpdateCSWaves();
+			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		}
 		else {
 			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
@@ -1694,7 +1790,7 @@ void MyApp::ApplyBlurFilter(ID3D12Resource* input)
 void MyApp::AnimateMaterials()
 {
 	// Scroll the water material texture coordinates.
-	auto waterMat = mMaterials[MATERIAL_NAMES[4]].get();
+	auto waterMat = mMaterials["water1"].get();
 
 	float& tu = waterMat->MatTransform(3, 0);
 	float& tv = waterMat->MatTransform(3, 1);
@@ -1913,6 +2009,26 @@ void MyApp::UpdateWaves()
 	mWavesRitem->Geo->VertexBufferGPU = currWavesVB->Resource();
 }
 
+void MyApp::UpdateCSWaves()
+{
+	// Every quarter second, generate a random wave.
+	static float t_base = 0.0f;
+	if ((mTimer.TotalTime() - t_base) >= 0.25f)
+	{
+		t_base += 0.25f;
+
+		int i = MathHelper::Rand(4, mCSWaves->RowCount() - 5);
+		int j = MathHelper::Rand(4, mCSWaves->ColumnCount() - 5);
+
+		float r = MathHelper::RandF(1.0f, 2.0f);
+
+		mCSWaves->Disturb(mCommandList.Get(), mCSWavesRootSignature.Get(), mPSOs[RenderLayer::WaveDisturbCS].Get(), i, j, r);
+	}
+
+	// Update the wave simulation.
+	mCSWaves->Update(mTimer, mCommandList.Get(), mCSWavesRootSignature.Get(), mPSOs[RenderLayer::WaveUpdateCS].Get());
+}
+
 #pragma endregion Update
 
 void MyApp::DrawRenderItems(const RenderLayer flag)
@@ -2100,7 +2216,10 @@ void MyApp::ShowMainWindow()
 				"TreeSpritesWireframe",
 				"AddCS",
 				"BlurHorCS",
-				"BlurVerCS"
+				"BlurVerCS",
+				"WaveVS",
+				"WaveDisturbCS",
+				"WaveUpdateCS"
 			};
 			if (ImGui::BeginListBox("Shader Type"))
 			{
@@ -2152,7 +2271,7 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE - 1, "%d", flags);
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
@@ -2185,7 +2304,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + SRV_CS_BLAR_SIZE - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + +mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };

@@ -112,6 +112,9 @@
     <FxCompile Include="WaveUpdateCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="WaveVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

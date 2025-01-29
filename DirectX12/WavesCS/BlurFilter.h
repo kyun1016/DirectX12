@@ -23,6 +23,8 @@ public:
 	BlurFilter& operator=(const BlurFilter& rhs) = delete;
 	~BlurFilter() = default;
 
+	UINT DescriptorCount()const;
+
 	ID3D12Resource* Output();
 
 	void BuildDescriptors(

@@ -17,6 +17,11 @@ BlurFilter::BlurFilter(ID3D12Device* device,
 	BuildResources();
 }
 
+UINT BlurFilter::DescriptorCount() const
+{
+	return 4;
+}
+
 ID3D12Resource* BlurFilter::Output()
 {
 	return mBlurMap0.Get();
