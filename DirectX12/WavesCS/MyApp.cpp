@@ -1688,7 +1688,7 @@ void MyApp::Render()
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	UpdateCSWaves();
+	// UpdateCSWaves();
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -1732,7 +1732,7 @@ void MyApp::Render()
 		else if (mLayerType[i] == RenderLayer::WaveDisturbCS || mLayerType[i] == RenderLayer::WaveUpdateCS)
 		{
 			UpdateCSWaves();
-			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+			// mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		}
 		else {
 			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
