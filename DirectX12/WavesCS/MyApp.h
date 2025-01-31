@@ -7,6 +7,7 @@
 #include "Waves.h"
 #include "BlurFilter.h"
 #include "GpuWaves.h"
+#include "CSAdd.h"
 #include <string>
 #include <array>
 
@@ -160,6 +161,7 @@ public:
 	virtual bool Initialize() override;
 	void LoadTextures();
 	void BuildRootSignature();
+	void BuildCSAddRootSignature();
 	void BuildCSBlurRootSignature();
 	void BuildCSWavesRootSignature();
 	void BuildDescriptorHeaps();
@@ -243,7 +245,8 @@ private:
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
 
-	std::unique_ptr<BlurFilter> mBlurFilter;
+	std::unique_ptr<CSAdd> mCSAdd;
+	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
 
 	PassConstants mMainPassCB;
@@ -252,6 +255,7 @@ private:
 	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSAddRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSBlurRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSWavesRootSignature = nullptr;
 
@@ -273,21 +277,4 @@ private:
 	float mRadius = 5.0f;
 
 	POINT mLastMousePos;
-
-#pragma region ComputeShader
-	static constexpr int NumDataElements = 32;
-
-	struct Data
-	{
-		DirectX::XMFLOAT3 v1;
-		DirectX::XMFLOAT2 v2;
-	};
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputBufferA = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputUploadBufferA = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputBufferB = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mInputUploadBufferB = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mOutputBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mReadBackBuffer = nullptr;
-#pragma endregion ComputeShader
 };

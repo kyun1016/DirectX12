@@ -55,13 +55,14 @@ bool MyApp::Initialize()
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
-	mBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
+	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 
 	LoadTextures();
 	BuildMaterials();
 
 	BuildRootSignature();
+	BuildCSAddRootSignature();
 	BuildCSBlurRootSignature();
 	BuildCSWavesRootSignature();
 
@@ -137,6 +138,40 @@ void MyApp::BuildRootSignature()
 	ThrowIfFailed(hr);
 
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+}
+
+void MyApp::BuildCSAddRootSignature()
+{
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsShaderResourceView(0);
+	slotRootParameter[1].InitAsShaderResourceView(1);
+	slotRootParameter[2].InitAsUnorderedAccessView(0);
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
+		0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(mDevice->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mCSAddRootSignature.GetAddressOf())));
 }
 
 void MyApp::BuildCSBlurRootSignature()
@@ -225,7 +260,7 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
+		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -307,7 +342,7 @@ void MyApp::BuildCSBlurShaderResourceViews()
 	//
 	// Fill out the heap with the descriptors to the BlurFilter resources.
 	//
-	mBlurFilter->BuildDescriptors(
+	mCSBlurFilter->BuildDescriptors(
 		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
 		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
 		mCbvSrvUavDescriptorSize);
@@ -316,8 +351,8 @@ void MyApp::BuildCSBlurShaderResourceViews()
 void MyApp::BuildCSWavesShaderResourceViews()
 {
 	mCSWaves->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
 		mCbvSrvUavDescriptorSize);
 }
 
@@ -1361,23 +1396,24 @@ void MyApp::BuildPSO()
 	// PSO for ComputeShader
 	//=====================================================
 	D3D12_COMPUTE_PIPELINE_STATE_DESC addCSPsoDesc = {
-		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mCSBlurRootSignature.Get(),
+		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mCSAddRootSignature.Get(),
 		/* D3D12_SHADER_BYTECODE CS					*/.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[0]]->GetBufferPointer()), mShaders[CS_NAME[0]]->GetBufferSize() },
 		/* UINT NodeMask							*/.NodeMask = 0,
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO	*/.CachedPSO = 0,
 		/* D3D12_PIPELINE_STATE_FLAGS Flags			*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
 	};
-	//ThrowIfFailed(mDevice->CreateComputePipelineState(&addCSPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AddCS])));
+	ThrowIfFailed(mDevice->CreateComputePipelineState(&addCSPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AddCS])));
 
 	//=====================================================
 	// PSO for Gaussian blur
 	//=====================================================
 	// PSO for horizontal blur
 	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurHorPSO = addCSPsoDesc;
+	BlurHorPSO.pRootSignature = mCSBlurRootSignature.Get();
 	BlurHorPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[1]]->GetBufferPointer()), mShaders[CS_NAME[1]]->GetBufferSize() };
 
 	// PSO for vertical blur
-	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurVerPSO = addCSPsoDesc;
+	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurVerPSO = BlurHorPSO;
 	BlurVerPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[2]]->GetBufferPointer()), mShaders[CS_NAME[2]]->GetBufferSize() };
 
 	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurHorPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurHorCS])));
@@ -1386,6 +1422,7 @@ void MyApp::BuildPSO()
 	// PSO for drawing waves
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
+	wavesRenderPSO.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[4]]->GetBufferPointer()), mShaders[VS_NAME[4]]->GetBufferSize() };
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesDisturbPSO = addCSPsoDesc;
@@ -1406,29 +1443,6 @@ void MyApp::BuildPSO()
 }
 void MyApp::BuildCSBuffer()
 {
-	//D3D12_RESOURCE_DESC srvDesc
-	//{
-	//	/* D3D12_RESOURCE_DIMENSION Dimension	*/.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-	//	/* UINT64 Alignment						*/.Alignment = 0,
-	//	/* UINT64 Width							*/.Width = mClientWidth,
-	//	/* UINT Height							*/.Height = mClientHeight,
-	//	/* UINT16 DepthOrArraySize				*/.DepthOrArraySize = 1,
-	//	/* UINT16 MipLevels						*/.MipLevels = 1,
-	//	/* DXGI_FORMAT Format					*/.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-	//	/* DXGI_SAMPLE_DESC SampleDesc{			*/.SampleDesc = {
-	//	/*	UINT Count							*/		.Count = 1,
-	//	/*	UINT Quality}						*/		.Quality = 0},
-	//	/* D3D12_TEXTURE_LAYOUT Layout			*/.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
-	//	/* D3D12_RESOURCE_FLAGS Flags			*/.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-	//};
-	//ThrowIfFailed(mDevice->CreateCommittedResource(
-	//	&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
-	//	D3D12_HEAP_FLAG_NONE,
-	//	&srvDesc,
-	//	D3D12_RESOURCE_STATE_COMMON,
-	//	nullptr,
-	//	IID_PPV_ARGS(&mReadBackBuffer)));
-
 	// Generate some data.
 	std::vector<Data> dataA(NumDataElements);
 	std::vector<Data> dataB(NumDataElements);
@@ -1650,8 +1664,8 @@ void MyApp::OnResize()
 		}
 	}
 
-	if (mBlurFilter)
-		mBlurFilter->OnResize(mClientWidth, mClientHeight);
+	if (mCSBlurFilter)
+		mCSBlurFilter->OnResize(mClientWidth, mClientHeight);
 }
 void MyApp::Update()
 {
@@ -1724,6 +1738,10 @@ void MyApp::Render()
 	{
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
+		else if (mLayerType[i] == RenderLayer::AddCS)
+		{
+			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
+		}
 		else if (mLayerType[i] == RenderLayer::BlurVerCS || mLayerType[i] == RenderLayer::BlurHorCS)
 		{
 			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
@@ -1731,7 +1749,6 @@ void MyApp::Render()
 		else if (mLayerType[i] == RenderLayer::WaveDisturbCS || mLayerType[i] == RenderLayer::WaveUpdateCS)
 		{
 			UpdateCSWaves();
-			// mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		}
 		else {
 			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
@@ -1775,12 +1792,12 @@ void MyApp::Render()
 
 void MyApp::ApplyBlurFilter(ID3D12Resource* input)
 {
-	mBlurFilter->Execute(mCommandList.Get(), mCSBlurRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), input, 4);
+	mCSBlurFilter->Execute(mCommandList.Get(), mCSBlurRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), input, 4);
 
 	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 
-	mCommandList->CopyResource(input, mBlurFilter->Output());
+	mCommandList->CopyResource(input, mCSBlurFilter->Output());
 
 	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
@@ -2270,7 +2287,7 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
@@ -2303,7 +2320,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + +mBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + +mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };

@@ -1,4 +1,3 @@
-#include "Common.hlsli"
 
 struct Data
 {
@@ -6,16 +5,14 @@ struct Data
     float2 v2;
 };
 
-//StructuredBuffer<Data> gInputA : register(t0);
-//StructuredBuffer<Data> gInputB : register(t1);
-//RWStructuredBuffer<Data> gOutput : register(u0);
+StructuredBuffer<Data> gInputA : register(t0);
+StructuredBuffer<Data> gInputB : register(t1);
+RWStructuredBuffer<Data> gOutput : register(u0);
 
-Texture2D gInputA;
-Texture2D gInputB;
-RWTexture2D<float4> gOutput;
 
-[numthreads(16, 16, 1)]
-void main( uint3 dispatchThreadID : SV_DispatchThreadID )
+[numthreads(32, 1, 1)]
+void main(int3 dtid : SV_DispatchThreadID)
 {
-    gOutput[dispatchThreadID.xy] = gInputA[dispatchThreadID.xy] + gInputB[dispatchThreadID.xy];
+    gOutput[dtid.x].v1 = gInputA[dtid.x].v1 + gInputB[dtid.x].v1;
+    gOutput[dtid.x].v2 = gInputA[dtid.x].v2 + gInputB[dtid.x].v2;
 }

@@ -247,9 +247,6 @@ void GpuWaves::Update(
 		cmdList->ResourceBarrier(1, &barrier);
 		cmdList->Dispatch(numGroupsX, numGroupsY, 1);
 
-		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		cmdList->ResourceBarrier(1, &barrier);
-
 		//
 		// Ping-pong buffers in preparation for the next update.
 		// The previous solution is no longer needed and becomes the target of the next solution in the next update.
@@ -273,6 +270,9 @@ void GpuWaves::Update(
 		mNextSolUav = uavTemp;
 
 		t = 0.0f; // reset time
+
+		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+		cmdList->ResourceBarrier(1, &barrier);
 	}
 }
 
