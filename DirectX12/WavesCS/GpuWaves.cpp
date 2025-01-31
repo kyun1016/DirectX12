@@ -243,7 +243,12 @@ void GpuWaves::Update(
 		// so there is no remainder.
 		UINT numGroupsX = mNumCols / 16;
 		UINT numGroupsY = mNumRows / 16;
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		cmdList->ResourceBarrier(1, &barrier);
 		cmdList->Dispatch(numGroupsX, numGroupsY, 1);
+
+		barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+		cmdList->ResourceBarrier(1, &barrier);
 
 		//
 		// Ping-pong buffers in preparation for the next update.
@@ -268,11 +273,6 @@ void GpuWaves::Update(
 		mNextSolUav = uavTemp;
 
 		t = 0.0f; // reset time
-
-		// The current solution needs to be able to be read by the vertex shader, so change its state to GENERIC_READ.
-
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		cmdList->ResourceBarrier(1, &barrier);
 	}
 }
 
@@ -302,4 +302,6 @@ void GpuWaves::Disturb(
 	// One thread group kicks off one thread, which displaces the height of one
 	// vertex and its neighbors.
 	cmdList->Dispatch(1, 1, 1);
+	barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+	cmdList->ResourceBarrier(1, &barrier);
 }

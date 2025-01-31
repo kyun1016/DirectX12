@@ -85,12 +85,6 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mPrevUploadBuffer = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mCurrUploadBuffer = nullptr;
-
-	D3D12_RESOURCE_BARRIER mBarrierPrevSol;
-	D3D12_RESOURCE_BARRIER mBarrierCurrSol;
-	D3D12_RESOURCE_BARRIER mBarrierNextSol;
-	D3D12_RESOURCE_BARRIER mBarrierPrevUploadBuffer;
-	D3D12_RESOURCE_BARRIER mBarrierCurrUploadBuffer;
 };
 
 #endif // GPUWAVES_H
