@@ -109,7 +109,7 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
 		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(&mPrevSol)));
 
@@ -117,7 +117,7 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
 		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(&mCurrSol)));
 
@@ -125,7 +125,7 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
 		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 		nullptr,
 		IID_PPV_ARGS(&mNextSol)));
 
@@ -170,21 +170,13 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 	// Note that mCurrSol is put in the GENERIC_READ state so it can be 
 	// read by a shader.
 	//
-	mBarrierPrevSol = CD3DX12_RESOURCE_BARRIER::Transition(mPrevSol.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON);
-	mBarrierCurrSol = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON);
-	mBarrierNextSol = CD3DX12_RESOURCE_BARRIER::Transition(mNextSol.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON);
-	mBarrierPrevUploadBuffer = CD3DX12_RESOURCE_BARRIER::Transition(mPrevUploadBuffer.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_GENERIC_READ);
-	mBarrierCurrUploadBuffer = CD3DX12_RESOURCE_BARRIER::Transition(mCurrUploadBuffer.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_GENERIC_READ);
-
-	D3DUtil::UpdateBarrier(cmdList, mBarrierPrevSol, D3D12_RESOURCE_STATE_COPY_DEST);
 	UpdateSubresources(cmdList, mPrevSol.Get(), mPrevUploadBuffer.Get(), 0, 0, num2DSubresources, &subResourceData);
-	D3DUtil::UpdateBarrier(cmdList, mBarrierPrevSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	CD3DX12_RESOURCE_BARRIER prevBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mPrevSol.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	cmdList->ResourceBarrier(1, &prevBarrier);
 
-	D3DUtil::UpdateBarrier(cmdList, mBarrierCurrSol, D3D12_RESOURCE_STATE_COPY_DEST);
 	UpdateSubresources(cmdList, mCurrSol.Get(), mCurrUploadBuffer.Get(), 0, 0, num2DSubresources, &subResourceData);
-	D3DUtil::UpdateBarrier(cmdList, mBarrierCurrSol, D3D12_RESOURCE_STATE_GENERIC_READ);
-
-	D3DUtil::UpdateBarrier(cmdList, mBarrierNextSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	CD3DX12_RESOURCE_BARRIER currBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+	cmdList->ResourceBarrier(1, &currBarrier);
 }
 
 void GpuWaves::BuildDescriptors(
@@ -279,7 +271,6 @@ void GpuWaves::Update(
 
 		// The current solution needs to be able to be read by the vertex shader, so change its state to GENERIC_READ.
 
-		// D3DUtil::UpdateBarrier(cmdList, mBarrierCurrSol, D3D12_RESOURCE_STATE_GENERIC_READ);
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 		cmdList->ResourceBarrier(1, &barrier);
 	}
@@ -305,7 +296,6 @@ void GpuWaves::Disturb(
 	// The current solution is in the GENERIC_READ state so it can be read by the vertex shader.
 	// Change it to UNORDERED_ACCESS for the compute shader.  Note that a UAV can still be
 	// read in a compute shader.
-	// D3DUtil::UpdateBarrier(cmdList, mBarrierCurrSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	cmdList->ResourceBarrier(1, &barrier);
 

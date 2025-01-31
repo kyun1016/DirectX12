@@ -1469,13 +1469,11 @@ void MyApp::Render()
 	rtvs[0] = mSwapChainDescriptor[mCurrBackBuffer];		// 기존
 	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
 	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
-	// mCommandList->OMSetRenderTargets(1, &mSwapChainDescriptor[mCurrBackBuffer], true, &mDepthStencilDescriptor);
 
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-	
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();

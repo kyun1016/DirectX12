@@ -1714,7 +1714,6 @@ void MyApp::Render()
 	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
 	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
 
-
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
