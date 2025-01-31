@@ -14,7 +14,10 @@ BlurFilter::BlurFilter(ID3D12Device* device,
 	mHeight = height;
 	mFormat = format;
 
+	BuildShader();
 	BuildResources();
+	BuildRootSignature();
+	BuildPSO();
 }
 
 UINT BlurFilter::DescriptorCount() const
@@ -25,6 +28,12 @@ UINT BlurFilter::DescriptorCount() const
 ID3D12Resource* BlurFilter::Output()
 {
 	return mBlurMap0.Get();
+}
+
+void BlurFilter::BuildShader()
+{
+	mHorShader = D3DUtil::LoadBinary(L"Shaders\\BlurHorCS.cso");
+	mVerShader = D3DUtil::LoadBinary(L"Shaders\\BlurVerCS.cso");
 }
 
 void BlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
@@ -45,31 +54,74 @@ void BlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
 	BuildDescriptors();
 }
 
+void BlurFilter::BuildRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable;
+	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable;
+	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); // u0
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsConstants(12, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(md3dDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+}
+
+void BlurFilter::BuildPSO()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurHorPSO = {
+		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mRootSignature.Get(),
+		/* D3D12_SHADER_BYTECODE CS					*/.CS = { reinterpret_cast<BYTE*>(mHorShader->GetBufferPointer()), mHorShader->GetBufferSize() },
+		/* UINT NodeMask							*/.NodeMask = 0,
+		/* D3D12_CACHED_PIPELINE_STATE CachedPSO	*/.CachedPSO = 0,
+		/* D3D12_PIPELINE_STATE_FLAGS Flags			*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
+	};
+
+	// PSO for vertical blur
+	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurVerPSO = BlurHorPSO;
+	BlurVerPSO.CS = { reinterpret_cast<BYTE*>(mVerShader->GetBufferPointer()), mVerShader->GetBufferSize() };
+
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&BlurHorPSO, IID_PPV_ARGS(&mHorPSO)));
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&BlurVerPSO, IID_PPV_ARGS(&mVerPSO)));
+}
+
 void BlurFilter::OnResize(UINT newWidth, UINT newHeight)
 {
-	// if ((mWidth != newWidth) || (mHeight != newHeight))
-	// {
-		mWidth = newWidth;
-		mHeight = newHeight;
+	mWidth = newWidth;
+	mHeight = newHeight;
 
-		BuildResources();
+	BuildResources();
 
-		// New resource, so we need new descriptors to that resource.
-		BuildDescriptors();
-	// }
+	// New resource, so we need new descriptors to that resource.
+	BuildDescriptors();
 }
 
 void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
-	ID3D12RootSignature* rootSig,
-	ID3D12PipelineState* horzBlurPSO,
-	ID3D12PipelineState* vertBlurPSO,
 	ID3D12Resource* input,
 	int blurCount)
 {
 	auto weights = CalcGaussWeights(2.5f);
 	int blurRadius = (int)weights.size() / 2;
 
-	cmdList->SetComputeRootSignature(rootSig);
+	cmdList->SetComputeRootSignature(mRootSignature.Get());
 
 	cmdList->SetComputeRoot32BitConstants(0, 1, &blurRadius, 0);
 	cmdList->SetComputeRoot32BitConstants(0, (UINT)weights.size(), weights.data(), 1);
@@ -93,7 +145,7 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 		// Horizontal Blur pass.
 		//
 
-		cmdList->SetPipelineState(horzBlurPSO);
+		cmdList->SetPipelineState(mHorPSO.Get());
 
 		cmdList->SetComputeRootDescriptorTable(1, mBlur0GpuSrv);
 		cmdList->SetComputeRootDescriptorTable(2, mBlur1GpuUav);
@@ -115,7 +167,7 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 		// Vertical Blur pass.
 		//
 
-		cmdList->SetPipelineState(vertBlurPSO);
+		cmdList->SetPipelineState(mVerPSO.Get());
 
 		cmdList->SetComputeRootDescriptorTable(1, mBlur1GpuSrv);
 		cmdList->SetComputeRootDescriptorTable(2, mBlur0GpuUav);
@@ -144,6 +196,14 @@ void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList,
 	cmdList->ResourceBarrier(1, &barrierInput);
 	cmdList->ResourceBarrier(1, &barrierMap0);
 	cmdList->ResourceBarrier(1, &barrierMap1);
+
+	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+	cmdList->ResourceBarrier(1, &RenderBarrier);
+
+	cmdList->CopyResource(input, mBlurMap0.Get());
+
+	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	cmdList->ResourceBarrier(1, &RenderBarrier);
 }
 
 std::vector<float> BlurFilter::CalcGaussWeights(float sigma)

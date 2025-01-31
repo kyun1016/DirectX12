@@ -7,20 +7,20 @@
 #include <cassert>
 
 GpuWaves::GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
-	int m, int n, float dx, float dt, float speed, float damping)
+	int m, int n, float dx, float dt, float speed, float damping, bool x4MsaaState, UINT x4MsaaQuality, ID3D12RootSignature* rootSig)
+	: md3dDevice(device)
+	, mNumRows(m)
+	, mNumCols(n)
+	, mTimeStep(dt)
+	, mSpatialStep(dx)
+	, m4xMsaaState(x4MsaaState)
+	, m4xMsaaQuality(x4MsaaQuality)
+	, mMainRootSignature(rootSig)
 {
-	md3dDevice = device;
-
-	mNumRows = m;
-	mNumCols = n;
-
 	assert((m * n) % 256 == 0);
 
 	mVertexCount = m * n;
 	mTriangleCount = (m - 1) * (n - 1) * 2;
-
-	mTimeStep = dt;
-	mSpatialStep = dx;
 
 	float d = damping * dt + 2.0f;
 	float e = (speed * speed) * (dt * dt) / (dx * dx);
@@ -28,7 +28,15 @@ GpuWaves::GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
 	mK[1] = (4.0f - 8.0f * e) / d;
 	mK[2] = (2.0f * e) / d;
 
+	BuildShadersAndInputLayout();
 	BuildResources(cmdList);
+	BuildCSRootSignature();
+	BuildPSO();
+}
+
+ID3D12PipelineState* GpuWaves::GetPSO()
+{
+	return mMainPSO.Get();
 }
 
 UINT GpuWaves::RowCount()const
@@ -75,6 +83,21 @@ UINT GpuWaves::DescriptorCount()const
 {
 	// Number of descriptors in heap to reserve for GpuWaves.
 	return 6;
+}
+
+void GpuWaves::BuildShadersAndInputLayout()
+{
+	mVSShader = D3DUtil::LoadBinary(L"Shaders\\WaveVS.cso");
+	mPSShader = D3DUtil::LoadBinary(L"Shaders\\MainPS.cso");
+	mCSDisturbShader = D3DUtil::LoadBinary(L"Shaders\\WaveDisturbCS.cso");
+	mCSUpdateShader = D3DUtil::LoadBinary(L"Shaders\\WaveUpdateCS.cso");
+
+	mMainInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
 }
 
 void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
@@ -179,6 +202,172 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 	cmdList->ResourceBarrier(1, &currBarrier);
 }
 
+void GpuWaves::BuildCSRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable1;
+	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable2;
+	uavTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
+
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+
+	// Perfomance TIP: Order from most frequent to least frequent.
+	slotRootParameter[0].InitAsConstants(6, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &uavTable0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
+	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable2);
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
+		0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	ThrowIfFailed(hr);
+
+	ThrowIfFailed(md3dDevice->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mCSRootSignature.GetAddressOf())));
+}
+
+void GpuWaves::BuildPSO()
+{
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO
+	{
+		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mMainRootSignature,
+		/* D3D12_SHADER_BYTECODE VS											*/.VS = { reinterpret_cast<BYTE*>(mVSShader->GetBufferPointer()), mVSShader->GetBufferSize() },
+		/* D3D12_SHADER_BYTECODE PS											*/.PS = { reinterpret_cast<BYTE*>(mPSShader->GetBufferPointer()), mPSShader->GetBufferSize() },
+		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
+		/* D3D12_STREAM_OUTPUT_DESC StreamOutput{							*/.StreamOutput = {
+		/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
+		/*			UINT Stream;											*/
+		/*			LPCSTR SemanticName;									*/
+		/*			UINT SemanticIndex;										*/
+		/*			BYTE StartComponent;									*/
+		/*			BYTE ComponentCount;									*/
+		/*			BYTE OutputSlot;										*/
+		/*		}															*/
+		/*		UINT NumEntries;											*/	0,
+		/*		const UINT* pBufferStrides;									*/	0,
+		/*		UINT NumStrides;											*/	0,
+		/*		UINT RasterizedStream;										*/	0
+		/* }																*/},
+		/* D3D12_BLEND_DESC BlendState{										*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+		/*		BOOL AlphaToCoverageEnable									*/
+		/*		BOOL IndependentBlendEnable									*/
+		/*		D3D12_RENDER_TARGET_BLEND_DESC RenderTarget[8]				*/
+		/* }																*/
+		/* UINT SampleMask													*/.SampleMask = UINT_MAX,
+		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
+		/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
+		/*		BOOL FrontCounterClockwise									*/		false,
+		/*		INT DepthBias												*/		D3D12_DEFAULT_DEPTH_BIAS,
+		/*		FLOAT DepthBiasClamp										*/		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+		/*		FLOAT SlopeScaledDepthBias									*/		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+		/*		BOOL DepthClipEnable										*/		true,
+		/*		BOOL MultisampleEnable										*/		false,
+		/*		BOOL AntialiasedLineEnable									*/		false,
+		/*		UINT ForcedSampleCount										*/		0,
+		/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+		/* }																*/},
+		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		/*		BOOL DepthEnable											*/		.DepthEnable = true,
+		/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+		/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+		/*		BOOL StencilEnable											*/		.StencilEnable = false,
+		/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+		/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+		/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/* }																*/ },
+		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mMainInputLayout.data(),
+		/*		UINT NumElements											*/		.NumElements = (UINT)mMainInputLayout.size()
+		/*	}																*/ },
+		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+		/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
+		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT,
+		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
+		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
+		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/*	}																*/},
+		/* UINT NodeMask													*/.NodeMask = 0,
+		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
+		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
+	};
+	wavesRenderPSO.BlendState.IndependentBlendEnable = true;
+	wavesRenderPSO.BlendState.RenderTarget[0] =
+	{
+		/* BOOL BlendEnable				*/true,
+		/* BOOL LogicOpEnable			*/false,
+		/* D3D12_BLEND SrcBlend			*/D3D12_BLEND_SRC_ALPHA,
+		/* D3D12_BLEND DestBlend		*/D3D12_BLEND_INV_SRC_ALPHA,
+		/* D3D12_BLEND_OP BlendOp		*/D3D12_BLEND_OP_ADD,
+		/* D3D12_BLEND SrcBlendAlpha	*/D3D12_BLEND_ONE,
+		/* D3D12_BLEND DestBlendAlpha	*/D3D12_BLEND_ZERO,
+		/* D3D12_BLEND_OP BlendOpAlpha	*/D3D12_BLEND_OP_ADD,
+		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
+		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
+	};
+	wavesRenderPSO.BlendState.RenderTarget[1] =
+	{
+		/* BOOL BlendEnable				*/true,
+		/* BOOL LogicOpEnable			*/false,
+		/* D3D12_BLEND SrcBlend			*/D3D12_BLEND_SRC_ALPHA,
+		/* D3D12_BLEND DestBlend		*/D3D12_BLEND_INV_SRC_ALPHA,
+		/* D3D12_BLEND_OP BlendOp		*/D3D12_BLEND_OP_ADD,
+		/* D3D12_BLEND SrcBlendAlpha	*/D3D12_BLEND_ONE,
+		/* D3D12_BLEND DestBlendAlpha	*/D3D12_BLEND_ZERO,
+		/* D3D12_BLEND_OP BlendOpAlpha	*/D3D12_BLEND_OP_ADD,
+		/* D3D12_LOGIC_OP LogicOp		*/D3D12_LOGIC_OP_NOOP,
+		/* UINT8 RenderTargetWriteMask	*/D3D12_COLOR_WRITE_ENABLE_ALL
+	};
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesDisturbPSO = {
+		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mCSRootSignature.Get(),
+		/* D3D12_SHADER_BYTECODE CS					*/.CS = { reinterpret_cast<BYTE*>(mCSDisturbShader->GetBufferPointer()), mCSDisturbShader->GetBufferSize() },
+		/* UINT NodeMask							*/.NodeMask = 0,
+		/* D3D12_CACHED_PIPELINE_STATE CachedPSO	*/.CachedPSO = 0,
+		/* D3D12_PIPELINE_STATE_FLAGS Flags			*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
+	};
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesUpdatePSO = wavesDisturbPSO;
+	wavesUpdatePSO.CS = { reinterpret_cast<BYTE*>(mCSUpdateShader->GetBufferPointer()), mCSUpdateShader->GetBufferSize() };
+
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mMainPSO)));
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&wavesDisturbPSO, IID_PPV_ARGS(&mCSDisturbPSO)));
+	ThrowIfFailed(md3dDevice->CreateComputePipelineState(&wavesUpdatePSO, IID_PPV_ARGS(&mCSUpdatePSO)));
+}
+
 void GpuWaves::BuildDescriptors(
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
 	CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor,
@@ -214,19 +403,32 @@ void GpuWaves::BuildDescriptors(
 	mNextSolUav = hGpuDescriptor.Offset(1, descriptorSize);
 }
 
-void GpuWaves::Update(
-	const GameTimer& gt,
-	ID3D12GraphicsCommandList* cmdList,
-	ID3D12RootSignature* rootSig,
-	ID3D12PipelineState* pso)
+void GpuWaves::UpdateWaves(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList)
+{
+	// Every quarter second, generate a random wave.
+	static float t_base = 0.0f;
+	if ((gt.TotalTime() - t_base) >= 0.25f)
+	{
+		t_base += 0.25f;
+
+		int i = MathHelper::Rand(4, mNumRows - 5);
+		int j = MathHelper::Rand(4, mNumCols - 5);
+
+		float r = MathHelper::RandF(1.0f, 2.0f);
+		Disturb(cmdList, i, j, r);
+	}
+	Update(gt, cmdList);
+}
+
+void GpuWaves::Update(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList)
 {
 	static float t = 0.0f;
 
 	// Accumulate time.
 	t += gt.DeltaTime();
 
-	cmdList->SetPipelineState(pso);
-	cmdList->SetComputeRootSignature(rootSig);
+	cmdList->SetPipelineState(mCSUpdatePSO.Get());
+	cmdList->SetComputeRootSignature(mCSRootSignature.Get());
 
 	// Only update the simulation at the specified time step.
 	if (t >= mTimeStep)
@@ -276,15 +478,10 @@ void GpuWaves::Update(
 	}
 }
 
-void GpuWaves::Disturb(
-	ID3D12GraphicsCommandList* cmdList,
-	ID3D12RootSignature* rootSig,
-	ID3D12PipelineState* pso,
-	UINT i, UINT j,
-	float magnitude)
+void GpuWaves::Disturb(ID3D12GraphicsCommandList* cmdList, UINT i, UINT j, float magnitude)
 {
-	cmdList->SetPipelineState(pso);
-	cmdList->SetComputeRootSignature(rootSig);
+	cmdList->SetPipelineState(mCSDisturbPSO.Get());
+	cmdList->SetComputeRootSignature(mCSRootSignature.Get());
 
 	// Set the disturb constants.
 	UINT disturbIndex[2] = { j, i };

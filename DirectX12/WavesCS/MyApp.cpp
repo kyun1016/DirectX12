@@ -55,17 +55,14 @@ bool MyApp::Initialize()
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
-	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
-	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 
 	LoadTextures();
 	BuildMaterials();
 
 	BuildRootSignature();
-	BuildCSAddRootSignature();
-	BuildCSBlurRootSignature();
-	BuildCSWavesRootSignature();
-
+	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality, mRootSignature.Get());
+	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
+	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
@@ -77,6 +74,7 @@ bool MyApp::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
+
 
 	if (!InitImgui())
 		return false;
@@ -138,113 +136,6 @@ void MyApp::BuildRootSignature()
 	ThrowIfFailed(hr);
 
 	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
-}
-
-void MyApp::BuildCSAddRootSignature()
-{
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-
-	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsShaderResourceView(0);
-	slotRootParameter[1].InitAsShaderResourceView(1);
-	slotRootParameter[2].InitAsUnorderedAccessView(0);
-
-	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
-		0, nullptr,
-		D3D12_ROOT_SIGNATURE_FLAG_NONE);
-
-	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-	{
-		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	}
-	ThrowIfFailed(hr);
-
-	ThrowIfFailed(mDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(mCSAddRootSignature.GetAddressOf())));
-}
-
-void MyApp::BuildCSBlurRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE srvTable;
-	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable;
-	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); // u0
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-
-	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstants(12, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
-
-	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	ThrowIfFailed(hr);
-
-	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mCSBlurRootSignature.GetAddressOf())));
-}
-
-void MyApp::BuildCSWavesRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE uavTable0;
-	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable1;
-	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable2;
-	uavTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
-
-	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstants(6, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &uavTable0);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
-	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable2);
-
-	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
-		0, nullptr,
-		D3D12_ROOT_SIGNATURE_FLAG_NONE);
-
-	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	ThrowIfFailed(hr);
-
-	ThrowIfFailed(mDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(mCSWavesRootSignature.GetAddressOf())));
 }
 
 void MyApp::BuildDescriptorHeaps()
@@ -1085,7 +976,7 @@ void MyApp::BuildRenderItems()
 	wavesRitem->DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
 	wavesRitem->GridSpatialStep = mCSWaves->SpatialStep();
 	wavesRitem->ObjCBIndex = objCBIndex++;
-	wavesRitem->Mat = mMaterials["water1"].get();
+	wavesRitem->Mat = mMaterials["ice"].get();
 	wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
 	wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
@@ -1391,177 +1282,8 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SubdivisionWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::NormalWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSpritesWireframe])));
-
-	//=====================================================
-	// PSO for ComputeShader
-	//=====================================================
-	D3D12_COMPUTE_PIPELINE_STATE_DESC addCSPsoDesc = {
-		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mCSAddRootSignature.Get(),
-		/* D3D12_SHADER_BYTECODE CS					*/.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[0]]->GetBufferPointer()), mShaders[CS_NAME[0]]->GetBufferSize() },
-		/* UINT NodeMask							*/.NodeMask = 0,
-		/* D3D12_CACHED_PIPELINE_STATE CachedPSO	*/.CachedPSO = 0,
-		/* D3D12_PIPELINE_STATE_FLAGS Flags			*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE,
-	};
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&addCSPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AddCS])));
-
-	//=====================================================
-	// PSO for Gaussian blur
-	//=====================================================
-	// PSO for horizontal blur
-	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurHorPSO = addCSPsoDesc;
-	BlurHorPSO.pRootSignature = mCSBlurRootSignature.Get();
-	BlurHorPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[1]]->GetBufferPointer()), mShaders[CS_NAME[1]]->GetBufferSize() };
-
-	// PSO for vertical blur
-	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurVerPSO = BlurHorPSO;
-	BlurVerPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[2]]->GetBufferPointer()), mShaders[CS_NAME[2]]->GetBufferSize() };
-
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurHorPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurHorCS])));
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&BlurVerPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::BlurVerCS])));
-	//=====================================================
-	// PSO for drawing waves
-	//=====================================================
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
-	wavesRenderPSO.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders[VS_NAME[4]]->GetBufferPointer()), mShaders[VS_NAME[4]]->GetBufferSize() };
-
-	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesDisturbPSO = addCSPsoDesc;
-	wavesDisturbPSO.pRootSignature = mCSWavesRootSignature.Get();
-	wavesDisturbPSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[3]]->GetBufferPointer()), mShaders[CS_NAME[3]]->GetBufferSize() };
-
-	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesUpdatePSO = wavesDisturbPSO;
-	wavesUpdatePSO.CS = { reinterpret_cast<BYTE*>(mShaders[CS_NAME[4]]->GetBufferPointer()), mShaders[CS_NAME[4]]->GetBufferSize() };
-
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS])));
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&wavesDisturbPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveDisturbCS])));
-	ThrowIfFailed(mDevice->CreateComputePipelineState(&wavesUpdatePSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveUpdateCS])));
-	//=====================================================
-	// Create ComputeShader PSO
-	//=====================================================
-	
-	
 }
-void MyApp::BuildCSBuffer()
-{
-	// Generate some data.
-	std::vector<Data> dataA(NumDataElements);
-	std::vector<Data> dataB(NumDataElements);
-	for (int i = 0; i < NumDataElements; ++i)
-	{
-		dataA[i].v1 = DirectX::XMFLOAT3(i, i, i);
-		dataA[i].v2 = DirectX::XMFLOAT2(i, 0);
 
-		dataB[i].v1 = DirectX::XMFLOAT3(-i, i, 0.0f);
-		dataB[i].v2 = DirectX::XMFLOAT2(0, -i);
-	}
-
-	UINT64 byteSize = dataA.size() * sizeof(Data);
-
-	// Create some buffers to be used as SRVs.
-	mInputBufferA = D3DUtil::CreateDefaultBuffer(
-		mDevice.Get(),
-		mCommandList.Get(),
-		dataA.data(),
-		byteSize,
-		mInputUploadBufferA);
-
-	mInputBufferB = D3DUtil::CreateDefaultBuffer(
-		mDevice.Get(),
-		mCommandList.Get(),
-		dataB.data(),
-		byteSize,
-		mInputUploadBufferB);
-
-	// Create the buffer that will be a UAV.
-	D3D12_HEAP_PROPERTIES heapProperty
-	{
-		/* D3D12_HEAP_TYPE Type						*/.Type = D3D12_HEAP_TYPE_DEFAULT,
-		/* D3D12_CPU_PAGE_PROPERTY CPUPageProperty	*/.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-		/* D3D12_MEMORY_POOL MemoryPoolPreference	*/.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
-		/* UINT CreationNodeMask					*/.CreationNodeMask = 1,
-		/* UINT VisibleNodeMask						*/.VisibleNodeMask = 1,
-	};
-
-	D3D12_RESOURCE_DESC bufferDesc
-	{
-		/* D3D12_RESOURCE_DIMENSION Dimension	*/.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-		/* UINT64 Alignment						*/.Alignment = 0,
-		/* UINT64 Width							*/.Width = byteSize,
-		/* UINT Height							*/.Height = 1,
-		/* UINT16 DepthOrArraySize				*/.DepthOrArraySize = 1,
-		/* UINT16 MipLevels						*/.MipLevels = 1,
-		/* DXGI_FORMAT Format					*/.Format = DXGI_FORMAT_UNKNOWN,
-		/* DXGI_SAMPLE_DESC SampleDesc{			*/.SampleDesc = {
-		/*	UINT Count							*/		.Count = 1,
-		/*	UINT Quality}						*/		.Quality = 0},
-		/* D3D12_TEXTURE_LAYOUT Layout			*/.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-		/* D3D12_RESOURCE_FLAGS Flags			*/.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
-	};
-	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&heapProperty,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		nullptr,
-		IID_PPV_ARGS(&mOutputBuffer)));
-
-	heapProperty.Type = D3D12_HEAP_TYPE_READBACK;
-	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&heapProperty,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&mReadBackBuffer)));
-}
-void MyApp::DoComputeWork()
-{
-	ThrowIfFailed(mCommandAllocator->Reset());
-
-	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), mPSOs[RenderLayer::AddCS].Get()));
-
-	mCommandList->SetComputeRootSignature(mRootSignature.Get());
-
-	mCommandList->SetComputeRootShaderResourceView(0, mInputBufferA->GetGPUVirtualAddress());
-	mCommandList->SetComputeRootShaderResourceView(1, mInputBufferB->GetGPUVirtualAddress());
-	mCommandList->SetComputeRootUnorderedAccessView(2, mOutputBuffer->GetGPUVirtualAddress());
-
-	mCommandList->Dispatch(1, 1, 1);
-
-	// Schedule to copy the data to the default buffer to the readback buffer.
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	mCommandList->ResourceBarrier(1, &barrier);
-
-	mCommandList->CopyResource(mReadBackBuffer.Get(), mOutputBuffer.Get());
-
-	barrier = CD3DX12_RESOURCE_BARRIER::Transition(mOutputBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
-	mCommandList->ResourceBarrier(1, &barrier);
-
-	// Done recording commands.
-	ThrowIfFailed(mCommandList->Close());
-
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	// Wait for the work to finish.
-	FlushCommandQueue();
-
-	// Map the data so we can read it on CPU.
-	Data* mappedData = nullptr;
-	ThrowIfFailed(mReadBackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
-
-	std::ofstream fout("results.txt");
-
-	for (int i = 0; i < NumDataElements; ++i)
-	{
-		fout << "(" << mappedData[i].v1.x << ", " << mappedData[i].v1.y << ", " << mappedData[i].v1.z <<
-			", " << mappedData[i].v2.x << ", " << mappedData[i].v2.y << ")" << std::endl;
-	}
-
-	mReadBackBuffer->Unmap(0, nullptr);
-}
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
 {
 	// Applications usually only need a handful of samplers.  So just define them all up front
@@ -1697,7 +1419,7 @@ void MyApp::Render()
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), mPSOs[RenderLayer::Opaque].Get()));
+	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), nullptr));
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -1740,15 +1462,22 @@ void MyApp::Render()
 			continue;
 		else if (mLayerType[i] == RenderLayer::AddCS)
 		{
-			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
+			// ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
 		}
 		else if (mLayerType[i] == RenderLayer::BlurVerCS || mLayerType[i] == RenderLayer::BlurHorCS)
 		{
-			ApplyBlurFilter(mSwapChainBuffer[mCurrBackBuffer].Get());
+			mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
 		}
 		else if (mLayerType[i] == RenderLayer::WaveDisturbCS || mLayerType[i] == RenderLayer::WaveUpdateCS)
 		{
-			UpdateCSWaves();
+			mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
+		}
+		else if (mLayerType[i] == RenderLayer::WaveVS)
+		{
+			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+			mCommandList->OMSetStencilRef(mLayerStencil[i]);
+			mCommandList->SetPipelineState(mCSWaves->GetPSO());
+			DrawRenderItems(mLayerType[i]);
 		}
 		else {
 			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
@@ -1788,19 +1517,6 @@ void MyApp::Render()
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	for (int i = 0; i < SRV_USER_SIZE; ++i)
 		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
-}
-
-void MyApp::ApplyBlurFilter(ID3D12Resource* input)
-{
-	mCSBlurFilter->Execute(mCommandList.Get(), mCSBlurRootSignature.Get(), mPSOs[RenderLayer::BlurHorCS].Get(), mPSOs[RenderLayer::BlurVerCS].Get(), input, 4);
-
-	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
-	mCommandList->ResourceBarrier(1, &RenderBarrier);
-
-	mCommandList->CopyResource(input, mCSBlurFilter->Output());
-
-	RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(input, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	mCommandList->ResourceBarrier(1, &RenderBarrier);
 }
 
 void MyApp::AnimateMaterials()
@@ -2023,26 +1739,6 @@ void MyApp::UpdateWaves()
 
 	// Set the dynamic VB of the wave renderitem to the current frame VB.
 	mWavesRitem->Geo->VertexBufferGPU = currWavesVB->Resource();
-}
-
-void MyApp::UpdateCSWaves()
-{
-	// Every quarter second, generate a random wave.
-	static float t_base = 0.0f;
-	if ((mTimer.TotalTime() - t_base) >= 0.25f)
-	{
-		t_base += 0.25f;
-
-		int i = MathHelper::Rand(4, mCSWaves->RowCount() - 5);
-		int j = MathHelper::Rand(4, mCSWaves->ColumnCount() - 5);
-
-		float r = MathHelper::RandF(1.0f, 2.0f);
-
-		mCSWaves->Disturb(mCommandList.Get(), mCSWavesRootSignature.Get(), mPSOs[RenderLayer::WaveDisturbCS].Get(), i, j, r);
-	}
-
-	// Update the wave simulation.
-	mCSWaves->Update(mTimer, mCommandList.Get(), mCSWavesRootSignature.Get(), mPSOs[RenderLayer::WaveUpdateCS].Get());
 }
 
 #pragma endregion Update

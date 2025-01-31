@@ -39,6 +39,9 @@
     <ClCompile Include="GpuWaves.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CSAdd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GpuWaves.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CSAdd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -27,23 +27,20 @@ public:
 
 	ID3D12Resource* Output();
 
+	void BuildShader();
 	void BuildDescriptors(
 		CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor,
 		UINT descriptorSize);
+	void BuildRootSignature();
+	void BuildPSO();
 
 	void OnResize(UINT newWidth, UINT newHeight);
 
 	///<summary>
 	/// Blurs the input texture blurCount times.
 	///</summary>
-	void Execute(
-		ID3D12GraphicsCommandList* cmdList,
-		ID3D12RootSignature* rootSig,
-		ID3D12PipelineState* horzBlurPSO,
-		ID3D12PipelineState* vertBlurPSO,
-		ID3D12Resource* input,
-		int blurCount);
+	void Execute(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* input, int blurCount);
 
 private:
 	std::vector<float> CalcGaussWeights(float sigma);
@@ -56,6 +53,11 @@ private:
 	const int MaxBlurRadius = 5;
 
 	ID3D12Device* md3dDevice = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> mHorShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> mVerShader;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mHorPSO;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mVerPSO;	
 
 	UINT mWidth = 0;
 	UINT mHeight = 0;

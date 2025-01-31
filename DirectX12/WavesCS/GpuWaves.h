@@ -17,11 +17,12 @@ class GpuWaves
 public:
 	// Note that m,n should be divisible by 16 so there is no 
 	// remainder when we divide into thread groups.
-	GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, int m, int n, float dx, float dt, float speed, float damping);
+	GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, int m, int n, float dx, float dt, float speed, float damping, bool x4MsaaState, UINT x4MsaaQuality, ID3D12RootSignature* rootSig);
 	GpuWaves(const GpuWaves& rhs) = delete;
 	GpuWaves& operator=(const GpuWaves& rhs) = delete;
 	~GpuWaves() = default;
 
+	ID3D12PipelineState* GetPSO();
 	UINT RowCount()const;
 	UINT ColumnCount()const;
 	UINT VertexCount()const;
@@ -34,25 +35,22 @@ public:
 
 	UINT DescriptorCount()const;
 
+	void BuildShadersAndInputLayout();
 	void BuildResources(ID3D12GraphicsCommandList* cmdList);
+	void BuildRootSignature();
+	void BuildCSRootSignature();
+	void BuildPSO();
 
 	void BuildDescriptors(
 		CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor,
 		UINT descriptorSize);
 
-	void Update(
-		const GameTimer& gt,
-		ID3D12GraphicsCommandList* cmdList,
-		ID3D12RootSignature* rootSig,
-		ID3D12PipelineState* pso);
+	void UpdateWaves(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList);
 
-	void Disturb(
-		ID3D12GraphicsCommandList* cmdList,
-		ID3D12RootSignature* rootSig,
-		ID3D12PipelineState* pso,
-		UINT i, UINT j,
-		float magnitude);
+	void Update(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList);
+
+	void Disturb(ID3D12GraphicsCommandList* cmdList, UINT i, UINT j, float magnitude);
 
 private:
 
@@ -62,13 +60,27 @@ private:
 	UINT mVertexCount;
 	UINT mTriangleCount;
 
+	bool m4xMsaaState = false;		// 4X MSAA enabled
+	UINT m4xMsaaQuality = 0;		// quality level of 4X MSAA
 	// Simulation constants we can precompute.
 	float mK[3];
 
 	float mTimeStep;
 	float mSpatialStep;
 
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
+
 	ID3D12Device* md3dDevice = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> mVSShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> mPSShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> mCSDisturbShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> mCSUpdateShader;
+	ID3D12RootSignature* mMainRootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mCSDisturbPSO;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mCSUpdatePSO;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mMainPSO;
+
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mPrevSolSrv;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mCurrSolSrv;

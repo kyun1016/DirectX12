@@ -14,7 +14,7 @@
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 
-extern class AppBase* g_appBasse;
+extern class AppBase* g_appBase;
 
 #pragma region ImGui
 // Simple free list based allocator
@@ -91,6 +91,7 @@ public:
 	void LogAdapterOutputs(IDXGIAdapter* adapter);
 	void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
+	void FlushCommandQueue();
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();
@@ -127,8 +128,6 @@ protected:
 	bool InitDirect3D();
 	void CreateCommandObjects();
 	void CreateSwapChain();
-
-	void FlushCommandQueue();
 
 	void CalculateFrameStats();
 

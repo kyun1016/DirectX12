@@ -161,9 +161,6 @@ public:
 	virtual bool Initialize() override;
 	void LoadTextures();
 	void BuildRootSignature();
-	void BuildCSAddRootSignature();
-	void BuildCSBlurRootSignature();
-	void BuildCSWavesRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShaderResourceViews();
 	void BuildCSBlurShaderResourceViews();
@@ -181,9 +178,6 @@ public:
 	void BuildFrameResources();
 	void BuildPSO();
 
-	void BuildCSBuffer();
-	void DoComputeWork();
-
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 #pragma endregion Initialize
 
@@ -193,15 +187,12 @@ private:
 	virtual void Update()override;
 	virtual void Render()override;
 
-	void ApplyBlurFilter(ID3D12Resource* input);
-
 	void AnimateMaterials();
 	void UpdateObjectCBs();
 	void UpdateMaterialCBs();
 	void UpdateMainPassCB();
 	void UpdateReflectedPassCB();
 	void UpdateWaves();
-	void UpdateCSWaves();
 
 	void DrawRenderItems(const RenderLayer ritems);
 
@@ -255,8 +246,6 @@ private:
 	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSAddRootSignature = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSBlurRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSWavesRootSignature = nullptr;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
