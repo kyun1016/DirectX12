@@ -93,11 +93,8 @@ private:
 		NormalWireframe,
 		TreeSpritesWireframe,
 		AddCS,
-		BlurHorCS,
-		BlurVerCS,
-		WaveVS,
-		WaveDisturbCS,
-		WaveUpdateCS,
+		BlurCS,
+		WaveVS_CS,
 		Count
 	};
 #pragma endregion Constant
@@ -163,14 +160,11 @@ public:
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShaderResourceViews();
-	void BuildCSBlurShaderResourceViews();
-	void BuildCSWavesShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
 	void BuildModelGeometry();
 	void BuildLandGeometry();
 	void BuildCSWavesGeometry();
-	void BuildWavesGeometryBuffers();
 	void BuildRoomGeometry();
 	void BuildTreeSpritesGeometry();
 	void BuildMaterials();
@@ -193,7 +187,6 @@ private:
 	void UpdateMaterialCBs();
 	void UpdateMainPassCB();
 	void UpdateReflectedPassCB();
-	void UpdateWaves();
 
 	void DrawRenderItems(const RenderLayer ritems);
 

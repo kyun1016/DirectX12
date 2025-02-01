@@ -119,14 +119,14 @@ void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	D3D12_HEAP_PROPERTIES heapProperty
-	{
-		/* D3D12_HEAP_TYPE Type						*/.Type = D3D12_HEAP_TYPE_DEFAULT,
-		/* D3D12_CPU_PAGE_PROPERTY CPUPageProperty	*/.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-		/* D3D12_MEMORY_POOL MemoryPoolPreference	*/.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
-		/* UINT CreationNodeMask					*/.CreationNodeMask = 1,
-		/* UINT VisibleNodeMask						*/.VisibleNodeMask = 1,
-	};
+	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	//{
+	//	/* D3D12_HEAP_TYPE Type						*/.Type = D3D12_HEAP_TYPE_DEFAULT,
+	//	/* D3D12_CPU_PAGE_PROPERTY CPUPageProperty	*/.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+	//	/* D3D12_MEMORY_POOL MemoryPoolPreference	*/.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+	//	/* UINT CreationNodeMask					*/.CreationNodeMask = 1,
+	//	/* UINT VisibleNodeMask						*/.VisibleNodeMask = 1,
+	//};
 
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(
 		&heapProperty,
@@ -324,7 +324,7 @@ void GpuWaves::BuildPSO()
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 	};
-	wavesRenderPSO.BlendState.IndependentBlendEnable = true;
+	wavesRenderPSO.BlendState.IndependentBlendEnable = false;
 	wavesRenderPSO.BlendState.RenderTarget[0] =
 	{
 		/* BOOL BlendEnable				*/true,
@@ -381,7 +381,6 @@ void GpuWaves::BuildDescriptors(
 	srvDesc.Texture2D.MipLevels = 1;
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-
 	uavDesc.Format = DXGI_FORMAT_R32_FLOAT;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
@@ -389,7 +388,6 @@ void GpuWaves::BuildDescriptors(
 	md3dDevice->CreateShaderResourceView(mPrevSol.Get(), &srvDesc, hCpuDescriptor);
 	md3dDevice->CreateShaderResourceView(mCurrSol.Get(), &srvDesc, hCpuDescriptor.Offset(1, descriptorSize));
 	md3dDevice->CreateShaderResourceView(mNextSol.Get(), &srvDesc, hCpuDescriptor.Offset(1, descriptorSize));
-
 	md3dDevice->CreateUnorderedAccessView(mPrevSol.Get(), nullptr, &uavDesc, hCpuDescriptor.Offset(1, descriptorSize));
 	md3dDevice->CreateUnorderedAccessView(mCurrSol.Get(), nullptr, &uavDesc, hCpuDescriptor.Offset(1, descriptorSize));
 	md3dDevice->CreateUnorderedAccessView(mNextSol.Get(), nullptr, &uavDesc, hCpuDescriptor.Offset(1, descriptorSize));
@@ -433,6 +431,9 @@ void GpuWaves::Update(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList)
 	// Only update the simulation at the specified time step.
 	if (t >= mTimeStep)
 	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		cmdList->ResourceBarrier(1, &barrier);
+
 		// Set the update constants.
 		cmdList->SetComputeRoot32BitConstants(0, 3, mK, 0);
 
@@ -445,8 +446,7 @@ void GpuWaves::Update(const GameTimer& gt, ID3D12GraphicsCommandList* cmdList)
 		// so there is no remainder.
 		UINT numGroupsX = mNumCols / 16;
 		UINT numGroupsY = mNumRows / 16;
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCurrSol.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		cmdList->ResourceBarrier(1, &barrier);
+
 		cmdList->Dispatch(numGroupsX, numGroupsY, 1);
 
 		//

@@ -9,6 +9,9 @@ struct ObjectConstants
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 WorldInvTranspose = MathHelper::Identity4x4();
+	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
+	float GridSpatialStep = 1.0f;
+	float Pad;
 };
 
 struct PassConstants
@@ -54,15 +57,13 @@ struct Vertex
 struct FrameResource
 {
 public:
-	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT waveVertCount)
+	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount)
 	{
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
 		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
 		MaterialCB = std::make_unique<UploadBuffer<MaterialConstants>>(device, materialCount, true);
 		ObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
-
-		WavesVB = std::make_unique<UploadBuffer<Vertex>>(device, waveVertCount, false);
 	}
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
@@ -74,8 +75,6 @@ public:
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
-	
-	std::unique_ptr<UploadBuffer<Vertex>> WavesVB = nullptr;
 
 	UINT64 Fence = 0;
 };

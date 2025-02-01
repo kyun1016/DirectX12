@@ -51,6 +51,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComputeFilter", "ComputeFil
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WavesCS", "WavesCS\WavesCS.vcxproj", "{51CF5339-9EDA-4F25-87EC-4CEE41F0B0C1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "14. Tesselation Shader", "14. Tesselation Shader", "{CD767F65-02BE-4955-BC0D-2C67B5DCDA39}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tessellation", "Tessellation\Tessellation.vcxproj", "{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -179,6 +183,14 @@ Global
 		{51CF5339-9EDA-4F25-87EC-4CEE41F0B0C1}.Release|x64.Build.0 = Release|x64
 		{51CF5339-9EDA-4F25-87EC-4CEE41F0B0C1}.Release|x86.ActiveCfg = Release|Win32
 		{51CF5339-9EDA-4F25-87EC-4CEE41F0B0C1}.Release|x86.Build.0 = Release|Win32
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Debug|x64.ActiveCfg = Debug|x64
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Debug|x64.Build.0 = Debug|x64
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Debug|x86.ActiveCfg = Debug|Win32
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Debug|x86.Build.0 = Debug|Win32
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Release|x64.ActiveCfg = Release|x64
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Release|x64.Build.0 = Release|x64
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Release|x86.ActiveCfg = Release|Win32
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -199,6 +211,7 @@ Global
 		{E8070A53-8A90-4F20-9C33-DDA9C6A6D40B} = {FFDA2D26-0756-4AF4-94E5-39A407C25BFA}
 		{ABBC4AF3-0081-415E-88AC-8757A037D400} = {898502C1-F438-406F-BB24-349815C50748}
 		{51CF5339-9EDA-4F25-87EC-4CEE41F0B0C1} = {898502C1-F438-406F-BB24-349815C50748}
+		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E} = {CD767F65-02BE-4955-BC0D-2C67B5DCDA39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}
