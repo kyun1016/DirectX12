@@ -32,8 +32,8 @@ ID3D12Resource* BlurFilter::Output()
 
 void BlurFilter::BuildShader()
 {
-	mHorShader = D3DUtil::LoadBinary(L"Shaders\\BlurHorCS.cso");
-	mVerShader = D3DUtil::LoadBinary(L"Shaders\\BlurVerCS.cso");
+	mHorShader = D3DUtil::CompileShader(L"BlurCS.hlsl", nullptr, "HorBlurCS", "cs_5_0");
+	mVerShader = D3DUtil::CompileShader(L"BlurCS.hlsl", nullptr, "VerBlurCS", "cs_5_0");
 }
 
 void BlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,

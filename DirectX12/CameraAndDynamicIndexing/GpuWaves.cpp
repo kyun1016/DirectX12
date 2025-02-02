@@ -29,6 +29,7 @@ GpuWaves::GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
 
 	BuildShadersAndInputLayout();
 	BuildResources(cmdList);
+	BuildRootSignature();
 	BuildCSRootSignature();
 	BuildPSO();
 }
@@ -103,10 +104,10 @@ void GpuWaves::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mVSShader        = D3DUtil::CompileShader(L"Wave.hlsl", waveDefines, "VS", "vs_5_0");
-	mCSDisturbShader = D3DUtil::CompileShader(L"Wave.hlsl", nullptr, "WaveDisturbCS", "cs_5_0");
-	mCSUpdateShader  = D3DUtil::CompileShader(L"Wave.hlsl", nullptr, "WaveUpdateCS", "cs_5_0");
-	mPSShader        = D3DUtil::CompileShader(L"Wave.hlsl", defines, "PS", "ps_5_0");
+	mVSShader        = D3DUtil::CompileShader(L"WaveVSPS.hlsl", waveDefines, "VS", "vs_5_0");
+	mCSDisturbShader = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveDisturbCS", "cs_5_0");
+	mCSUpdateShader  = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveUpdateCS", "cs_5_0");
+	mPSShader        = D3DUtil::CompileShader(L"WaveVSPS.hlsl", defines, "PS", "ps_5_0");
 
 	mMainInputLayout =
 	{

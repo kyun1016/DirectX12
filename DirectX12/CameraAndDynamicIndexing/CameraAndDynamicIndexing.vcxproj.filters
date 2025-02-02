@@ -97,7 +97,10 @@
     <None Include="Subdivision.hlsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Wave.hlsl">
+    <None Include="WaveCS.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="WaveVSPS.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

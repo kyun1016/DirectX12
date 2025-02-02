@@ -261,6 +261,10 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", nullptr, "GS", "gs_5_0");
 	mShaders["NormalPS"] = D3DUtil::CompileShader(L"Normal.hlsl", nullptr, "PS", "ps_5_0");
 
+	mShaders["BillboardVS"] = D3DUtil::CompileShader(L"Billboard.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["BillboardGS"] = D3DUtil::CompileShader(L"Billboard.hlsl", nullptr, "GS", "gs_5_0");
+	mShaders["BillboardPS"] = D3DUtil::CompileShader(L"Billboard.hlsl", nullptr, "PS", "ps_5_0");
+
 	mShaders["SubdivisionVS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", nullptr, "VS", "vs_5_0");
 	mShaders["SubdivisionGS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", nullptr, "GS", "gs_5_0");
 	mShaders["SubdivisionPS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", nullptr, "PS", "ps_5_0");
