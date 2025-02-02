@@ -60,10 +60,11 @@ bool MyApp::Initialize()
 	LoadTextures();
 	BuildMaterials();
 
-	BuildRootSignature();
-	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality, mRootSignature.Get());
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
+
+	BuildRootSignature();
+	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality, mRootSignature.Get());
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
@@ -72,6 +73,7 @@ bool MyApp::Initialize()
 	BuildCSWavesGeometry();
 	BuildRoomGeometry();
 	BuildTreeSpritesGeometry();
+	BuildQuadPatchGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
@@ -238,11 +240,11 @@ void MyApp::BuildShaderResourceViews()
 
 void MyApp::BuildShadersAndInputLayout()
 {
-	//const D3D_SHADER_MACRO defines[] =
-	//{
-	//	"FOG", "1",
-	//	NULL, NULL
-	//};
+	const D3D_SHADER_MACRO defines[] =
+	{
+		"FOG", "1",
+		NULL, NULL
+	};
 
 	//const D3D_SHADER_MACRO alphaTestDefines[] =
 	//{
@@ -254,9 +256,10 @@ void MyApp::BuildShadersAndInputLayout()
 	//mShaders["opaquePS"] = D3DUtil::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
 	//mShaders["alphaTestedPS"] = D3DUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
-	//mShaders["treeSpriteVS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
-	//mShaders["treeSpriteGS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
-	// mShaders["treeSpritePS"] = D3DUtil::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
+	mShaders["tessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["tessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "HS", "hs_5_0");
+	mShaders["tessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "DS", "ds_5_0");
+	mShaders["tessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "PS", "ps_5_0");
 
 	for (size_t i = 0; i < VS_DIR.size(); ++i) mShaders[VS_NAME[i]] = D3DUtil::LoadBinary(VS_DIR[i]);
 	for (size_t i = 0; i < GS_DIR.size(); ++i) mShaders[GS_NAME[i]] = D3DUtil::LoadBinary(GS_DIR[i]);
@@ -684,6 +687,51 @@ void MyApp::BuildTreeSpritesGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+void MyApp::BuildQuadPatchGeometry()
+{
+	std::array<Vertex, 4> vertices =
+	{		// Floor: Observe we tile texture coordinates.
+		Vertex(-10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f), // 0 
+		Vertex(+10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f),
+		Vertex(-10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(+10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f)
+	};
+
+	std::array<std::int16_t, 4> indices = { 0, 1, 2, 3 };
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = GEO_MESH_NAMES[6].first;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry quadSubmesh;
+	quadSubmesh.IndexCount = 4;
+	quadSubmesh.StartIndexLocation = 0;
+	quadSubmesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[GEO_MESH_NAMES[6].second[0]] = quadSubmesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+}
+
 void MyApp::BuildMaterials()
 {
 	for (size_t i = 0; i < TEXTURE_FILENAMES.size(); ++i)
@@ -938,8 +986,28 @@ void MyApp::BuildRenderItems()
 	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
 	treeSpritesRitem->LayerFlag
 		= (1 << (int)RenderLayer::TreeSprites)
+		| (1 << (int)RenderLayer::TreeSpritesWireframe)
 		| (1 << (int)RenderLayer::Normal);
 	mAllRitems.push_back(std::move(treeSpritesRitem));
+
+	//=========================================================
+	// Tessellation
+	//=========================================================
+	gridRitem = std::make_unique<RenderItem>();
+	DirectX::XMStoreFloat4x4(&gridRitem->World, DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+	DirectX::XMStoreFloat4x4(&gridRitem->TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
+	gridRitem->ObjCBIndex = objCBIndex++;
+	gridRitem->Mat = mMaterials[MATERIAL_NAMES[2]].get();
+	gridRitem->Geo = mGeometries[GEO_MESH_NAMES[6].first].get();
+	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].BaseVertexLocation;
+	gridRitem->LayerFlag
+		= (1 << (int)RenderLayer::Tessellation)
+		| (1 << (int)RenderLayer::TessellationWireframe)
+		| (1 << (int)RenderLayer::Normal);
+	mAllRitems.push_back(std::move(gridRitem));
 }
 
 void MyApp::BuildFrameResources()
@@ -1019,7 +1087,7 @@ void MyApp::BuildPSO()
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
 		/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
-		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, DXGI_FORMAT_R8G8B8A8_UNORM,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, mBackBufferFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
 		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mDepthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
 		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
@@ -1169,6 +1237,16 @@ void MyApp::BuildPSO()
 	treeSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
+	// PSO for Tessellation
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC tessPsoDesc = opaquePsoDesc;
+	tessPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["tessVS"]->GetBufferPointer()), mShaders["tessVS"]->GetBufferSize() };
+	tessPsoDesc.HS = { reinterpret_cast<BYTE*>(mShaders["tessHS"]->GetBufferPointer()), mShaders["tessHS"]->GetBufferSize() };
+	tessPsoDesc.DS = { reinterpret_cast<BYTE*>(mShaders["tessDS"]->GetBufferPointer()), mShaders["tessDS"]->GetBufferSize() };
+	tessPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["tessPS"]->GetBufferPointer()), mShaders["tessPS"]->GetBufferSize() };
+	tessPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
@@ -1180,6 +1258,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Subdivision])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Normal])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSprites])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Tessellation])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -1193,6 +1272,7 @@ void MyApp::BuildPSO()
 	subdivisionDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	normalDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	treeSpritePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	tessPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::OpaqueWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::MirrorWireframe])));
@@ -1203,6 +1283,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SubdivisionWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::NormalWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSpritesWireframe])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TessellationWireframe])));
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> MyApp::GetStaticSamplers()
@@ -1343,8 +1424,6 @@ void MyApp::Render()
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -1660,6 +1739,9 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 			|| flag == RenderLayer::TreeSprites
 			|| flag == RenderLayer::TreeSpritesWireframe)
 			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+		else if (flag == RenderLayer::Tessellation
+			|| flag == RenderLayer::TessellationWireframe)
+			ri->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
 		else
 			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
@@ -1810,6 +1892,7 @@ void MyApp::ShowMainWindow()
 				"Subdivision",
 				"Normal",
 				"TreeSprites",
+				"Tessellation",
 				"OpaqueWireframe",
 				"MirrorWireframe",
 				"ReflectedWireframe",
@@ -1819,9 +1902,10 @@ void MyApp::ShowMainWindow()
 				"SubdivisionWireframe",
 				"NormalWireframe",
 				"TreeSpritesWireframe",
+				"TessellationWireframe",
 				"AddCS",
 				"BlurCS",
-				"WaveVS_CS",
+				"WaveVS_CS"
 			};
 			if (ImGui::BeginListBox("Shader Type"))
 			{

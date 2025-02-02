@@ -49,12 +49,13 @@ private:
 	};
 
 	static const inline std::vector<std::pair<std::string, std::vector<std::string>>> GEO_MESH_NAMES = {
-		{"ShapeGeo", std::vector<std::string>({"box", "grid", "sphere", "cylinder" })},
+		{"ShapeGeo", std::vector<std::string>({"box", "grid", "sphere", "cylinder"})},
 		{"ModelGeo", std::vector<std::string>({"skull"})},
 		{"LandGeo",	std::vector<std::string>({"land"})},
 		{"WaterGeo", std::vector<std::string>({"water"})},
 		{"RoomGeo", std::vector<std::string>({"floor", "wall", "mirror"})},
-		{"TreeSpritesGeo", std::vector<std::string>({"points"})}
+		{"TreeSpritesGeo", std::vector<std::string>({"points"})},
+		{"QuadPatchGeo", std::vector<std::string>({"quadpatch"})}
 	};
 
 	static const inline std::wstring				MESH_MODEL_DIR = L"../Data/Models/";
@@ -83,6 +84,7 @@ private:
 		Subdivision,
 		Normal,
 		TreeSprites,
+		Tessellation,
 		OpaqueWireframe,
 		MirrorWireframe,
 		ReflectedWireframe,
@@ -92,6 +94,7 @@ private:
 		SubdivisionWireframe,
 		NormalWireframe,
 		TreeSpritesWireframe,
+		TessellationWireframe,
 		AddCS,
 		BlurCS,
 		WaveVS_CS,
@@ -167,6 +170,7 @@ public:
 	void BuildCSWavesGeometry();
 	void BuildRoomGeometry();
 	void BuildTreeSpritesGeometry();
+	void BuildQuadPatchGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();

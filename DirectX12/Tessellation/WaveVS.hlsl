@@ -108,7 +108,6 @@ VertexOut main(VertexIn vin)
 	float t = gDisplacementMap.SampleLevel( gsamPointClamp, vin.TexC-float2(0.0f, dv), 0.0f ).r;
 	float b = gDisplacementMap.SampleLevel( gsamPointClamp, vin.TexC+float2(0.0f, dv), 0.0f ).r;
 	vin.NormalL = normalize( float3(-r+l, 2.0f*gGridSpatialStep, b-t) );
-	
 #endif
 	
 	

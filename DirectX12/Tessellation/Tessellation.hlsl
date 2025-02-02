@@ -65,11 +65,15 @@ cbuffer cbMaterial : register(b2)
 struct VertexIn
 {
     float3 PosL : POSITION;
+    float3 NormalL : NORMAL;
+    float2 TexC : TEXCOORD;
 };
 
 struct VertexOut
 {
     float3 PosL : POSITION;
+    float3 NormalL : NORMAL;
+    float2 TexC : TEXCOORD;
 };
 
 VertexOut VS(VertexIn vin)
@@ -77,6 +81,8 @@ VertexOut VS(VertexIn vin)
     VertexOut vout;
 	
     vout.PosL = vin.PosL;
+    vout.NormalL = vin.NormalL;
+    vout.TexC = vin.TexC;
 
     return vout;
 }
@@ -120,6 +126,8 @@ PatchTess ConstantHS(InputPatch<VertexOut, 4> patch, uint patchID : SV_Primitive
 struct HullOut
 {
     float3 PosL : POSITION;
+    float3 NormalL : NORMAL;
+    float2 TexC : TEXCOORD;
 };
 
 [domain("quad")]
@@ -135,6 +143,8 @@ HullOut HS(InputPatch<VertexOut, 4> p,
     HullOut hout;
 	
     hout.PosL = p[i].PosL;
+    hout.NormalL = p[i].NormalL;
+    hout.TexC = p[i].TexC;
 	
     return hout;
 }
@@ -142,6 +152,9 @@ HullOut HS(InputPatch<VertexOut, 4> p,
 struct DomainOut
 {
     float4 PosH : SV_POSITION;
+    float3 PosW : POSITION;
+    float3 NormalW : NORMAL;
+    float2 TexC : TEXCOORD;
 };
 
 // The domain shader is called for every vertex created by the tessellator.  
@@ -157,17 +170,79 @@ DomainOut DS(PatchTess patchTess,
     float3 v1 = lerp(quad[0].PosL, quad[1].PosL, uv.x);
     float3 v2 = lerp(quad[2].PosL, quad[3].PosL, uv.x);
     float3 p = lerp(v1, v2, uv.y);
-	
-	// Displacement mapping
+    
+    // Displacement mapping
     p.y = 0.3f * (p.z * sin(p.x) + p.x * cos(p.z));
+    
+    float3 n1 = lerp(quad[0].NormalL, quad[1].NormalL, uv.x);
+    float3 n2 = lerp(quad[2].NormalL, quad[3].NormalL, uv.x);
+    float3 n = lerp(n1, n2, uv.y);
+    n.y = 0.3f * (n.z * sin(n.x) + n.x * cos(n.z));
+    
+    float2 t1 = lerp(quad[0].TexC, quad[1].TexC, uv.x);
+    float2 t2 = lerp(quad[2].TexC, quad[3].TexC, uv.x);
+    float2 t = lerp(t1, t2, uv.y);
+	
 	
     float4 posW = mul(float4(p, 1.0f), gWorld);
+    dout.PosW = posW.xyz;
+    
+    dout.NormalW = mul(n, (float3x3) gWorld);
+    
     dout.PosH = mul(posW, gViewProj);
+    
+    float4 texC = mul(float4(t, 0.0f, 1.0f), gTexTransform);
+    dout.TexC = mul(texC, gMatTransform).xy;
 	
     return dout;
 }
 
-float4 PS(DomainOut pin) : SV_Target
+struct PixelOut
 {
-    return float4(1.0f, 1.0f, 1.0f, 1.0f);
+    float4 color0 : SV_Target0;
+    float4 color1 : SV_Target1;
+};
+
+PixelOut PS(DomainOut pin) : SV_Target
+{
+    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	
+#ifdef ALPHA_TEST
+	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
+	// as possible in the shader so that we can potentially exit the
+	// shader early, thereby skipping the rest of the shader code.
+	clip(diffuseAlbedo.a - 0.1f);
+#endif
+
+    // Interpolating normal can unnormalize it, so renormalize it.
+    pin.NormalW = normalize(pin.NormalW);
+
+    // Vector from point being lit to eye. 
+    float3 toEyeW = gEyePosW - pin.PosW;
+    float distToEye = length(toEyeW);
+    toEyeW /= distToEye; // normalize
+
+    // Light terms.
+    float4 ambient = gAmbientLight * diffuseAlbedo;
+
+    const float shininess = 1.0f - gRoughness;
+    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+    float3 shadowFactor = 1.0f;
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+        pin.NormalW, toEyeW, shadowFactor);
+
+    float4 litColor = ambient + directLight;
+
+#ifdef FOG
+    float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
+    litColor = lerp(litColor, gFogColor, fogAmount);
+#endif
+
+    // Common convention to take alpha from diffuse albedo.
+    litColor.a = diffuseAlbedo.a;
+
+    PixelOut ret;
+    ret.color0 = litColor;
+    ret.color1 = litColor;
+    return ret;
 }
