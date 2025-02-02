@@ -25,6 +25,8 @@
 #include "GeometryGenerator.h"
 #include "GameTimer.h"
 #include "DDSTextureLoader.h"
+#include "D3DUtil.h"
+#include "Camera.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")

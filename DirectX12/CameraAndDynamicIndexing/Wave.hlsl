@@ -1,0 +1,233 @@
+// Defaults for number of lights.
+#ifndef NUM_DIR_LIGHTS
+#define NUM_DIR_LIGHTS 3
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+#define NUM_POINT_LIGHTS 0
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+#define NUM_SPOT_LIGHTS 0
+#endif
+
+// Include structures and functions for lighting.
+#include "LightingUtil.hlsli"
+
+Texture2D gDiffuseMap : register(t0);
+Texture2D gDisplacementMap : register(t1);
+
+SamplerState gsamPointWrap : register(s0);
+SamplerState gsamPointClamp : register(s1);
+SamplerState gsamLinearWrap : register(s2);
+SamplerState gsamLinearClamp : register(s3);
+SamplerState gsamAnisotropicWrap : register(s4);
+SamplerState gsamAnisotropicClamp : register(s5);
+
+// Constant data that varies per frame.
+cbuffer cbPerObject : register(b0)
+{
+    float4x4 gWorld;
+    float4x4 gTexTransform;
+    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
+    float2 gDisplacementMapTexelSize;
+    float gGridSpatialStep;
+    float cbPerObjectPad1;
+};
+cbuffer cbUpdateSettings
+{
+    float gWaveConstant0;
+    float gWaveConstant1;
+    float gWaveConstant2;
+	
+    float gDisturbMag;
+    int2 gDisturbIndex;
+};
+
+// Constant data that varies per material.
+cbuffer cbPass : register(b1)
+{
+    float4x4 gView;
+    float4x4 gInvView;
+    float4x4 gProj;
+    float4x4 gInvProj;
+    float4x4 gViewProj;
+    float4x4 gInvViewProj;
+    float3 gEyePosW;
+    float cbPerPassPad1;
+    float2 gRenderTargetSize;
+    float2 gInvRenderTargetSize;
+    float gNearZ;
+    float gFarZ;
+    float gTotalTime;
+    float gDeltaTime;
+    float4 gAmbientLight;
+
+    float4 gFogColor;
+    float gFogStart;
+    float gFogRange;
+    float2 cbPerPassPad2;
+
+    // Indices [0, NUM_DIR_LIGHTS) are directional lights;
+    // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
+    // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
+    // are spot lights for a maximum of MaxLights per object.
+    Light gLights[MaxLights];
+};
+
+cbuffer cbMaterial : register(b2)
+{
+    float4 gDiffuseAlbedo;
+    float3 gFresnelR0;
+    float gRoughness;
+    float4x4 gMatTransform;
+};
+
+RWTexture2D<float> gPrevSolInput : register(u0);
+RWTexture2D<float> gCurrSolInput : register(u1);
+RWTexture2D<float> gOutput : register(u2);
+
+struct VertexIn
+{
+    float3 PosL : POSITION;
+    float3 NormalL : NORMAL;
+    float2 TexC : TEXCOORD;
+};
+
+struct VertexOut
+{
+    float4 PosH : SV_POSITION;
+    float3 PosW : POSITION;
+    float3 NormalW : NORMAL;
+    float2 TexC : TEXCOORD;
+};
+
+VertexOut VS(VertexIn vin)
+{
+    VertexOut vout = (VertexOut) 0.0f;
+	
+	
+#ifdef DISPLACEMENT_MAP
+	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
+    vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, vin.TexC, 1.0f).r;
+	
+	// Estimate normal using finite difference.
+    float du = gDisplacementMapTexelSize.x;
+    float dv = gDisplacementMapTexelSize.y;
+    float l = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(du, 0.0f), 0.0f).r;
+    float r = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC + float2(du, 0.0f), 0.0f).r;
+    float t = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(0.0f, dv), 0.0f).r;
+    float b = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC + float2(0.0f, dv), 0.0f).r;
+    vin.NormalL = normalize(float3(-r + l, 2.0f * gGridSpatialStep, b - t));
+#endif
+	
+	
+    // Transform to world space.
+    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
+    vout.PosW = posW.xyz;
+
+    // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
+    vout.NormalW = mul(vin.NormalL, (float3x3) gWorld);
+
+    // Transform to homogeneous clip space.
+    vout.PosH = mul(posW, gViewProj);
+	
+	// Output vertex attributes for interpolation across triangle.
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
+    vout.TexC = mul(texC, gMatTransform).xy;
+
+    return vout;
+}
+
+[numthreads(1, 1, 1)]
+void WaveDisturbCS(int3 groupThreadID : SV_GroupThreadID,
+                    int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	// We do not need to do bounds checking because:
+	//	 *out-of-bounds reads return 0, which works for us--it just means the boundary of 
+	//    our water simulation is clamped to 0 in local space.
+	//   *out-of-bounds writes are a no-op.
+	
+    int x = gDisturbIndex.x;
+    int y = gDisturbIndex.y;
+
+    float halfMag = 0.5f * gDisturbMag;
+
+	// Buffer is RW so operator += is well defined.
+    gOutput[int2(x, y)] += gDisturbMag;
+    gOutput[int2(x + 1, y)] += halfMag;
+    gOutput[int2(x - 1, y)] += halfMag;
+    gOutput[int2(x, y + 1)] += halfMag;
+    gOutput[int2(x, y - 1)] += halfMag;
+}
+
+[numthreads(16, 16, 1)]
+void WaveUpdateCS(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	// We do not need to do bounds checking because:
+	//	 *out-of-bounds reads return 0, which works for us--it just means the boundary of 
+	//    our water simulation is clamped to 0 in local space.
+	//   *out-of-bounds writes are a no-op.
+	
+    int x = dispatchThreadID.x;
+    int y = dispatchThreadID.y;
+
+    gOutput[int2(x, y)] =
+		gWaveConstant0 * gPrevSolInput[int2(x, y)].r +
+		gWaveConstant1 * gCurrSolInput[int2(x, y)].r +
+		gWaveConstant2 * (
+			gCurrSolInput[int2(x, y + 1)].r +
+			gCurrSolInput[int2(x, y - 1)].r +
+			gCurrSolInput[int2(x + 1, y)].r +
+			gCurrSolInput[int2(x - 1, y)].r);
+}
+
+struct PixelOut
+{
+    float4 color0 : SV_Target0;
+    float4 color1 : SV_Target1;
+};
+
+PixelOut PS(VertexOut pin) : SV_Target
+{
+    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	
+#ifdef ALPHA_TEST
+	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
+	// as possible in the shader so that we can potentially exit the
+	// shader early, thereby skipping the rest of the shader code.
+	clip(diffuseAlbedo.a - 0.1f);
+#endif
+
+    // Interpolating normal can unnormalize it, so renormalize it.
+    pin.NormalW = normalize(pin.NormalW);
+
+    // Vector from point being lit to eye. 
+    float3 toEyeW = gEyePosW - pin.PosW;
+    float distToEye = length(toEyeW);
+    toEyeW /= distToEye; // normalize
+
+    // Light terms.
+    float4 ambient = gAmbientLight * diffuseAlbedo;
+
+    const float shininess = 1.0f - gRoughness;
+    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+    float3 shadowFactor = 1.0f;
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+        pin.NormalW, toEyeW, shadowFactor);
+
+    float4 litColor = ambient + directLight;
+
+#ifdef FOG
+    float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
+    litColor = lerp(litColor, gFogColor, fogAmount);
+#endif
+
+    // Common convention to take alpha from diffuse albedo.
+    litColor.a = diffuseAlbedo.a;
+
+    PixelOut ret;
+    ret.color0 = litColor;
+    ret.color1 = litColor;
+    return ret;
+}
