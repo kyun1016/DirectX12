@@ -109,25 +109,37 @@ void MyApp::LoadTextures()
 void MyApp::BuildRootSignature()
 {
 	// Create root CBVs.
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0, 0); // register t0
-
-	CD3DX12_DESCRIPTOR_RANGE displacementMapTable;
-	displacementMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE texArrayTable;
-	texArrayTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 2);
+	D3D12_DESCRIPTOR_RANGE DiffuseMap_Displacement_TreeMap_Table // register t0[4] / t1 / t2 (Space0)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = 6,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 0,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
+
+
+	/*D3D12_SHADER_VISIBILITY
+	{
+		D3D12_SHADER_VISIBILITY_ALL = 0,
+		D3D12_SHADER_VISIBILITY_VERTEX = 1,
+		D3D12_SHADER_VISIBILITY_HULL = 2,
+		D3D12_SHADER_VISIBILITY_DOMAIN = 3,
+		D3D12_SHADER_VISIBILITY_GEOMETRY = 4,
+		D3D12_SHADER_VISIBILITY_PIXEL = 5,
+		D3D12_SHADER_VISIBILITY_AMPLIFICATION = 6,
+		D3D12_SHADER_VISIBILITY_MESH = 7
+	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0); // register b0
 	slotRootParameter[1].InitAsConstantBufferView(1); // register b1
 	slotRootParameter[2].InitAsShaderResourceView(0, 1);
 	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL); 
-	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable);
-	slotRootParameter[4].InitAsDescriptorTable(1, &texArrayTable);
+	slotRootParameter[4].InitAsDescriptorTable(1, &DiffuseMap_Displacement_TreeMap_Table);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
@@ -1258,7 +1270,7 @@ void MyApp::BuildPSO()
 	// PSO for CS Wave
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
-	treeSpritePsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["DisplacementVS"]->GetBufferPointer()), mShaders["DisplacementVS"]->GetBufferSize() };
+	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders["DisplacementVS"]->GetBufferPointer()), mShaders["DisplacementVS"]->GetBufferSize() };
 
 	//=====================================================
 	// PSO for Tessellation
