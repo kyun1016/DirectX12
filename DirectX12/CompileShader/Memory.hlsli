@@ -32,17 +32,15 @@ Texture2D gDiffuseMap[TEX_SIZE] : register(t0, space0);
 #else
 Texture2D gDiffuseMap[16] : register(t0, space0);
 #endif
-Texture2D gDisplacementMap : register(t0, space1);
-#ifdef TEX_ARRAY_SIZE
-Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t1, space1);
-#else
-Texture2DArray gTreeMapArray[2] : register(t1, space1);
-#endif
-
-
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0. 
-StructuredBuffer<MaterialData> gMaterialData : register(t0, space2);
+StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
+Texture2D gDisplacementMap : register(t1, space1);
+#ifdef TEX_ARRAY_SIZE
+Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t2, space1);
+#else
+Texture2DArray gTreeMapArray[2] : register(t2, space1);
+#endif
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);

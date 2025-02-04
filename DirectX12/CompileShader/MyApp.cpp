@@ -125,19 +125,19 @@ void MyApp::BuildRootSignature()
 		/* UINT RegisterSpace						*/.RegisterSpace = 0,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t0 (Space1)
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t1 (Space1)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 		/* UINT NumDescriptors						*/.NumDescriptors = 1,
-		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 1,
 		/* UINT RegisterSpace						*/.RegisterSpace = 1,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t1[2] (Space1)
+	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t2[2] (Space1)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEXTURE_ARRAY_FILENAMES.size(),
-		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 1,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 2,
 		/* UINT RegisterSpace						*/.RegisterSpace = 1,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
@@ -160,7 +160,7 @@ void MyApp::BuildRootSignature()
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0); // register b0
 	slotRootParameter[1].InitAsConstantBufferView(1); // register b1
-	slotRootParameter[2].InitAsShaderResourceView(0, 2);
+	slotRootParameter[2].InitAsShaderResourceView(0, 1);	// t0
 	slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
@@ -1416,7 +1416,7 @@ void MyApp::OnResize()
 			/* }																			*/
 		};
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize);
 
 		for (int i = 0; i < SRV_USER_SIZE; ++i)
 		{
@@ -1489,23 +1489,26 @@ void MyApp::Render()
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
+	
+	// slotRootParameter[0].InitAsConstantBufferView(0); // register b0
+	// slotRootParameter[1].InitAsConstantBufferView(1); // register b1
+	// slotRootParameter[2].InitAsShaderResourceView(0, 1);	// t0
+	// slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	// slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	// slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
+	mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize));
+	mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
+
 
 	mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
-		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-		//slotRootParameter[0].InitAsConstantBufferView(0); // register b0
-		//slotRootParameter[1].InitAsConstantBufferView(1); // register b1
-		//slotRootParameter[2].InitAsShaderResourceView(0, 2);
-		//slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
-		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
-		mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize));
-		mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
+		
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
 		else if (mLayerType[i] == RenderLayer::AddCS)
@@ -1519,6 +1522,7 @@ void MyApp::Render()
 			mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
 		}
 		else {
+			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
 			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
