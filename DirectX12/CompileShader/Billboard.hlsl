@@ -83,7 +83,7 @@ PixelOut PS(BillboardGeometryOut pin)
     uint diffuseTexIndex = matData.DiffuseMapIndex;
     
     float3 uvw = float3(pin.TexC, pin.PrimID % 4);
-    diffuseAlbedo *= gTreeMapArray.Sample(gsamAnisotropicWrap, uvw);
+    diffuseAlbedo *= gTreeMapArray[diffuseTexIndex].Sample(gsamAnisotropicWrap, uvw);
     
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon 

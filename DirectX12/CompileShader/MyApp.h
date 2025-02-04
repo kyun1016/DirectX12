@@ -19,22 +19,18 @@ private:
 	static constexpr int MAX_LAYER_DEPTH = 20;
 	static constexpr int SRV_IMGUI_SIZE = 64;
 	static const inline std::wstring				TEXTURE_DIR = L"../Data/Textures/";
-	static constexpr int SIZE_STD_TEX = 16;
-	static constexpr int SIZE_ARY_TEX = SIZE_STD_TEX + 2;
 	static const inline std::vector<std::wstring>	TEXTURE_FILENAMES = {
 		// STD TEX
 		L"bricks.dds",L"bricks2.dds",L"bricks3.dds", L"checkboard.dds", L"grass.dds",
 		L"ice.dds", L"stone.dds", L"tile.dds", L"WireFence.dds", L"WoodCrate01.dds",
 		L"WoodCrate02.dds", L"water1.dds", L"white1x1.dds", L"tree01S.dds", L"tree02S.dds",
 		L"tree35S.dds",
-
+	};
+	static const inline std::vector<std::wstring>	TEXTURE_ARRAY_FILENAMES = {
 		// Array Tex (for Billboard Shader)
 		L"treearray.dds", L"treeArray2.dds",
 	};
 
-	static constexpr int SIZE_STD_MAT = SIZE_STD_TEX;
-	static constexpr int SIZE_ARY_MAT = SIZE_STD_MAT + 2;
-	static constexpr int SIZE_USR_MAT = SIZE_ARY_MAT + 3;
 	static const inline std::vector<std::string>	MATERIAL_NAMES = {
 		// STD TEX Material
 		"bricks", "bricks2", "bricks3", "checkboard", "grass",

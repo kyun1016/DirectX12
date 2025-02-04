@@ -116,7 +116,10 @@ int AppBase::Run()
 				Update();
 				Render();
 
-				RenderImGui();
+				// RenderImGui();
+
+				// Done recording commands.
+				ThrowIfFailed(mCommandList->Close());
 
 				// Add the command list to the queue for execution.
 				ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -1005,9 +1008,6 @@ void AppBase::RenderImGui()
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	mCommandList->ResourceBarrier(1, &barrier);
-
-	// Done recording commands.
-	ThrowIfFailed(mCommandList->Close());
 
 	// Update and Render additional Platform Windows
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)

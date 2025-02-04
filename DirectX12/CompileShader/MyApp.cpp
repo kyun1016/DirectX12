@@ -104,23 +104,46 @@ void MyApp::LoadTextures()
 
 		mTextures[a] = std::move(texture);
 	}
+	for (const auto& a : TEXTURE_ARRAY_FILENAMES)
+	{
+		auto texture = std::make_unique<Texture>();
+		texture->Filename = TEXTURE_DIR + a;
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
+
+		mTextures[a] = std::move(texture);
+	}
 }
 
 void MyApp::BuildRootSignature()
 {
 	// Create root CBVs.
-	D3D12_DESCRIPTOR_RANGE DiffuseMap_Displacement_TreeMap_Table // register t0[4] / t1 / t2 (Space0)
+	D3D12_DESCRIPTOR_RANGE TexTable // register t0[16] (Space0)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = 6,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEXTURE_FILENAMES.size(),
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 0,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t0 (Space1)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 1,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t1[2] (Space1)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEXTURE_ARRAY_FILENAMES.size(),
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 1,
+		/* UINT RegisterSpace						*/.RegisterSpace = 1,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
-
+	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
 
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -137,14 +160,15 @@ void MyApp::BuildRootSignature()
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0); // register b0
 	slotRootParameter[1].InitAsConstantBufferView(1); // register b1
-	slotRootParameter[2].InitAsShaderResourceView(0, 1);
-	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL); 
-	slotRootParameter[4].InitAsDescriptorTable(1, &DiffuseMap_Displacement_TreeMap_Table);
+	slotRootParameter[2].InitAsShaderResourceView(0, 2);
+	slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -170,7 +194,7 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
+		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -207,7 +231,7 @@ void MyApp::BuildShaderResourceViews()
 	};
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
-	for (int i = 0; i < SIZE_STD_TEX; ++i)
+	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
 	{
 		auto texture = mTextures[TEXTURE_FILENAMES[i]]->Resource;
 
@@ -221,9 +245,9 @@ void MyApp::BuildShaderResourceViews()
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 	srvDesc.Texture2DArray.MipLevels = -1;
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
-	for (int i = SIZE_STD_TEX; i < TEXTURE_FILENAMES.size(); ++i)
+	for (int i = 0; i < TEXTURE_ARRAY_FILENAMES.size(); ++i)
 	{
-		auto texture = mTextures[TEXTURE_FILENAMES[i]]->Resource;
+		auto texture = mTextures[TEXTURE_ARRAY_FILENAMES[i]]->Resource;
 
 		srvDesc.Format = texture->GetDesc().Format;
 		srvDesc.Texture2DArray.ArraySize = texture->GetDesc().DepthOrArraySize;
@@ -244,26 +268,42 @@ void MyApp::BuildShaderResourceViews()
 	}
 
 	mCSBlurFilter->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize),
 		mCbvSrvUavDescriptorSize);
 
 	mCSWaves->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
 		mCbvSrvUavDescriptorSize);
 }
 
 void MyApp::BuildShadersAndInputLayout()
 {
+	char texSize[100];
+	char texArraySize[100];
+	strcpy_s(texSize, std::to_string(TEXTURE_FILENAMES.size()).c_str());
+	strcpy_s(texArraySize, std::to_string(TEXTURE_ARRAY_FILENAMES.size()).c_str());
+
 	const D3D_SHADER_MACRO defines[] =
 	{
+		"TEX_SIZE", texSize,
+		"TEX_ARRAY_SIZE", texArraySize,
+		NULL, NULL
+	};
+
+	const D3D_SHADER_MACRO fogDefines[] =
+	{
+		"TEX_SIZE", texSize,
+		"TEX_ARRAY_SIZE", texArraySize,
 		"FOG", "1",
 		NULL, NULL
 	};
 
 	const D3D_SHADER_MACRO alphaTestDefines[] =
 	{
+		"TEX_SIZE", texSize,
+		"TEX_ARRAY_SIZE", texArraySize,
 		"FOG", "1",
 		"ALPHA_TEST", "1",
 		NULL, NULL
@@ -271,30 +311,33 @@ void MyApp::BuildShadersAndInputLayout()
 
 	const D3D_SHADER_MACRO waveDefines[] =
 	{
+		"TEX_SIZE", texSize,
+		"TEX_ARRAY_SIZE", texArraySize,
 		"DISPLACEMENT_MAP", "1",
 		NULL, NULL
 	};
 
-	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
 	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
-	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
+	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", fogDefines, "PS", "ps_5_1");
 	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
+	mShaders["DisplacementPS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "PS", "ps_5_1");
 
-	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", nullptr, "GS", "gs_5_1");
-	mShaders["NormalPS"] = D3DUtil::CompileShader(L"Normal.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "VS", "vs_5_1");
+	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "GS", "gs_5_1");
+	mShaders["NormalPS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "PS", "ps_5_1");
 
-	mShaders["BillboardVS"] = D3DUtil::CompileShader(L"Billboard.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["BillboardGS"] = D3DUtil::CompileShader(L"Billboard.hlsl", nullptr, "GS", "gs_5_1");
+	mShaders["BillboardVS"] = D3DUtil::CompileShader(L"Billboard.hlsl", defines, "VS", "vs_5_1");
+	mShaders["BillboardGS"] = D3DUtil::CompileShader(L"Billboard.hlsl", defines, "GS", "gs_5_1");
 	mShaders["BillboardPS"] = D3DUtil::CompileShader(L"Billboard.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
-	mShaders["SubdivisionVS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["SubdivisionGS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", nullptr, "GS", "gs_5_1");
+	mShaders["SubdivisionVS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", defines, "VS", "vs_5_1");
+	mShaders["SubdivisionGS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", defines, "GS", "gs_5_1");
 
-	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "HS", "hs_5_1");
-	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "DS", "ds_5_1");
-	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "VS", "vs_5_1");
+	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
+	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
+	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -764,12 +807,24 @@ void MyApp::BuildQuadPatchGeometry()
 
 void MyApp::BuildMaterials()
 {
+	UINT idx = 0;
 	for (size_t i = 0; i < TEXTURE_FILENAMES.size(); ++i)
 	{
 		auto mat = std::make_unique<Material>();
-		mat->Name = MATERIAL_NAMES[i];
-		mat->MatCBIndex = i;
-		mat->DiffuseSrvHeapIndex = i + SRV_IMGUI_SIZE;
+		mat->Name = MATERIAL_NAMES[idx];
+		mat->MatCBIndex = idx;
+		mat->DiffuseSrvHeapIndex = idx++ + SRV_IMGUI_SIZE;
+		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+		mat->Roughness = 0.1f;
+		mMaterials[mat->Name] = std::move(mat);
+	}
+	for (size_t i = 0; i < TEXTURE_ARRAY_FILENAMES.size(); ++i)
+	{
+		auto mat = std::make_unique<Material>();
+		mat->Name = MATERIAL_NAMES[idx];
+		mat->MatCBIndex = idx++;
+		mat->DiffuseSrvHeapIndex = i;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
@@ -778,10 +833,10 @@ void MyApp::BuildMaterials()
 	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 
-	UINT offset = TEXTURE_FILENAMES.size();
+	
 	auto skullMat = std::make_unique<Material>();
-	skullMat->Name = MATERIAL_NAMES[offset];
-	skullMat->MatCBIndex = offset++;
+	skullMat->Name = MATERIAL_NAMES[idx];
+	skullMat->MatCBIndex = idx++;
 	skullMat->DiffuseSrvHeapIndex = SRV_IMGUI_SIZE;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
@@ -789,8 +844,8 @@ void MyApp::BuildMaterials()
 	mMaterials[skullMat->Name] = std::move(skullMat);
 
 	auto shadowMat = std::make_unique<Material>();
-	shadowMat->Name = MATERIAL_NAMES[offset];
-	shadowMat->MatCBIndex = offset++;
+	shadowMat->Name = MATERIAL_NAMES[idx];
+	shadowMat->MatCBIndex = idx++;
 	shadowMat->DiffuseSrvHeapIndex = SRV_IMGUI_SIZE;
 	shadowMat->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	shadowMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
@@ -798,8 +853,8 @@ void MyApp::BuildMaterials()
 	mMaterials[shadowMat->Name] = std::move(shadowMat);
 
 	auto viewportMat = std::make_unique<Material>();
-	viewportMat->Name = MATERIAL_NAMES[offset];
-	viewportMat->MatCBIndex = offset++;
+	viewportMat->Name = MATERIAL_NAMES[idx];
+	viewportMat->MatCBIndex = idx++;
 	viewportMat->DiffuseSrvHeapIndex = SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size();
 	viewportMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	viewportMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
@@ -1271,6 +1326,7 @@ void MyApp::BuildPSO()
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
 	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders["DisplacementVS"]->GetBufferPointer()), mShaders["DisplacementVS"]->GetBufferSize() };
+	wavesRenderPSO.PS = { reinterpret_cast<BYTE*>(mShaders["DisplacementPS"]->GetBufferPointer()), mShaders["DisplacementPS"]->GetBufferSize() };
 
 	//=====================================================
 	// PSO for Tessellation
@@ -1433,13 +1489,23 @@ void MyApp::Render()
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
-	mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
-	mCommandList->SetGraphicsRootDescriptorTable(3, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	mCommandList->SetGraphicsRootDescriptorTable(4, mCSWaves->DisplacementMap());
+
 	mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		//slotRootParameter[0].InitAsConstantBufferView(0); // register b0
+		//slotRootParameter[1].InitAsConstantBufferView(1); // register b1
+		//slotRootParameter[2].InitAsShaderResourceView(0, 2);
+		//slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
+		mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size(), mCbvSrvUavDescriptorSize));
+		mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
 		else if (mLayerType[i] == RenderLayer::AddCS)
@@ -1453,7 +1519,6 @@ void MyApp::Render()
 			mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
 		}
 		else {
-			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
 			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
@@ -1694,6 +1759,10 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetVertexBuffers(0, 1, &vbv);
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
+
+		/*mCommandList->SetGraphicsRootDescriptorTable(0, tex);
+		mCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		mCommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);*/
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (ri->ObjCBIndex + offset) * objCBByteSize;
 

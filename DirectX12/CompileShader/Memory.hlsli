@@ -27,13 +27,22 @@ struct MaterialData
     uint MatPad2;
 };
 
-Texture2D gDiffuseMap[4] : register(t0);
-Texture2D gDisplacementMap : register(t1);
-Texture2DArray gTreeMapArray : register(t2);
+#ifdef TEX_SIZE
+Texture2D gDiffuseMap[TEX_SIZE] : register(t0, space0);
+#else
+Texture2D gDiffuseMap[16] : register(t0, space0);
+#endif
+Texture2D gDisplacementMap : register(t0, space1);
+#ifdef TEX_ARRAY_SIZE
+Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t1, space1);
+#else
+Texture2DArray gTreeMapArray[2] : register(t1, space1);
+#endif
+
 
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0. 
-StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
+StructuredBuffer<MaterialData> gMaterialData : register(t0, space2);
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
@@ -43,7 +52,7 @@ SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 
 // Constant data that varies per frame.
-#ifdef DISPLACEMENT_MAP
+
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
@@ -54,18 +63,18 @@ cbuffer cbPerObject : register(b0)
     float gGridSpatialStep;
     float cbPerObjectPad1;
 };
-#else
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 gWorld;
-    float4x4 gTexTransform;
-    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
-    uint gMaterialIndex;
-    uint gObjPad0;
-    uint gObjPad1;
-    uint gObjPad2;
-};
-#endif
+
+//cbuffer cbPerObject : register(b0)
+//{
+//    float4x4 gWorld;
+//    float4x4 gTexTransform;
+//    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
+//    uint gMaterialIndex;
+//    uint gObjPad0;
+//    uint gObjPad1;
+//    uint gObjPad2;
+//};
+
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b1)
