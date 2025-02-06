@@ -8,14 +8,6 @@ struct VertexIn
     float2 TexC : TEXCOORD;
 };
 
-struct VertexOut
-{
-    float4 PosH : SV_POSITION;
-    float3 PosW : POSITION;
-    float3 NormalW : NORMAL;
-    float2 TexC : TEXCOORD;
-};
-
 struct SubdivisionGeometryOut
 {
     float4 PosH : SV_POSITION;
@@ -23,11 +15,6 @@ struct SubdivisionGeometryOut
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
 };
-
-VertexIn VS(VertexIn vin)
-{
-    return vin;
-}
 
 void Subdivide(VertexIn inVerts[3], out VertexIn outVerts[6])
 {
@@ -118,16 +105,9 @@ void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOu
 }
 
 [maxvertexcount(8)]
-void GS(triangle VertexIn gin[3], inout TriangleStream<SubdivisionGeometryOut> triStream)
+void main(triangle VertexIn gin[3], inout TriangleStream<SubdivisionGeometryOut> triStream)
 {
     VertexIn v[6];
     Subdivide(gin, v);
     OutputSubdivision(v, triStream);
 }
-
-
-struct PixelOut
-{
-    float4 color0 : SV_Target0;
-    float4 color1 : SV_Target1;
-};

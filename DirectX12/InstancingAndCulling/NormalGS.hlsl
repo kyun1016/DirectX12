@@ -2,28 +2,11 @@
 
 static const float lineScale = 0.1;
 
-struct VertexIn
-{
-    float3 PosL : POSITION;
-    float3 NormalL : NORMAL;
-    float2 TexC : TEXCOORD;
-};
-
 struct NormalGeometryShaderInput
 {
     float4 PosL : SV_POSITION;
     float3 NormalL : NORMAL;
 };
-
-NormalGeometryShaderInput VS(VertexIn input)
-{
-    NormalGeometryShaderInput output;
-
-    output.PosL = float4(input.PosL, 1.0);
-    output.NormalL = input.NormalL;
-
-    return output;
-}
 
 struct NormalPixelShaderInput
 {
@@ -32,7 +15,7 @@ struct NormalPixelShaderInput
 };
 
 [maxvertexcount(2)]
-void GS(point NormalGeometryShaderInput input[1], inout LineStream<NormalPixelShaderInput> outputStream)
+void main(point NormalGeometryShaderInput input[1], inout LineStream<NormalPixelShaderInput> outputStream)
 {
     NormalPixelShaderInput output;
     
@@ -48,24 +31,4 @@ void GS(point NormalGeometryShaderInput input[1], inout LineStream<NormalPixelSh
     output.pos = mul(posW + lineScale * normalW, gViewProj);
     output.color = float3(1.0, 0.0, 0.0);
     outputStream.Append(output);
-}
-
-struct PixelShaderInput
-{
-    float4 pos : SV_POSITION;
-    float3 color : COLOR;
-};
-
-struct PixelOut
-{
-    float4 color0 : SV_Target0;
-    float4 color1 : SV_Target1;
-};
-
-PixelOut PS(PixelShaderInput input)
-{
-    PixelOut ret;
-    ret.color0 = float4(input.color, 1.0f);
-    ret.color1 = float4(input.color, 1.0f);
-    return ret;
 }
