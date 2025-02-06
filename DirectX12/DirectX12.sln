@@ -61,6 +61,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CameraAndDynamicIndexing", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CompileShader", "CompileShader\CompileShader.vcxproj", "{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "16. Instancing And Culling", "16. Instancing And Culling", "{4C017692-4E9B-4C98-ACCC-7E6A49079F00}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstancingAndCulling", "InstancingAndCulling\InstancingAndCulling.vcxproj", "{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -213,6 +217,14 @@ Global
 		{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570}.Release|x64.Build.0 = Release|x64
 		{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570}.Release|x86.ActiveCfg = Release|Win32
 		{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570}.Release|x86.Build.0 = Release|Win32
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Debug|x64.ActiveCfg = Debug|x64
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Debug|x64.Build.0 = Debug|x64
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Debug|x86.ActiveCfg = Debug|Win32
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Debug|x86.Build.0 = Debug|Win32
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x64.ActiveCfg = Release|x64
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x64.Build.0 = Release|x64
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x86.ActiveCfg = Release|Win32
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -236,6 +248,7 @@ Global
 		{8C76FED5-FFD0-4545-928C-61F06ADFEB9E} = {CD767F65-02BE-4955-BC0D-2C67B5DCDA39}
 		{7324A2C4-C195-47DA-9330-B0C181132F64} = {D1F5BB33-8D50-4E23-BFEE-F4AA11C12FBD}
 		{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570} = {D1F5BB33-8D50-4E23-BFEE-F4AA11C12FBD}
+		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E} = {4C017692-4E9B-4C98-ACCC-7E6A49079F00}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}
