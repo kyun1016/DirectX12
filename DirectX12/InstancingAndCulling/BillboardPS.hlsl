@@ -34,15 +34,15 @@ PixelOut main(BillboardGeometryOut pin)
 	clip(diffuseAlbedo.a - 0.1f);
 #endif
 	
-	// º¸°£µÈ ¹ı¼±À» ´Ù½Ã Á¤±ÔÈ­
+	// ë³´ê°„ëœ ë²•ì„ ì„ ë‹¤ì‹œ ì •ê·œí™”
     pin.NormalW = normalize(pin.NormalW);
 	
-	// Á¶¸íµÇ´Â Á¡¿¡¼­ ´«À¸·ÎÀÇ º¤ÅÍ
+	// ì¡°ëª…ë˜ëŠ” ì ì—ì„œ ëˆˆìœ¼ë¡œì˜ ë²¡í„°
     float3 toEyeW = gEyePosW - pin.PosW;
     float distToEye = length(toEyeW);
-    toEyeW /= distToEye; // Á¤±ÔÈ­
+    toEyeW /= distToEye; // ì •ê·œí™”
 	
-	// Á¶¸í °è»ê¿¡ Æ÷ÇÔµÇ´Â Ç×µé.
+	// ì¡°ëª… ê³„ì‚°ì— í¬í•¨ë˜ëŠ” í•­ë“¤.
     float4 ambient = gAmbientLight * diffuseAlbedo;
 	
     const float shininess = 1.0f - roughness;

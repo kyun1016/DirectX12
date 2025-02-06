@@ -22,14 +22,14 @@ void main(point BillboardVertexIn gin[1],
 	inout TriangleStream<BillboardGeometryOut> triStream
 )
 {
-    // World Space ±âÁØ Ä«¸Ş¶ó ¹æÇâ ÁÂÇ¥°è °è»ê
+    // World Space ê¸°ì¤€ ì¹´ë©”ë¼ ë°©í–¥ ì¢Œí‘œê³„ ê³„ì‚°
     float3 up = float3(0.0f, 1.0f, 0.0f);
     float3 look = gEyePosW - gin[0].PosW;
     look.y = 0.0f;
     look = normalize(look);
     float3 right = cross(up, look);
 
-    //  4°³ÀÇ Á¤Á¡ °è»ê
+    //  4ê°œì˜ ì •ì  ê³„ì‚°
     float halfWidth = 0.5f * gin[0].SizeW.x;
     float halfHeight = 0.5f * gin[0].SizeW.y;
     

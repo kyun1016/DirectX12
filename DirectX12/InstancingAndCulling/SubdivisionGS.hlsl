@@ -30,22 +30,22 @@ void Subdivide(VertexIn inVerts[3], out VertexIn outVerts[6])
     
     VertexIn m[3];
     
-    // °¢ º¯ÀÇ ÁßÁ¡À» °è»ê
+    // ê° ë³€ì˜ ì¤‘ì ì„ ê³„ì‚°
     m[0].PosL = 0.5f * (inVerts[0].PosL + inVerts[1].PosL);
     m[1].PosL = 0.5f * (inVerts[1].PosL + inVerts[2].PosL);
     m[2].PosL = 0.5f * (inVerts[2].PosL + inVerts[0].PosL);
     
-    // // ´ÜÀ§ ±¸¿¡ Åõ¿µ
+    // // ë‹¨ìœ„ êµ¬ì— íˆ¬ì˜
     // m[0].PosL = normalize(m[0].PosL);
     // m[1].PosL = normalize(m[1].PosL);
     // m[2].PosL = normalize(m[2].PosL);
     
-    // ¹ı¼±À» À¯µµ
+    // ë²•ì„ ì„ ìœ ë„
     m[0].NormalL = m[0].PosL;
     m[1].NormalL = m[1].PosL;
     m[2].NormalL = m[2].PosL;
     
-    // ÅØ½ºÃ³ ÁÂÇ¥¸¦ º¸°£
+    // í…ìŠ¤ì²˜ ì¢Œí‘œë¥¼ ë³´ê°„
     m[0].TexC = 0.5f * (inVerts[0].TexC + inVerts[1].TexC);
     m[1].TexC = 0.5f * (inVerts[1].TexC + inVerts[2].TexC);
     m[2].TexC = 0.5f * (inVerts[2].TexC + inVerts[0].TexC);
@@ -68,12 +68,12 @@ void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOu
     [unroll]
     for (int i = 0; i < 6; ++i)
     {
-        // world space·Î º¯È¯
+        // world spaceë¡œ ë³€í™˜
         float4 posW = mul(float4(v[i].PosL, 1.0f), gWorld);
         gout[i].PosW = posW.xyz;
         gout[i].NormalW = mul(v[i].NormalL, (float3x3) gWorld);
         
-        // homogeneous clip space·Î º¯È¯
+        // homogeneous clip spaceë¡œ ë³€í™˜
         gout[i].PosH = mul(posW, gViewProj);
         
         float4 texC = mul(float4(v[i].TexC, 0.0f, 1.0f), gTexTransform);
@@ -89,9 +89,9 @@ void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOu
     //    *-----*-----*            *-----*-----*          
     // 0(0)   m2(2)   2(4)       0(0)   m2(2)   2(4)          
     
-    // »ï°¢ÇüÀ» 2°³ÀÇ ¶ì·Î ±×¸°´Ù.
-    // 1. ¶ì 1: ¾Æ·¡ÂÊ »ï°¢Çü ¼¼ °³
-    // 2. ¶ì 2: À§ÂÊ »ï°¢Çü 1°³
+    // ì‚¼ê°í˜•ì„ 2ê°œì˜ ë ë¡œ ê·¸ë¦°ë‹¤.
+    // 1. ë  1: ì•„ë˜ìª½ ì‚¼ê°í˜• ì„¸ ê°œ
+    // 2. ë  2: ìœ„ìª½ ì‚¼ê°í˜• 1ê°œ
     [unroll]
     for (int j = 0; j < 5; ++j)
     {
