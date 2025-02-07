@@ -15,6 +15,17 @@
 #define MaxLights 16
 #include "LightingUtil.hlsli"
 
+struct InstancelData
+{
+    float4x4 gWorld;
+    float4x4 gTexTransform;
+    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
+    uint gMaterialIndex;
+    float2 gDisplacementMapTexelSize;
+    float gGridSpatialStep;
+    float cbPerObjectPad1;
+};
+
 struct MaterialData
 {
     float4 DiffuseAlbedo;
@@ -42,7 +53,8 @@ Texture2DArray gTreeMapArray[2] : register(t0, space1);
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0. 
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space2);
-Texture2D gDisplacementMap : register(t1, space2);
+StructuredBuffer<InstancelData> gInstanceData : register(t1, space2);
+Texture2D gDisplacementMap : register(t2, space2);
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
@@ -52,7 +64,6 @@ SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 
 // Constant data that varies per frame.
-
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
@@ -64,20 +75,8 @@ cbuffer cbPerObject : register(b0)
     float cbPerObjectPad1;
 };
 
-//cbuffer cbPerObject : register(b0)
-//{
-//    float4x4 gWorld;
-//    float4x4 gTexTransform;
-//    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
-//    uint gMaterialIndex;
-//    uint gObjPad0;
-//    uint gObjPad1;
-//    uint gObjPad2;
-//};
-
-
 // Constant data that varies per material.
-cbuffer cbPass : register(b1)
+cbuffer cbPass : register(b0)
 {
     float4x4 gView;
     float4x4 gInvView;
