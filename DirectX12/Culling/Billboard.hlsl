@@ -27,14 +27,14 @@ void GS(point BillboardVertexIn gin[1],
 	inout TriangleStream<BillboardGeometryOut> triStream
 )
 {
-    // World Space ±âÁØ Ä«¸Ş¶ó ¹æÇâ ÁÂÇ¥°è °è»ê
+    // World Space ê¸°ì¤€ ì¹´ë©”ë¼ ë°©í–¥ ì¢Œí‘œê³„ ê³„ì‚°
     float3 up = float3(0.0f, 1.0f, 0.0f);
     float3 look = gEyePosW - gin[0].PosW;
     look.y = 0.0f;
     look = normalize(look);
     float3 right = cross(up, look);
 
-    //  4°³ÀÇ Á¤Á¡ °è»ê
+    //  4ê°œì˜ ì •ì  ê³„ì‚°
     float halfWidth = 0.5f * gin[0].SizeW.x;
     float halfHeight = 0.5f * gin[0].SizeW.y;
     
@@ -92,15 +92,15 @@ PixelOut PS(BillboardGeometryOut pin)
 	clip(diffuseAlbedo.a - 0.1f);
 #endif
 	
-	// º¸°£µÈ ¹ı¼±À» ´Ù½Ã Á¤±ÔÈ­
+	// ë³´ê°„ëœ ë²•ì„ ì„ ë‹¤ì‹œ ì •ê·œí™”
     pin.NormalW = normalize(pin.NormalW);
 	
-	// Á¶¸íµÇ´Â Á¡¿¡¼­ ´«À¸·ÎÀÇ º¤ÅÍ
+	// ì¡°ëª…ë˜ëŠ” ì ì—ì„œ ëˆˆìœ¼ë¡œì˜ ë²¡í„°
     float3 toEyeW = gEyePosW - pin.PosW;
     float distToEye = length(toEyeW);
-    toEyeW /= distToEye; // Á¤±ÔÈ­
+    toEyeW /= distToEye; // ì •ê·œí™”
 	
-	// Á¶¸í °è»ê¿¡ Æ÷ÇÔµÇ´Â Ç×µé.
+	// ì¡°ëª… ê³„ì‚°ì— í¬í•¨ë˜ëŠ” í•­ë“¤.
     float4 ambient = gAmbientLight * diffuseAlbedo;
 	
     const float shininess = 1.0f - roughness;

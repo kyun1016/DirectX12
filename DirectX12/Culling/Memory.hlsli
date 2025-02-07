@@ -19,7 +19,7 @@ struct InstancelData
 {
     float4x4 gWorld;
     float4x4 gTexTransform;
-    float4x4 gWorldInvTranspose; // Geometery Shader µ¿ÀÛ °£ ¹ı¼± º¤ÅÍ º¯È¯ ½Ã Á÷±³ ¼ºÁú À¯Áö¸¦ À§ÇÔ
+    float4x4 gWorldInvTranspose; // Geometery Shader ë™ì‘ ê°„ ë²•ì„  ë²¡í„° ë³€í™˜ ì‹œ ì§êµ ì„±ì§ˆ ìœ ì§€ë¥¼ ìœ„í•¨
     uint gMaterialIndex;
     float2 gDisplacementMapTexelSize;
     float gGridSpatialStep;
@@ -68,7 +68,7 @@ cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
     float4x4 gTexTransform;
-    float4x4 gWorldInvTranspose; // Geometery Shader µ¿ÀÛ °£ ¹ı¼± º¤ÅÍ º¯È¯ ½Ã Á÷±³ ¼ºÁú À¯Áö¸¦ À§ÇÔ
+    float4x4 gWorldInvTranspose; // Geometery Shader ë™ì‘ ê°„ ë²•ì„  ë²¡í„° ë³€í™˜ ì‹œ ì§êµ ì„±ì§ˆ ìœ ì§€ë¥¼ ìœ„í•¨
     uint gMaterialIndex;
     float2 gDisplacementMapTexelSize;
     float gGridSpatialStep;
