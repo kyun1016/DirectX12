@@ -65,6 +65,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "16. Instancing And Culling"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstancingAndCulling", "InstancingAndCulling\InstancingAndCulling.vcxproj", "{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Culling", "Culling\Culling.vcxproj", "{3F79F1C3-1474-494C-84D1-D13D06FFDB40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -225,6 +227,14 @@ Global
 		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x64.Build.0 = Release|x64
 		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x86.ActiveCfg = Release|Win32
 		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E}.Release|x86.Build.0 = Release|Win32
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Debug|x64.ActiveCfg = Debug|x64
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Debug|x64.Build.0 = Debug|x64
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Debug|x86.ActiveCfg = Debug|Win32
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Debug|x86.Build.0 = Debug|Win32
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Release|x64.ActiveCfg = Release|x64
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Release|x64.Build.0 = Release|x64
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Release|x86.ActiveCfg = Release|Win32
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -249,6 +259,7 @@ Global
 		{7324A2C4-C195-47DA-9330-B0C181132F64} = {D1F5BB33-8D50-4E23-BFEE-F4AA11C12FBD}
 		{24C7AEC7-F448-4AAF-AA37-8FD6FC0F5570} = {D1F5BB33-8D50-4E23-BFEE-F4AA11C12FBD}
 		{FDF704E0-0E3E-4576-839C-BAB99BFFA73E} = {4C017692-4E9B-4C98-ACCC-7E6A49079F00}
+		{3F79F1C3-1474-494C-84D1-D13D06FFDB40} = {4C017692-4E9B-4C98-ACCC-7E6A49079F00}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}

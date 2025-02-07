@@ -1632,12 +1632,17 @@ void MyApp::UpdateObjectCBs()
 			{
 				DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->World);
 				DirectX::XMMATRIX texTransform = DirectX::XMLoadFloat4x4(&e->TexTransform);
+				
 
 				DirectX::XMVECTOR mirrorPlane = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
 				DirectX::XMMATRIX R = DirectX::XMMatrixReflect(mirrorPlane);
 				ObjectConstants objConstants;
 				DirectX::XMStoreFloat4x4(&objConstants.World, DirectX::XMMatrixTranspose(world * R));
 				DirectX::XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+				objConstants.MaterialIndex = e->Mat->MatCBIndex;
+
+				DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+				DirectX::XMStoreFloat4x4(&objConstants.WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
 				objConstants.DisplacementMapTexelSize = e->DisplacementMapTexelSize;
 				objConstants.GridSpatialStep = e->GridSpatialStep;
 				currObjectCB->CopyData(mAllRitems.size() + e->ObjCBIndex, objConstants);

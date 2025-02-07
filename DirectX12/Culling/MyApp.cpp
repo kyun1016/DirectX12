@@ -141,7 +141,7 @@ void MyApp::BuildRootSignature()
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-
+	
 
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
@@ -216,19 +216,19 @@ void MyApp::BuildShaderResourceViews()
 		/* 	D3D12_TEX1D_SRV Texture1D													*/
 		/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
 		/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
-			/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-			/*		UINT MipLevels															*/	.MipLevels = 0,
-			/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
-			/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
-			/*	}																			*/}
-			/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
-			/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
-			/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
-			/* 	D3D12_TEX3D_SRV Texture3D													*/
-			/* 	D3D12_TEXCUBE_SRV TextureCube												*/
-			/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
-			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
-			/* }																			*/
+		/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+		/*		UINT MipLevels															*/	.MipLevels = 0,
+		/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+		/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
+		/*	}																			*/}
+		/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+		/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+		/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+		/* 	D3D12_TEX3D_SRV Texture3D													*/
+		/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+		/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+		/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+		/* }																			*/
 	};
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
@@ -836,7 +836,7 @@ void MyApp::BuildMaterials()
 	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 
-
+	
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[idx];
 	skullMat->MatCBIndex = idx++;
@@ -918,7 +918,7 @@ void MyApp::BuildRenderItems()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	boxRitem->LayerFlag
+	boxRitem->LayerFlag 
 		= (1 << (int)RenderLayer::AlphaTested)
 		| (1 << (int)RenderLayer::AlphaTestedWireframe);
 	mAllRitems.push_back(std::move(boxRitem));
@@ -1116,19 +1116,19 @@ void MyApp::BuildPSO()
 		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
 		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
 		/* D3D12_STREAM_OUTPUT_DESC StreamOutput{							*/.StreamOutput = {
-			/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
-			/*			UINT Stream;											*/
-			/*			LPCSTR SemanticName;									*/
-			/*			UINT SemanticIndex;										*/
-			/*			BYTE StartComponent;									*/
-			/*			BYTE ComponentCount;									*/
-			/*			BYTE OutputSlot;										*/
-			/*		}															*/
-			/*		UINT NumEntries;											*/	0,
-			/*		const UINT* pBufferStrides;									*/	0,
-			/*		UINT NumStrides;											*/	0,
-			/*		UINT RasterizedStream;										*/	0
-			/* }																*/},
+		/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
+		/*			UINT Stream;											*/
+		/*			LPCSTR SemanticName;									*/
+		/*			UINT SemanticIndex;										*/
+		/*			BYTE StartComponent;									*/
+		/*			BYTE ComponentCount;									*/
+		/*			BYTE OutputSlot;										*/
+		/*		}															*/
+		/*		UINT NumEntries;											*/	0,
+		/*		const UINT* pBufferStrides;									*/	0,
+		/*		UINT NumStrides;											*/	0,
+		/*		UINT RasterizedStream;										*/	0
+		/* }																*/},
 		/* D3D12_BLEND_DESC BlendState{										*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
 		/*		BOOL AlphaToCoverageEnable									*/
 		/*		BOOL IndependentBlendEnable									*/
@@ -1136,51 +1136,51 @@ void MyApp::BuildPSO()
 		/* }																*/
 		/* UINT SampleMask													*/.SampleMask = UINT_MAX,
 		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
-			/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
-			/*		BOOL FrontCounterClockwise									*/		false,
-			/*		INT DepthBias												*/		D3D12_DEFAULT_DEPTH_BIAS,
-			/*		FLOAT DepthBiasClamp										*/		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-			/*		FLOAT SlopeScaledDepthBias									*/		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-			/*		BOOL DepthClipEnable										*/		true,
-			/*		BOOL MultisampleEnable										*/		false,
-			/*		BOOL AntialiasedLineEnable									*/		false,
-			/*		UINT ForcedSampleCount										*/		0,
-			/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
-			/* }																*/},
-			/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			/*		BOOL DepthEnable											*/		.DepthEnable = true,
-			/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
-			/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
-			/*		BOOL StencilEnable											*/		.StencilEnable = false,
-			/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
-			/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
-			/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
-			/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
-			/*		}															*/		},
+		/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
+		/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
+		/*		BOOL FrontCounterClockwise									*/		false,
+		/*		INT DepthBias												*/		D3D12_DEFAULT_DEPTH_BIAS,
+		/*		FLOAT DepthBiasClamp										*/		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+		/*		FLOAT SlopeScaledDepthBias									*/		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+		/*		BOOL DepthClipEnable										*/		true,
+		/*		BOOL MultisampleEnable										*/		false,
+		/*		BOOL AntialiasedLineEnable									*/		false,
+		/*		UINT ForcedSampleCount										*/		0,
+		/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+		/* }																*/},
+		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		/*		BOOL DepthEnable											*/		.DepthEnable = true,
+		/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+		/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+		/*		BOOL StencilEnable											*/		.StencilEnable = false,
+		/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+		/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+		/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
 		/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
-			/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
-			/*		}															*/		},
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
 		/* }																*/ },
 		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
-			/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mMainInputLayout.data(),
-			/*		UINT NumElements											*/		.NumElements = (UINT)mMainInputLayout.size()
-			/*	}																*/ },
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mMainInputLayout.data(),
+		/*		UINT NumElements											*/		.NumElements = (UINT)mMainInputLayout.size()
+		/*	}																*/ },
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
 		/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
 		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, mBackBufferFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
 		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mDepthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
-			/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
-			/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
-			/*	}																*/},
+		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
+		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/*	}																*/},
 		/* UINT NodeMask													*/.NodeMask = 0,
 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
@@ -1270,7 +1270,7 @@ void MyApp::BuildPSO()
 	// PSO for alpha tested objects
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
-	alphaTestedPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["AlphaTestedPS"]->GetBufferPointer()),	mShaders["AlphaTestedPS"]->GetBufferSize() };
+	alphaTestedPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["AlphaTestedPS"]->GetBufferPointer()),	mShaders["AlphaTestedPS"]->GetBufferSize()};
 	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
@@ -1405,18 +1405,18 @@ void MyApp::OnResize()
 			/* 	D3D12_TEX1D_SRV Texture1D													*/
 			/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
 			/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
-				/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-				/*		UINT MipLevels															*/	.MipLevels = 1,
-				/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
-				/*		FLOAT ResourceMinLODClamp}												*/	.ResourceMinLODClamp = 0.0f}
-				/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
-				/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
-				/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
-				/* 	D3D12_TEX3D_SRV Texture3D													*/
-				/* 	D3D12_TEXCUBE_SRV TextureCube												*/
-				/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
-				/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
-				/* }																			*/
+			/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
+			/*		UINT MipLevels															*/	.MipLevels = 1,
+			/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
+			/*		FLOAT ResourceMinLODClamp}												*/	.ResourceMinLODClamp = 0.0f}
+			/* 	D3D12_TEX2D_ARRAY_SRV Texture2DArray										*/
+			/* 	D3D12_TEX2DMS_SRV Texture2DMS												*/
+			/* 	D3D12_TEX2DMS_ARRAY_SRV Texture2DMSArray									*/
+			/* 	D3D12_TEX3D_SRV Texture3D													*/
+			/* 	D3D12_TEXCUBE_SRV TextureCube												*/
+			/* 	D3D12_TEXCUBE_ARRAY_SRV TextureCubeArray									*/
+			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
+			/* }																			*/
 		};
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
@@ -1469,7 +1469,7 @@ void MyApp::Render()
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
-	for (int i = 0; i < SRV_USER_SIZE; ++i)
+	for(int i=0; i<SRV_USER_SIZE; ++i)
 		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
@@ -1492,7 +1492,7 @@ void MyApp::Render()
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
-
+	
 	// slotRootParameter[0].InitAsConstantBufferView(0); // register b0
 	// slotRootParameter[1].InitAsConstantBufferView(1); // register b1
 	// slotRootParameter[2].InitAsShaderResourceView(0, 1);	// t0
@@ -1507,7 +1507,7 @@ void MyApp::Render()
 	mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
 
 
-
+	
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -1524,7 +1524,7 @@ void MyApp::Render()
 			mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
 		}
 		else {
-			if (mLayerType[i] == RenderLayer::WaveVS_CS)
+			if(mLayerType[i] == RenderLayer::WaveVS_CS)
 				mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
@@ -1887,7 +1887,7 @@ void MyApp::ShowMainWindow()
 			ImGui::LabelText("label", "Value");
 			// ImGui::SliderInt("Shader Type [0, 1]", &mLayerType[layerIdx], 0, 1, "%d", flags);
 
-			const char* items[] = {
+			const char* items[] = { 
 				"None",
 				"Opaque",
 				"Mirror",
@@ -1925,7 +1925,7 @@ void MyApp::ShowMainWindow()
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
 				}
-				mLayerType[layerIdx] = (RenderLayer)item_selected_idx;
+				mLayerType[layerIdx] = (RenderLayer) item_selected_idx;
 				ImGui::EndListBox();
 			}
 
@@ -1996,7 +1996,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() +mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
