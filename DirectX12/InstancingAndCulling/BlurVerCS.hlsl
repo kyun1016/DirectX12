@@ -34,7 +34,7 @@ RWTexture2D<float4> gOutput : register(u0);
 groupshared float4 gCache[CacheSize];
 
 [numthreads(1, N, 1)]
-void VerBlurCS(int3 groupThreadID : SV_GroupThreadID,
+void main(int3 groupThreadID : SV_GroupThreadID,
 				int3 dispatchThreadID : SV_DispatchThreadID)
 {
 	// Put in an array for each indexing.
@@ -45,6 +45,8 @@ void VerBlurCS(int3 groupThreadID : SV_GroupThreadID,
 	// N pixels, we will need to load N + 2*BlurRadius pixels
 	// due to the blur radius.
 	//
+    uint width, height;
+    gInput.GetDimensions(width, height);
 	
 	// This thread group runs N threads.  To get the extra 2*BlurRadius pixels, 
 	// have 2*BlurRadius threads sample an extra pixel.
@@ -57,12 +59,13 @@ void VerBlurCS(int3 groupThreadID : SV_GroupThreadID,
     if (groupThreadID.y >= N - gBlurRadius)
     {
 		// Clamp out of bound samples that occur at image borders.
-        int y = min(dispatchThreadID.y + gBlurRadius, gInput.Length.y - 1);
+        
+        int y = min(dispatchThreadID.y + gBlurRadius, height - 1);
         gCache[groupThreadID.y + 2 * gBlurRadius] = gInput[int2(dispatchThreadID.x, y)];
     }
 	
 	// Clamp out of bound samples that occur at image borders.
-    gCache[groupThreadID.y + gBlurRadius] = gInput[min(dispatchThreadID.xy, gInput.Length.xy - 1)];
+    gCache[groupThreadID.y + gBlurRadius] = gInput[min(dispatchThreadID.xy, width*height - 1)];
 
 
 	// Wait for all threads to finish.

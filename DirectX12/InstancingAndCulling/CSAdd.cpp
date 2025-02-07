@@ -14,7 +14,7 @@ CSAdd::CSAdd(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 
 void CSAdd::BuildShader()
 {
-	mShader = D3DUtil::CompileShader(L"AddCS.hlsl", nullptr, "main", "cs_5_0");
+	mShader = D3DUtil::LoadBinary(L"Shaders\\AddCS.cso");  // D3DUtil::CompileShader(L"AddCS.hlsl", nullptr, "main", "cs_5_0");
 }
 
 void CSAdd::BuildResources(ID3D12GraphicsCommandList* cmdList)

@@ -93,10 +93,10 @@ void GpuWaves::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mVSShader        = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
-	mCSDisturbShader = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveDisturbCS", "cs_5_1");
-	mCSUpdateShader  = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveUpdateCS", "cs_5_1");
-	mPSShader        = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
+	mVSShader        = D3DUtil::LoadBinary(L"Shaders\\MainDisplacementVS.cso");
+	mCSDisturbShader = D3DUtil::LoadBinary(L"Shaders\\WaveDisturbCS.cso");
+	mCSUpdateShader  = D3DUtil::LoadBinary(L"Shaders\\WaveUpdateCS.cso");
+	mPSShader        = D3DUtil::LoadBinary(L"Shaders\\MainFogPS.cso");
 
 	mMainInputLayout =
 	{

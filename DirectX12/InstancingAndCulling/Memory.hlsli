@@ -27,10 +27,12 @@ struct MaterialData
     uint MatPad2;
 };
 
+
+
 #ifdef TEX_SIZE
 Texture2D gDiffuseMap[TEX_SIZE] : register(t0, space0);
 #else
-Texture2D gDiffuseMap[16] : register(t0, space0);
+Texture2D gDiffuseMap[18] : register(t0, space0);
 #endif
 
 #ifdef TEX_ARRAY_SIZE

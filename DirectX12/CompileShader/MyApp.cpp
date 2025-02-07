@@ -42,7 +42,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerCBIdx[7] = 0;
 	mLayerCBIdx[8] = 0;
 
-	for (int i = 9; i < MAX_LAYER_DEPTH; ++i)
+	for (int i = 1; i < MAX_LAYER_DEPTH; ++i)
 	{
 		mLayerType[i] = RenderLayer::None;
 		mLayerStencil[i] = 0;
@@ -317,6 +317,8 @@ void MyApp::BuildShadersAndInputLayout()
 		"DISPLACEMENT_MAP", "1",
 		NULL, NULL
 	};
+
+	// 오직 Release 모드에서만 동작이 가능함 (Timeout 발생)
 
 	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
 	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");

@@ -42,7 +42,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerCBIdx[7] = 0;
 	mLayerCBIdx[8] = 0;
 
-	for (int i = 9; i < MAX_LAYER_DEPTH; ++i)
+	for (int i = 3; i < MAX_LAYER_DEPTH; ++i)
 	{
 		mLayerType[i] = RenderLayer::None;
 		mLayerStencil[i] = 0;
@@ -318,27 +318,26 @@ void MyApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
-	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
-	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", fogDefines, "PS", "ps_5_1");
-	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
-	mShaders["DisplacementPS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "PS", "ps_5_1");
+	mShaders["MainVS"]				= D3DUtil::LoadBinary(L"Shaders\\MainVS.cso");
+	mShaders["MainDisplacementVS"]	= D3DUtil::LoadBinary(L"Shaders\\MainDisplacementVS.cso");
+	mShaders["MainFogPS"]			= D3DUtil::LoadBinary(L"Shaders\\MainFogPS.cso");
+	mShaders["MainAlphaTestedPS"]	= D3DUtil::LoadBinary(L"Shaders\\MainAlphaTestedPS.cso");
 
-	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "VS", "vs_5_1");
-	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "GS", "gs_5_1");
-	mShaders["NormalPS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "PS", "ps_5_1");
+	mShaders["NormalVS"] = D3DUtil::LoadBinary(L"Shaders\\NormalVS.cso");
+	mShaders["NormalGS"] = D3DUtil::LoadBinary(L"Shaders\\NormalGS.cso");
+	mShaders["NormalPS"] = D3DUtil::LoadBinary(L"Shaders\\NormalPS.cso");
 
-	mShaders["BillboardVS"] = D3DUtil::CompileShader(L"Billboard.hlsl", defines, "VS", "vs_5_1");
-	mShaders["BillboardGS"] = D3DUtil::CompileShader(L"Billboard.hlsl", defines, "GS", "gs_5_1");
-	mShaders["BillboardPS"] = D3DUtil::CompileShader(L"Billboard.hlsl", alphaTestDefines, "PS", "ps_5_1");
+	mShaders["BillboardVS"] = D3DUtil::LoadBinary(L"Shaders\\BillboardVS.cso");
+	mShaders["BillboardGS"] = D3DUtil::LoadBinary(L"Shaders\\BillboardGS.cso");
+	mShaders["BillboardPS"] = D3DUtil::LoadBinary(L"Shaders\\BillboardPS.cso");
 
-	mShaders["SubdivisionVS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", defines, "VS", "vs_5_1");
-	mShaders["SubdivisionGS"] = D3DUtil::CompileShader(L"Subdivision.hlsl", defines, "GS", "gs_5_1");
+	mShaders["SubdivisionVS"] = D3DUtil::LoadBinary(L"Shaders\\SubdivisionVS.cso");
+	mShaders["SubdivisionGS"] = D3DUtil::LoadBinary(L"Shaders\\SubdivisionGS.cso");
 
-	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "VS", "vs_5_1");
-	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
-	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
-	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
+	mShaders["TessVS"] = D3DUtil::LoadBinary(L"Shaders\\TessellationVS.cso");
+	mShaders["TessHS"] = D3DUtil::LoadBinary(L"Shaders\\TessellationHS.cso");
+	mShaders["TessDS"] = D3DUtil::LoadBinary(L"Shaders\\TessellationDS.cso");
+	mShaders["TessPS"] = D3DUtil::LoadBinary(L"Shaders\\MainPS.cso");
 
 	mMainInputLayout =
 	{
@@ -1109,7 +1108,7 @@ void MyApp::BuildPSO()
 	{
 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
 		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mShaders["MainVS"]->GetBufferPointer()), mShaders["MainVS"]->GetBufferSize()},
-		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mShaders["MainPS"]->GetBufferPointer()), mShaders["MainPS"]->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mShaders["MainFogPS"]->GetBufferPointer()), mShaders["MainFogPS"]->GetBufferSize()},
 		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
 		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
 		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
@@ -1268,7 +1267,7 @@ void MyApp::BuildPSO()
 	// PSO for alpha tested objects
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = opaquePsoDesc;
-	alphaTestedPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["AlphaTestedPS"]->GetBufferPointer()),	mShaders["AlphaTestedPS"]->GetBufferSize()};
+	alphaTestedPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["MainAlphaTestedPS"]->GetBufferPointer()),	mShaders["MainAlphaTestedPS"]->GetBufferSize()};
 	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
@@ -1326,8 +1325,7 @@ void MyApp::BuildPSO()
 	// PSO for CS Wave
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
-	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders["DisplacementVS"]->GetBufferPointer()), mShaders["DisplacementVS"]->GetBufferSize() };
-	wavesRenderPSO.PS = { reinterpret_cast<BYTE*>(mShaders["DisplacementPS"]->GetBufferPointer()), mShaders["DisplacementPS"]->GetBufferSize() };
+	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders["MainDisplacementVS"]->GetBufferPointer()), mShaders["MainDisplacementVS"]->GetBufferSize() };
 
 	//=====================================================
 	// PSO for Tessellation

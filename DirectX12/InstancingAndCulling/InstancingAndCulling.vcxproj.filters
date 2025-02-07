@@ -70,38 +70,74 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Memory.hlsli">
+    <FxCompile Include="AddCS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="LightingUtil.hlsli">
+    </FxCompile>
+    <FxCompile Include="BlurVerCS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="AddCS.hlsl">
+    </FxCompile>
+    <FxCompile Include="WaveUpdateCS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Billboard.hlsl">
+    </FxCompile>
+    <FxCompile Include="MainVS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="BlurCS.hlsl">
+    </FxCompile>
+    <FxCompile Include="MainPS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Main.hlsl">
+    </FxCompile>
+    <FxCompile Include="BlurHorCS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Normal.hlsl">
+    </FxCompile>
+    <FxCompile Include="BillboardVS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Subdivision.hlsl">
+    </FxCompile>
+    <FxCompile Include="BillboardGS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Tessellation.hlsl">
+    </FxCompile>
+    <FxCompile Include="BillboardPS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="WaveCS.hlsl">
+    </FxCompile>
+    <FxCompile Include="SubdivisionGS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="WaveVSPS.hlsl">
+    </FxCompile>
+    <FxCompile Include="NormalPS.hlsl">
       <Filter>Shaders</Filter>
-    </None>
+    </FxCompile>
+    <FxCompile Include="NormalGS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="WaveDisturbCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TessellationDS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TessellationHS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TessellationVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="NormalVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SubdivisionVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="LightingUtil.hlsli">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Memory.hlsli">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="MainFogPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="MainAlphaTestedPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="MainDisplacementVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
