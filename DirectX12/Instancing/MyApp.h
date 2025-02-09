@@ -120,7 +120,7 @@ private:
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		UINT InstanceBase = 0;
+		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		std::vector<InstanceData> Instances;
 

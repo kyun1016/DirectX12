@@ -1499,6 +1499,8 @@ void MyApp::Render()
 	// slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	// slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
+	mCommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
 	mCommandList->SetGraphicsRootShaderResourceView(1, matBuffer->GetGPUVirtualAddress());
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 	mCommandList->SetGraphicsRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
@@ -1615,12 +1617,12 @@ void MyApp::UpdateInstanceBuffer()
 			}
 		}
 		
-		e->InstanceBase = visibleInstanceCount;
+		e->StartInstanceLocation = visibleInstanceCount;
 		for (auto& data : e->Instances)
 		{
 			currInstanceBuffer->CopyData(visibleInstanceCount++, data);
 		}
-		e->InstanceCount = visibleInstanceCount - e->InstanceBase;
+		e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
 	}
 
 //	for (auto& e : mAllRitems)
@@ -1773,10 +1775,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-		auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
-		mCommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
-
-		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->InstanceBase);
+		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);
 	}
 }
 
