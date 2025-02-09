@@ -881,7 +881,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		boxRitem->Instances.push_back({});
-		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 5.0f, 5.0 + 5.0 * (i / 5)));
+		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 5.0f, 5.0 + 5.0 * (i / 5), i % 2 + 1.0f));
 		boxRitem->Instances.back().MaterialIndex = i;
 	}
 	mInstanceCount += boxRitem->Instances.size();
@@ -889,9 +889,9 @@ void MyApp::BuildRenderItems()
 
 	auto subBoxRitem = std::make_unique<RenderItem>();
 	subBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	subBoxRitem->IndexCount = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	subBoxRitem->StartIndexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	subBoxRitem->BaseVertexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	subBoxRitem->IndexCount = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
+	subBoxRitem->StartIndexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
+	subBoxRitem->BaseVertexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
 	subBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
 		| (1 << (int)RenderLayer::Normal)
@@ -900,7 +900,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		subBoxRitem->Instances.push_back({});
-		subBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5)));
+		subBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5), 3.0f));
 		subBoxRitem->Instances.back().MaterialIndex = i;
 	}
 	mInstanceCount += subBoxRitem->Instances.size();
@@ -908,16 +908,16 @@ void MyApp::BuildRenderItems()
 
 	auto alphaBoxRitem = std::make_unique<RenderItem>();
 	alphaBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
+	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
+	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
 	alphaBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::AlphaTested)
 		| (1 << (int)RenderLayer::AlphaTestedWireframe);
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		alphaBoxRitem->Instances.push_back({});
-		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 15.0f, 5.0 + 5.0 * (i / 5)));
+		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 15.0f, 5.0 + 5.0 * (i / 5), 4.0f));
 		alphaBoxRitem->Instances.back().MaterialIndex = i;
 	}
 	mInstanceCount += alphaBoxRitem->Instances.size();
@@ -1491,7 +1491,8 @@ void MyApp::Render()
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
-	
+	auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
+
 	// slotRootParameter[0].InitAsShaderResourceView(0, 2);	// MaterialData t0 (Space2)
 	// slotRootParameter[1].InitAsShaderResourceView(1, 2);	// MaterialData t1 (Space2)
 	// slotRootParameter[2].InitAsConstantBufferView(0);		// register b0
@@ -1499,7 +1500,6 @@ void MyApp::Render()
 	// slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	// slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-	auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
 	mCommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
 	mCommandList->SetGraphicsRootShaderResourceView(1, matBuffer->GetGPUVirtualAddress());
 	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
@@ -1597,11 +1597,12 @@ void MyApp::UpdateInstanceBuffer()
 {
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	int visibleInstanceCount = 0;
+	mAllRitems[0]->Datas[0].Translation.y += 0.01f;
 	for (auto& e : mAllRitems)
 	{
 		if (e->NumFramesDirty > 0)
 		{
-			e->NumFramesDirty--;
+			// e->NumFramesDirty--;
 			for (size_t i = 0; i < e->Instances.size(); ++i)
 			{
 				DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
@@ -1618,9 +1619,9 @@ void MyApp::UpdateInstanceBuffer()
 		}
 		
 		e->StartInstanceLocation = visibleInstanceCount;
-		for (auto& data : e->Instances)
+		for (size_t i = 0; i < e->Instances.size(); ++i)
 		{
-			currInstanceBuffer->CopyData(visibleInstanceCount++, data);
+			currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
 		}
 		e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
 	}
