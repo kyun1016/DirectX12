@@ -4,7 +4,22 @@
 #include "../EngineCore/MathHelper.h"
 #include "../EngineCore/UploadBuffer.h"
 
-struct ObjectConstants
+struct MaterialData
+{
+	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+	float Roughness = 64.0f;
+
+	// Used in texture mapping.
+	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
+
+	UINT DiffuseMapIndex = 0;
+	UINT MaterialPad0;
+	UINT MaterialPad1;
+	UINT MaterialPad2;
+};
+
+struct InstanceData
 {
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
@@ -42,21 +57,6 @@ struct PassConstants
 	Light Lights[MaxLights];
 };
 
-struct MaterialData
-{
-	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float Roughness = 64.0f;
-
-	// Used in texture mapping.
-	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
-
-	UINT DiffuseMapIndex = 0;
-	UINT MaterialPad0;
-	UINT MaterialPad1;
-	UINT MaterialPad2;
-};
-
 struct Vertex
 {
 	Vertex() = default;
@@ -73,13 +73,13 @@ struct Vertex
 struct FrameResource
 {
 public:
-	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount)
+	FrameResource(ID3D12Device* device, UINT passCount, UINT maxInstanceCount, UINT materialCount)
 	{
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
-		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
+		InstanceBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, maxInstanceCount, false);
 		MaterialBuffer = std::make_unique<UploadBuffer<MaterialData>>(device, materialCount, false);
-		ObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
+		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
 	}
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
@@ -88,10 +88,10 @@ public:
 public:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
-	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
-	
+	std::unique_ptr<UploadBuffer<InstanceData>> InstanceBuffer = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
+
+	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 
 	UINT64 Fence = 0;
 };

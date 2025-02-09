@@ -94,35 +94,19 @@ private:
 	{
 		RenderItem() = default;
 
-		// World matrix of the shape that describes the object's local space
-		// relative to the world space, which defines the position, orientation,
-		// and scale of the object in the world.
-		DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
-		DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-
-		// Used for GPU waves render items.
-		DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
-		float GridSpatialStep = 1.0f;
-
 		// Dirty flag indicating the object data has changed and we need to update the constant buffer.
 		// Because we have an object cbuffer for each FrameResource, we have to apply the
 		// update to each FrameResource.  Thus, when we modify obect data we should set 
 		// NumFramesDirty = APP_NUM_FRAME_RESOURCES so that each frame resource gets the update.
 		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
-		// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
-		UINT ObjCBIndex = -1;
-
-		Material* Mat = nullptr;
 		MeshGeometry* Geo = nullptr;
 
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		// DrawIndexedInstanced parameters.
-		UINT IndexCount = 0;
-		UINT StartIndexLocation = 0;
-		int BaseVertexLocation = 0;
+		UINT InstanceCount = 0;
+		std::vector<InstanceData> Instances;
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
@@ -133,10 +117,19 @@ private:
 			| (1 << (int)RenderLayer::ReflectedWireframe)
 			| (1 << (int)RenderLayer::ShadowWireframe)
 			| (1 << (int)RenderLayer::NormalWireframe);
-		float WorldX = 0.0f, WorldY = 0.0f, WorldZ = 0.0f;
-		float AngleX = 0.0f, AngleY = 0.5f, AngleZ = 0.0f;
-		float ScaleX = 1.0f, ScaleY = 1.0f, ScaleZ = 1.0f;
-		float OffsetX = 0.0f, OffsetY = 0.0f, OffsetZ = 0.0f;
+
+		struct RootData
+		{
+			DirectX::XMFLOAT3 Translation = { 0.f, 0.f, 0.f };
+			DirectX::XMFLOAT3 Scale = { 1.f, 1.f, 1.f };
+			DirectX::XMFLOAT4 RotationQuat = { 1.f, 1.f, 1.f, 0.f };
+		};
+		std::vector<RootData> Datas;
+
+		// DrawIndexedInstanced parameters.
+		UINT IndexCount = 0;
+		UINT StartIndexLocation = 0;
+		int BaseVertexLocation = 0;		
 	};
 
 	using Super = typename AppBase;
@@ -174,7 +167,7 @@ private:
 	virtual void Sync()override;
 
 	void AnimateMaterials();
-	void UpdateObjectCBs();
+	void UpdateInstanceBuffer();
 	void UpdateMaterialBuffer();
 	void UpdateMainPassCB();
 	void UpdateReflectedPassCB();
@@ -217,6 +210,8 @@ private:
 	int mLayerCBIdx[MAX_LAYER_DEPTH];
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	UINT mInstanceCount = 0;
+
 	std::unique_ptr<Waves> mWaves;
 	RenderItem* mWavesRitem = nullptr;
 
