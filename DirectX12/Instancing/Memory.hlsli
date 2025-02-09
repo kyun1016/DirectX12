@@ -51,9 +51,9 @@ Texture2DArray gTreeMapArray[2] : register(t0, space1);
 #endif
 
 // Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
-StructuredBuffer<MaterialData> gMaterialData : register(t0, space2);
-StructuredBuffer<InstanceData> gInstanceData : register(t1, space2);
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space2); 
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space2);
 Texture2D gDisplacementMap : register(t2, space2);
 
 SamplerState gsamPointWrap : register(s0);

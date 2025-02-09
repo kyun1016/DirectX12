@@ -451,7 +451,7 @@ void MyApp::BuildShapeGeometry()
 	// Part 1. Mesh 생성
 	//=========================================================
 	std::vector<GeometryGenerator::MeshData> meshes(GEO_MESH_NAMES[0].second.size());
-	meshes[0] = GeometryGenerator::CreateBox(1.5f, 0.5f, 1.5f, 3);
+	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 2);
 	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
 	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
 	meshes[3] = GeometryGenerator::CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
@@ -875,67 +875,65 @@ void MyApp::BuildRenderItems()
 	//=========================================================
 	auto boxRitem = std::make_unique<RenderItem>();
 	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		boxRitem->Instances.push_back({});
-		boxRitem->Datas.push_back({});
-		boxRitem->Datas.back().Translation = DirectX::XMFLOAT3((i % 5) * 5.0f, 15.5f, -5.0 + -5.0 * (i / 5));
+		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 5.0f, 5.0 + 5.0 * (i / 5)));
 		boxRitem->Instances.back().MaterialIndex = i;
 	}
 	mInstanceCount += boxRitem->Instances.size();
 	mAllRitems.push_back(std::move(boxRitem));
-	//for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
-	//{
-	//	boxRitem = std::make_unique<RenderItem>();
-	//	DirectX::XMStoreFloat4x4(&boxRitem->Instances.World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation((i % 5) * 5.0f, 15.5f, 5.0f * (i / 5)));
-	//	DirectX::XMStoreFloat4x4(&boxRitem->Instances.TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	//	boxRitem->InsIndex = insIndex++;
-	//	boxRitem->Mat = mMaterials[MATERIAL_NAMES[i]].get();
-	//	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	//	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	//	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	//	boxRitem->LayerFlag
-	//		= (1 << (int)RenderLayer::Subdivision)
-	//		| (1 << (int)RenderLayer::Normal)
-	//		| (1 << (int)RenderLayer::SubdivisionWireframe)
-	//		| (1 << (int)RenderLayer::NormalWireframe);
-	//	mAllRitems.push_back(std::move(boxRitem));
-	//}
 
-	//boxRitem = std::make_unique<RenderItem>();
-	//DirectX::XMStoreFloat4x4(&boxRitem->Instances.World, DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f) * DirectX::XMMatrixTranslation(0.0f, 6.5f, 10.0f));
-	//DirectX::XMStoreFloat4x4(&boxRitem->Instances.TexTransform, DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	//boxRitem->InsIndex = insIndex++;
-	//boxRitem->Mat = mMaterials[MATERIAL_NAMES[5]].get();
-	//boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
-	//boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
-	//boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	//boxRitem->LayerFlag 
-	//	= (1 << (int)RenderLayer::AlphaTested)
-	//	| (1 << (int)RenderLayer::AlphaTestedWireframe);
-	//mAllRitems.push_back(std::move(boxRitem));
+	auto subBoxRitem = std::make_unique<RenderItem>();
+	subBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	subBoxRitem->IndexCount = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	subBoxRitem->StartIndexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	subBoxRitem->BaseVertexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	subBoxRitem->LayerFlag
+		= (1 << (int)RenderLayer::Subdivision)
+		| (1 << (int)RenderLayer::Normal)
+		| (1 << (int)RenderLayer::SubdivisionWireframe)
+		| (1 << (int)RenderLayer::NormalWireframe);
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
+	{
+		subBoxRitem->Instances.push_back({});
+		subBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5)));
+		subBoxRitem->Instances.back().MaterialIndex = i;
+	}
+	mInstanceCount += subBoxRitem->Instances.size();
+	mAllRitems.push_back(std::move(subBoxRitem));
+
+	auto alphaBoxRitem = std::make_unique<RenderItem>();
+	alphaBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	alphaBoxRitem->LayerFlag
+		= (1 << (int)RenderLayer::AlphaTested)
+		| (1 << (int)RenderLayer::AlphaTestedWireframe);
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
+	{
+		alphaBoxRitem->Instances.push_back({});
+		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 15.0f, 5.0 + 5.0 * (i / 5)));
+		alphaBoxRitem->Instances.back().MaterialIndex = i;
+	}
+	mInstanceCount += alphaBoxRitem->Instances.size();
+	mAllRitems.push_back(std::move(alphaBoxRitem));
 
 
-	//auto gridRitem = std::make_unique<RenderItem>();
-	//DirectX::XMStoreFloat4x4(&gridRitem->Instances.World, DirectX::XMMatrixTranslation(0.0f, 5.0f, 0.0f));
-	//DirectX::XMStoreFloat4x4(&gridRitem->Instances.TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	//gridRitem->InsIndex = insIndex++;
-	//gridRitem->Mat = mMaterials[MATERIAL_NAMES[2]].get();
-	//gridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
-	//gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
-	//gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
-	//mAllRitems.push_back(std::move(gridRitem));
+	auto gridRitem = std::make_unique<RenderItem>();
+	gridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
+	gridRitem->Instances.push_back({});
+	gridRitem->Datas.push_back(RootData(0.0f, 3.0f, 0.0f));
+	gridRitem->Instances.back().MaterialIndex = 5;
+	mInstanceCount += gridRitem->Instances.size();
+	mAllRitems.push_back(std::move(gridRitem));
 
 	//DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	//for (int i = 0; i < 5; ++i)
@@ -1596,6 +1594,7 @@ void MyApp::AnimateMaterials()
 void MyApp::UpdateInstanceBuffer()
 {
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
+	int visibleInstanceCount = 0;
 	for (auto& e : mAllRitems)
 	{
 		if (e->NumFramesDirty > 0)
@@ -1606,7 +1605,7 @@ void MyApp::UpdateInstanceBuffer()
 				DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
 				DirectX::XMFLOAT3 scale = e->Datas[i].Scale;
 
-				DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z)* DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+				DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
 				DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 				DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
 				XMStoreFloat4x4(&e->Instances[i].World, DirectX::XMMatrixTranspose(world));
@@ -1615,13 +1614,13 @@ void MyApp::UpdateInstanceBuffer()
 				e->Instances[i].MaterialIndex;
 			}
 		}
-
-		int visibleInstanceCount = 0;
+		
+		e->InstanceBase = visibleInstanceCount;
 		for (auto& data : e->Instances)
 		{
 			currInstanceBuffer->CopyData(visibleInstanceCount++, data);
 		}
-		e->InstanceCount = visibleInstanceCount;
+		e->InstanceCount = visibleInstanceCount - e->InstanceBase;
 	}
 
 //	for (auto& e : mAllRitems)
@@ -1777,7 +1776,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
 		mCommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
 
-		mCommandList->DrawIndexedInstanced(ri->IndexCount, 3, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->InstanceBase);
 	}
 }
 
@@ -1958,7 +1957,7 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
@@ -1991,7 +1990,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount()) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_IMGUI_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() +mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_USER_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
@@ -1999,7 +1998,7 @@ void MyApp::ShowMaterialWindow()
 			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
 
-		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * mat->DiffuseSrvHeapIndex;
+		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * (mat->DiffuseSrvHeapIndex + SRV_IMGUI_SIZE);
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);

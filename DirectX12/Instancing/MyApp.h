@@ -90,6 +90,21 @@ private:
 		Count
 	};
 #pragma endregion Constant
+	struct RootData
+	{
+		RootData() = default;
+		RootData(float tranX = 0.0f, float tranY = 0.0f, float tranZ = 0.0f, float scale = 1.0f)
+			: Translation(tranX, tranY, tranZ)
+			, Scale(scale, scale, scale)
+			, RotationQuat(1.f, 1.f, 1.f, 0.f)
+		{
+		}
+
+		DirectX::XMFLOAT3 Translation;
+		DirectX::XMFLOAT3 Scale;
+		DirectX::XMFLOAT4 RotationQuat;
+	};
+
 	struct RenderItem
 	{
 		RenderItem() = default;
@@ -105,6 +120,7 @@ private:
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+		UINT InstanceBase = 0;
 		UINT InstanceCount = 0;
 		std::vector<InstanceData> Instances;
 
@@ -118,12 +134,6 @@ private:
 			| (1 << (int)RenderLayer::ShadowWireframe)
 			| (1 << (int)RenderLayer::NormalWireframe);
 
-		struct RootData
-		{
-			DirectX::XMFLOAT3 Translation = { 0.f, 0.f, 0.f };
-			DirectX::XMFLOAT3 Scale = { 1.f, 1.f, 1.f };
-			DirectX::XMFLOAT4 RotationQuat = { 1.f, 1.f, 1.f, 0.f };
-		};
 		std::vector<RootData> Datas;
 
 		// DrawIndexedInstanced parameters.
