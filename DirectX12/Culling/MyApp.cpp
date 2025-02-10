@@ -817,7 +817,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<Material>();
 		mat->Name = MATERIAL_NAMES[idx];
 		mat->MatCBIndex = idx;
-		mat->DiffuseSrvHeapIndex = idx++;
+		mat->DiffuseSrvHeapIndex = SRV_USER_SIZE + idx++;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
@@ -828,7 +828,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<Material>();
 		mat->Name = MATERIAL_NAMES[idx];
 		mat->MatCBIndex = idx++;
-		mat->DiffuseSrvHeapIndex = i;
+		mat->DiffuseSrvHeapIndex = SRV_USER_SIZE + i;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
@@ -841,7 +841,7 @@ void MyApp::BuildMaterials()
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[idx];
 	skullMat->MatCBIndex = idx++;
-	skullMat->DiffuseSrvHeapIndex = 0;
+	skullMat->DiffuseSrvHeapIndex = SRV_USER_SIZE;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
@@ -850,7 +850,7 @@ void MyApp::BuildMaterials()
 	auto shadowMat = std::make_unique<Material>();
 	shadowMat->Name = MATERIAL_NAMES[idx];
 	shadowMat->MatCBIndex = idx++;
-	shadowMat->DiffuseSrvHeapIndex = 0;
+	shadowMat->DiffuseSrvHeapIndex = SRV_USER_SIZE;
 	shadowMat->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	shadowMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	shadowMat->Roughness = 0.0f;
@@ -859,7 +859,7 @@ void MyApp::BuildMaterials()
 	auto viewportMat = std::make_unique<Material>();
 	viewportMat->Name = MATERIAL_NAMES[idx];
 	viewportMat->MatCBIndex = idx++;
-	viewportMat->DiffuseSrvHeapIndex = TEXTURE_FILENAMES.size();
+	viewportMat->DiffuseSrvHeapIndex = 0;
 	viewportMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	viewportMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	viewportMat->Roughness = 0.0f;
@@ -979,7 +979,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size()*8; ++i)
 	{
 		boxRitem->Instances.push_back({});
-		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5), 2.0f));
+		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5), 3.0f));
 		boxRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 	
@@ -993,14 +993,13 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size() * 8; ++i)
 	{
 		alphaBoxRitem->Instances.push_back({});
-		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 30.0f, 5.0 + 5.0 * (i / 5), 1.0f));
+		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 30.0f, 5.0 + 5.0 * (i / 5), 3.0f));
 		alphaBoxRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 
 	gridRitem->Instances.push_back({});
 	gridRitem->Datas.push_back(RootData(0.0f, 5.0f, 0.0f));
-	gridRitem->Instances.back().MaterialIndex = 12;
-
+	gridRitem->Instances.back().MaterialIndex = 2;
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	for (int i = 0; i < 5; ++i)
@@ -1022,7 +1021,7 @@ void MyApp::BuildRenderItems()
 	{
 		mirrorGridRitem->Instances.push_back({});
 		mirrorGridRitem->Datas.push_back(RootData(0.0f, 100.0f, 0.0f, 1.0f));
-		mirrorGridRitem->Instances.back().MaterialIndex = 15;
+		mirrorGridRitem->Instances.back().MaterialIndex = 13;
 	}
 	
 	
@@ -1042,7 +1041,7 @@ void MyApp::BuildRenderItems()
 	{
 		landRitem->Instances.push_back({});
 		landRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
-		landRitem->Instances.back().MaterialIndex = 6;
+		landRitem->Instances.back().MaterialIndex = 4;
 	}
 
 	////=========================================================
@@ -1051,7 +1050,10 @@ void MyApp::BuildRenderItems()
 	{
 		wavesRitem->Instances.push_back({});
 		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 3.0f));
-		wavesRitem->Instances.back().MaterialIndex = 13;
+		wavesRitem->Instances.back().MaterialIndex = 11;
+		wavesRitem->Instances.back().DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
+		wavesRitem->Instances.back().DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
+		wavesRitem->Instances.back().GridSpatialStep = mCSWaves->SpatialStep();
 	}
 
 	////=========================================================
