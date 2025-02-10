@@ -341,7 +341,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "VS", "vs_5_1");
 	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
 	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
-	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
+	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", fogDefines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -1049,7 +1049,7 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	{
 		wavesRitem->Instances.push_back({});
-		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 3.0f));
+		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.5f));
 		wavesRitem->Instances.back().MaterialIndex = 11;
 		wavesRitem->Instances.back().DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
 		wavesRitem->Instances.back().DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
