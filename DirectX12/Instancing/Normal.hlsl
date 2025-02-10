@@ -25,7 +25,7 @@ NormalGeometryShaderInput VS(VertexIn input, uint instanceID : SV_InstanceID)
 
     output.PosL = float4(input.PosL, 1.0);
     output.NormalL = input.NormalL;
-    output.InsIndex = instanceID;
+    output.InsIndex = instanceID + gBaseInstanceIndex;
     return output;
 }
 

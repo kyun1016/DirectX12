@@ -37,7 +37,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     vout.PosL = vin.PosL;
     vout.NormalL = vin.NormalL;
     vout.TexC = vin.TexC;
-    vout.InsIndex = instanceID;
+    vout.InsIndex = instanceID + gBaseInstanceIndex;
     
     return vout;
 }

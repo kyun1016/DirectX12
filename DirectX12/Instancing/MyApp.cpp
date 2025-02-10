@@ -869,235 +869,237 @@ void MyApp::BuildMaterials()
 
 void MyApp::BuildRenderItems()
 {
-	UINT insIndex = 0;
-
-	//=========================================================
-	// GEO_MESH_NAMES[0]: ShapeGeo
-	//=========================================================
 	auto boxRitem = std::make_unique<RenderItem>();
+	auto gridRitem = std::make_unique<RenderItem>();
+	auto sphereRitem = std::make_unique<RenderItem>();
+	auto cylinderRitem = std::make_unique<RenderItem>();
+	auto alphaBoxRitem = std::make_unique<RenderItem>();
+	auto mirrorGridRitem = std::make_unique<RenderItem>();
+	auto subSphereRitem = std::make_unique<RenderItem>();
+	auto skullRitem = std::make_unique<RenderItem>();
+	auto landRitem = std::make_unique<RenderItem>();
+	auto wavesRitem = std::make_unique<RenderItem>();
+	auto treeSpritesRitem = std::make_unique<RenderItem>();
+	auto tessPatchRitem = std::make_unique<RenderItem>();
+
 	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	gridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	sphereRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	cylinderRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	alphaBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	mirrorGridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	subSphereRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
+	skullRitem->Geo = mGeometries[GEO_MESH_NAMES[1].first].get();
+	landRitem->Geo = mGeometries[GEO_MESH_NAMES[2].first].get();
+	wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
+	treeSpritesRitem->Geo = mGeometries[GEO_MESH_NAMES[5].first].get();
+	tessPatchRitem->Geo = mGeometries[GEO_MESH_NAMES[6].first].get();
+
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
-	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
-	{
-		boxRitem->Instances.push_back({});
-		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 5.0f, 5.0 + 5.0 * (i / 5), i % 2 + 1.0f));
-		boxRitem->Instances.back().MaterialIndex = i;
-	}
-	mInstanceCount += boxRitem->Instances.size();
-	mAllRitems.push_back(std::move(boxRitem));
 
-	auto subBoxRitem = std::make_unique<RenderItem>();
-	subBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	subBoxRitem->IndexCount = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
-	subBoxRitem->StartIndexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
-	subBoxRitem->BaseVertexLocation = subBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
-	subBoxRitem->LayerFlag
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
+
+	sphereRitem->IndexCount = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
+	sphereRitem->StartIndexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
+	sphereRitem->BaseVertexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
+
+	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
+	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
+	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
+
+	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
+	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
+	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+
+	mirrorGridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
+	mirrorGridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
+	mirrorGridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
+
+	subSphereRitem->IndexCount = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
+	subSphereRitem->StartIndexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
+	subSphereRitem->BaseVertexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
+
+	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
+	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
+	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
+
+	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
+	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
+	landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].BaseVertexLocation;
+
+	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
+	wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].StartIndexLocation;
+	wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].BaseVertexLocation;
+
+	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].IndexCount;
+	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].StartIndexLocation;
+	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
+
+	tessPatchRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].IndexCount;
+	tessPatchRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].StartIndexLocation;
+	tessPatchRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].BaseVertexLocation;
+
+	subSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
 		| (1 << (int)RenderLayer::Normal)
 		| (1 << (int)RenderLayer::SubdivisionWireframe)
 		| (1 << (int)RenderLayer::NormalWireframe);
-	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
-	{
-		subBoxRitem->Instances.push_back({});
-		subBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5), 3.0f));
-		subBoxRitem->Instances.back().MaterialIndex = i;
-	}
-	mInstanceCount += subBoxRitem->Instances.size();
-	mAllRitems.push_back(std::move(subBoxRitem));
 
-	auto alphaBoxRitem = std::make_unique<RenderItem>();
-	alphaBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
-	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
-	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
 	alphaBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::AlphaTested)
 		| (1 << (int)RenderLayer::AlphaTestedWireframe)
 		| (1 << (int)RenderLayer::Normal)
 		| (1 << (int)RenderLayer::NormalWireframe);
+
+	mirrorGridRitem->LayerFlag
+		= (1 << (int)RenderLayer::Mirror)
+		| (1 << (int)RenderLayer::Transparent);
+
+	wavesRitem->LayerFlag
+		= (1 << (int)RenderLayer::WaveVS_CS);
+
+	treeSpritesRitem->LayerFlag
+		= (1 << (int)RenderLayer::TreeSprites)
+		| (1 << (int)RenderLayer::TreeSpritesWireframe)
+		| (1 << (int)RenderLayer::Normal);
+
+	tessPatchRitem->LayerFlag
+		= (1 << (int)RenderLayer::Tessellation)
+		| (1 << (int)RenderLayer::TessellationWireframe)
+		| (1 << (int)RenderLayer::Normal);
+
+	//=========================================================
+	// GEO_MESH_NAMES[0]: ShapeGeo
+	//=========================================================
+
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
+	{
+		boxRitem->Instances.push_back({});
+		boxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 10.0f, 5.0 + 5.0 * (i / 5), 2.0f));
+		boxRitem->Instances.back().MaterialIndex = i;
+	}
+	
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
+	{
+		subSphereRitem->Instances.push_back({});
+		subSphereRitem->Datas.push_back(RootData((i % 5) * 5.0f, 15.0f, 5.0 + 5.0 * (i / 5), 3.0f));
+		subSphereRitem->Instances.back().MaterialIndex = i;
+	}
+	
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		alphaBoxRitem->Instances.push_back({});
-		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 15.0f, 5.0 + 5.0 * (i / 5), 4.0f));
+		alphaBoxRitem->Datas.push_back(RootData((i % 5) * 5.0f, 20.0f, 5.0 + 5.0 * (i / 5), 1.0f));
 		alphaBoxRitem->Instances.back().MaterialIndex = i;
 	}
-	mInstanceCount += alphaBoxRitem->Instances.size();
-	mAllRitems.push_back(std::move(alphaBoxRitem));
 
-
-	auto gridRitem = std::make_unique<RenderItem>();
-	gridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
-	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
-	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	gridRitem->Instances.push_back({});
-	gridRitem->Datas.push_back(RootData(0.0f, 3.0f, 0.0f));
+	gridRitem->Datas.push_back(RootData(0.0f, 5.0f, 0.0f));
 	gridRitem->Instances.back().MaterialIndex = 15;
-	mInstanceCount += gridRitem->Instances.size();
-	mAllRitems.push_back(std::move(gridRitem));
 
-	//DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
-	//for (int i = 0; i < 5; ++i)
-	//{
-	//	auto leftCylRitem = std::make_unique<RenderItem>();
-	//	auto rightCylRitem = std::make_unique<RenderItem>();
-	//	auto leftSphereRitem = std::make_unique<RenderItem>();
-	//	auto rightSphereRitem = std::make_unique<RenderItem>();
 
-	//	DirectX::XMMATRIX leftCylWorld = DirectX::XMMatrixTranslation(-5.0f, 6.5f, -10.0f + i * 5.0f);
-	//	DirectX::XMMATRIX rightCylWorld = DirectX::XMMatrixTranslation(+5.0f, 6.5f, -10.0f + i * 5.0f);
-	//	DirectX::XMMATRIX leftSphereWorld = DirectX::XMMatrixTranslation(-5.0f, 8.5f, -10.0f + i * 5.0f);
-	//	DirectX::XMMATRIX rightSphereWorld = DirectX::XMMatrixTranslation(+5.0f, 8.5f, -10.0f + i * 5.0f);
+	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+	for (int i = 0; i < 5; ++i)
+	{
+		cylinderRitem->Instances.push_back({});
+		cylinderRitem->Datas.push_back(RootData(-5.0f, 6.5f, -10.0f + i * 5.0f));
+		cylinderRitem->Instances.back().MaterialIndex = i;
+		cylinderRitem->Instances.push_back({});
+		cylinderRitem->Datas.push_back(RootData(5.0f, 6.5f, -10.0f + i * 5.0f));
+		cylinderRitem->Instances.back().MaterialIndex = i;
+		sphereRitem->Instances.push_back({});
+		sphereRitem->Datas.push_back(RootData(-5.0f, 8.5f, -10.0f + i * 5.0f));
+		sphereRitem->Instances.back().MaterialIndex = i;
+		sphereRitem->Instances.push_back({});
+		sphereRitem->Datas.push_back(RootData(-5.0f, 8.5f, -10.0f + i * 5.0f));
+		sphereRitem->Instances.back().MaterialIndex = i;
+	}
 
-	//	DirectX::XMStoreFloat4x4(&leftCylRitem->Instances.World, leftCylWorld);
-	//	DirectX::XMStoreFloat4x4(&leftCylRitem->Instances.TexTransform, brickTexTransform);
-	//	leftCylRitem->InsIndex = insIndex++;
-	//	leftCylRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
-	//	leftCylRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//	leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
-	//	leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
-	//	leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
-
-	//	DirectX::XMStoreFloat4x4(&rightCylRitem->Instances.World, rightCylWorld);
-	//	DirectX::XMStoreFloat4x4(&rightCylRitem->Instances.TexTransform, brickTexTransform);
-	//	rightCylRitem->InsIndex = insIndex++;
-	//	rightCylRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
-	//	rightCylRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//	rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
-	//	rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
-	//	rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
-
-	//	DirectX::XMStoreFloat4x4(&leftSphereRitem->Instances.World, leftSphereWorld);
-	//	leftSphereRitem->Instances.TexTransform = MathHelper::Identity4x4();
-	//	leftSphereRitem->InsIndex = insIndex++;
-	//	leftSphereRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
-	//	leftSphereRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//	leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
-	//	leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
-	//	leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
-
-	//	DirectX::XMStoreFloat4x4(&rightSphereRitem->Instances.World, rightSphereWorld);
-	//	rightSphereRitem->Instances.TexTransform = MathHelper::Identity4x4();
-	//	rightSphereRitem->InsIndex = insIndex++;
-	//	rightSphereRitem->Mat = mMaterials[MATERIAL_NAMES[1]].get();
-	//	rightSphereRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
-	//	rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
-	//	rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
-	//	rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
-
-	//	mAllRitems.push_back(std::move(leftCylRitem));
-	//	mAllRitems.push_back(std::move(leftSphereRitem));
-	//	mAllRitems.push_back(std::move(rightCylRitem));
-	//	mAllRitems.push_back(std::move(rightSphereRitem));
-	//}
+	{
+		mirrorGridRitem->Instances.push_back({});
+		mirrorGridRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 10.0f));
+		mirrorGridRitem->Instances.back().MaterialIndex = 15;
+	}
+	
+	
 	////=========================================================
 	//// GEO_MESH_NAMES[1]:ModelGeo
 	////=========================================================
-	//auto skullRitem = std::make_unique<RenderItem>();
-	//DirectX::XMStoreFloat4x4(&skullRitem->Instances.World, DirectX::XMMatrixTranslation(0.0f, 7.0f, 0.0f));
-	//DirectX::XMStoreFloat4x4(&skullRitem->Instances.TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	//skullRitem->InsIndex = insIndex++;
-	//skullRitem->Mat = mMaterials[MATERIAL_NAMES[7]].get();
-	//skullRitem->Geo = mGeometries[GEO_MESH_NAMES[1].first].get();
-	//skullRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
-	//skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
-	//skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
-	//mAllRitems.push_back(std::move(skullRitem));
+	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
+	{
+		skullRitem->Instances.push_back({});
+		skullRitem->Datas.push_back(RootData((i % 5) * 5.0f, 25.0f, 5.0 + 5.0 * (i / 5), 1.0f));
+		skullRitem->Instances.back().MaterialIndex = i;
+	}
 
 	////=========================================================
 	//// GEO_MESH_NAMES[2]:LandGeo
 	////=========================================================
-	//auto landRitem = std::make_unique<RenderItem>();
-	//landRitem->Instances.World = MathHelper::Identity4x4();
-	//landRitem->InsIndex = insIndex++;
-	//landRitem->Mat = mMaterials["grass"].get();
-	//landRitem->Geo = mGeometries[GEO_MESH_NAMES[2].first].get();
-	//landRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
-	//landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
-	//landRitem->BaseVertexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].BaseVertexLocation;
-	//mAllRitems.push_back(std::move(landRitem));
+	{
+		landRitem->Instances.push_back({});
+		landRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
+		landRitem->Instances.back().MaterialIndex = 15;
+	}
 
 	////=========================================================
 	//// GEO_MESH_NAMES[3]:WaterGeo
 	////=========================================================
-	//auto wavesRitem = std::make_unique<RenderItem>();
-	//wavesRitem->Instances.World = MathHelper::Identity4x4();
-	//XMStoreFloat4x4(&wavesRitem->Instances.TexTransform, DirectX::XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	//wavesRitem->Instances.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
-	//wavesRitem->Instances.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
-	//wavesRitem->Instances.GridSpatialStep = mCSWaves->SpatialStep();
-	//wavesRitem->InsIndex = insIndex++;
-	//wavesRitem->Mat = mMaterials["water1"].get();
-	//wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
-	//wavesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].IndexCount;
-	//wavesRitem->StartIndexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].StartIndexLocation;
-	//wavesRitem->BaseVertexLocation = wavesRitem->Geo->DrawArgs[GEO_MESH_NAMES[3].second[0]].BaseVertexLocation;
-	//wavesRitem->LayerFlag
-	//	= (1 << (int)RenderLayer::WaveVS_CS);
-	//mAllRitems.push_back(std::move(wavesRitem));
-	////=========================================================
-	//// GEO_MESH_NAMES[4]: RoomGeo
-	////=========================================================
-	//auto mirrorRitem = std::make_unique<RenderItem>();
-	//DirectX::XMStoreFloat4x4(&mirrorRitem->Instances.World, DirectX::XMMatrixScaling(10.0f, 10.0f, 1.0f));
-	//mirrorRitem->Instances.TexTransform = MathHelper::Identity4x4();
-	//mirrorRitem->InsIndex = insIndex++;
-	//mirrorRitem->Mat = mMaterials["ice"].get();
-	//mirrorRitem->Geo = mGeometries[GEO_MESH_NAMES[4].first].get();
-	//mirrorRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//mirrorRitem->IndexCount = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].IndexCount;
-	//mirrorRitem->StartIndexLocation = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].StartIndexLocation;
-	//mirrorRitem->BaseVertexLocation = mirrorRitem->Geo->DrawArgs[GEO_MESH_NAMES[4].second[2]].BaseVertexLocation;
-	//mirrorRitem->LayerFlag
-	//	= (1 << (int)RenderLayer::Mirror)
-	//	| (1 << (int)RenderLayer::Transparent);
-	//mAllRitems.push_back(std::move(mirrorRitem));
+	{
+		wavesRitem->Instances.push_back({});
+		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 3.0f));
+		wavesRitem->Instances.back().MaterialIndex = 5;
+	}
 
 	////=========================================================
 	//// GEO_MESH_NAMES[5]: TreeSpritesGeo
 	////=========================================================
-	//auto treeSpritesRitem = std::make_unique<RenderItem>();
-	//treeSpritesRitem->Instances.World = MathHelper::Identity4x4();
-	//treeSpritesRitem->InsIndex = insIndex++;
-	//treeSpritesRitem->Mat = mMaterials["treearray"].get();
-	//treeSpritesRitem->Geo = mGeometries[GEO_MESH_NAMES[5].first].get();
-	//treeSpritesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
-	//treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].IndexCount;
-	//treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].StartIndexLocation;
-	//treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
-	//treeSpritesRitem->LayerFlag
-	//	= (1 << (int)RenderLayer::TreeSprites)
-	//	| (1 << (int)RenderLayer::TreeSpritesWireframe)
-	//	| (1 << (int)RenderLayer::Normal);
-	//mAllRitems.push_back(std::move(treeSpritesRitem));
+
+	{
+		treeSpritesRitem->Instances.push_back({});
+		treeSpritesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
+		treeSpritesRitem->Instances.back().MaterialIndex = SRV_USER_SIZE + TEXTURE_FILENAMES.size();
+	}
+
 
 	////=========================================================
 	//// Tessellation
 	////=========================================================
-	//gridRitem = std::make_unique<RenderItem>();
-	//DirectX::XMStoreFloat4x4(&gridRitem->Instances.World, DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-	//DirectX::XMStoreFloat4x4(&gridRitem->Instances.TexTransform, DirectX::XMMatrixScaling(8.0f, 8.0f, 1.0f));
-	//gridRitem->InsIndex = insIndex++;
-	//gridRitem->Mat = mMaterials[MATERIAL_NAMES[2]].get();
-	//gridRitem->Geo = mGeometries[GEO_MESH_NAMES[6].first].get();
-	//gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
-	//gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].IndexCount;
-	//gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].StartIndexLocation;
-	//gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].BaseVertexLocation;
-	//gridRitem->LayerFlag
-	//	= (1 << (int)RenderLayer::Tessellation)
-	//	| (1 << (int)RenderLayer::TessellationWireframe)
-	//	| (1 << (int)RenderLayer::Normal);
-	//mAllRitems.push_back(std::move(gridRitem));
+	{
+		tessPatchRitem->Instances.push_back({});
+		tessPatchRitem->Datas.push_back(RootData(0.0f, 10.0f, 0.0f, 100.0f));
+		tessPatchRitem->Instances.back().MaterialIndex = SRV_USER_SIZE;
+	}
+
+
+	mInstanceCount += boxRitem->Instances.size();
+	mInstanceCount += gridRitem->Instances.size();
+	mInstanceCount += sphereRitem->Instances.size();
+	mInstanceCount += cylinderRitem->Instances.size();
+	mInstanceCount += alphaBoxRitem->Instances.size();
+	mInstanceCount += mirrorGridRitem->Instances.size();
+	mInstanceCount += subSphereRitem->Instances.size();
+	mInstanceCount += skullRitem->Instances.size();
+	mInstanceCount += landRitem->Instances.size();
+	mInstanceCount += wavesRitem->Instances.size();
+	mInstanceCount += treeSpritesRitem->Instances.size();
+	mInstanceCount += tessPatchRitem->Instances.size();
+	
+	mAllRitems.push_back(std::move(boxRitem));
+	mAllRitems.push_back(std::move(gridRitem));
+	mAllRitems.push_back(std::move(sphereRitem));
+	mAllRitems.push_back(std::move(cylinderRitem));
+	mAllRitems.push_back(std::move(alphaBoxRitem));
+	mAllRitems.push_back(std::move(mirrorGridRitem));
+	mAllRitems.push_back(std::move(subSphereRitem));
+	mAllRitems.push_back(std::move(skullRitem));
+	mAllRitems.push_back(std::move(landRitem));
+	mAllRitems.push_back(std::move(wavesRitem));
+	mAllRitems.push_back(std::move(treeSpritesRitem));
+	mAllRitems.push_back(std::move(tessPatchRitem));
 }
 
 void MyApp::BuildFrameResources()
@@ -1601,7 +1603,7 @@ void MyApp::UpdateInstanceBuffer()
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
 	int visibleInstanceCount = 0;
-	mAllRitems[0]->Datas[0].Translation.y += 0.01f;
+	// mAllRitems[0]->Datas[0].Translation.y += 0.01f;
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
 		auto& e = mAllRitems[i];

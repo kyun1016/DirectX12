@@ -22,7 +22,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     VertexOut vout;
     vout.PosW = vin.PosW;
     vout.SizeW = vin.SizeW;
-    vout.MatIndex = gInstanceData[instanceID].MaterialIndex;
+    vout.MatIndex = gInstanceData[instanceID + gBaseInstanceIndex].MaterialIndex;
     
     return vout;
 }
