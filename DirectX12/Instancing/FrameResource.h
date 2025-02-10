@@ -57,6 +57,11 @@ struct PassConstants
 	Light Lights[MaxLights];
 };
 
+struct InstanceConstants
+{
+	UINT BaseInstanceIndex;
+};
+
 struct Vertex
 {
 	Vertex() = default;
@@ -73,13 +78,14 @@ struct Vertex
 struct FrameResource
 {
 public:
-	FrameResource(ID3D12Device* device, UINT passCount, UINT maxInstanceCount, UINT materialCount)
+	FrameResource(ID3D12Device* device, UINT passCount, UINT baseInstanceCount, UINT maxInstanceCount, UINT materialCount)
 	{
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
 		InstanceBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, maxInstanceCount, false);
 		MaterialBuffer = std::make_unique<UploadBuffer<MaterialData>>(device, materialCount, false);
 		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
+		InstanceCB = std::make_unique<UploadBuffer<InstanceConstants>>(device, baseInstanceCount, true);
 	}
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
@@ -92,6 +98,7 @@ public:
 	std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
 
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+	std::unique_ptr<UploadBuffer<InstanceConstants>> InstanceCB = nullptr;
 
 	UINT64 Fence = 0;
 };

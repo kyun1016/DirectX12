@@ -144,7 +144,7 @@ void MyApp::BuildRootSignature()
 	
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[7];
 
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -159,17 +159,18 @@ void MyApp::BuildRootSignature()
 	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsShaderResourceView(0, 2);	// MaterialData t0 (Space2)
-	slotRootParameter[1].InitAsShaderResourceView(1, 2);	// MaterialData t1 (Space2)
-	slotRootParameter[2].InitAsConstantBufferView(0);		// register b0
-	slotRootParameter[3].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+	slotRootParameter[0].InitAsConstantBufferView(1);		// register b1 (gBaseInstanceIndex)
+	slotRootParameter[1].InitAsShaderResourceView(0, 2);	// InstanceData t0 (Space2)
+	slotRootParameter[2].InitAsShaderResourceView(1, 2);	// MaterialData t1 (Space2)
+	slotRootParameter[3].InitAsConstantBufferView(0);		// register b0
+	slotRootParameter[4].InitAsDescriptorTable(1, &TexTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[5].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[6].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(7, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -913,7 +914,9 @@ void MyApp::BuildRenderItems()
 	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
 	alphaBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::AlphaTested)
-		| (1 << (int)RenderLayer::AlphaTestedWireframe);
+		| (1 << (int)RenderLayer::AlphaTestedWireframe)
+		| (1 << (int)RenderLayer::Normal)
+		| (1 << (int)RenderLayer::NormalWireframe);
 	for (int i = 0; i < MATERIAL_NAMES.size(); ++i)
 	{
 		alphaBoxRitem->Instances.push_back({});
@@ -931,7 +934,7 @@ void MyApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	gridRitem->Instances.push_back({});
 	gridRitem->Datas.push_back(RootData(0.0f, 3.0f, 0.0f));
-	gridRitem->Instances.back().MaterialIndex = 5;
+	gridRitem->Instances.back().MaterialIndex = 15;
 	mInstanceCount += gridRitem->Instances.size();
 	mAllRitems.push_back(std::move(gridRitem));
 
@@ -1100,7 +1103,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 2, mInstanceCount * 2, (UINT)mMaterials.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 2, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mMaterials.size()));
 }
 
 void MyApp::BuildPSO()
@@ -1500,12 +1503,12 @@ void MyApp::Render()
 	// slotRootParameter[4].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	// slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-	mCommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
-	mCommandList->SetGraphicsRootShaderResourceView(1, matBuffer->GetGPUVirtualAddress());
-	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-	mCommandList->SetGraphicsRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
-	mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
-	mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
+	mCommandList->SetGraphicsRootShaderResourceView(1, instanceBuffer->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
+	mCommandList->SetGraphicsRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
+	mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -1525,7 +1528,7 @@ void MyApp::Render()
 			if(mLayerType[i] == RenderLayer::WaveVS_CS)
 				mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-			mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+			mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
 			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
 			DrawRenderItems(mLayerType[i]);
@@ -1596,10 +1599,12 @@ void MyApp::AnimateMaterials()
 void MyApp::UpdateInstanceBuffer()
 {
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
+	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
 	int visibleInstanceCount = 0;
 	mAllRitems[0]->Datas[0].Translation.y += 0.01f;
-	for (auto& e : mAllRitems)
+	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
+		auto& e = mAllRitems[i];
 		if (e->NumFramesDirty > 0)
 		{
 			// e->NumFramesDirty--;
@@ -1618,7 +1623,11 @@ void MyApp::UpdateInstanceBuffer()
 			}
 		}
 		
+		InstanceConstants insCB;
+		insCB.BaseInstanceIndex = visibleInstanceCount;
 		e->StartInstanceLocation = visibleInstanceCount;
+		currInstanceCB->CopyData(i, insCB);
+
 		for (size_t i = 0; i < e->Instances.size(); ++i)
 		{
 			currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
@@ -1752,10 +1761,13 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		= (flag == RenderLayer::Reflected || flag == RenderLayer::ReflectedWireframe)
 		? mAllRitems.size()
 		: 0;
+	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(InstanceConstants));
+	auto currInstanceCB = mCurrFrameResource->InstanceCB->Resource();
 
 	// For each render item...
-	for (auto& ri : mAllRitems)
+	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
+		auto& ri = mAllRitems[i];
 		if (!(ri->LayerFlag & (1 << (int)flag)))
 			continue;
 
@@ -1775,8 +1787,13 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetVertexBuffers(0, 1, &vbv);
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
+		std::cout << ri->StartInstanceLocation << std::endl;
+
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
+		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
 		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);
+		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
 }
 

@@ -95,3 +95,8 @@ cbuffer cbPass : register(b0)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
 };
+
+cbuffer cbInstance : register(b1)
+{
+    uint gBaseInstanceIndex;
+}
