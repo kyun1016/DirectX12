@@ -12,16 +12,21 @@ struct VertexOut
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint InsIndex : SV_InstanceID;
 };
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
     VertexOut vout;
 	
     vout.PosL = vin.PosL;
     vout.NormalL = vin.NormalL;
     vout.TexC = vin.TexC;
-
+    vout.InsIndex = instanceID + gBaseInstanceIndex;
+    
     return vout;
 }
  
@@ -34,9 +39,15 @@ struct PatchTess
 PatchTess ConstantHS(InputPatch<VertexOut, 4> patch, uint patchID : SV_PrimitiveID)
 {
     PatchTess pt;
+    
+    InstanceData instData = gInstanceData[patch[0].InsIndex];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    float4x4 worldInvTranspose = instData.WorldInvTranspose;
+    uint matIndex = instData.MaterialIndex;
 	
     float3 centerL = 0.25f * (patch[0].PosL + patch[1].PosL + patch[2].PosL + patch[3].PosL);
-    float3 centerW = mul(float4(centerL, 1.0f), gWorld).xyz;
+    float3 centerW = mul(float4(centerL, 1.0f), world).xyz;
 	
     float d = distance(centerW, gEyePosW);
 
@@ -66,6 +77,10 @@ struct HullOut
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint InsIndex : SV_InstanceID;
 };
 
 [domain("quad")]
@@ -83,6 +98,7 @@ HullOut HS(InputPatch<VertexOut, 4> p,
     hout.PosL = p[i].PosL;
     hout.NormalL = p[i].NormalL;
     hout.TexC = p[i].TexC;
+    hout.InsIndex = p[i].InsIndex;
 	
     return hout;
 }
@@ -93,6 +109,10 @@ struct DomainOut
     float3 PosW : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint MatIndex : MATINDEX;
 };
 
 // The domain shader is called for every vertex created by the tessellator.  
@@ -102,9 +122,17 @@ DomainOut DS(PatchTess patchTess,
              float2 uv : SV_DomainLocation,
              const OutputPatch<HullOut, 4> quad)
 {
-    MaterialData matData = gMaterialData[gMaterialIndex];
-    
     DomainOut dout;
+    
+    InstanceData instData = gInstanceData[quad[0].InsIndex];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    float4x4 worldInvTranspose = instData.WorldInvTranspose;
+    float2 displacementMapTexelSize = instData.DisplacementMapTexelSize;
+    float gridSpatialStep = instData.GridSpatialStep;
+    uint matIndex = instData.MaterialIndex;
+    
+    MaterialData matData = gMaterialData[matIndex];
 	
 	// Bilinear interpolation.
     float3 v1 = lerp(quad[0].PosL, quad[1].PosL, uv.x);
@@ -124,15 +152,17 @@ DomainOut DS(PatchTess patchTess,
     float2 t = lerp(t1, t2, uv.y);
 	
 	
-    float4 posW = mul(float4(p, 1.0f), gWorld);
+    float4 posW = mul(float4(p, 1.0f), world);
     dout.PosW = posW.xyz;
     
-    dout.NormalW = mul(n, (float3x3) gWorld);
+    dout.NormalW = mul(n, (float3x3) world);
     
     dout.PosH = mul(posW, gViewProj);
     
-    float4 texC = mul(float4(t, 0.0f, 1.0f), gTexTransform);
+    float4 texC = mul(float4(t, 0.0f, 1.0f), texTransform);
     dout.TexC = mul(texC, matData.MatTransform).xy;
+    
+    dout.MatIndex = matIndex;
 	
     return dout;
 }
@@ -146,7 +176,7 @@ struct PixelOut
 PixelOut PS(DomainOut pin)
 {
     // Fetch the material data.
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[pin.MatIndex];
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;

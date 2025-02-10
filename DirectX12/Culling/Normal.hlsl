@@ -13,15 +13,19 @@ struct NormalGeometryShaderInput
 {
     float4 PosL : SV_POSITION;
     float3 NormalL : NORMAL;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint InsIndex : SV_InstanceID;
 };
 
-NormalGeometryShaderInput VS(VertexIn input)
+NormalGeometryShaderInput VS(VertexIn input, uint instanceID : SV_InstanceID)
 {
     NormalGeometryShaderInput output;
 
     output.PosL = float4(input.PosL, 1.0);
     output.NormalL = input.NormalL;
-
+    output.InsIndex = instanceID + gBaseInstanceIndex;
     return output;
 }
 
@@ -36,9 +40,13 @@ void GS(point NormalGeometryShaderInput input[1], inout LineStream<NormalPixelSh
 {
     NormalPixelShaderInput output;
     
-    float4 posW = mul(input[0].PosL, gWorld);
+    InstanceData instData = gInstanceData[input[0].InsIndex];
+    float4x4 world = instData.World;
+    float4x4 worldInvTranspose = instData.WorldInvTranspose;
+    
+    float4 posW = mul(input[0].PosL, world);
     float4 normalL = float4(input[0].NormalL, 0.0);
-    float4 normalW = mul(normalL, gWorldInvTranspose);
+    float4 normalW = mul(normalL, worldInvTranspose);
     normalW = float4(normalize(normalW.xyz), 0.0);
     
     output.pos = mul(posW, gViewProj);

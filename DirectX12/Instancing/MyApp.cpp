@@ -1042,7 +1042,7 @@ void MyApp::BuildRenderItems()
 	{
 		landRitem->Instances.push_back({});
 		landRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
-		landRitem->Instances.back().MaterialIndex = 15;
+		landRitem->Instances.back().MaterialIndex = 6;
 	}
 
 	////=========================================================
@@ -1051,7 +1051,7 @@ void MyApp::BuildRenderItems()
 	{
 		wavesRitem->Instances.push_back({});
 		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 3.0f));
-		wavesRitem->Instances.back().MaterialIndex = 5;
+		wavesRitem->Instances.back().MaterialIndex = 13;
 	}
 
 	////=========================================================
@@ -1073,7 +1073,6 @@ void MyApp::BuildRenderItems()
 		tessPatchRitem->Datas.push_back(RootData(0.0f, 10.0f, 0.0f, 100.0f));
 		tessPatchRitem->Instances.back().MaterialIndex = SRV_USER_SIZE;
 	}
-
 
 	mInstanceCount += boxRitem->Instances.size();
 	mInstanceCount += gridRitem->Instances.size();

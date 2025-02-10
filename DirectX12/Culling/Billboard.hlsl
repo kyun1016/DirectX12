@@ -1,15 +1,30 @@
 #include "Memory.hlsli"
 
 // Billboard
-struct BillboardVertexIn
+struct VertexIn
 {
     float3 PosW : POSITION;
     float2 SizeW : SIZE;
 };
 
-BillboardVertexIn VS(BillboardVertexIn vin)
+struct VertexOut
 {
-    return vin;
+    float3 PosW : POSITION;
+    float2 SizeW : SIZE;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint MatIndex : MATINDEX;
+};
+
+VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
+{
+    VertexOut vout;
+    vout.PosW = vin.PosW;
+    vout.SizeW = vin.SizeW;
+    vout.MatIndex = gInstanceData[instanceID + gBaseInstanceIndex].MaterialIndex;
+    
+    return vout;
 }
 
 struct BillboardGeometryOut
@@ -19,10 +34,14 @@ struct BillboardGeometryOut
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
     uint PrimID : SV_PrimitiveID;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint MatIndex : MATINDEX;
 };
 
 [maxvertexcount(4)]
-void GS(point BillboardVertexIn gin[1],
+void GS(point VertexOut gin[1],
 	uint primID : SV_PrimitiveID,
 	inout TriangleStream<BillboardGeometryOut> triStream
 )
@@ -61,6 +80,7 @@ void GS(point BillboardVertexIn gin[1],
         gout.NormalW = look;
         gout.TexC = texC[i];
         gout.PrimID = primID;
+        gout.MatIndex = gin[0].MatIndex;
         
         triStream.Append(gout);
     }
@@ -76,7 +96,7 @@ struct PixelOut
 PixelOut PS(BillboardGeometryOut pin)
 {
     // Fetch the material data.
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[pin.MatIndex];
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;

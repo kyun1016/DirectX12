@@ -15,15 +15,15 @@
 #define MaxLights 16
 #include "LightingUtil.hlsli"
 
-struct InstancelData
+struct InstanceData
 {
-    float4x4 gWorld;
-    float4x4 gTexTransform;
-    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
-    uint gMaterialIndex;
-    float2 gDisplacementMapTexelSize;
-    float gGridSpatialStep;
-    float cbPerObjectPad1;
+    float4x4 World;
+    float4x4 TexTransform;
+    float4x4 WorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
+    uint MaterialIndex;
+    float2 DisplacementMapTexelSize;
+    float GridSpatialStep;
+    float bPerObjectPad1;
 };
 
 struct MaterialData
@@ -51,9 +51,9 @@ Texture2DArray gTreeMapArray[2] : register(t0, space1);
 #endif
 
 // Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
-StructuredBuffer<MaterialData> gMaterialData : register(t0, space2);
-StructuredBuffer<InstancelData> gInstanceData : register(t1, space2);
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space2); 
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space2);
 Texture2D gDisplacementMap : register(t2, space2);
 
 SamplerState gsamPointWrap : register(s0);
@@ -62,18 +62,6 @@ SamplerState gsamLinearWrap : register(s2);
 SamplerState gsamLinearClamp : register(s3);
 SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
-
-// Constant data that varies per frame.
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 gWorld;
-    float4x4 gTexTransform;
-    float4x4 gWorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
-    uint gMaterialIndex;
-    float2 gDisplacementMapTexelSize;
-    float gGridSpatialStep;
-    float cbPerObjectPad1;
-};
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -107,3 +95,8 @@ cbuffer cbPass : register(b0)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
 };
+
+cbuffer cbInstance : register(b1)
+{
+    uint gBaseInstanceIndex;
+}

@@ -10,10 +10,13 @@ struct VertexIn
 
 struct VertexOut
 {
-    float4 PosH : SV_POSITION;
-    float3 PosW : POSITION;
-    float3 NormalW : NORMAL;
+    float3 PosL : POSITION;
+    float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint InsIndex : SV_InstanceID;
 };
 
 struct SubdivisionGeometryOut
@@ -22,14 +25,24 @@ struct SubdivisionGeometryOut
     float3 PosW : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint MatIndex : MATINDEX;
 };
 
-VertexIn VS(VertexIn vin)
+VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
-    return vin;
+    VertexOut vout;
+    vout.PosL = vin.PosL;
+    vout.NormalL = vin.NormalL;
+    vout.TexC = vin.TexC;
+    vout.InsIndex = instanceID + gBaseInstanceIndex;
+    
+    return vout;
 }
 
-void Subdivide(VertexIn inVerts[3], out VertexIn outVerts[6])
+void Subdivide(VertexOut inVerts[3], out VertexOut outVerts[6])
 {
     //         1(5)                
     //          *                
@@ -41,7 +54,7 @@ void Subdivide(VertexIn inVerts[3], out VertexIn outVerts[6])
     //    *-----*-----*          
     // 0(0)   m2(2)   2(4)          
     
-    VertexIn m[3];
+    VertexOut m[3];
     
     // 각 변의 중점을 계산
     m[0].PosL = 0.5f * (inVerts[0].PosL + inVerts[1].PosL);
@@ -69,12 +82,22 @@ void Subdivide(VertexIn inVerts[3], out VertexIn outVerts[6])
     outVerts[3] = m[1];
     outVerts[4] = inVerts[2];
     outVerts[5] = inVerts[1];
+    
+    outVerts[0].InsIndex = inVerts[0].InsIndex;
 }
 
-void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOut> triStream)
+void OutputSubdivision(VertexOut v[6], inout TriangleStream<SubdivisionGeometryOut> triStream)
 {
+    InstanceData instData = gInstanceData[v[0].InsIndex];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    float4x4 worldInvTranspose = instData.WorldInvTranspose;
+    float2 displacementMapTexelSize = instData.DisplacementMapTexelSize;
+    float gridSpatialStep = instData.GridSpatialStep;
+    uint matIndex = instData.MaterialIndex;
+    
     // Fetch the material data.
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[matIndex];
     
     SubdivisionGeometryOut gout[6];
     
@@ -82,15 +105,16 @@ void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOu
     for (int i = 0; i < 6; ++i)
     {
         // world space로 변환
-        float4 posW = mul(float4(v[i].PosL, 1.0f), gWorld);
+        float4 posW = mul(float4(v[i].PosL, 1.0f), world);
         gout[i].PosW = posW.xyz;
-        gout[i].NormalW = mul(v[i].NormalL, (float3x3) gWorld);
+        gout[i].NormalW = mul(v[i].NormalL, (float3x3) world);
         
         // homogeneous clip space로 변환
         gout[i].PosH = mul(posW, gViewProj);
         
-        float4 texC = mul(float4(v[i].TexC, 0.0f, 1.0f), gTexTransform);
+        float4 texC = mul(float4(v[i].TexC, 0.0f, 1.0f), texTransform);
         gout[i].TexC = mul(texC, matData.MatTransform).xy;
+        gout[i].MatIndex = matIndex;
     }
     //         1(5)                     1(5)                
     //          *                        *                
@@ -118,16 +142,9 @@ void OutputSubdivision(VertexIn v[6], inout TriangleStream<SubdivisionGeometryOu
 }
 
 [maxvertexcount(8)]
-void GS(triangle VertexIn gin[3], inout TriangleStream<SubdivisionGeometryOut> triStream)
+void GS(triangle VertexOut gin[3], inout TriangleStream<SubdivisionGeometryOut> triStream)
 {
-    VertexIn v[6];
+    VertexOut v[6];
     Subdivide(gin, v);
     OutputSubdivision(v, triStream);
 }
-
-
-struct PixelOut
-{
-    float4 color0 : SV_Target0;
-    float4 color1 : SV_Target1;
-};

@@ -13,41 +13,55 @@ struct VertexOut
     float3 PosW : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
+    
+    // nointerpolation is used so the index is not interpolated 
+	// across the triangle.
+    nointerpolation uint MatIndex : MATINDEX;
 };
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
-    // Fetch the material data.
-    MaterialData matData = gMaterialData[gMaterialIndex];
-    
     VertexOut vout = (VertexOut) 0.0f;
+    
+    InstanceData instData = gInstanceData[instanceID + gBaseInstanceIndex];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    float4x4 worldInvTranspose = instData.WorldInvTranspose;
+    float2 displacementMapTexelSize = instData.DisplacementMapTexelSize;
+    float gridSpatialStep = instData.GridSpatialStep;
+    uint matIndex = instData.MaterialIndex;
+    
+    vout.MatIndex = matIndex;
+    
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[matIndex];
 
 #ifdef DISPLACEMENT_MAP
 	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
     vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, vin.TexC, 1.0f).r;
 	
 	// Estimate normal using finite difference.
-    float du = gDisplacementMapTexelSize.x;
-    float dv = gDisplacementMapTexelSize.y;
+    float du = displacementMapTexelSize.x;
+    float dv = displacementMapTexelSize.y;
     float l = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(du, 0.0f), 0.0f).r;
     float r = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC + float2(du, 0.0f), 0.0f).r;
     float t = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(0.0f, dv), 0.0f).r;
     float b = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC + float2(0.0f, dv), 0.0f).r;
-    vin.NormalL = normalize(float3(-r + l, 2.0f * gGridSpatialStep, b - t));
+    vin.NormalL = normalize(float3(-r + l, 2.0f * gridSpatialStep, b - t));
 #endif
     
     // Transform to world space.
-    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
+    float4 posW = mul(float4(vin.PosL, 1.0f), world);
     vout.PosW = posW.xyz;
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-    vout.NormalW = mul(vin.NormalL, (float3x3) gWorld);
+    vout.NormalW = mul(vin.NormalL, (float3x3) worldInvTranspose);
 
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);
 	
 	// Output vertex attributes for interpolation across triangle.
-    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
     vout.TexC = mul(texC, matData.MatTransform).xy;
 	
     return vout;
@@ -62,7 +76,7 @@ struct PixelOut
 PixelOut PS(VertexOut pin)
 {
     // Fetch the material data.
-    MaterialData matData = gMaterialData[gMaterialIndex];
+    MaterialData matData = gMaterialData[pin.MatIndex];
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;

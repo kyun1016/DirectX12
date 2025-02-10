@@ -19,13 +19,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </None>
     <None Include="LightingUtil.hlsli">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </None>
     <None Include="Memory.hlsli">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -56,31 +56,28 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="AddCS.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Billboard.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="BlurCS.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Main.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Normal.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Subdivision.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Tessellation.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="WaveCS.hlsl">
-      <Filter>Resource Files</Filter>
-    </FxCompile>
-    <FxCompile Include="WaveVSPS.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
