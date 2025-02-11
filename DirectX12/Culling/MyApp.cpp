@@ -71,7 +71,6 @@ bool MyApp::Initialize()
 	BuildModelGeometry();
 	BuildLandGeometry();
 	BuildCSWavesGeometry();
-	BuildRoomGeometry();
 	BuildTreeSpritesGeometry();
 	BuildQuadPatchGeometry();
 	BuildRenderItems();
@@ -448,6 +447,7 @@ void MyApp::BuildCSWavesGeometry()
 
 void MyApp::BuildShapeGeometry()
 {
+	using namespace DirectX;
 	//=========================================================
 	// Part 1. Mesh 생성
 	//=========================================================
@@ -457,6 +457,26 @@ void MyApp::BuildShapeGeometry()
 	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
 	meshes[3] = GeometryGenerator::CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
+	//=========================================================
+	// Part 1-1. Culling을 위한 Bounding Box 생성
+	//=========================================================
+	DirectX::BoundingBox bounds[4];
+	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+	for (size_t i = 0; i < 4; ++i)
+	{
+		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+		for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
+		{
+			DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].Vertices[j].Position);
+			vMin = DirectX::XMVectorMin(vMin, P);
+			vMax = DirectX::XMVectorMax(vMax, P);
+		}
+		DirectX::XMStoreFloat3(&bounds[i].Center, 0.5f * (vMin + vMax));
+		DirectX::XMStoreFloat3(&bounds[i].Extents, 0.5f * (vMax - vMin));
+	}
 	//=========================================================
 	// Part 2. Sub Mesh 생성 및 통합 vertices & indices 생성
 	//=========================================================
@@ -470,6 +490,7 @@ void MyApp::BuildShapeGeometry()
 	UINT k = 0;
 	for (size_t i = 0; i < GEO_MESH_NAMES[0].second.size(); ++i)
 	{
+		submeshes[i].Bounds = bounds[i];
 		if (i == 0)
 		{
 			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
@@ -520,6 +541,8 @@ void MyApp::BuildShapeGeometry()
 
 void MyApp::BuildModelGeometry()
 {
+	using namespace DirectX;
+
 	std::ifstream fin(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]);
 
 	if (!fin)
@@ -536,12 +559,44 @@ void MyApp::BuildModelGeometry()
 	fin >> ignore >> tcount;
 	fin >> ignore >> ignore >> ignore >> ignore;
 
+	XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+	XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
 	std::vector<Vertex> vertices(vcount);
 	for (UINT i = 0; i < vcount; ++i)
 	{
 		fin >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
 		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
+
+		XMVECTOR P = XMLoadFloat3(&vertices[i].Pos);
+
+		// Project point onto unit sphere and generate spherical texture coordinates.
+		XMFLOAT3 spherePos;
+		DirectX::XMStoreFloat3(&spherePos, XMVector3Normalize(P));
+
+		float theta = atan2f(spherePos.z, spherePos.x);
+
+		// Put in [0, 2pi].
+		if (theta < 0.0f)
+			theta += XM_2PI;
+
+		float phi = acosf(spherePos.y);
+
+		float u = theta / (2.0f * XM_PI);
+		float v = phi / XM_PI;
+
+		vertices[i].TexC = { u, v };
+
+		vMin = XMVectorMin(vMin, P);
+		vMax = XMVectorMax(vMax, P);
 	}
+
+	BoundingBox bounds;
+	DirectX::XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
+	DirectX::XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
 
 	fin >> ignore;
 	fin >> ignore;
@@ -587,121 +642,9 @@ void MyApp::BuildModelGeometry()
 	submesh.IndexCount = (UINT)indices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
+	submesh.Bounds = bounds;
 
 	geo->DrawArgs[GEO_MESH_NAMES[1].second[0]] = submesh;
-
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void MyApp::BuildRoomGeometry()
-{
-	// Create and specify geometry.  For this sample we draw a floor
-// and a wall with a mirror on it.  We put the floor, wall, and
-// mirror geometry in one vertex buffer.
-//
-//   |--------------|
-//   |              |
-//   |----|----|----|
-//   |Wall|Mirr|Wall|
-//   |    | or |    |
-//   /--------------/
-//  /   Floor      /
-// /--------------/
-
-	std::array<Vertex, 20> vertices =
-	{
-		// Floor: Observe we tile texture coordinates.
-		Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
-		Vertex(-3.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
-		Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
-
-		// Wall: Observe we tile texture coordinates, and that we
-		// leave a gap in the middle for the mirror.
-		Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 4
-		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
-		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
-
-		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
-		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
-		Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
-
-		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 12
-		Vertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 0.0f),
-		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 1.0f),
-
-		// Mirror
-		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 16
-		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f),
-		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f)
-	};
-
-	std::array<std::int16_t, 30> indices =
-	{
-		// Floor
-		0, 1, 2,
-		0, 2, 3,
-
-		// Walls
-		4, 5, 6,
-		4, 6, 7,
-
-		8, 9, 10,
-		8, 10, 11,
-
-		12, 13, 14,
-		12, 14, 15,
-
-		// Mirror
-		16, 17, 18,
-		16, 18, 19
-	};
-
-	SubmeshGeometry floorSubmesh;
-	floorSubmesh.IndexCount = 6;
-	floorSubmesh.StartIndexLocation = 0;
-	floorSubmesh.BaseVertexLocation = 0;
-
-	SubmeshGeometry wallSubmesh;
-	wallSubmesh.IndexCount = 18;
-	wallSubmesh.StartIndexLocation = 6;
-	wallSubmesh.BaseVertexLocation = 0;
-
-	SubmeshGeometry mirrorSubmesh;
-	mirrorSubmesh.IndexCount = 6;
-	mirrorSubmesh.StartIndexLocation = 24;
-	mirrorSubmesh.BaseVertexLocation = 0;
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[4].first;
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	geo->DrawArgs[GEO_MESH_NAMES[4].second[0]] = floorSubmesh;
-	geo->DrawArgs[GEO_MESH_NAMES[4].second[1]] = wallSubmesh;
-	geo->DrawArgs[GEO_MESH_NAMES[4].second[2]] = mirrorSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -898,34 +841,50 @@ void MyApp::BuildRenderItems()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	boxRitem->mFrustumCullingEnabled = true;
+	boxRitem->Bounds = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].Bounds;
 
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
+	gridRitem->mFrustumCullingEnabled = true;
+	gridRitem->Bounds = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].Bounds;
 
 	sphereRitem->IndexCount = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	sphereRitem->StartIndexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	sphereRitem->BaseVertexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
+	sphereRitem->mFrustumCullingEnabled = true;
+	sphereRitem->Bounds = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].Bounds;
 
 	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
+	cylinderRitem->mFrustumCullingEnabled = true;
+	cylinderRitem->Bounds = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].Bounds;
 
 	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
+	alphaBoxRitem->mFrustumCullingEnabled = true;
+	alphaBoxRitem->Bounds = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].Bounds;
 
 	mirrorGridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	mirrorGridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	mirrorGridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
+	mirrorGridRitem->mFrustumCullingEnabled = true;
+	mirrorGridRitem->Bounds = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].Bounds;
 
 	subSphereRitem->IndexCount = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	subSphereRitem->StartIndexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	subSphereRitem->BaseVertexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
+	subSphereRitem->mFrustumCullingEnabled = true;
+	subSphereRitem->Bounds = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].Bounds;
 
 	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
 	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
 	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
+	skullRitem->mFrustumCullingEnabled = true;
+	skullRitem->Bounds = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].Bounds;
 
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
 	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
@@ -1398,6 +1357,7 @@ void MyApp::OnResize()
 	// The window resized, so update the aspect ratio and recompute the projection matrix.
 	mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 
+	DirectX::BoundingFrustum::CreateFromMatrix(mCamFrustum, mCamera.GetProj());
 	if (mSrvDescriptorHeap)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
@@ -1596,11 +1556,15 @@ void MyApp::AnimateMaterials()
 	waterMat->MatTransform(3, 1) = tv;
 
 	// Material has changed, so need to update cbuffer.
-	waterMat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+	waterMat->NumFramesDirty = 1;
 }
 
 void MyApp::UpdateInstanceBuffer()
 {
+	DirectX::XMMATRIX view = mCamera.GetView();
+	DirectX::XMVECTOR detView = XMMatrixDeterminant(view);
+	DirectX::XMMATRIX invView = XMMatrixInverse(&detView, view);
+
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
 	int visibleInstanceCount = 0;
@@ -1610,7 +1574,7 @@ void MyApp::UpdateInstanceBuffer()
 		auto& e = mAllRitems[i];
 		if (e->NumFramesDirty > 0)
 		{
-			// e->NumFramesDirty--;
+			e->NumFramesDirty--;
 			for (size_t i = 0; i < e->Instances.size(); ++i)
 			{
 				DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
@@ -1633,10 +1597,26 @@ void MyApp::UpdateInstanceBuffer()
 
 		for (size_t i = 0; i < e->Instances.size(); ++i)
 		{
-			currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
+			DirectX::XMMATRIX invWorld = DirectX::XMLoadFloat4x4(&e->Instances[i].WorldInvTranspose);
+
+			// View space to the object's local space.
+			DirectX::XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+			DirectX::BoundingFrustum localSpaceFrustum;
+			mCamFrustum.Transform(localSpaceFrustum, viewToLocal);
+			if ((localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT) || (e->mFrustumCullingEnabled == false))
+			{
+				currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
+			}
 		}
 		e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
 	}
+	std::wostringstream outs;
+	outs.precision(6);
+	outs << L"Instancing and Culling Demo" <<
+		L"    " << visibleInstanceCount <<
+		L" objects visible out of " << mInstanceCount;
+	mWndCaption = outs.str();
 
 //	for (auto& e : mAllRitems)
 //	{
@@ -1763,7 +1743,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 	UINT offset
 		= (flag == RenderLayer::Reflected || flag == RenderLayer::ReflectedWireframe)
 		? mAllRitems.size()
-		: 0;
+		: 0u;
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(InstanceConstants));
 	auto currInstanceCB = mCurrFrameResource->InstanceCB->Resource();
 
@@ -1790,7 +1770,6 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetVertexBuffers(0, 1, &vbv);
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
-		std::cout << ri->StartInstanceLocation << std::endl;
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
 		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
@@ -2015,7 +1994,7 @@ void MyApp::ShowMaterialWindow()
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
 			mat->FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
-			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+			mat->NumFramesDirty = 1;
 		}
 
 		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * (mat->DiffuseSrvHeapIndex + SRV_IMGUI_SIZE);
@@ -2074,7 +2053,7 @@ void MyApp::ShowRenderItemWindow()
 
 		if (flag)
 		{
-			ritm->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+			ritm->NumFramesDirty = 1;
 		}
 	}
 

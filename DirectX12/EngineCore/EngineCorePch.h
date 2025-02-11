@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <limits>
+#include <sstream>
 
 #include <Windows.h>
 #include <WinUser.h>
@@ -17,6 +19,7 @@
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
 #include "d3dx12.h"

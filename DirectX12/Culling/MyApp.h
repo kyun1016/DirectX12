@@ -120,8 +120,10 @@ private:
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+		DirectX::BoundingBox Bounds;
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
+		bool mFrustumCullingEnabled = false;
 		std::vector<InstanceData> Instances;
 
 		int LayerFlag
@@ -160,7 +162,6 @@ public:
 	void BuildModelGeometry();
 	void BuildLandGeometry();
 	void BuildCSWavesGeometry();
-	void BuildRoomGeometry();
 	void BuildTreeSpritesGeometry();
 	void BuildQuadPatchGeometry();
 	void BuildMaterials();
@@ -243,6 +244,7 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
+	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
 
 	POINT mLastMousePos;
