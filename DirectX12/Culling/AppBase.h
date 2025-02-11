@@ -87,7 +87,7 @@ public:
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
-	void SetWindowBounds(int left, int top, int right, int bottom);
+	void SetWindowBoundingBox(int left, int top, int right, int bottom);
 
 	void LogAdapters();
 	void LogAdapterOutputs(IDXGIAdapter* adapter);

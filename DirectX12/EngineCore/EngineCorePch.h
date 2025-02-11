@@ -14,6 +14,7 @@
 #include <WinUser.h>
 #include <wrl/client.h> // ComPtr
 
+#include "SimpleMath.h"
 #include <d3d12.h>
 #include <DirectXCollision.h>
 #include <DirectXColors.h>

@@ -116,11 +116,14 @@ private:
 		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 		MeshGeometry* Geo = nullptr;
+		MeshGeometry* BoundingBoxMesh = nullptr;
+		MeshGeometry* BoundingSphereMesh = nullptr;
 
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		DirectX::BoundingBox Bounds;
+		DirectX::BoundingBox BoundingBox;
+		DirectX::BoundingSphere BoundingSphere;
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;

@@ -156,7 +156,7 @@ void AppBase::UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight)
 	mAspectRatio = static_cast<float>(mClientWidth) / static_cast<float>(mClientHeight);
 }
 
-void AppBase::SetWindowBounds(int left, int top, int right, int bottom)
+void AppBase::SetWindowBoundingBox(int left, int top, int right, int bottom)
 {
 	mWindowRect.left = static_cast<LONG>(left);
 	mWindowRect.top = static_cast<LONG>(top);
@@ -496,7 +496,7 @@ bool AppBase::MakeWindowHandle()
 	//);
 	//SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
 
-	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
+	SetWindowBoundingBox(0, 0, mClientWidth, mClientHeight);
 	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
 	mHwndWindow = CreateWindow(
 		/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,

@@ -144,7 +144,8 @@ struct SubmeshGeometry
 
 	// Bounding box of the geometry defined by this submesh. 
 	// This is used in later chapters of the book.
-	DirectX::BoundingBox Bounds;
+	DirectX::BoundingBox BoundingBox;
+	DirectX::BoundingSphere BoundingSphere;
 };
 
 struct MeshGeometry

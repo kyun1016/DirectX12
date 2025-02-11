@@ -490,7 +490,7 @@ void MyApp::BuildShapeGeometry()
 	UINT k = 0;
 	for (size_t i = 0; i < GEO_MESH_NAMES[0].second.size(); ++i)
 	{
-		submeshes[i].Bounds = bounds[i];
+		submeshes[i].BoundingBox = bounds[i];
 		if (i == 0)
 		{
 			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
@@ -642,7 +642,7 @@ void MyApp::BuildModelGeometry()
 	submesh.IndexCount = (UINT)indices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
-	submesh.Bounds = bounds;
+	submesh.BoundingBox = bounds;
 
 	geo->DrawArgs[GEO_MESH_NAMES[1].second[0]] = submesh;
 
@@ -842,49 +842,49 @@ void MyApp::BuildRenderItems()
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 	boxRitem->mFrustumCullingEnabled = true;
-	boxRitem->Bounds = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].Bounds;
+	boxRitem->BoundingBox = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingBox;
 
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	gridRitem->mFrustumCullingEnabled = true;
-	gridRitem->Bounds = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].Bounds;
+	gridRitem->BoundingBox = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BoundingBox;
 
 	sphereRitem->IndexCount = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	sphereRitem->StartIndexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	sphereRitem->BaseVertexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
 	sphereRitem->mFrustumCullingEnabled = true;
-	sphereRitem->Bounds = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].Bounds;
+	sphereRitem->BoundingBox = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingBox;
 
 	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
 	cylinderRitem->mFrustumCullingEnabled = true;
-	cylinderRitem->Bounds = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].Bounds;
+	cylinderRitem->BoundingBox = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BoundingBox;
 
 	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 	alphaBoxRitem->mFrustumCullingEnabled = true;
-	alphaBoxRitem->Bounds = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].Bounds;
+	alphaBoxRitem->BoundingBox = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingBox;
 
 	mirrorGridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	mirrorGridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	mirrorGridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	mirrorGridRitem->mFrustumCullingEnabled = true;
-	mirrorGridRitem->Bounds = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].Bounds;
+	mirrorGridRitem->BoundingBox = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BoundingBox;
 
 	subSphereRitem->IndexCount = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	subSphereRitem->StartIndexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	subSphereRitem->BaseVertexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
 	subSphereRitem->mFrustumCullingEnabled = true;
-	subSphereRitem->Bounds = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].Bounds;
+	subSphereRitem->BoundingBox = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingBox;
 
 	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
 	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
 	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
 	skullRitem->mFrustumCullingEnabled = true;
-	skullRitem->Bounds = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].Bounds;
+	skullRitem->BoundingBox = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BoundingBox;
 
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
 	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
@@ -1604,7 +1604,7 @@ void MyApp::UpdateInstanceBuffer()
 
 			DirectX::BoundingFrustum localSpaceFrustum;
 			mCamFrustum.Transform(localSpaceFrustum, viewToLocal);
-			if ((localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT) || (e->mFrustumCullingEnabled == false))
+			if ((localSpaceFrustum.Contains(e->BoundingBox) != DirectX::DISJOINT) || (e->mFrustumCullingEnabled == false))
 			{
 				currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
 			}
@@ -1812,23 +1812,24 @@ void MyApp::OnKeyboardInput()
 {
 	const float dt = mTimer.DeltaTime();
 
+	float speed = 30.0f;
 	if (GetAsyncKeyState('Q') & 0x8000)
-		mCamera.Up(10.0f * dt);
+		mCamera.Up(speed * dt);
 
 	if (GetAsyncKeyState('E') & 0x8000)
-		mCamera.Up(-10.0f * dt);
+		mCamera.Up(-speed * dt);
 
 	if (GetAsyncKeyState('W') & 0x8000)
-		mCamera.Walk(10.0f * dt);
+		mCamera.Walk(speed * dt);
 
 	if (GetAsyncKeyState('S') & 0x8000)
-		mCamera.Walk(-10.0f * dt);
+		mCamera.Walk(-speed * dt);
 
 	if (GetAsyncKeyState('A') & 0x8000)
-		mCamera.Strafe(-10.0f * dt);
+		mCamera.Strafe(-speed * dt);
 
 	if (GetAsyncKeyState('D') & 0x8000)
-		mCamera.Strafe(10.0f * dt);
+		mCamera.Strafe(speed * dt);
 
 	mCamera.UpdateViewMatrix();
 }

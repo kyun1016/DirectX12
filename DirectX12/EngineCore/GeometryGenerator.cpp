@@ -372,29 +372,29 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
 {
 	MeshData meshData;
 
-	uint32 ringCount = stackCount + 1;
-	uint32 ringVertexCount = sliceCount + 1;
-	meshData.Vertices.resize(ringCount * ringVertexCount);
-
-	float stackHeight = height / stackCount;
-	float dr = bottomRadius - topRadius;
-	float radiusStep = dr / stackCount;
-	float dTheta = 2.0f * XM_PI / sliceCount;
 	//
 	// Build Stacks.
 	// 
 
-	//
-	// Create the vertices.
-	//
-	for (uint32 i = 0; i <= stackCount; ++i)
+	float stackHeight = height / stackCount;
+
+	// Amount to increment radius as we move up each stack level from bottom to top.
+	float radiusStep = (topRadius - bottomRadius) / stackCount;
+
+	uint32 ringCount = stackCount + 1;
+
+	// Compute vertices for each stack ring starting at the bottom and moving up.
+	for (uint32 i = 0; i < ringCount; ++i)
 	{
 		float y = -0.5f * height + i * stackHeight;
 		float r = bottomRadius + i * radiusStep;
 
+		// vertices of ring
+		float dTheta = 2.0f * XM_PI / sliceCount;
 		for (uint32 j = 0; j <= sliceCount; ++j)
 		{
-			Vertex& vertex = meshData.Vertices[i * ringVertexCount + j];
+			Vertex vertex;
+
 			float c = cosf(j * dTheta);
 			float s = sinf(j * dTheta);
 
@@ -421,19 +421,27 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
 			//  dx/dv = (r0-r1)*cos(t)
 			//  dy/dv = -h
 			//  dz/dv = (r0-r1)*sin(t)
+
+			// This is unit length.
 			vertex.TangentU = XMFLOAT3(-s, 0.0f, c);
+
+			float dr = bottomRadius - topRadius;
 			XMFLOAT3 bitangent(dr * c, -height, dr * s);
 
 			XMVECTOR T = XMLoadFloat3(&vertex.TangentU);
 			XMVECTOR B = XMLoadFloat3(&bitangent);
 			XMVECTOR N = XMVector3Normalize(XMVector3Cross(T, B));
 			XMStoreFloat3(&vertex.Normal, N);
+
+			meshData.Vertices.push_back(vertex);
 		}
 	}
 
-	//
-	// Create the indices.
-	//
+	// Add one because we duplicate the first and last vertex per ring
+	// since the texture coordinates are different.
+	uint32 ringVertexCount = sliceCount + 1;
+
+	// Compute indices for each stack.
 	for (uint32 i = 0; i < stackCount; ++i)
 	{
 		for (uint32 j = 0; j < sliceCount; ++j)
@@ -447,70 +455,9 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
 			meshData.Indices32.push_back(i * ringVertexCount + j + 1);
 		}
 	}
-	//==============================================================================
-	// BuildCylinderTopCap(bottomRadius, topRadius, height, sliceCount, meshData);
-	//==============================================================================
-	uint32 baseIndex = (uint32)meshData.Vertices.size();
-	float y = 0.5f * height;
-	// Duplicate cap ring vertices because the texture coordinates and normals differ.
-	for (uint32 i = 0; i <= sliceCount; ++i)
-	{
-		float x = topRadius * cosf(i * dTheta);
-		float z = topRadius * sinf(i * dTheta);
-
-		// Scale down by the height to try and make top cap texture coord area
-		// proportional to base.
-		float u = x / height + 0.5f;
-		float v = z / height + 0.5f;
-
-		meshData.Vertices.push_back(Vertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
-	}
-
-	// Cap center vertex.
-	meshData.Vertices.push_back(Vertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
-
-	// Index of center vertex.
-	uint32 centerIndex = (uint32)meshData.Vertices.size() - 1;
-
-	for (uint32 i = 0; i < sliceCount; ++i)
-	{
-		meshData.Indices32.push_back(centerIndex);
-		meshData.Indices32.push_back(baseIndex + i + 1);
-		meshData.Indices32.push_back(baseIndex + i);
-	}
-
-	//==============================================================================
-	// BuildCylinderBottomCap(bottomRadius, topRadius, height, sliceCount, meshData);
-	//==============================================================================
-	baseIndex = (uint32)meshData.Vertices.size();
-	y = -0.5f * height;
-
-	// vertices of ring
-	for (uint32 i = 0; i <= sliceCount; ++i)
-	{
-		float x = bottomRadius * cosf(i * dTheta);
-		float z = bottomRadius * sinf(i * dTheta);
-
-		// Scale down by the height to try and make top cap texture coord area
-		// proportional to base.
-		float u = x / height + 0.5f;
-		float v = z / height + 0.5f;
-
-		meshData.Vertices.push_back(Vertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
-	}
-
-	// Cap center vertex.
-	meshData.Vertices.push_back(Vertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
-
-	// Cache the index of center vertex.
-	centerIndex = (uint32)meshData.Vertices.size() - 1;
-
-	for (uint32 i = 0; i < sliceCount; ++i)
-	{
-		meshData.Indices32.push_back(centerIndex);
-		meshData.Indices32.push_back(baseIndex + i);
-		meshData.Indices32.push_back(baseIndex + i + 1);
-	}
+	
+	BuildCylinderTopCap(bottomRadius, topRadius, height, sliceCount, meshData);
+	BuildCylinderBottomCap(bottomRadius, topRadius, height, sliceCount, meshData);
 
 	return meshData;
 }

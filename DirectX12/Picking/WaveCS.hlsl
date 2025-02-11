@@ -16,10 +16,10 @@ RWTexture2D<float> gOutput : register(u2);
 void WaveDisturbCS(int3 groupThreadID : SV_GroupThreadID,
                     int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	// We do not need to do bounds checking because:
-	//	 *out-of-bounds reads return 0, which works for us--it just means the boundary of 
+	// We do not need to do BoundingBox checking because:
+	//	 *out-of-BoundingBox reads return 0, which works for us--it just means the boundary of 
 	//    our water simulation is clamped to 0 in local space.
-	//   *out-of-bounds writes are a no-op.
+	//   *out-of-BoundingBox writes are a no-op.
 	
     int x = gDisturbIndex.x;
     int y = gDisturbIndex.y;
@@ -37,10 +37,10 @@ void WaveDisturbCS(int3 groupThreadID : SV_GroupThreadID,
 [numthreads(16, 16, 1)]
 void WaveUpdateCS(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-	// We do not need to do bounds checking because:
-	//	 *out-of-bounds reads return 0, which works for us--it just means the boundary of 
+	// We do not need to do BoundingBox checking because:
+	//	 *out-of-BoundingBox reads return 0, which works for us--it just means the boundary of 
 	//    our water simulation is clamped to 0 in local space.
-	//   *out-of-bounds writes are a no-op.
+	//   *out-of-BoundingBox writes are a no-op.
 	
     int x = dispatchThreadID.x;
     int y = dispatchThreadID.y;

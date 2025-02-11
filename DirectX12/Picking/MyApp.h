@@ -52,7 +52,8 @@ private:
 		{"WaterGeo", std::vector<std::string>({"water"})},
 		{"RoomGeo", std::vector<std::string>({"floor", "wall", "mirror"})},
 		{"TreeSpritesGeo", std::vector<std::string>({"points"})},
-		{"QuadPatchGeo", std::vector<std::string>({"quadpatch"})}
+		{"QuadPatchGeo", std::vector<std::string>({"quadpatch"})},
+		{"BoundingGeo", std::vector<std::string>({"boundingBox", "boundingSphere"})}
 	};
 
 	static const inline std::wstring				MESH_MODEL_DIR = L"../Data/Models/";
@@ -116,11 +117,14 @@ private:
 		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 		MeshGeometry* Geo = nullptr;
+		MeshGeometry* BoundingBoxMesh = nullptr;
+		MeshGeometry* BoundingSphereMesh = nullptr;
 
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		DirectX::BoundingBox Bounds;
+		DirectX::BoundingBox BoundingBox;
+		DirectX::BoundingSphere BoundingSphere;
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
@@ -141,7 +145,7 @@ private:
 		// DrawIndexedInstanced parameters.
 		UINT IndexCount = 0;
 		UINT StartIndexLocation = 0;
-		int BaseVertexLocation = 0;		
+		int BaseVertexLocation = 0;
 	};
 
 	using Super = typename AppBase;
@@ -164,6 +168,7 @@ public:
 	void BuildCSWavesGeometry();
 	void BuildTreeSpritesGeometry();
 	void BuildQuadPatchGeometry();
+	void BuildBoundingGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
