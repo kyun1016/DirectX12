@@ -208,6 +208,8 @@ private:
 
 	void DrawRenderItems(const RenderLayer ritems);
 
+	void Pick(int sx, int sy);
+
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
@@ -244,6 +246,7 @@ private:
 	int mLayerCBIdx[MAX_LAYER_DEPTH];
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	int mPickedRitemIdx = -1;
 	UINT mInstanceCount = 0;
 
 	std::unique_ptr<Waves> mWaves;

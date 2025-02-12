@@ -1921,12 +1921,37 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 	}
 }
 
+void MyApp::Pick(int sx, int sy)
+{
+	DirectX::XMFLOAT4X4 P = mCamera.GetProj4x4f();
+
+	// Compute picking ray in view space.
+	float vx = (+2.0f * sx / mClientWidth - 1.0f) / P(0, 0);
+	float vy = (-2.0f * sy / mClientHeight + 1.0f) / P(1, 1);
+
+	// Ray definition in view space.
+	DirectX::XMVECTOR rayOrigin = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR rayDir = DirectX::XMVectorSet(vx, vy, 1.0f, 0.0f);
+
+	DirectX::XMMATRIX view = mCamera.GetView();
+	DirectX::XMVECTOR det = XMMatrixDeterminant(view);
+	DirectX::XMMATRIX invView = XMMatrixInverse(&det, view);
+	for()
+}
+
 void MyApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
+	if ((btnState & MK_LBUTTON) != 0)
+	{
+		mLastMousePos.x = x;
+		mLastMousePos.y = y;
 
-	SetCapture(mHwndWindow);
+		SetCapture(mHwndWindow);
+	}
+	else if ((btnState & MK_RBUTTON) != 0)
+	{
+		Pick(x, y);
+	}
 }
 
 void MyApp::OnMouseUp(WPARAM btnState, int x, int y)
