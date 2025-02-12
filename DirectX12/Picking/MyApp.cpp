@@ -73,6 +73,7 @@ bool MyApp::Initialize()
 	BuildCSWavesGeometry();
 	BuildTreeSpritesGeometry();
 	BuildQuadPatchGeometry();
+	BuildBoundingGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
@@ -341,6 +342,9 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
 	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
 	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", fogDefines, "PS", "ps_5_1");
+
+	mShaders["BasicVS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "VS", "vs_5_1");
+	mShaders["BasicPS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -777,9 +781,11 @@ void MyApp::BuildQuadPatchGeometry()
 
 void MyApp::BuildBoundingGeometry()
 {
+	using namespace DirectX;
+	
 	std::vector<GeometryGenerator::MeshData> meshes(GEO_MESH_NAMES[7].second.size());
-	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 2);
-	meshes[1] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
+	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 0);
+	meshes[1] = GeometryGenerator::CreateSphere(1.0f, 10, 10);
 
 	//=========================================================
 	// Part 2. Sub Mesh 생성 및 통합 vertices & indices 생성
@@ -911,6 +917,8 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem = std::make_unique<RenderItem>();
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
 	auto tessPatchRitem = std::make_unique<RenderItem>();
+	auto boundingBoxRitem = std::make_unique<RenderItem>();
+	auto boundingSphereRitem = std::make_unique<RenderItem>();
 
 	boxRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
 	gridRitem->Geo = mGeometries[GEO_MESH_NAMES[0].first].get();
@@ -924,54 +932,64 @@ void MyApp::BuildRenderItems()
 	wavesRitem->Geo = mGeometries[GEO_MESH_NAMES[3].first].get();
 	treeSpritesRitem->Geo = mGeometries[GEO_MESH_NAMES[5].first].get();
 	tessPatchRitem->Geo = mGeometries[GEO_MESH_NAMES[6].first].get();
+	boundingBoxRitem->Geo = mGeometries[GEO_MESH_NAMES[7].first].get();
+	boundingSphereRitem->Geo = mGeometries[GEO_MESH_NAMES[7].first].get();
 
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 	boxRitem->mFrustumCullingEnabled = true;
 	boxRitem->BoundingBox = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingBox;
+	boxRitem->BoundingSphere = boxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingSphere;
 
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	gridRitem->mFrustumCullingEnabled = true;
 	gridRitem->BoundingBox = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BoundingBox;
+	gridRitem->BoundingSphere = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingSphere;
 
 	sphereRitem->IndexCount = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	sphereRitem->StartIndexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	sphereRitem->BaseVertexLocation = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
 	sphereRitem->mFrustumCullingEnabled = true;
 	sphereRitem->BoundingBox = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingBox;
+	sphereRitem->BoundingSphere = sphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingSphere;
 
 	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].IndexCount;
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BaseVertexLocation;
 	cylinderRitem->mFrustumCullingEnabled = true;
 	cylinderRitem->BoundingBox = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BoundingBox;
+	cylinderRitem->BoundingSphere = cylinderRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[3]].BoundingSphere;
 
 	alphaBoxRitem->IndexCount = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].IndexCount;
 	alphaBoxRitem->StartIndexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].StartIndexLocation;
 	alphaBoxRitem->BaseVertexLocation = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BaseVertexLocation;
 	alphaBoxRitem->mFrustumCullingEnabled = true;
 	alphaBoxRitem->BoundingBox = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingBox;
+	alphaBoxRitem->BoundingSphere = alphaBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[0]].BoundingSphere;
 
 	mirrorGridRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].IndexCount;
 	mirrorGridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].StartIndexLocation;
 	mirrorGridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BaseVertexLocation;
 	mirrorGridRitem->mFrustumCullingEnabled = true;
 	mirrorGridRitem->BoundingBox = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BoundingBox;
+	mirrorGridRitem->BoundingSphere = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[1]].BoundingSphere;
 
 	subSphereRitem->IndexCount = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].IndexCount;
 	subSphereRitem->StartIndexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].StartIndexLocation;
 	subSphereRitem->BaseVertexLocation = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BaseVertexLocation;
 	subSphereRitem->mFrustumCullingEnabled = true;
 	subSphereRitem->BoundingBox = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingBox;
+	subSphereRitem->BoundingSphere = subSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[0].second[2]].BoundingSphere;
 
 	skullRitem->IndexCount = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].IndexCount;
 	skullRitem->StartIndexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].StartIndexLocation;
 	skullRitem->BaseVertexLocation = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BaseVertexLocation;
 	skullRitem->mFrustumCullingEnabled = true;
 	skullRitem->BoundingBox = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BoundingBox;
+	skullRitem->BoundingSphere = skullRitem->Geo->DrawArgs[GEO_MESH_NAMES[1].second[0]].BoundingSphere;
 
 	landRitem->IndexCount = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].IndexCount;
 	landRitem->StartIndexLocation = landRitem->Geo->DrawArgs[GEO_MESH_NAMES[2].second[0]].StartIndexLocation;
@@ -985,9 +1003,23 @@ void MyApp::BuildRenderItems()
 	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].StartIndexLocation;
 	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs[GEO_MESH_NAMES[5].second[0]].BaseVertexLocation;
 
-	tessPatchRitem->IndexCount = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].IndexCount;
-	tessPatchRitem->StartIndexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].StartIndexLocation;
-	tessPatchRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].BaseVertexLocation;
+	tessPatchRitem->IndexCount = tessPatchRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].IndexCount;
+	tessPatchRitem->StartIndexLocation = tessPatchRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].StartIndexLocation;
+	tessPatchRitem->BaseVertexLocation = tessPatchRitem->Geo->DrawArgs[GEO_MESH_NAMES[6].second[0]].BaseVertexLocation;
+
+	boundingBoxRitem->IndexCount = boundingBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[0]].IndexCount;
+	boundingBoxRitem->StartIndexLocation = boundingBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[0]].StartIndexLocation;
+	boundingBoxRitem->BaseVertexLocation = boundingBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[0]].BaseVertexLocation;
+	boundingBoxRitem->mFrustumCullingEnabled = true;
+	boundingBoxRitem->BoundingBox = boundingBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[0]].BoundingBox;
+	boundingBoxRitem->BoundingSphere = boundingBoxRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[0]].BoundingSphere;
+
+	boundingSphereRitem->IndexCount = boundingSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[1]].IndexCount;
+	boundingSphereRitem->StartIndexLocation = boundingSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[1]].StartIndexLocation;
+	boundingSphereRitem->BaseVertexLocation = boundingSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[1]].BaseVertexLocation;
+	boundingSphereRitem->mFrustumCullingEnabled = true;
+	boundingSphereRitem->BoundingBox = boundingSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[1]].BoundingBox;
+	boundingSphereRitem->BoundingSphere = boundingSphereRitem->Geo->DrawArgs[GEO_MESH_NAMES[7].second[1]].BoundingSphere;
 
 	subSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1018,6 +1050,12 @@ void MyApp::BuildRenderItems()
 		| (1 << (int)RenderLayer::TessellationWireframe)
 		| (1 << (int)RenderLayer::Normal);
 
+	boundingBoxRitem->LayerFlag
+		= (1 << (int)RenderLayer::BoundingBox);
+
+	boundingSphereRitem->LayerFlag
+		= (1 << (int)RenderLayer::BoundingSphere);
+
 	//=========================================================
 	// GEO_MESH_NAMES[0]: ShapeGeo
 	//=========================================================
@@ -1025,48 +1063,48 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
 	{
 		boxRitem->Instances.push_back({});
-		boxRitem->Datas.push_back(RootData((i % 10) * 8.0f, 10.0f, 5.0 + 5.0 * (i / 5), 3.0f));
+		boxRitem->Datas.push_back(RootData((i % 10) * 8.0f, 10.0f, 5.0 + 5.0 * (i / 5), 3.0f, mInstanceCount++));
 		boxRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 	
 	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
 	{
 		subSphereRitem->Instances.push_back({});
-		subSphereRitem->Datas.push_back(RootData((i % 10) * 8.0f, 20.0f, 5.0 + 5.0 * (i / 5), 3.0f));
+		subSphereRitem->Datas.push_back(RootData((i % 10) * 8.0f, 20.0f, 5.0 + 5.0 * (i / 5), 3.0f, mInstanceCount++));
 		subSphereRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 	
 	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
 	{
 		alphaBoxRitem->Instances.push_back({});
-		alphaBoxRitem->Datas.push_back(RootData((i % 10) * 8.0f, 30.0f, 5.0 + 5.0 * (i / 5), 3.0f));
+		alphaBoxRitem->Datas.push_back(RootData((i % 10) * 8.0f, 30.0f, 5.0 + 5.0 * (i / 5), 3.0f, mInstanceCount++));
 		alphaBoxRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 
 	gridRitem->Instances.push_back({});
-	gridRitem->Datas.push_back(RootData(0.0f, 5.0f, 0.0f));
+	gridRitem->Datas.push_back(RootData(0.0f, 5.0f, 0.0f, 1.0f, mInstanceCount++));
 	gridRitem->Instances.back().MaterialIndex = 2;
 
 	DirectX::XMMATRIX brickTexTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 	for (int i = 0; i < 5; ++i)
 	{
 		cylinderRitem->Instances.push_back({});
-		cylinderRitem->Datas.push_back(RootData(-5.0f, 6.5f, -10.0f + i * 5.0f));
+		cylinderRitem->Datas.push_back(RootData(-5.0f, 6.5f, -10.0f + i * 5.0f, 1.0f, mInstanceCount++));
 		cylinderRitem->Instances.back().MaterialIndex = i;
 		cylinderRitem->Instances.push_back({});
-		cylinderRitem->Datas.push_back(RootData(5.0f, 6.5f, -10.0f + i * 5.0f));
+		cylinderRitem->Datas.push_back(RootData(5.0f, 6.5f, -10.0f + i * 5.0f, 1.0f, mInstanceCount++));
 		cylinderRitem->Instances.back().MaterialIndex = i;
 		sphereRitem->Instances.push_back({});
-		sphereRitem->Datas.push_back(RootData(5.0f, 8.5f, -10.0f + i * 5.0f));
+		sphereRitem->Datas.push_back(RootData(5.0f, 8.5f, -10.0f + i * 5.0f, 1.0f, mInstanceCount++));
 		sphereRitem->Instances.back().MaterialIndex = i;
 		sphereRitem->Instances.push_back({});
-		sphereRitem->Datas.push_back(RootData(-5.0f, 8.5f, -10.0f + i * 5.0f));
+		sphereRitem->Datas.push_back(RootData(-5.0f, 8.5f, -10.0f + i * 5.0f, 1.0f, mInstanceCount++));
 		sphereRitem->Instances.back().MaterialIndex = i;
 	}
 
 	{
 		mirrorGridRitem->Instances.push_back({});
-		mirrorGridRitem->Datas.push_back(RootData(0.0f, 100.0f, 0.0f, 1.0f));
+		mirrorGridRitem->Datas.push_back(RootData(0.0f, 100.0f, 0.0f, 1.0f, mInstanceCount++));
 		mirrorGridRitem->Instances.back().MaterialIndex = 13;
 	}
 	
@@ -1077,7 +1115,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
 	{
 		skullRitem->Instances.push_back({});
-		skullRitem->Datas.push_back(RootData((i % 10) * 8.0f, 40.0f, 5.0 + 5.0 * (i / 5), 0.3f));
+		skullRitem->Datas.push_back(RootData((i % 10) * 8.0f, 40.0f, 5.0 + 5.0 * (i / 5), 0.3f, mInstanceCount++));
 		skullRitem->Instances.back().MaterialIndex = i % MATERIAL_NAMES.size();
 	}
 
@@ -1086,7 +1124,7 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	{
 		landRitem->Instances.push_back({});
-		landRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
+		landRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f, mInstanceCount++));
 		landRitem->Instances.back().MaterialIndex = 4;
 	}
 
@@ -1095,7 +1133,7 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	{
 		wavesRitem->Instances.push_back({});
-		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.5f));
+		wavesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.5f, mInstanceCount++));
 		wavesRitem->Instances.back().MaterialIndex = 11;
 		wavesRitem->Instances.back().DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
 		wavesRitem->Instances.back().DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
@@ -1107,7 +1145,7 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	{
 		treeSpritesRitem->Instances.push_back({});
-		treeSpritesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f));
+		treeSpritesRitem->Datas.push_back(RootData(0.0f, 0.0f, 0.0f, 1.0f, mInstanceCount++));
 		treeSpritesRitem->Instances.back().MaterialIndex = SRV_USER_SIZE + TEXTURE_FILENAMES.size();
 	}
 
@@ -1116,23 +1154,10 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	{
 		tessPatchRitem->Instances.push_back({});
-		tessPatchRitem->Datas.push_back(RootData(0.0f, 10.0f, 0.0f, 1.0f));
+		tessPatchRitem->Datas.push_back(RootData(0.0f, 10.0f, 0.0f, 1.0f, mInstanceCount++));
 		tessPatchRitem->Instances.back().MaterialIndex = SRV_USER_SIZE;
 	}
 
-	mInstanceCount += boxRitem->Instances.size();
-	mInstanceCount += gridRitem->Instances.size();
-	mInstanceCount += sphereRitem->Instances.size();
-	mInstanceCount += cylinderRitem->Instances.size();
-	mInstanceCount += alphaBoxRitem->Instances.size();
-	mInstanceCount += mirrorGridRitem->Instances.size();
-	mInstanceCount += subSphereRitem->Instances.size();
-	mInstanceCount += skullRitem->Instances.size();
-	mInstanceCount += landRitem->Instances.size();
-	mInstanceCount += wavesRitem->Instances.size();
-	mInstanceCount += treeSpritesRitem->Instances.size();
-	mInstanceCount += tessPatchRitem->Instances.size();
-	
 	mAllRitems.push_back(std::move(boxRitem));
 	mAllRitems.push_back(std::move(gridRitem));
 	mAllRitems.push_back(std::move(sphereRitem));
@@ -1145,6 +1170,25 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
 	mAllRitems.push_back(std::move(tessPatchRitem));
+
+	for (size_t i = 0; i < mAllRitems.size(); ++i)
+	{
+		if (mAllRitems[i]->mFrustumCullingEnabled)
+		{
+			for (const auto& a : mAllRitems[i]->Datas)
+			{
+				boundingBoxRitem->Instances.push_back({});
+				boundingBoxRitem->Datas.push_back(RootData(a.Translation.x, a.Translation.y, a.Translation.z, a.Scale.x, mInstanceCount++));
+
+				boundingSphereRitem->Instances.push_back({});
+				boundingSphereRitem->Datas.push_back(RootData(a.Translation.x, a.Translation.y, a.Translation.z, a.Scale.x, mInstanceCount++));
+			}
+		}
+	}
+	mAllRitems.push_back(std::move(boundingBoxRitem));
+	mAllRitems.push_back(std::move(boundingSphereRitem));
+
+	mUpdateBoundingMesh = true;
 }
 
 void MyApp::BuildFrameResources()
@@ -1391,6 +1435,14 @@ void MyApp::BuildPSO()
 	tessPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
 
 	//=====================================================
+	// PSO for Tessellation
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC boundingBoxPsoDesc = opaquePsoDesc;
+	boundingBoxPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["BasicVS"]->GetBufferPointer()), mShaders["BasicVS"]->GetBufferSize() };
+	boundingBoxPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["BasicPS"]->GetBufferPointer()), mShaders["BasicPS"]->GetBufferSize() };
+	boundingBoxPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
@@ -1403,6 +1455,8 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Normal])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSprites])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Tessellation])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingBox])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingSphere])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS_CS])));
 
 	//=====================================================
@@ -1847,6 +1901,9 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		else if (flag == RenderLayer::Tessellation
 			|| flag == RenderLayer::TessellationWireframe)
 			ri->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+		else if (flag == RenderLayer::BoundingBox
+			|| flag == RenderLayer::BoundingSphere)
+			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		else
 			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
@@ -1978,6 +2035,8 @@ void MyApp::ShowMainWindow()
 				"Normal",
 				"TreeSprites",
 				"Tessellation",
+				"BoundingBox",
+				"BoundingSphere",
 				"OpaqueWireframe",
 				"MirrorWireframe",
 				"ReflectedWireframe",

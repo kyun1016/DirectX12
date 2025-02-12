@@ -74,6 +74,8 @@ private:
 		Normal,
 		TreeSprites,
 		Tessellation,
+		BoundingBox,
+		BoundingSphere,
 		OpaqueWireframe,
 		MirrorWireframe,
 		ReflectedWireframe,
@@ -98,12 +100,31 @@ private:
 			: Translation(tranX, tranY, tranZ)
 			, Scale(scale, scale, scale)
 			, RotationQuat(1.f, 1.f, 1.f, 0.f)
+			, BoundingCount(0u)
+			, FrustumCullingEnabled(false)
+			, ShowBoundingBox(false)
+			, ShowBoundingSphere(false)
+		{
+		}
+
+		RootData(float tranX = 0.0f, float tranY = 0.0f, float tranZ = 0.0f, float scale = 1.0f, UINT boundingCount = 0)
+			: Translation(tranX, tranY, tranZ)
+			, Scale(scale, scale, scale)
+			, RotationQuat(1.f, 1.f, 1.f, 0.f)
+			, BoundingCount(boundingCount)
+			, FrustumCullingEnabled(false)
+			, ShowBoundingBox(false)
+			, ShowBoundingSphere(false)
 		{
 		}
 
 		DirectX::XMFLOAT3 Translation;
 		DirectX::XMFLOAT3 Scale;
 		DirectX::XMFLOAT4 RotationQuat;
+		UINT BoundingCount;
+		bool FrustumCullingEnabled;
+		bool ShowBoundingBox;
+		bool ShowBoundingSphere;
 	};
 
 	struct RenderItem
@@ -117,8 +138,6 @@ private:
 		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 		MeshGeometry* Geo = nullptr;
-		MeshGeometry* BoundingBoxMesh = nullptr;
-		MeshGeometry* BoundingSphereMesh = nullptr;
 
 		// Primitive topology.
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -129,6 +148,7 @@ private:
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
 		std::vector<InstanceData> Instances;
+		std::vector<RootData> Datas;
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
@@ -139,8 +159,6 @@ private:
 			| (1 << (int)RenderLayer::ReflectedWireframe)
 			| (1 << (int)RenderLayer::ShadowWireframe)
 			| (1 << (int)RenderLayer::NormalWireframe);
-
-		std::vector<RootData> Datas;
 
 		// DrawIndexedInstanced parameters.
 		UINT IndexCount = 0;
@@ -249,6 +267,8 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
+
+	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
 
