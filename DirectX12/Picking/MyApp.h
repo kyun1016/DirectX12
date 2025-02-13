@@ -139,7 +139,7 @@ private:
 			, Scale(scale)
 			, RotationQuat(rot)
 			, BoundingCount(boundingCount)
-			, FrustumCullingEnabled(false)
+			, FrustumCullingEnabled(true)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
 			, IsPickable(true)
@@ -186,8 +186,7 @@ private:
 
 		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
 		{
-			// Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount));
-			Datas.push_back(RootData(translation, scale, rot, boundingCount));
+			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount));
 			
 			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
 			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);

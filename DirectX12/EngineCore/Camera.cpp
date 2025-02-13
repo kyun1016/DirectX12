@@ -64,6 +64,44 @@ XMFLOAT3 Camera::GetLook3f()const
 	return mLook;
 }
 
+DirectX::SimpleMath::Quaternion Camera::GetQuaternion() const
+{
+	DirectX::SimpleMath::Quaternion q;
+
+	double trace = mRight.x + mUp.y + mLook.z;
+	if (trace > 0.0) {
+		double s = 0.5 / sqrt(trace + 1.0);
+		q.w = 0.25 / s;
+		q.x = (mUp.z - mLook.y) * s;
+		q.y = (mLook.x - mRight.z) * s;
+		q.z = (mRight.y - mUp.x) * s;
+	}
+	else {
+		if (mRight.x > mUp.y && mRight.x > mLook.z) {
+			double s = 2.0 * sqrt(1.0 + mRight.x - mUp.y - mLook.z);
+			q.w = (mUp.z - mLook.y) / s;
+			q.x = 0.25 * s;
+			q.y = (mUp.x + mRight.y) / s;
+			q.z = (mLook.x + mRight.z) / s;
+		}
+		else if (mUp.y > mLook.z) {
+			double s = 2.0 * sqrt(1.0 + mUp.y - mRight.x - mLook.z);
+			q.w = (mLook.x - mRight.z) / s;
+			q.x = (mUp.x + mRight.y) / s;
+			q.y = 0.25 * s;
+			q.z = (mLook.y + mUp.z) / s;
+		}
+		else {
+			double s = 2.0 * sqrt(1.0 + mLook.z - mRight.x - mUp.y);
+			q.w = (mRight.y - mUp.x) / s;
+			q.x = (mLook.x + mRight.z) / s;
+			q.y = (mLook.y + mUp.z) / s;
+			q.z = 0.25 * s;
+		}
+	}
+	return q;
+}
+
 float Camera::GetNearZ()const
 {
 	return mNearZ;

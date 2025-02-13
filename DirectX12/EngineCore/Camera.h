@@ -22,6 +22,7 @@ public:
 	DirectX::XMFLOAT3 GetUp3f()const;
 	DirectX::XMVECTOR GetLook()const;
 	DirectX::XMFLOAT3 GetLook3f()const;
+	DirectX::SimpleMath::Quaternion GetQuaternion() const;
 
 	// Get frustum properties.
 	float GetNearZ()const;

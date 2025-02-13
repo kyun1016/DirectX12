@@ -1632,9 +1632,8 @@ void MyApp::AnimateMaterials()
 
 void MyApp::UpdateInstanceBuffer()
 {
-	DirectX::XMMATRIX view = mCamera.GetView();
-	DirectX::XMVECTOR detView = XMMatrixDeterminant(view);
-	DirectX::XMMATRIX invView = XMMatrixInverse(&detView, view);
+	mCamFrustum.Origin = mCamera.GetPosition3f();
+	mCamFrustum.Orientation = mCamera.GetQuaternion();
 
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
@@ -1643,22 +1642,22 @@ void MyApp::UpdateInstanceBuffer()
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
 		auto& e = mAllRitems[i];
-		if (e->NumFramesDirty > 0)
-		{
-			e->NumFramesDirty--;
-			for (size_t i = 0; i < e->Instances.size(); ++i)
-			{
-				DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
-				DirectX::XMFLOAT3 scale = e->Datas[i].Scale;
+		//if (e->NumFramesDirty > 0)
+		//{
+		//	e->NumFramesDirty--;
+		//	for (size_t i = 0; i < e->Instances.size(); ++i)
+		//	{
+		//		DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
+		//		DirectX::XMFLOAT3 scale = e->Datas[i].Scale;
 
-				DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-				DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
-				DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-				XMStoreFloat4x4(&e->Instances[i].World, DirectX::XMMatrixTranspose(world));
-				XMStoreFloat4x4(&e->Instances[i].TexTransform, DirectX::XMMatrixTranspose(texTransform));
-				XMStoreFloat4x4(&e->Instances[i].WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
-			}
-		}
+		//		DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+		//		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+		//		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+		//		XMStoreFloat4x4(&e->Instances[i].World, DirectX::XMMatrixTranspose(world));
+		//		XMStoreFloat4x4(&e->Instances[i].TexTransform, DirectX::XMMatrixTranspose(texTransform));
+		//		XMStoreFloat4x4(&e->Instances[i].WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
+		//	}
+		//}
 		
 		InstanceConstants insCB;
 		insCB.BaseInstanceIndex = visibleInstanceCount;
@@ -1667,14 +1666,7 @@ void MyApp::UpdateInstanceBuffer()
 
 		for (size_t i = 0; i < e->Instances.size(); ++i)
 		{
-			DirectX::XMMATRIX invWorld = DirectX::XMLoadFloat4x4(&e->Instances[i].WorldInvTranspose);
-
-			// View space to the object's local space.
-			DirectX::XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
-
-			DirectX::BoundingFrustum localSpaceFrustum;
-			mCamFrustum.Transform(localSpaceFrustum, viewToLocal);
-			if ((localSpaceFrustum.Contains(e->BoundingBox) != DirectX::DISJOINT) || (e->mFrustumCullingEnabled == false))
+			if ((mCamFrustum.Contains(e->Datas[i].BoundingBox) != DirectX::DISJOINT) || (e->Datas[i].FrustumCullingEnabled == false))
 			{
 				currInstanceBuffer->CopyData(visibleInstanceCount++, e->Instances[i]);
 			}
