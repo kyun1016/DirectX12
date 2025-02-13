@@ -80,6 +80,8 @@ private:
 
 	bool mViewDirty = true;
 
+	float mSpeed = 3.0f;
+
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();

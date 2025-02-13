@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <limits>
 #include <sstream>
+#include <algorithm>
 
 #include <Windows.h>
 #include <WinUser.h>

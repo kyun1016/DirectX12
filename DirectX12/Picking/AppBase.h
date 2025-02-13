@@ -219,4 +219,9 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Debug> mD12Debug;
 	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
 #endif
+
+	float mMouseNdcX = 0.0f;
+	float mMouseNdcY = 0.0f;
+	int mMouseX = -1;
+	int mMouseY = -1;
 };

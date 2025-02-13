@@ -1921,36 +1921,77 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 	}
 }
 
-void MyApp::Pick(int sx, int sy)
+void MyApp::Pick()
 {
-	DirectX::XMFLOAT4X4 P = mCamera.GetProj4x4f();
+	using DirectX::SimpleMath::Ray;
+	using DirectX::SimpleMath::Vector3;
+	using DirectX::SimpleMath::Matrix;
 
-	// Compute picking ray in view space.
-	float vx = (+2.0f * sx / mClientWidth - 1.0f) / P(0, 0);
-	float vy = (-2.0f * sy / mClientHeight + 1.0f) / P(1, 1);
+	float dist = 0.0f;
 
-	// Ray definition in view space.
-	DirectX::XMVECTOR rayOrigin = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	DirectX::XMVECTOR rayDir = DirectX::XMVectorSet(vx, vy, 1.0f, 0.0f);
+	const Matrix projRow = mCamera.GetProj4x4f();
+	const Matrix viewRow = mCamera.GetView4x4f();
+	const Vector3 ndcNear = Vector3(mMouseNdcX, mMouseNdcY, 0.0f);
+	const Vector3 ndcFar = Vector3(mMouseNdcX, mMouseNdcY, 1.0f);
+	const Matrix invProjView = (viewRow * projRow).Invert();
+	const Vector3 worldNear = Vector3::Transform(ndcNear, invProjView);
+	const Vector3 worldFar = Vector3::Transform(ndcFar, invProjView);
+	Vector3 dir = worldFar - worldNear;
+	dir.Normalize();
+	const Ray curRay = Ray(worldNear, dir);
 
-	DirectX::XMMATRIX view = mCamera.GetView();
-	DirectX::XMVECTOR det = XMMatrixDeterminant(view);
-	DirectX::XMMATRIX invView = XMMatrixInverse(&det, view);
-	for()
+	// if (mPickModel.first == -1)
+	{
+		mPickModel = PickClosest(curRay, dist);
+		if (mPickModel.first != -1)
+		{
+			std::cout << "Newly selected model: " << mPickModel.first << " / " << mPickModel.second << std::endl;
+		}
+	}
+}
+
+std::pair<int,int> MyApp::PickClosest(const DirectX::SimpleMath::Ray& pickingRay, float& minDist)
+{
+	std::pair<int, int> ret(-1,-1);
+	minDist = 1e5f;
+	for (int i = 0; i < mAllRitems.size(); ++i) {
+		for (int j = 0; j < mAllRitems[i]->Datas.size(); ++j) {
+			auto& data = mAllRitems[i]->Datas[j];
+			float dist = 0.0f;
+			if (data.IsPickable &&
+				pickingRay.Intersects(data.BoundingSphere, dist) &&
+				dist < minDist) {
+				ret = { i,j };
+				minDist = dist;
+			}
+		}
+	}
+	return ret;
 }
 
 void MyApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
+	mMouseX = x;
+	mMouseY = y;
+
+	// 마우스 커서의 위치를 NDC로 변환
+	// 마우스 커서는 좌측 상단 (0, 0), 우측 하단(width-1, height-1)
+	// NDC는 좌측 하단이 (-1, -1), 우측 상단(1, 1)
+	mMouseNdcX = x * 2.0f / mClientWidth - 1.0f;
+	mMouseNdcY = -y * 2.0f / mClientHeight + 1.0f;
+
+	// 커서가 화면 밖으로 나갔을 경우 범위 조절
+	// 게임에서는 클램프를 안할 수도 있습니다.
+	mMouseNdcX = std::clamp(mMouseNdcX, -1.0f, 1.0f);
+	mMouseNdcY = std::clamp(mMouseNdcY, -1.0f, 1.0f);
+
 	if ((btnState & MK_LBUTTON) != 0)
 	{
-		mLastMousePos.x = x;
-		mLastMousePos.y = y;
-
 		SetCapture(mHwndWindow);
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
-		Pick(x, y);
+		Pick();
 	}
 }
 
@@ -1964,15 +2005,15 @@ void MyApp::OnMouseMove(WPARAM btnState, int x, int y)
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		// Make each pixel correspond to a quarter of a degree.
-		float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-		float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
+		float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - mMouseX));
+		float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - mMouseY));
 
 		mCamera.Pitch(dy);
 		mCamera.RotateY(dx);
 	}
 
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
+	mMouseX = x;
+	mMouseY = y;
 }
 
 void MyApp::OnKeyboardInput()

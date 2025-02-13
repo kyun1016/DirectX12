@@ -95,7 +95,7 @@ private:
 #pragma endregion Constant
 	struct RootData
 	{
-		RootData() = default;
+		RootData() = delete;
 		RootData(float tranX = 0.0f, float tranY = 0.0f, float tranZ = 0.0f, float scale = 1.0f)
 			: Translation(tranX, tranY, tranZ)
 			, Scale(scale, scale, scale)
@@ -104,6 +104,7 @@ private:
 			, FrustumCullingEnabled(false)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
+			, IsPickable(true)
 		{
 		}
 
@@ -115,8 +116,11 @@ private:
 			, FrustumCullingEnabled(false)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
+			, IsPickable(true)
 		{
 		}
+		DirectX::BoundingBox BoundingBox;
+		DirectX::BoundingSphere BoundingSphere;
 
 		DirectX::XMFLOAT3 Translation;
 		DirectX::XMFLOAT3 Scale;
@@ -125,6 +129,7 @@ private:
 		bool FrustumCullingEnabled;
 		bool ShowBoundingBox;
 		bool ShowBoundingSphere;
+		bool IsPickable;
 	};
 
 	struct RenderItem
@@ -208,7 +213,8 @@ private:
 
 	void DrawRenderItems(const RenderLayer ritems);
 
-	void Pick(int sx, int sy);
+	void Pick();
+	std::pair<int, int> PickClosest(const DirectX::SimpleMath::Ray& pickingRay, float& minDist);
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
@@ -246,7 +252,7 @@ private:
 	int mLayerCBIdx[MAX_LAYER_DEPTH];
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	int mPickedRitemIdx = -1;
+	std::pair<int, int> mPickModel = { -1,-1 };
 	UINT mInstanceCount = 0;
 
 	std::unique_ptr<Waves> mWaves;
@@ -274,6 +280,4 @@ private:
 	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
-
-	POINT mLastMousePos;
 };
