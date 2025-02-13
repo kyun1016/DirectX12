@@ -21,9 +21,9 @@ struct MaterialData
 
 struct InstanceData
 {
-	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 WorldInvTranspose = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix World = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix TexTransform = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix WorldInvTranspose = MathHelper::Identity4x4();
 	UINT MaterialIndex = 0;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
 	float GridSpatialStep = 1.0f;

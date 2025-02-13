@@ -131,6 +131,32 @@ private:
 			, IsPickable(true)
 		{
 		}
+
+		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0)
+			: BoundingBox(boundingBox)
+			, BoundingSphere(boundingSphere)
+			, Translation(translation)
+			, Scale(scale)
+			, RotationQuat(rot)
+			, BoundingCount(boundingCount)
+			, FrustumCullingEnabled(false)
+			, ShowBoundingBox(false)
+			, ShowBoundingSphere(false)
+			, IsPickable(true)
+		{
+			BoundingBox.Center.x += translation.x;
+			BoundingBox.Center.y += translation.y;
+			BoundingBox.Center.z += translation.z;
+
+			BoundingBox.Extents.x *= scale.x;
+			BoundingBox.Extents.y *= scale.y;
+			BoundingBox.Extents.z *= scale.z;
+
+			BoundingSphere.Center.x += translation.x;
+			BoundingSphere.Center.y += translation.y;
+			BoundingSphere.Center.z += translation.z;
+			BoundingSphere.Radius *= scale.Length();
+		}
 		DirectX::BoundingBox BoundingBox;
 		DirectX::BoundingSphere BoundingSphere;
 
@@ -160,6 +186,7 @@ private:
 
 		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
 		{
+			// Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount));
 			Datas.push_back(RootData(translation, scale, rot, boundingCount));
 			
 			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
