@@ -119,12 +119,24 @@ private:
 			, IsPickable(true)
 		{
 		}
+
+		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0)
+			: Translation(translation)
+			, Scale(scale)
+			, RotationQuat(rot)
+			, BoundingCount(boundingCount)
+			, FrustumCullingEnabled(false)
+			, ShowBoundingBox(false)
+			, ShowBoundingSphere(false)
+			, IsPickable(true)
+		{
+		}
 		DirectX::BoundingBox BoundingBox;
 		DirectX::BoundingSphere BoundingSphere;
 
-		DirectX::XMFLOAT3 Translation;
-		DirectX::XMFLOAT3 Scale;
-		DirectX::XMFLOAT4 RotationQuat;
+		DirectX::SimpleMath::Vector3 Translation;
+		DirectX::SimpleMath::Vector3 Scale;
+		DirectX::SimpleMath::Quaternion RotationQuat;
 		UINT BoundingCount;
 		bool FrustumCullingEnabled;
 		bool ShowBoundingBox;
@@ -135,6 +147,48 @@ private:
 	struct RenderItem
 	{
 		RenderItem() = default;
+		RenderItem(int idx1, int idx2, MeshGeometry* geo, bool culling = true)
+			: Geo(geo)
+			, IndexCount(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].IndexCount)
+			, StartIndexLocation(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].StartIndexLocation)
+			, BaseVertexLocation(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BaseVertexLocation)
+			, BoundingBox(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BoundingBox)
+			, BoundingSphere(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BoundingSphere)
+			, mFrustumCullingEnabled(culling)
+		{
+		}
+
+		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
+		{
+			Datas.push_back(RootData(translation, scale, rot, boundingCount));
+			
+			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+			Instances.push_back({});
+			XMStoreFloat4x4(&Instances.back().World, DirectX::XMMatrixTranspose(world));
+			XMStoreFloat4x4(&Instances.back().TexTransform, DirectX::XMMatrixTranspose(texTransform));
+			XMStoreFloat4x4(&Instances.back().WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
+			Instances.back().MaterialIndex = matIdx;
+		}
+
+		void Push(RootData data)
+		{
+			Datas.push_back(data);
+
+			DirectX::SimpleMath::Vector3 scale = data.Scale;
+			DirectX::SimpleMath::Vector3 translation = data.Translation;
+
+			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+			Instances.push_back({});
+			XMStoreFloat4x4(&Instances.back().World, DirectX::XMMatrixTranspose(world));
+			XMStoreFloat4x4(&Instances.back().TexTransform, DirectX::XMMatrixTranspose(texTransform));
+			XMStoreFloat4x4(&Instances.back().WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
+		}
 
 		// Dirty flag indicating the object data has changed and we need to update the constant buffer.
 		// Because we have an object cbuffer for each FrameResource, we have to apply the
@@ -152,8 +206,8 @@ private:
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
-		std::vector<InstanceData> Instances;
-		std::vector<RootData> Datas;
+		std::vector<InstanceData> Instances;	// GPU 전송 전용 데이터
+		std::vector<RootData> Datas;			// CPU 및 알고리즘 연산을 위한 데이터
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
