@@ -287,6 +287,19 @@ void MyApp::BuildShaderResourceViews()
 		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
+	mCSBlurFilter->BuildDescriptors(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize),
+		mCbvSrvUavDescriptorSize);
+	hDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
+
+	mCSWaves->BuildDescriptors(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		mCbvSrvUavDescriptorSize);
+	hDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
+
+
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
@@ -299,16 +312,6 @@ void MyApp::BuildShaderResourceViews()
 		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
 		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
-
-	mCSBlurFilter->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size(), mCbvSrvUavDescriptorSize),
-		mCbvSrvUavDescriptorSize);
-
-	mCSWaves->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
-		mCbvSrvUavDescriptorSize);
 }
 
 void MyApp::BuildShadersAndInputLayout()
@@ -319,7 +322,6 @@ void MyApp::BuildShadersAndInputLayout()
 	strcpy_s(texSize, std::to_string(TEXTURE_FILENAMES.size() + SRV_USER_SIZE).c_str());
 	strcpy_s(texArraySize, std::to_string(TEXTURE_ARRAY_FILENAMES.size()).c_str());
 	strcpy_s(texCubeSize, std::to_string(TEXTURE_CUBE_FILENAMES.size()).c_str());
-	std::cout << texSize << std::endl;
 	const D3D_SHADER_MACRO defines[] =
 	{
 		"TEX_SIZE", texSize,
@@ -912,18 +914,6 @@ void MyApp::BuildMaterials()
 	}
 	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
-
-	for (size_t i = 0; i < TEXTURE_CUBE_FILENAMES.size(); ++i)
-	{
-		auto mat = std::make_unique<Material>();
-		mat->Name = MATERIAL_NAMES[idx];
-		mat->MatCBIndex = idx++;
-		mat->DiffuseSrvHeapIndex = i;
-		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		mat->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
-		mat->Roughness = 1.0f;
-		mMaterials[mat->Name] = std::move(mat);
-	}
 
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[idx];
@@ -1636,7 +1626,7 @@ void MyApp::Render()
 	mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
 	mCommandList->SetGraphicsRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
 	mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
-	mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize));
+	mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize));
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -2182,7 +2172,12 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Texture [0, ") + std::to_string(SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &texIdx, 0, SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+	ImGui::SliderInt(
+		(std::string("Texture [0, ") 
+			+ std::to_string(SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(),
+		&texIdx,
+		0,
+		SRV_IMGUI_SIZE + SRV_USER_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
@@ -2215,7 +2210,7 @@ void MyApp::ShowMaterialWindow()
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_USER_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(TEXTURE_FILENAMES.size() + SRV_USER_SIZE + TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_USER_SIZE + TEXTURE_FILENAMES.size() + TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };

@@ -100,6 +100,8 @@ cbuffer cbPass : register(b0)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
+    
+    uint gCubeMapIndex;
 };
 
 cbuffer cbInstance : register(b1)

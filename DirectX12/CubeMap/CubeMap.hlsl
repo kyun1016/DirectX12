@@ -11,8 +11,6 @@ struct VertexOut
 {
     float4 PosH : SV_POSITION;
     float3 PosL : POSITION;
-    
-    nointerpolation uint MatIndex : MATINDEX;
 };
  
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
@@ -21,9 +19,6 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
     InstanceData instData = gInstanceData[instanceID + gBaseInstanceIndex];
     float4x4 world = instData.World;
-    uint matIndex = instData.MaterialIndex;
-    
-    vout.MatIndex = matIndex;
 	// Use local vertex position as cubemap lookup vector.
     vout.PosL = vin.PosL;
 	
@@ -41,8 +36,5 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    MaterialData matData = gMaterialData[pin.MatIndex];
-    uint diffuseTexIndex = matData.DiffuseMapIndex;
-    
-    return gCubeMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.PosL);
+    return gCubeMap[gCubeMapIndex].Sample(gsamLinearWrap, pin.PosL);
 }

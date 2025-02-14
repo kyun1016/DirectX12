@@ -66,11 +66,7 @@ private:
 	float mTimeStep;
 	float mSpatialStep;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
-
 	ID3D12Device* md3dDevice = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> mVSShader;
-	Microsoft::WRL::ComPtr<ID3DBlob> mPSShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> mCSDisturbShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> mCSUpdateShader;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mCSRootSignature;

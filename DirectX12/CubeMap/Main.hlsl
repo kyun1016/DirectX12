@@ -95,7 +95,9 @@ PixelOut PS(VertexOut pin)
     pin.NormalW = normalize(pin.NormalW);
 
     // Vector from point being lit to eye. 
-    float3 toEyeW = normalize(gEyePosW - pin.PosW);
+    float3 toEyeW = gEyePosW - pin.PosW;
+    float distToEye = length(toEyeW);
+    toEyeW /= distToEye; // ¡§±‘»≠
 
     // Light terms.
     float4 ambient = gAmbientLight * diffuseAlbedo;
@@ -108,6 +110,12 @@ PixelOut PS(VertexOut pin)
 
     float4 litColor = ambient + directLight;
 
+    // Add in specular reflections.
+    float3 r = reflect(-toEyeW, pin.NormalW);
+    float4 reflectionColor = gCubeMap[gCubeMapIndex].Sample(gsamLinearWrap, r);
+    float3 fresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, r);
+    litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
+    
 #ifdef FOG
     float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
     litColor = lerp(litColor, gFogColor, fogAmount);

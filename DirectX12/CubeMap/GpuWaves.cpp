@@ -81,6 +81,7 @@ UINT GpuWaves::DescriptorCount()const
 
 void GpuWaves::BuildShadersAndInputLayout()
 {
+
 	const D3D_SHADER_MACRO waveDefines[] =
 	{
 		"DISPLACEMENT_MAP", "1",
@@ -93,17 +94,8 @@ void GpuWaves::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mVSShader        = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
 	mCSDisturbShader = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveDisturbCS", "cs_5_1");
 	mCSUpdateShader  = D3DUtil::CompileShader(L"WaveCS.hlsl", nullptr, "WaveUpdateCS", "cs_5_1");
-	mPSShader        = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
-
-	mMainInputLayout =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	};
 }
 
 void GpuWaves::BuildResources(ID3D12GraphicsCommandList* cmdList)
