@@ -30,6 +30,10 @@ private:
 		// Array Tex (for Billboard Shader)
 		L"treearray.dds", L"treeArray2.dds",
 	};
+	static const inline std::vector<std::wstring>	TEXTURE_CUBE_FILENAMES = {
+		// Array Tex (for Billboard Shader)
+		L"desertcube1024.dds", L"grasscube1024.dds",L"snowcube1024.dds",L"sunsetcube1024.dds",
+	};
 
 	static const inline std::vector<std::string>	MATERIAL_NAMES = {
 		// STD TEX Material
@@ -40,6 +44,9 @@ private:
 
 		// Array TEX Material
 		"treearray", "treeArray2",
+
+		// CubeMap TEX Material
+		"desertcube1024", "grasscube1024","snowcube1024", "sunsetcube1024",
 
 		// User Define Material
 		"skullMat", "shadowMat", "viewport"
@@ -76,6 +83,7 @@ private:
 		Tessellation,
 		BoundingBox,
 		BoundingSphere,
+		CubeMap,
 		OpaqueWireframe,
 		MirrorWireframe,
 		ReflectedWireframe,
@@ -97,26 +105,26 @@ private:
 	{
 		RootData() = delete;
 
-		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
+		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 			: Translation(translation)
 			, Scale(scale)
 			, RotationQuat(rot)
 			, BoundingCount(boundingCount)
-			, FrustumCullingEnabled(false)
+			, FrustumCullingEnabled(cull)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
 			, IsPickable(true)
 		{
 		}
 
-		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
+		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 			: BoundingBox(boundingBox)
 			, BoundingSphere(boundingSphere)
 			, Translation(translation)
 			, Scale(scale)
 			, RotationQuat(rot)
 			, BoundingCount(boundingCount)
-			, FrustumCullingEnabled(true)
+			, FrustumCullingEnabled(cull)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
 			, IsPickable(true)
@@ -173,9 +181,9 @@ private:
 		{
 		}
 
-		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0)
+		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		{
-			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount, matIdx));
+			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount, matIdx, cull));
 		}
 
 		void Push(RootData data)
