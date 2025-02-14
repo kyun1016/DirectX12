@@ -64,11 +64,13 @@ bool MyApp::Initialize()
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality);
+	mDynamicCubeMap = std::make_unique<CubeRenderTarget>(mDevice.Get(), CUBE_MAP_SIZE, CUBE_MAP_SIZE, DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	LoadTextures();
 	BuildMaterials();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
+	BuildCubeDepthStencil();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
 	BuildModelGeometry();
@@ -148,7 +150,7 @@ void MyApp::BuildRootSignature()
 	D3D12_DESCRIPTOR_RANGE TexCubeTable // register t0[0] (Space2)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEXTURE_CUBE_FILENAMES.size(),
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEXTURE_CUBE_FILENAMES.size() + mDynamicCubeMap->DescriptorCount(), // CubeMap + Dynamic CubeMap
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -217,7 +219,7 @@ void MyApp::BuildDescriptorHeaps()
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + SRV_USER_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
+		/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE + SRV_USER_SIZE + (UINT)TEXTURE_FILENAMES.size() + (UINT)TEXTURE_ARRAY_FILENAMES.size() + (UINT)TEXTURE_CUBE_FILENAMES.size() + mDynamicCubeMap->DescriptorCount() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(),
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 		/* UINT NodeMask					*/.NodeMask = 0
 	};
@@ -253,7 +255,8 @@ void MyApp::BuildShaderResourceViews()
 		/* }																			*/
 	};
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hCPUDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hGPUDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDesc.Texture2D.MostDetailedMip = 0;
@@ -262,8 +265,9 @@ void MyApp::BuildShaderResourceViews()
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	for (int i = 0; i < SRV_USER_SIZE; ++i)
 	{
-		mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hDescriptor);
-		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hCPUDescriptor);
+		hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
 	for (int i = 0; i < TEXTURE_FILENAMES.size(); ++i)
@@ -272,8 +276,9 @@ void MyApp::BuildShaderResourceViews()
 
 		srvDesc.Format = texture->GetDesc().Format;
 		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
-		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
-		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
+		hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
@@ -286,21 +291,24 @@ void MyApp::BuildShaderResourceViews()
 
 		srvDesc.Format = texture->GetDesc().Format;
 		srvDesc.Texture2DArray.ArraySize = texture->GetDesc().DepthOrArraySize;
-		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
-		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
+		hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
 	mCSBlurFilter->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size(), mCbvSrvUavDescriptorSize),
+		hCPUDescriptor,
+		hGPUDescriptor,
 		mCbvSrvUavDescriptorSize);
-	hDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
+	hCPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
+	hGPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
 
 	mCSWaves->BuildDescriptors(
-		CD3DX12_CPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
-		CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize),
+		hCPUDescriptor,
+		hGPUDescriptor,
 		mCbvSrvUavDescriptorSize);
-	hDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
+	hCPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
+	hGPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
 
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
@@ -311,9 +319,63 @@ void MyApp::BuildShaderResourceViews()
 
 		srvDesc.TextureCube.MipLevels = texture->GetDesc().MipLevels;
 		srvDesc.Format = texture->GetDesc().Format;
-		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
-		hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
+		hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
+
+	auto rtvCpuStart = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
+	int rtvOffset = APP_NUM_BACK_BUFFERS + 1;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cubeRtvHandles[6];
+	for (int i = 0; i < 6; ++i)
+		cubeRtvHandles[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvCpuStart, rtvOffset + i, mRtvDescriptorSize);
+
+	// Dynamic cubemap SRV is after the sky SRV.
+	mDynamicCubeMap->BuildDescriptors(
+		hCPUDescriptor,
+		hGPUDescriptor,
+		cubeRtvHandles);
+	hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+	hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+}
+
+void MyApp::BuildCubeDepthStencil()
+{
+	// Create the depth/stencil buffer and view.
+	D3D12_RESOURCE_DESC depthStencilDesc;
+	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Alignment = 0;
+	depthStencilDesc.Width = CUBE_MAP_SIZE;
+	depthStencilDesc.Height = CUBE_MAP_SIZE;
+	depthStencilDesc.DepthOrArraySize = 1;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.Format = mDepthStencilFormat;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	D3D12_CLEAR_VALUE optClear;
+	optClear.Format = mDepthStencilFormat;
+	optClear.DepthStencil.Depth = 1.0f;
+	optClear.DepthStencil.Stencil = 0;
+
+	auto heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	ThrowIfFailed(mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&depthStencilDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		&optClear,
+		IID_PPV_ARGS(mCubeDepthStencilBuffer.GetAddressOf())));
+
+	// Create descriptor to mip level 0 of entire resource using the format of the resource.
+	mDevice->CreateDepthStencilView(mCubeDepthStencilBuffer.Get(), nullptr, mCubeDSV);
+
+	// Transition the resource from its initial state to be used as a depth buffer.
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mCubeDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	mCommandList->ResourceBarrier(1, &barrier);
 }
 
 void MyApp::BuildShadersAndInputLayout()
@@ -323,7 +385,7 @@ void MyApp::BuildShadersAndInputLayout()
 	char texCubeSize[100];
 	strcpy_s(texSize, std::to_string(TEXTURE_FILENAMES.size() + SRV_USER_SIZE).c_str());
 	strcpy_s(texArraySize, std::to_string(TEXTURE_ARRAY_FILENAMES.size()).c_str());
-	strcpy_s(texCubeSize, std::to_string(TEXTURE_CUBE_FILENAMES.size()).c_str());
+	strcpy_s(texCubeSize, std::to_string(TEXTURE_CUBE_FILENAMES.size() + mDynamicCubeMap->DescriptorCount()).c_str());	// CubeMap + Dynamic CubeMap
 	const D3D_SHADER_MACRO defines[] =
 	{
 		"TEX_SIZE", texSize,
@@ -1506,6 +1568,39 @@ void MyApp::BuildPSO()
 #pragma endregion Initialize
 
 #pragma region Update
+void MyApp::CreateRtvAndDsvDescriptorHeaps()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1 + 6,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		/* UINT NodeMask					*/0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
+
+	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS + 1; i++)
+	{
+		mSwapChainDescriptor[i] = rtvHandle;
+		rtvHandle.ptr += mRtvDescriptorSize;
+	}
+
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
+	{
+		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+		/* UINT NumDescriptors				*/2,
+		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		/* UINT NodeMask					*/0
+	};
+	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
+
+	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	mDepthStencilDescriptor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	mCubeDSV = CD3DX12_CPU_DESCRIPTOR_HANDLE(mDsvHeap->GetCPUDescriptorHandleForHeapStart(), 1, mDsvDescriptorSize);
+}
 void MyApp::OnResize()
 {
 	AppBase::OnResize();
@@ -1540,11 +1635,11 @@ void MyApp::OnResize()
 			/* }																			*/
 		};
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hCPUDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
 		for (int i = 0; i < SRV_USER_SIZE; ++i)
 		{
-			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hDescriptor);
-			hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hCPUDescriptor);
+			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 		}
 	}
 
@@ -1581,33 +1676,10 @@ void MyApp::Render()
 	// Reusing the command list reuses memory.
 	ThrowIfFailed(mCommandList->Reset(mCurrFrameResource->CmdListAlloc.Get(), nullptr));
 
+	//====================================================
+	// GPU Memory setting
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	mCommandList->RSSetViewports(1, &mScreenViewport);
-	mCommandList->RSSetScissorRects(1, &mScissorRect);
-
-	// Indicate a state transition on the resource usage.
-	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
-	for(int i=0; i<SRV_USER_SIZE; ++i)
-		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	for (int i = 0; i < SRV_USER_SIZE; ++i)
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
-
-	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
-	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
-	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
-	rtvs[0] = mSwapChainDescriptor[mCurrBackBuffer];		// 기존
-	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
-	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
-	// mCommandList->OMSetRenderTargets(1, &mSwapChainDescriptor[mCurrBackBuffer], false, &mDepthStencilDescriptor);
 
 	// Bind per-pass constant buffer.  We only need to do this once per-pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
@@ -1629,6 +1701,36 @@ void MyApp::Render()
 	mCommandList->SetGraphicsRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
 	mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
 	mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize));
+	//====================================================
+
+	DrawSceneToCubeMap();
+
+	//====================================================
+	// Render Target Setting
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+	// Indicate a state transition on the resource usage.
+	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	mCommandList->ResourceBarrier(1, &RenderBarrier);
+	for (int i = 0; i < SRV_USER_SIZE; ++i)
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
+
+	// Clear the back buffer and depth buffer.
+	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// Specify the buffers we are going to render to.
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
+	rtvs[0] = mSwapChainDescriptor[mCurrBackBuffer];		// 기존
+	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
+	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
+	//====================================================
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -1863,7 +1965,41 @@ void MyApp::UpdateMainPassCB()
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
+
+	UpdateCubeMapFacePassCBs();
 }
+
+void MyApp::UpdateCubeMapFacePassCBs()
+{
+	for (int i = 0; i < 6; ++i)
+	{
+		PassConstants cubeFacePassCB = mMainPassCB;
+
+		DirectX::XMMATRIX view = mCubeMapCamera[i].GetView();
+		DirectX::XMMATRIX proj = mCubeMapCamera[i].GetProj();
+
+		DirectX::XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+		DirectX::XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
+		DirectX::XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
+		DirectX::XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+
+		XMStoreFloat4x4(&cubeFacePassCB.View, XMMatrixTranspose(view));
+		XMStoreFloat4x4(&cubeFacePassCB.InvView, XMMatrixTranspose(invView));
+		XMStoreFloat4x4(&cubeFacePassCB.Proj, XMMatrixTranspose(proj));
+		XMStoreFloat4x4(&cubeFacePassCB.InvProj, XMMatrixTranspose(invProj));
+		XMStoreFloat4x4(&cubeFacePassCB.ViewProj, XMMatrixTranspose(viewProj));
+		XMStoreFloat4x4(&cubeFacePassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+		cubeFacePassCB.EyePosW = mCubeMapCamera[i].GetPosition3f();
+		cubeFacePassCB.RenderTargetSize = XMFLOAT2((float)CubeMapSize, (float)CubeMapSize);
+		cubeFacePassCB.InvRenderTargetSize = XMFLOAT2(1.0f / CubeMapSize, 1.0f / CubeMapSize);
+
+		auto currPassCB = mCurrFrameResource->PassCB.get();
+
+		// Cube map pass cbuffers are stored in elements 1-6.
+		currPassCB->CopyData(1 + i, cubeFacePassCB);
+	}
+}
+
 void MyApp::UpdateReflectedPassCB()
 {
 	mReflectedPassCB = mMainPassCB;
@@ -1925,6 +2061,68 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);
 		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
+}
+
+void MyApp::DrawSceneToCubeMap()
+{
+	auto viewport = mDynamicCubeMap->Viewport();
+	auto scissorRect = mDynamicCubeMap->ScissorRect();
+	mCommandList->RSSetViewports(1, &viewport);
+	mCommandList->RSSetScissorRects(1, &scissorRect);
+
+	// Change to RENDER_TARGET.
+	D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mDynamicCubeMap->Resource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	mCommandList->ResourceBarrier(1, &barrier);
+
+	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
+
+	// For each cube map face.
+	for (int i = 0; i < 6; ++i)
+	{
+		auto rtv = mDynamicCubeMap->Rtv(i);
+		// Clear the back buffer and depth buffer.
+		mCommandList->ClearRenderTargetView(rtv, DirectX::Colors::LightSteelBlue, 0, nullptr);
+		mCommandList->ClearDepthStencilView(mCubeDSV, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+		// Specify the buffers we are going to render to.
+		mCommandList->OMSetRenderTargets(1, &rtv, true, &mCubeDSV);
+
+		// Bind the pass constant buffer for this cube map face so we use 
+		// the right view/proj matrix for this cube face.
+		auto passCB = mCurrFrameResource->PassCB->Resource();
+		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + i) * passCBByteSize;
+		mCommandList->SetGraphicsRootConstantBufferView(1, passCBAddress);
+
+		for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
+		{
+			if (mLayerType[i] == RenderLayer::None)
+				continue;
+			else if (mLayerType[i] == RenderLayer::AddCS)
+			{
+				mCSAdd->DoComputeWork(mCommandList.Get(), mCurrFrameResource->CmdListAlloc.Get());
+				mLayerType[i] = RenderLayer::None;
+				mSyncEn = true;
+			}
+			else if (mLayerType[i] == RenderLayer::BlurCS)
+			{
+				// mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
+			}
+			else {
+				if (mLayerType[i] == RenderLayer::WaveVS_CS)
+					mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
+				mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+				mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+				mCommandList->OMSetStencilRef(mLayerStencil[i]);
+				mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
+				DrawRenderItems(mLayerType[i]);
+			}
+		}
+	}
+	
+	// Change back to GENERIC_READ so we can read the texture in a shader.
+	barrier.Transition.StateBefore = barrier.Transition.StateAfter;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	mCommandList->ResourceBarrier(1, &barrier);
 }
 
 void MyApp::Pick()
@@ -2279,7 +2477,7 @@ void MyApp::ShowRenderItemWindow()
 
 		if (flag)
 		{
-			ritm->NumFramesDirty = 1;
+			// ritm->NumFramesDirty = 1; 바로 업데이트 하는 방식으로 수정
 		}
 	}
 
