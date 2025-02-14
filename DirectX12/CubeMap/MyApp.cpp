@@ -299,7 +299,6 @@ void MyApp::BuildShaderResourceViews()
 		mCbvSrvUavDescriptorSize);
 	hDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
 
-
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
@@ -2065,6 +2064,8 @@ void MyApp::UpdateImGui()
 		ShowRenderItemWindow();
 	if (mShowViewportWindow)
 		ShowViewportWindow();
+	if (mShowCubeMapWindow)
+		ShowCubeMapWindow();
 }
 
 void MyApp::ShowMainWindow()
@@ -2078,6 +2079,7 @@ void MyApp::ShowMainWindow()
 		ImGui::Checkbox("Material", &mShowMaterialWindow);
 		ImGui::Checkbox("Render Item", &mShowRenderItemWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
+		ImGui::Checkbox("Cubemap", &mShowCubeMapWindow);
 		ImGui::TreePop();
 	}
 
@@ -2292,6 +2294,24 @@ void MyApp::ShowViewportWindow()
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
+	}
+	ImGui::End();
+}
+
+void MyApp::ShowCubeMapWindow()
+{
+	ImGui::Begin("cubemap", &mShowCubeMapWindow);
+
+	static int idx;
+
+	ImGui::LabelText("label", "Value");
+	ImGui::SeparatorText("Inputs");
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	int flag = 0;
+	flag += ImGui::SliderInt((std::string("Cubemap [0, ") + std::to_string((UINT)TEXTURE_CUBE_FILENAMES.size() - 1) + "]").c_str(), &idx, 0, (UINT)TEXTURE_CUBE_FILENAMES.size() - 1, "%d", flags);
+	if (flag)
+	{
+		mMainPassCB.gCubeMapIndex = idx;
 	}
 	ImGui::End();
 }

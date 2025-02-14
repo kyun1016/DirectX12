@@ -284,11 +284,13 @@ private:
 	void ShowMaterialWindow();
 	void ShowRenderItemWindow();
 	void ShowViewportWindow();
+	void ShowCubeMapWindow();
 	bool mShowDemoWindow = false;
 	bool mShowTextureWindow = false;
 	bool mShowMaterialWindow = false;
 	bool mShowRenderItemWindow = false;
 	bool mShowViewportWindow = false;
+	bool mShowCubeMapWindow = false;
 
 	int mImguiIdxTexture = 0;
 	int mImguiWidth = 0;
