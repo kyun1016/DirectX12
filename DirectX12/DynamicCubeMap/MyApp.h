@@ -247,6 +247,8 @@ public:
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildPSO();
+	void BuildCubeFaceCamera(float x, float y, float z);
+
 #pragma endregion Initialize
 
 private:
@@ -263,7 +265,6 @@ private:
 	void UpdateMainPassCB();
 	void UpdateCubeMapFacePassCBs();
 	void UpdateReflectedPassCB();
-	
 
 	void DrawRenderItems(const RenderLayer ritems);
 	void DrawSceneToCubeMap();
@@ -315,8 +316,12 @@ private:
 	std::unique_ptr<CSAdd> mCSAdd;
 	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
+
 	std::unique_ptr<CubeRenderTarget> mDynamicCubeMap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mCubeDepthStencilBuffer;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE mCubeDSV;
+	Camera mCubeMapCamera[6];
+	int mGPUCubeMapIndex = 0;
 
 	PassConstants mMainPassCB;
 	PassConstants mReflectedPassCB;
@@ -332,10 +337,7 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE mCubeDSV;
-
 	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
-	Camera mCubeMapCamera[6];
 };

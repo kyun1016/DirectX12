@@ -61,6 +61,7 @@ bool MyApp::Initialize()
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	mCamera.SetPosition(0.0f, 2.0f, -15.0f);
+	BuildCubeFaceCamera(0.0f, 8.0f, 0.0f);
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality);
@@ -82,7 +83,6 @@ bool MyApp::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
-
 
 	if (!InitImgui())
 		return false;
@@ -976,6 +976,8 @@ void MyApp::BuildMaterials()
 		mat->Roughness = 0.1f;
 		mMaterials[mat->Name] = std::move(mat);
 	}
+	mMaterials["bricks3"]->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+	mMaterials["bricks3"]->FresnelR0 = DirectX::XMFLOAT3(0.97f, 0.97f, 0.97f);
 	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 
@@ -1071,49 +1073,51 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	//for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	//{
+	//	translation.x = (i % 10) * 8.0f;
+	//	translation.y = 10.0f;
+	//	translation.z = 5.0 + 5.0 * (i / 5);
+	//	scale.x = 3.0f;
+	//	scale.y = 3.0f;
+	//	scale.z = 3.0f;
+
+	//	boxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+	//}
+	//
+	//for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	//{
+	//	translation.x = (i % 10) * 8.0f;
+	//	translation.y = 20.0f;
+	//	translation.z = 5.0 + 5.0 * (i / 5);
+	//	scale.x = 3.0f;
+	//	scale.y = 3.0f;
+	//	scale.z = 3.0f;
+
+	//	subSphereRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+	//}
+	//
+	//for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	//{
+	//	translation.x = (i % 10) * 8.0f;
+	//	translation.y = 30.0f;
+	//	translation.z = 5.0 + 5.0 * (i / 5);
+	//	scale.x = 3.0f;
+	//	scale.y = 3.0f;
+	//	scale.z = 3.0f;
+
+	//	alphaBoxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+	//}
+
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 10.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		boxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+		translation.x = 0.0f;
+		translation.y = 5.0f;
+		translation.z = 0.0f;
+		scale.x = 1.0f;
+		scale.y = 1.0f;
+		scale.z = 1.0f;
+		gridRitem->Push(translation, scale, rot, mInstanceCount++, 2);
 	}
-	
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 20.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		subSphereRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
-	}
-	
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 30.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		alphaBoxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
-	}
-
-	translation.x = 0.0f;
-	translation.y = 5.0f;
-	translation.z = 0.0f;
-	scale.x = 1.0f;
-	scale.y = 1.0f;
-	scale.z = 1.0f;
-	gridRitem->Push(translation, scale, rot, mInstanceCount++, 2);
 
 	for (int i = 0; i < 5; ++i)
 	{
@@ -1137,13 +1141,23 @@ void MyApp::BuildRenderItems()
 
 	{
 		translation.x = 0.0f;
-		translation.y = 100.0f;
+		translation.y = 8.0f;
 		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		mirrorGridRitem->Push(translation, scale, rot, mInstanceCount++, 13);
+		scale.x = 2.0f;
+		scale.y = 2.0f;
+		scale.z = 2.0f;
+		sphereRitem->Push(translation, scale, rot, mInstanceCount++, 2);
 	}
+
+	//{
+	//	translation.x = 0.0f;
+	//	translation.y = 100.0f;
+	//	translation.z = 0.0f;
+	//	scale.x = 1.0f;
+	//	scale.y = 1.0f;
+	//	scale.z = 1.0f;
+	//	mirrorGridRitem->Push(translation, scale, rot, mInstanceCount++, 13);
+	//}
 	
 	
 	////=========================================================
@@ -1161,34 +1175,34 @@ void MyApp::BuildRenderItems()
 		skullRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 
-	////=========================================================
-	//// GEO_MESH_NAMES[2]:LandGeo
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		landRitem->Push(translation, scale, rot, mInstanceCount++, 4);
-	}
+	//////=========================================================
+	////// GEO_MESH_NAMES[2]:LandGeo
+	//////=========================================================
+	//{
+	//	translation.x = 0.0f;
+	//	translation.y = 0.0f;
+	//	translation.z = 0.0f;
+	//	scale.x = 1.0f;
+	//	scale.y = 1.0f;
+	//	scale.z = 1.0f;
+	//	landRitem->Push(translation, scale, rot, mInstanceCount++, 4);
+	//}
 
-	////=========================================================
-	//// GEO_MESH_NAMES[3]:WaterGeo
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 1.5f;
-		scale.y = 1.5f;
-		scale.z = 1.5f;
-		wavesRitem->Push(translation, scale, rot, mInstanceCount++, 11);
-		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
-		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
-		wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
-	}
+	//////=========================================================
+	////// GEO_MESH_NAMES[3]:WaterGeo
+	//////=========================================================
+	//{
+	//	translation.x = 0.0f;
+	//	translation.y = 0.0f;
+	//	translation.z = 0.0f;
+	//	scale.x = 1.5f;
+	//	scale.y = 1.5f;
+	//	scale.z = 1.5f;
+	//	wavesRitem->Push(translation, scale, rot, mInstanceCount++, 11);
+	//	wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
+	//	wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
+	//	wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
+	//}
 
 	////=========================================================
 	//// GEO_MESH_NAMES[5]: TreeSpritesGeo
@@ -1263,7 +1277,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 2, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mMaterials.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1+1+6, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mMaterials.size()));
 }
 
 void MyApp::BuildPSO()
@@ -1565,6 +1579,42 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TessellationWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS_CS_Wireframe])));
 }
+void MyApp::BuildCubeFaceCamera(float x, float y, float z)
+{
+	// Generate the cube map about the given position.
+	DirectX::XMFLOAT3 center(x, y, z);
+	DirectX::XMFLOAT3 worldUp(0.0f, 1.0f, 0.0f);
+
+	// Look along each coordinate axis.
+	DirectX::XMFLOAT3 targets[6] =
+	{
+		DirectX::XMFLOAT3(x + 1.0f, y, z), // +X
+		DirectX::XMFLOAT3(x - 1.0f, y, z), // -X
+		DirectX::XMFLOAT3(x, y + 1.0f, z), // +Y
+		DirectX::XMFLOAT3(x, y - 1.0f, z), // -Y
+		DirectX::XMFLOAT3(x, y, z + 1.0f), // +Z
+		DirectX::XMFLOAT3(x, y, z - 1.0f)  // -Z
+	};
+
+	// Use world up vector (0,1,0) for all directions except +Y/-Y.  In these cases, we
+	// are looking down +Y or -Y, so we need a different "up" vector.
+	DirectX::XMFLOAT3 ups[6] =
+	{
+		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),  // +X
+		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),  // -X
+		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), // +Y
+		DirectX::XMFLOAT3(0.0f, 0.0f, +1.0f), // -Y
+		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),	 // +Z
+		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f)	 // -Z
+	};
+
+	for (int i = 0; i < 6; ++i)
+	{
+		mCubeMapCamera[i].LookAt(center, targets[i], ups[i]);
+		mCubeMapCamera[i].SetLens(0.5f * DirectX::XM_PI, 1.0f, 0.1f, 1000.0f);
+		mCubeMapCamera[i].UpdateViewMatrix();
+	}
+}
 #pragma endregion Initialize
 
 #pragma region Update
@@ -1700,7 +1750,9 @@ void MyApp::Render()
 	mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
 	mCommandList->SetGraphicsRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
 	mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
-	mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize));
+
+	UINT cubeMapIndex = SRV_IMGUI_SIZE + (UINT)TEXTURE_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEXTURE_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount();
+	mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), cubeMapIndex + mGPUCubeMapIndex, mCbvSrvUavDescriptorSize));
 	//====================================================
 
 	DrawSceneToCubeMap();
@@ -1749,6 +1801,10 @@ void MyApp::Render()
 		else {
 			if(mLayerType[i] == RenderLayer::WaveVS_CS)
 				mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
+			if(mLayerType[i] == RenderLayer::CubeMap)
+				mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), cubeMapIndex + mGPUCubeMapIndex, mCbvSrvUavDescriptorSize));
+			else
+				mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), cubeMapIndex + TEXTURE_CUBE_FILENAMES.size(), mCbvSrvUavDescriptorSize));
 			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
@@ -1854,7 +1910,7 @@ void MyApp::UpdateInstanceBuffer()
 
 		for (size_t i = 0; i < e->Datas.size(); ++i)
 		{
-			if ((mCamFrustum.Contains(e->Datas[i].BoundingBox) != DirectX::DISJOINT) || (e->Datas[i].FrustumCullingEnabled == false))
+			// if ((mCamFrustum.Contains(e->Datas[i].BoundingBox) != DirectX::DISJOINT) || (e->Datas[i].FrustumCullingEnabled == false))
 			{
 				currInstanceBuffer->CopyData(visibleInstanceCount++, e->Datas[i].InstanceData);
 			}
@@ -1977,11 +2033,15 @@ void MyApp::UpdateCubeMapFacePassCBs()
 
 		DirectX::XMMATRIX view = mCubeMapCamera[i].GetView();
 		DirectX::XMMATRIX proj = mCubeMapCamera[i].GetProj();
-
 		DirectX::XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-		DirectX::XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
-		DirectX::XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
-		DirectX::XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+
+		DirectX::XMVECTOR detView = XMMatrixDeterminant(view);
+		DirectX::XMVECTOR detProj = XMMatrixDeterminant(proj);
+		DirectX::XMVECTOR detViewProj = XMMatrixDeterminant(viewProj);
+
+		DirectX::XMMATRIX invView = XMMatrixInverse(&detView, view);
+		DirectX::XMMATRIX invProj = XMMatrixInverse(&detProj, proj);
+		DirectX::XMMATRIX invViewProj = XMMatrixInverse(&detViewProj, viewProj);
 
 		XMStoreFloat4x4(&cubeFacePassCB.View, XMMatrixTranspose(view));
 		XMStoreFloat4x4(&cubeFacePassCB.InvView, XMMatrixTranspose(invView));
@@ -1990,13 +2050,12 @@ void MyApp::UpdateCubeMapFacePassCBs()
 		XMStoreFloat4x4(&cubeFacePassCB.ViewProj, XMMatrixTranspose(viewProj));
 		XMStoreFloat4x4(&cubeFacePassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 		cubeFacePassCB.EyePosW = mCubeMapCamera[i].GetPosition3f();
-		cubeFacePassCB.RenderTargetSize = XMFLOAT2((float)CubeMapSize, (float)CubeMapSize);
-		cubeFacePassCB.InvRenderTargetSize = XMFLOAT2(1.0f / CubeMapSize, 1.0f / CubeMapSize);
+		cubeFacePassCB.RenderTargetSize = DirectX::XMFLOAT2((float)CUBE_MAP_SIZE, (float)CUBE_MAP_SIZE);
+		cubeFacePassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / CUBE_MAP_SIZE, 1.0f / CUBE_MAP_SIZE);
 
 		auto currPassCB = mCurrFrameResource->PassCB.get();
-
-		// Cube map pass cbuffers are stored in elements 1-6.
-		currPassCB->CopyData(1 + i, cubeFacePassCB);
+		// Cube map pass cbuffers are stored in elements 2-7.	// 0 normal, 1: Reflected 2~7: CubeFace
+		currPassCB->CopyData(2 + i, cubeFacePassCB);
 	}
 }
 
@@ -2081,7 +2140,7 @@ void MyApp::DrawSceneToCubeMap()
 	{
 		auto rtv = mDynamicCubeMap->Rtv(i);
 		// Clear the back buffer and depth buffer.
-		mCommandList->ClearRenderTargetView(rtv, DirectX::Colors::LightSteelBlue, 0, nullptr);
+		mCommandList->ClearRenderTargetView(rtv, (float*)&mMainPassCB.FogColor, 0, nullptr);
 		mCommandList->ClearDepthStencilView(mCubeDSV, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 		// Specify the buffers we are going to render to.
@@ -2091,32 +2150,14 @@ void MyApp::DrawSceneToCubeMap()
 		// the right view/proj matrix for this cube face.
 		auto passCB = mCurrFrameResource->PassCB->Resource();
 		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + i) * passCBByteSize;
-		mCommandList->SetGraphicsRootConstantBufferView(1, passCBAddress);
+		mCommandList->SetGraphicsRootConstantBufferView(3, passCBAddress);
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		mCommandList->OMSetStencilRef(mLayerStencil[0]);
+		mCommandList->SetPipelineState(mPSOs[RenderLayer::Opaque].Get());
+		DrawRenderItems(RenderLayer::Opaque);
 
-		for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
-		{
-			if (mLayerType[i] == RenderLayer::None)
-				continue;
-			else if (mLayerType[i] == RenderLayer::AddCS)
-			{
-				mCSAdd->DoComputeWork(mCommandList.Get(), mCurrFrameResource->CmdListAlloc.Get());
-				mLayerType[i] = RenderLayer::None;
-				mSyncEn = true;
-			}
-			else if (mLayerType[i] == RenderLayer::BlurCS)
-			{
-				// mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
-			}
-			else {
-				if (mLayerType[i] == RenderLayer::WaveVS_CS)
-					mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
-				mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-				mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
-				mCommandList->OMSetStencilRef(mLayerStencil[i]);
-				mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
-				DrawRenderItems(mLayerType[i]);
-			}
-		}
+		mCommandList->SetPipelineState(mPSOs[RenderLayer::CubeMap].Get());
+		DrawRenderItems(RenderLayer::CubeMap);
 	}
 	
 	// Change back to GENERIC_READ so we can read the texture in a shader.
@@ -2503,16 +2544,13 @@ void MyApp::ShowCubeMapWindow()
 {
 	ImGui::Begin("cubemap", &mShowCubeMapWindow);
 
-	static int idx;
-
 	ImGui::LabelText("label", "Value");
 	ImGui::SeparatorText("Inputs");
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 	int flag = 0;
-	flag += ImGui::SliderInt((std::string("Cubemap [0, ") + std::to_string((UINT)TEXTURE_CUBE_FILENAMES.size() - 1) + "]").c_str(), &idx, 0, (UINT)TEXTURE_CUBE_FILENAMES.size() - 1, "%d", flags);
+	flag += ImGui::SliderInt((std::string("Cubemap [0, ") + std::to_string((UINT)TEXTURE_CUBE_FILENAMES.size() - 1) + "]").c_str(), &mGPUCubeMapIndex, 0, (UINT)TEXTURE_CUBE_FILENAMES.size() - 1, "%d", flags);
 	if (flag)
 	{
-		mMainPassCB.gCubeMapIndex = idx;
 	}
 	ImGui::End();
 }

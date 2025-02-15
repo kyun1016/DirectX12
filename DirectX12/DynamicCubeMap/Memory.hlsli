@@ -50,11 +50,12 @@ Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space1);
 Texture2DArray gTreeMapArray[2] : register(t0, space1);
 #endif
 
-#ifdef TEX_CUBE_SIZE
-TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space2);
-#else
-TextureCube gCubeMap[1] : register(t0, space2);
-#endif
+// #ifdef TEX_CUBE_SIZE
+// TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space2);
+// #else
+// TextureCube gCubeMap[1] : register(t0, space2);
+// #endif
+TextureCube gCubeMap : register(t0, space2);
 
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
@@ -100,8 +101,6 @@ cbuffer cbPass : register(b0)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
-    
-    uint gCubeMapIndex;
 };
 
 cbuffer cbInstance : register(b1)

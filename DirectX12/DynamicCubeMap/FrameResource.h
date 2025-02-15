@@ -55,8 +55,6 @@ struct PassConstants
 	DirectX::XMFLOAT2 cbPerObjectPad2;
 
 	Light Lights[MaxLights];
-
-	UINT gCubeMapIndex = 0;
 };
 
 struct InstanceConstants
