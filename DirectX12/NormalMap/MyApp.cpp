@@ -530,6 +530,8 @@ void MyApp::BuildMeshes()
 	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));
 	mMeshes.push_back(LoadModelMesh(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]));
 
+	UpdateTangents();
+
 	BuildGeometry(mMeshes);
 }
 
@@ -1588,17 +1590,16 @@ void MyApp::AnimateMaterials()
 
 void MyApp::UpdateTangents()
 {
-	using namespace std;
 	using namespace DirectX;
 
 	// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
 
 	for (auto& m : mMeshes) {
-		vector<XMFLOAT3> positions(m.Vertices.size());
-		vector<XMFLOAT3> normals(m.Vertices.size());
-		vector<XMFLOAT2> texcoords(m.Vertices.size());
-		vector<XMFLOAT3> tangents(m.Vertices.size());
-		vector<XMFLOAT3> bitangents(m.Vertices.size());
+		std::vector<XMFLOAT3> positions(m.Vertices.size());
+		std::vector<XMFLOAT3> normals(m.Vertices.size());
+		std::vector<XMFLOAT2> texcoords(m.Vertices.size());
+		std::vector<XMFLOAT3> tangents(m.Vertices.size());
+		std::vector<XMFLOAT3> bitangents(m.Vertices.size());
 
 		for (size_t i = 0; i < m.Vertices.size(); i++) {
 			auto& v = m.Vertices[i];
@@ -1607,10 +1608,10 @@ void MyApp::UpdateTangents()
 			texcoords[i] = v.TexC;
 		}
 
-		//ComputeTangentFrame(m.Indices32.data(), m.Indices32.size() / 3,
-		//	positions.data(), normals.data(), texcoords.data(),
-		//	m.Vertices.size(), tangents.data(),
-		//	bitangents.data());
+		DirectX::ComputeTangentFrame(m.Indices32.data(), m.Indices32.size() / 3,
+			positions.data(), normals.data(), texcoords.data(),
+			m.Vertices.size(), tangents.data(),
+			bitangents.data());
 
 		for (size_t i = 0; i < m.Vertices.size(); i++) {
 			m.Vertices[i].TangentU = tangents[i];
