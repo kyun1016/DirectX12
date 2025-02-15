@@ -32,7 +32,7 @@ struct MaterialData
     float3 FresnelR0;
     float Roughness;
     float4x4 MatTransform;
-    uint DiffMapIndex;
+    uint DiffMapIndex; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
     uint NormMapIndex;
     uint MatPad1;
     uint MatPad2;

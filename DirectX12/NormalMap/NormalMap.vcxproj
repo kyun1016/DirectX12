@@ -170,7 +170,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="RenderItem.cpp" />
     <ClCompile Include="Waves.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -181,7 +180,6 @@
     <ClInclude Include="GpuWaves.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="RenderItem.h" />
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>

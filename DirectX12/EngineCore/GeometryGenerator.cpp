@@ -8,8 +8,6 @@ using namespace DirectX;
 
 GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
 {
-	MeshData meshData;
-
 	//
 	// Create the vertices.
 	//
@@ -51,8 +49,6 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
 		{+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f}
 	};
 
-	meshData.Vertices.assign(&v[0], &v[24]);
-
 	//
 	// Create the indices.
 	//
@@ -78,6 +74,8 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
 		20,22,23
 	};
 
+	MeshData meshData;
+	meshData.Vertices.assign(&v[0], &v[24]);
 	meshData.Indices32.assign(&i[0], &i[36]);
 
 	// Put a cap on the number of subdivisions.

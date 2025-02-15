@@ -109,23 +109,33 @@ private:
 	{
 		RootData() = delete;
 
-		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 			: Translation(translation)
 			, Scale(scale)
 			, RotationQuat(rot)
+			, TexScale(texScale)
 			, BoundingCount(boundingCount)
 			, FrustumCullingEnabled(cull)
 			, ShowBoundingBox(false)
 			, ShowBoundingSphere(false)
 			, IsPickable(true)
 		{
+			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
+			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+			InstanceData.World = DirectX::XMMatrixTranspose(world);
+			InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
+			InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
+			InstanceData.MaterialIndex = matIdx;
 		}
 
-		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 			: BoundingBox(boundingBox)
 			, BoundingSphere(boundingSphere)
 			, Translation(translation)
 			, Scale(scale)
+			, TexScale(texScale)
 			, RotationQuat(rot)
 			, BoundingCount(boundingCount)
 			, FrustumCullingEnabled(cull)
@@ -146,8 +156,10 @@ private:
 			BoundingSphere.Center.z += translation.z;
 			BoundingSphere.Radius *= scale.Length();
 
-			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+			DirectX::XMMATRIX world 
+				= DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) 
+				* DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
 			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
 
 			InstanceData.World = DirectX::XMMatrixTranspose(world);
@@ -164,6 +176,7 @@ private:
 		DirectX::SimpleMath::Vector3 Translation;
 		DirectX::SimpleMath::Vector3 Scale;
 		DirectX::SimpleMath::Quaternion RotationQuat;
+		DirectX::SimpleMath::Vector3 TexScale;
 		UINT BoundingCount;	// 추후 BoundingBox, BoundingSphere 표현을 위한 구조에서 연동하여 활용
 		bool FrustumCullingEnabled;
 		bool ShowBoundingBox;
@@ -185,21 +198,15 @@ private:
 		{
 		}
 
-		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		{
-			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, boundingCount, matIdx, cull));
+			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 		}
 
 		void Push(RootData data)
 		{
 			Datas.push_back(data);
 		}
-
-		// Dirty flag indicating the object data has changed and we need to update the constant buffer.
-		// Because we have an object cbuffer for each FrameResource, we have to apply the
-		// update to each FrameResource.  Thus, when we modify obect data we should set 
-		// NumFramesDirty = APP_NUM_FRAME_RESOURCES so that each frame resource gets the update.
-		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 		MeshGeometry* Geo = nullptr;
 
@@ -336,8 +343,13 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
-
 	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUUser;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUDiff;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUNorm;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUArray;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUCube;
 };

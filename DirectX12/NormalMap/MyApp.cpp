@@ -282,6 +282,9 @@ void MyApp::BuildShaderResourceViews()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hCPUDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE hGPUDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+	mhGPUUser = hGPUDescriptor;
+	mhGPUDiff = hGPUDescriptor;
+
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDesc.Texture2D.MostDetailedMip = 0;
@@ -306,6 +309,7 @@ void MyApp::BuildShaderResourceViews()
 		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
+	mhGPUNorm = hGPUDescriptor;
 	for (int i = 0; i < TEX_NORM_FILENAMES.size(); ++i)
 	{
 		auto texture = mTextures[TEX_NORM_FILENAMES[i]]->Resource;
@@ -317,6 +321,7 @@ void MyApp::BuildShaderResourceViews()
 		hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 	}
 
+	mhGPUArray = hGPUDescriptor;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 	srvDesc.Texture2DArray.MipLevels = -1;
@@ -340,6 +345,7 @@ void MyApp::BuildShaderResourceViews()
 	hCPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
 	hGPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
 
+	mhGPUCube = hGPUDescriptor;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
@@ -440,6 +446,7 @@ void MyApp::BuildShadersAndInputLayout()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 
 	mTreeSpriteInputLayout =
@@ -545,7 +552,7 @@ void MyApp::BuildShapeGeometry()
 	// Part 1. Mesh 생성
 	//=========================================================
 	std::vector<GeometryGenerator::MeshData> meshes(GEO_MESH_NAMES[0].second.size());
-	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 2);
+	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3);
 	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
 	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
 	meshes[3] = GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20);
@@ -943,8 +950,9 @@ void MyApp::BuildMaterials()
 		mat->Name = MATERIAL_NAMES[idx];
 		mat->MatCBIndex = idx;
 		mat->DiffuseSrvHeapIndex = SRV_USER_SIZE + idx++;
+		mat->NormalSrvHeapIndex = 0;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
+		mat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 		mat->Roughness = 0.1f;
 		mMaterials[mat->Name] = std::move(mat);
 	}
@@ -953,16 +961,23 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<Material>();
 		mat->Name = MATERIAL_NAMES[idx];
 		mat->MatCBIndex = idx++;
-		mat->DiffuseSrvHeapIndex = SRV_USER_SIZE + i;
+		mat->DiffuseSrvHeapIndex = 0;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
 		mMaterials[mat->Name] = std::move(mat);
 	}
-	mMaterials["bricks3"]->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	mMaterials["bricks3"]->FresnelR0 = DirectX::XMFLOAT3(0.97f, 0.97f, 0.97f);
-	mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
-	mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
+	{
+		mMaterials["bricks3"]->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+		mMaterials["bricks3"]->FresnelR0 = DirectX::XMFLOAT3(0.97f, 0.97f, 0.97f);
+		mMaterials["water1"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
+		mMaterials["ice"]->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
+
+		mMaterials["bricks"]->NormalSrvHeapIndex = 1;
+		mMaterials["bricks2"]->NormalSrvHeapIndex = 2;
+		mMaterials["tile"]->NormalSrvHeapIndex = 3;
+	}
+	
 
 	auto skullMat = std::make_unique<Material>();
 	skullMat->Name = MATERIAL_NAMES[idx];
@@ -1001,6 +1016,7 @@ void MyApp::BuildRenderItems()
 	auto cylinderRitem = std::make_unique<RenderItem>(0, 3, mGeometries[GEO_MESH_NAMES[0].first].get());
 	auto alphaBoxRitem = std::make_unique<RenderItem>(0, 0, mGeometries[GEO_MESH_NAMES[0].first].get());
 	auto mirrorGridRitem = std::make_unique<RenderItem>(0, 1, mGeometries[GEO_MESH_NAMES[0].first].get());
+	auto subBoxRitem = std::make_unique<RenderItem>(0, 0, mGeometries[GEO_MESH_NAMES[0].first].get());
 	auto subSphereRitem = std::make_unique<RenderItem>(0, 2, mGeometries[GEO_MESH_NAMES[0].first].get());
 	auto skullRitem = std::make_unique<RenderItem>(1, 0, mGeometries[GEO_MESH_NAMES[1].first].get());
 	auto landRitem = std::make_unique<RenderItem>(2, 0, mGeometries[GEO_MESH_NAMES[2].first].get(), false);
@@ -1010,6 +1026,12 @@ void MyApp::BuildRenderItems()
 	auto boundingBoxRitem = std::make_unique<RenderItem>(7, 0, mGeometries[GEO_MESH_NAMES[7].first].get());
 	auto boundingSphereRitem = std::make_unique<RenderItem>(7, 1, mGeometries[GEO_MESH_NAMES[7].first].get());
 	auto cubeBoxRitem = std::make_unique<RenderItem>(0, 2, mGeometries[GEO_MESH_NAMES[0].first].get());
+
+	subBoxRitem->LayerFlag
+		= (1 << (int)RenderLayer::Subdivision)
+		| (1 << (int)RenderLayer::Normal)
+		| (1 << (int)RenderLayer::SubdivisionWireframe)
+		| (1 << (int)RenderLayer::NormalWireframe);
 
 	subSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1055,20 +1077,21 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 translation;
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
+	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
 
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 10.0f;
 		translation.z = 5.0 + 5.0 * (i / 5);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
+		scale.x = 2.0f;
+		scale.y = 2.0f;
+		scale.z = 2.0f;
 
-		boxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+		boxRitem->Push(translation, scale, rot, { 2.0f, 2.0f, 2.0f }, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 	
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 20.0f;
@@ -1077,10 +1100,10 @@ void MyApp::BuildRenderItems()
 		scale.y = 3.0f;
 		scale.z = 3.0f;
 
-		subSphereRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
-	
-	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+
+	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 30.0f;
@@ -1089,16 +1112,42 @@ void MyApp::BuildRenderItems()
 		scale.y = 3.0f;
 		scale.z = 3.0f;
 
-		alphaBoxRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+		subBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
+	}
+	
+	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
+	{
+		translation.x = (i % 10) * 8.0f;
+		translation.y = 40.0f;
+		translation.z = 5.0 + 5.0 * (i / 5);
+		scale.x = 3.0f;
+		scale.y = 3.0f;
+		scale.z = 3.0f;
+
+		subSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 
-	translation.x = 0.0f;
-	translation.y = 5.0f;
-	translation.z = 0.0f;
-	scale.x = 1.0f;
-	scale.y = 1.0f;
-	scale.z = 1.0f;
-	gridRitem->Push(translation, scale, rot, mInstanceCount++, 2);
+	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
+	{
+		translation.x = (i % 10) * 8.0f;
+		translation.y = 50.0f;
+		translation.z = 5.0 + 5.0 * (i / 5);
+		scale.x = 3.0f;
+		scale.y = 3.0f;
+		scale.z = 3.0f;
+
+		alphaBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
+	}
+
+	{
+		translation.x = 0.0f;
+		translation.y = 5.0f;
+		translation.z = 0.0f;
+		scale.x = 1.0f;
+		scale.y = 1.0f;
+		scale.z = 1.0f;
+		gridRitem->Push(translation, scale, rot, { 8.0f, 8.0f, 8.0f }, mInstanceCount++, 1);
+	}
 
 	for (int i = 0; i < 5; ++i)
 	{
@@ -1109,15 +1158,15 @@ void MyApp::BuildRenderItems()
 		scale.y = 1.0f;
 		scale.z = 1.0f;
 
-		cylinderRitem->Push(translation, scale, rot, mInstanceCount++, 2 + i);
+		cylinderRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
 		translation.y = 8.5f;
-		sphereRitem->Push(translation, scale, rot, mInstanceCount++, 2 + i);
+		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
 
 		translation.x = -5.0f;
 		translation.y = 6.5f;
-		cylinderRitem->Push(translation, scale, rot, mInstanceCount++, 2 + i);
+		cylinderRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
 		translation.y = 8.5f;
-		sphereRitem->Push(translation, scale, rot, mInstanceCount++, 2 + i);
+		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
 	}
 
 	{
@@ -1127,7 +1176,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
-		sphereRitem->Push(translation, scale, rot, mInstanceCount++, 2);
+		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
 	}
 
 	{
@@ -1137,7 +1186,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		mirrorGridRitem->Push(translation, scale, rot, mInstanceCount++, 13);
+		mirrorGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 13);
 	}
 	
 	
@@ -1153,7 +1202,7 @@ void MyApp::BuildRenderItems()
 		scale.y = 0.3f;
 		scale.z = 0.3f;
 
-		skullRitem->Push(translation, scale, rot, mInstanceCount++, i % MATERIAL_NAMES.size());
+		skullRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 
 	////=========================================================
@@ -1166,7 +1215,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		landRitem->Push(translation, scale, rot, mInstanceCount++, 4);
+		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 4);
 	}
 
 	////=========================================================
@@ -1179,7 +1228,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.5f;
 		scale.y = 1.5f;
 		scale.z = 1.5f;
-		wavesRitem->Push(translation, scale, rot, mInstanceCount++, 11);
+		wavesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 11);
 		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
 		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
 		wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
@@ -1195,7 +1244,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size());
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size());
 	}
 
 	////=========================================================
@@ -1208,7 +1257,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, mInstanceCount++, SRV_USER_SIZE);
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
 	}
 
 	mAllRitems.push_back(std::move(boxRitem));
@@ -1217,6 +1266,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(cylinderRitem));
 	mAllRitems.push_back(std::move(alphaBoxRitem));
 	mAllRitems.push_back(std::move(mirrorGridRitem));
+	mAllRitems.push_back(std::move(subBoxRitem));
 	mAllRitems.push_back(std::move(subSphereRitem));
 	mAllRitems.push_back(std::move(skullRitem));
 	mAllRitems.push_back(std::move(landRitem));
@@ -1248,7 +1298,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 5000.0f;
 		scale.y = 5000.0f;
 		scale.z = 5000.0f;
-		cubeBoxRitem->Push(translation, scale, rot, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size(), false);
+		cubeBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size(), false);
 	}
 	mAllRitems.push_back(std::move(cubeBoxRitem));
 
@@ -1663,9 +1713,10 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootShaderResourceView(1, instanceBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(4, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize));
-		mCommandList->SetGraphicsRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE, mCbvSrvUavDescriptorSize));
-		mCommandList->SetGraphicsRootDescriptorTable(7, CD3DX12_GPU_DESCRIPTOR_HANDLE(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE + (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE + (UINT)TEX_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize));
+		mCommandList->SetGraphicsRootDescriptorTable(4, mhGPUDiff);
+		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUNorm);
+		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUArray);
+		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUCube);
 		mCommandList->SetGraphicsRootDescriptorTable(8, mCSWaves->DisplacementMap());
 		
 	}
@@ -1778,7 +1829,7 @@ void MyApp::AnimateMaterials()
 	waterMat->MatTransform(3, 1) = tv;
 
 	// Material has changed, so need to update cbuffer.
-	waterMat->NumFramesDirty = 1;
+	waterMat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 }
 
 void MyApp::UpdateInstanceBuffer()
@@ -1793,22 +1844,6 @@ void MyApp::UpdateInstanceBuffer()
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
 		auto& e = mAllRitems[i];
-		//if (e->NumFramesDirty > 0)
-		//{
-		//	e->NumFramesDirty--;
-		//	for (size_t i = 0; i < e->Instances.size(); ++i)
-		//	{
-		//		DirectX::XMFLOAT3 translation = e->Datas[i].Translation;
-		//		DirectX::XMFLOAT3 scale = e->Datas[i].Scale;
-
-		//		DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-		//		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
-		//		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-		//		XMStoreFloat4x4(&e->Instances[i].World, DirectX::XMMatrixTranspose(world));
-		//		XMStoreFloat4x4(&e->Instances[i].TexTransform, DirectX::XMMatrixTranspose(texTransform));
-		//		XMStoreFloat4x4(&e->Instances[i].WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
-		//	}
-		//}
 		
 		InstanceConstants insCB;
 		insCB.BaseInstanceIndex = visibleInstanceCount;
@@ -1882,6 +1917,7 @@ void MyApp::UpdateMaterialBuffer()
 			matData.Roughness = mat->Roughness;
 			XMStoreFloat4x4(&matData.MatTransform, XMMatrixTranspose(matTransform));
 			matData.DiffMapIndex = mat->DiffuseSrvHeapIndex;
+			matData.NormMapIndex = mat->NormalSrvHeapIndex;
 
 			currMaterialCB->CopyData(mat->MatCBIndex, matData);
 
@@ -2241,14 +2277,22 @@ void MyApp::ShowTextureWindow()
 
 	static int texIdx;
 
+	int size
+		= SRV_USER_SIZE
+		+ TEX_DIFF_FILENAMES.size()
+		+ TEX_NORM_FILENAMES.size()
+		+ TEX_ARRAY_FILENAMES.size()
+		+ mCSBlurFilter->DescriptorCount()
+		+ mCSWaves->DescriptorCount()
+		+ (UINT)TEX_CUBE_FILENAMES.size();
+		
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 	ImGui::SliderInt(
-		(std::string("Texture [0, ") 
-			+ std::to_string(SRV_IMGUI_SIZE + SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size() + (UINT)TEX_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(),
+		(std::string("Texture [0, ") + std::to_string(size - 1) + "]").c_str(),
 		&texIdx,
 		0,
-		SRV_IMGUI_SIZE + SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size() + (UINT)TEX_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
-	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * texIdx;
+		size - 1, "%d", flags);
+	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
@@ -2268,6 +2312,22 @@ void MyApp::ShowMaterialWindow()
 	static float diff4f[4];
 	static float fres3f[3];
 
+	int dataSize
+		= SRV_USER_SIZE
+		+ TEX_DIFF_FILENAMES.size()
+		+ TEX_NORM_FILENAMES.size()
+		+ TEX_ARRAY_FILENAMES.size()
+		+ TEX_CUBE_FILENAMES.size()
+		+ mCSBlurFilter->DescriptorCount()
+		+ mCSWaves->DescriptorCount();
+
+	int texDiffSize
+		= SRV_USER_SIZE
+		+ TEX_DIFF_FILENAMES.size();
+
+	int texNormSize
+		= TEX_NORM_FILENAMES.size();
+
 	ImGui::LabelText("label", "Value");
 	ImGui::SeparatorText("Inputs");
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
@@ -2276,21 +2336,24 @@ void MyApp::ShowMaterialWindow()
 		int flag = 0;
 		Material* mat = mMaterials[MATERIAL_NAMES[matIdx]].get();
 
-		// flag += ImGui::InputFloat4("DiffuseAlbedo R/G/B/A", diff4f);
 		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
 		flag += ImGui::DragFloat("Roughness", &mat->Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::SliderInt((std::string("Texture Index [0, ") + std::to_string(TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE + TEX_ARRAY_FILENAMES.size() + (UINT)TEX_CUBE_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size() + mCSBlurFilter->DescriptorCount() + mCSWaves->DescriptorCount() - 1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->DiffuseSrvHeapIndex, 0, texDiffSize-1, "%d", flags);
+		flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->NormalSrvHeapIndex, 0, texNormSize-1, "%d", flags);
 		if (flag)
 		{
 			mat->DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
 			mat->FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
-			mat->NumFramesDirty = 1;
+			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
 
-		ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * (mat->DiffuseSrvHeapIndex + SRV_IMGUI_SIZE);
+		ImTextureID my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->DiffuseSrvHeapIndex;
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+
+		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+		my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->NormalSrvHeapIndex;
 		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 	}
 	ImGui::End();
@@ -2344,7 +2407,8 @@ void MyApp::ShowRenderItemWindow()
 
 		if (flag)
 		{
-			ritm->NumFramesDirty = 1;
+			// ritm->NumFramesDirty = 1;
+			// TODO: 즉시 instance 데이터를 업데이트 하는 로직으로 수정
 		}
 	}
 
@@ -2355,7 +2419,7 @@ void MyApp::ShowViewportWindow()
 {
 	ImGui::Begin("viewport1", &mShowViewportWindow);
 
-	ImTextureID my_tex_id = (ImTextureID)mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + mCbvSrvUavDescriptorSize * (SRV_IMGUI_SIZE + TEX_DIFF_FILENAMES.size());
+	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize;
 	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
