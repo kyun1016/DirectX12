@@ -21,6 +21,7 @@
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include <DirectXMesh.h>
 #include <DirectXPackedVector.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>

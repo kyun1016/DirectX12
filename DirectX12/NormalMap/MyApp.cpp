@@ -470,6 +470,7 @@ void MyApp::BuildLandGeometry()
 		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
 		vertices[i].Normal = GetHillsNormal(p.x, p.z);
 		vertices[i].TexC = grid.Vertices[i].TexC;
+		vertices[i].TangentU = grid.Vertices[i].TangentU;
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -508,6 +509,7 @@ void MyApp::BuildCSWavesGeometry()
 		vertices[i].Pos = grid.Vertices[i].Position;
 		vertices[i].Normal = grid.Vertices[i].Normal;
 		vertices[i].TexC = grid.Vertices[i].TexC;
+		vertices[i].TangentU = grid.Vertices[i].TangentU;
 	}
 
 	std::vector<std::uint32_t> indices = grid.Indices32;
@@ -621,7 +623,8 @@ void MyApp::BuildShapeGeometry()
 		{
 			vertices[k].Pos = ver.Position;
 			vertices[k].Normal = ver.Normal;
-			vertices[k++].TexC = ver.TexC;
+			vertices[k].TexC = ver.TexC;
+			vertices[k++].TangentU = ver.TangentU;
 		}
 	}
 
@@ -702,10 +705,14 @@ void MyApp::BuildModelGeometry()
 		float v = phi / XM_PI;
 
 		vertices[i].TexC = { u, v };
+		// vertices[i].TangentU = { u, v };
 
 		vMin = XMVectorMin(vMin, P);
 		vMax = XMVectorMax(vMax, P);
 	}
+	// DirectX::ComputeTangentFrame(vertices.);
+
+
 	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
 
 	BoundingBox BoundingBox;
@@ -1088,7 +1095,7 @@ void MyApp::BuildRenderItems()
 		scale.y = 2.0f;
 		scale.z = 2.0f;
 
-		boxRitem->Push(translation, scale, rot, { 2.0f, 2.0f, 2.0f }, mInstanceCount++, i % MATERIAL_NAMES.size());
+		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 	
 	for (int i = 0; i < MATERIAL_NAMES.size() * 10; ++i)
@@ -1196,7 +1203,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
-		translation.y = 40.0f;
+		translation.y = 60.0f;
 		translation.z = 5.0 + 5.0 * (i / 5);
 		scale.x = 0.3f;
 		scale.y = 0.3f;
@@ -1830,6 +1837,45 @@ void MyApp::AnimateMaterials()
 
 	// Material has changed, so need to update cbuffer.
 	waterMat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+}
+
+void MyApp::UpdateTangents()
+{
+	using namespace std;
+	using namespace DirectX;
+
+	// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
+
+	for (auto& m : mGeometries) {
+
+		vector<XMFLOAT3> positions(m.vertices.size());
+		vector<XMFLOAT3> normals(m.vertices.size());
+		vector<XMFLOAT2> texcoords(m.vertices.size());
+		vector<XMFLOAT3> tangents(m.vertices.size());
+		vector<XMFLOAT3> bitangents(m.vertices.size());
+
+		for (size_t i = 0; i < m.vertices.size(); i++) {
+			auto& v = m.vertices[i];
+			positions[i] = v.position;
+			normals[i] = v.normalModel;
+			texcoords[i] = v.texcoord;
+		}
+
+		ComputeTangentFrame(m.indices.data(), m.indices.size() / 3,
+			positions.data(), normals.data(), texcoords.data(),
+			m.vertices.size(), tangents.data(),
+			bitangents.data());
+
+		for (size_t i = 0; i < m.vertices.size(); i++) {
+			m.vertices[i].tangentModel = tangents[i];
+		}
+
+		if (m.skinnedVertices.size() > 0) {
+			for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
+				m.skinnedVertices[i].tangentModel = tangents[i];
+			}
+		}
+	}
 }
 
 void MyApp::UpdateInstanceBuffer()

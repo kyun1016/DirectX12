@@ -271,6 +271,7 @@ private:
 	virtual void Sync()override;
 
 	void AnimateMaterials();
+	void UpdateTangents();
 	void UpdateInstanceBuffer();
 	void UpdateMaterialBuffer();
 	void UpdateMainPassCB();
@@ -337,6 +338,7 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
 
+	std::vector<GeometryGenerator::MeshData> mMeshes;
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;

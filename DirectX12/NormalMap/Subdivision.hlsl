@@ -14,6 +14,7 @@ struct VertexOut
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    float3 TangentU : TANGENT;
     
     // nointerpolation is used so the index is not interpolated 
 	// across the triangle.
@@ -40,6 +41,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     vout.NormalL = vin.NormalL;
     vout.TexC = vin.TexC;
     vout.InsIndex = instanceID + gBaseInstanceIndex;
+    vout.TangentU = vin.TangentU;
     
     return vout;
 }
@@ -69,14 +71,19 @@ void Subdivide(VertexOut inVerts[3], out VertexOut outVerts[6])
     // m[2].PosL = normalize(m[2].PosL);
     
     // 법선을 유도
-    m[0].NormalL = m[0].PosL;
-    m[1].NormalL = m[1].PosL;
-    m[2].NormalL = m[2].PosL;
+    m[0].NormalL = normalize((inVerts[0].NormalL + inVerts[1].NormalL));
+    m[1].NormalL = normalize((inVerts[1].NormalL + inVerts[2].NormalL));
+    m[2].NormalL = normalize((inVerts[2].NormalL + inVerts[0].NormalL));
+    
+    m[0].TangentU = normalize((inVerts[0].TangentU + inVerts[1].TangentU));
+    m[1].TangentU = normalize((inVerts[1].TangentU + inVerts[2].TangentU));
+    m[2].TangentU = normalize((inVerts[2].TangentU + inVerts[0].TangentU));
     
     // 텍스처 좌표를 보간
     m[0].TexC = 0.5f * (inVerts[0].TexC + inVerts[1].TexC);
     m[1].TexC = 0.5f * (inVerts[1].TexC + inVerts[2].TexC);
     m[2].TexC = 0.5f * (inVerts[2].TexC + inVerts[0].TexC);
+    
     
     outVerts[0] = inVerts[0];
     outVerts[1] = m[0];
@@ -109,7 +116,9 @@ void OutputSubdivision(VertexOut v[6], inout TriangleStream<SubdivisionGeometryO
         // world space로 변환
         float4 posW = mul(float4(v[i].PosL, 1.0f), world);
         gout[i].PosW = posW.xyz;
-        gout[i].NormalW = mul(v[i].NormalL, (float3x3) world);
+        gout[i].NormalW = mul(v[i].NormalL, (float3x3) worldInvTranspose);
+        
+        gout[i].TangentW = mul(v[i].TangentU, (float3x3) worldInvTranspose);
         
         // homogeneous clip space로 변환
         gout[i].PosH = mul(posW, gViewProj);
