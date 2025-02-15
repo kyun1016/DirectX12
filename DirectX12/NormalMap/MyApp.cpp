@@ -440,8 +440,9 @@ void MyApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		
 	};
 
 	mTreeSpriteInputLayout =
@@ -570,12 +571,22 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	//=========================================================
 	// Part 2. vertices & indices 생성
 	//=========================================================
-	std::vector<GeometryGenerator::Vertex> vertices;
+	size_t totalVertexCount = 0;
+	for (const auto& a : meshes)
+		totalVertexCount += a.Vertices.size();
+	UINT k = 0;
+	std::vector<Vertex> vertices(totalVertexCount);
 	std::vector<std::uint16_t> indices;
 	for (size_t i = 0; i < meshes.size(); ++i)
 	{
 		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-		vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
+		for (const auto& ver : meshes[i].Vertices)
+		{
+			vertices[k].Position = ver.Position;
+			vertices[k].Normal = ver.Normal;
+			vertices[k].TangentU = ver.TangentU;
+			vertices[k++].TexC = ver.TexC;
+		}
 	}
 
 	//=========================================================
@@ -603,7 +614,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	//=========================================================
 	// Part 3. GPU 할당 (16bit)
 	//=========================================================
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(GeometryGenerator::Vertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -615,7 +626,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(GeometryGenerator::Vertex);
+	geo->VertexByteStride = sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = indexFormat;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -701,6 +712,7 @@ void MyApp::BuildMaterials()
 		mat->Name = MATERIAL_NAMES[idx];
 		mat->MatCBIndex = idx++;
 		mat->DiffuseSrvHeapIndex = 0;
+		mat->NormalSrvHeapIndex = 0;
 		mat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		mat->FresnelR0 = DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f);
 		mat->Roughness = 0.1f;
@@ -722,6 +734,7 @@ void MyApp::BuildMaterials()
 	skullMat->Name = MATERIAL_NAMES[idx];
 	skullMat->MatCBIndex = idx++;
 	skullMat->DiffuseSrvHeapIndex = SRV_USER_SIZE;
+	skullMat->NormalSrvHeapIndex = 0;
 	skullMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skullMat->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
 	skullMat->Roughness = 0.3f;
@@ -731,6 +744,7 @@ void MyApp::BuildMaterials()
 	shadowMat->Name = MATERIAL_NAMES[idx];
 	shadowMat->MatCBIndex = idx++;
 	shadowMat->DiffuseSrvHeapIndex = SRV_USER_SIZE;
+	shadowMat->NormalSrvHeapIndex = 0;
 	shadowMat->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	shadowMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	shadowMat->Roughness = 0.0f;
@@ -740,6 +754,7 @@ void MyApp::BuildMaterials()
 	viewportMat->Name = MATERIAL_NAMES[idx];
 	viewportMat->MatCBIndex = idx++;
 	viewportMat->DiffuseSrvHeapIndex = 0;
+	viewportMat->NormalSrvHeapIndex = 0;
 	viewportMat->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	viewportMat->FresnelR0 = DirectX::XMFLOAT3(0.001f, 0.001f, 0.001f);
 	viewportMat->Roughness = 0.0f;
@@ -1573,40 +1588,40 @@ void MyApp::AnimateMaterials()
 
 void MyApp::UpdateTangents()
 {
-	//using namespace std;
-	//using namespace DirectX;
+	using namespace std;
+	using namespace DirectX;
 
-	//// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
+	// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
 
-	//for (auto& m : mMeshes) {
-	//	vector<XMFLOAT3> positions(m.Vertices.size());
-	//	vector<XMFLOAT3> normals(m.Vertices.size());
-	//	vector<XMFLOAT2> texcoords(m.Vertices.size());
-	//	vector<XMFLOAT3> tangents(m.Vertices.size());
-	//	vector<XMFLOAT3> bitangents(m.Vertices.size());
+	for (auto& m : mMeshes) {
+		vector<XMFLOAT3> positions(m.Vertices.size());
+		vector<XMFLOAT3> normals(m.Vertices.size());
+		vector<XMFLOAT2> texcoords(m.Vertices.size());
+		vector<XMFLOAT3> tangents(m.Vertices.size());
+		vector<XMFLOAT3> bitangents(m.Vertices.size());
 
-	//	for (size_t i = 0; i < m.Vertices.size(); i++) {
-	//		auto& v = m.Vertices[i];
-	//		positions[i] = v.Position;
-	//		normals[i] = v.Normal;
-	//		texcoords[i] = v.TexC;
-	//	}
+		for (size_t i = 0; i < m.Vertices.size(); i++) {
+			auto& v = m.Vertices[i];
+			positions[i] = v.Position;
+			normals[i] = v.Normal;
+			texcoords[i] = v.TexC;
+		}
 
-	//	ComputeTangentFrame(m.Indices32.data(), m.Indices32.size() / 3,
-	//		positions.data(), normals.data(), texcoords.data(),
-	//		m.Vertices.size(), tangents.data(),
-	//		bitangents.data());
+		//ComputeTangentFrame(m.Indices32.data(), m.Indices32.size() / 3,
+		//	positions.data(), normals.data(), texcoords.data(),
+		//	m.Vertices.size(), tangents.data(),
+		//	bitangents.data());
 
-	//	for (size_t i = 0; i < m.Vertices.size(); i++) {
-	//		m.Vertices[i].TangentU = tangents[i];
-	//	}
+		for (size_t i = 0; i < m.Vertices.size(); i++) {
+			m.Vertices[i].TangentU = tangents[i];
+		}
 
-	//	//if (m.skinnedVertices.size() > 0) {
-	//	//	for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
-	//	//		m.skinnedVertices[i].tangentModel = tangents[i];
-	//	//	}
-	//	//}
-	//}
+		//if (m.skinnedVertices.size() > 0) {
+		//	for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
+		//		m.skinnedVertices[i].tangentModel = tangents[i];
+		//	}
+		//}
+	}
 }
 
 void MyApp::UpdateInstanceBuffer()
@@ -1797,6 +1812,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
+		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
 		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
@@ -2108,7 +2124,7 @@ void MyApp::ShowMaterialWindow()
 	ImGui::LabelText("label", "Value");
 	ImGui::SeparatorText("Inputs");
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Material [0, ") + std::to_string(MATERIAL_NAMES.size() - 1) + "]").c_str(), &matIdx, 0, MATERIAL_NAMES.size() - 1, "%d", flags);
+	ImGui::SliderInt((std::string("Material [0, ") + std::to_string(mMaterials.size() - 1) + "]").c_str(), &matIdx, 0, mMaterials.size() - 1, "%d", flags);
 	{
 		int flag = 0;
 		Material* mat = mMaterials[MATERIAL_NAMES[matIdx]].get();

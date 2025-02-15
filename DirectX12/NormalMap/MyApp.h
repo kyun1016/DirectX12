@@ -49,9 +49,6 @@ private:
 		// Array TEX Material
 		"treearray", "treeArray2",
 
-		// CubeMap TEX Material
-		"desertcube1024", "grasscube1024","snowcube1024", "sunsetcube1024",
-
 		// User Define Material
 		"skullMat", "shadowMat", "viewport"
 	};
@@ -310,8 +307,6 @@ private:
 	UINT mInstanceCount = 0;
 
 	std::unique_ptr<Waves> mWaves;
-	RenderItem* mWavesRitem = nullptr;
-
 	std::unique_ptr<CSAdd> mCSAdd;
 	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
