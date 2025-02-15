@@ -14,9 +14,9 @@ struct MaterialData
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 
 	UINT DiffuseMapIndex = 0;
-	UINT MaterialPad0;
-	UINT MaterialPad1;
-	UINT MaterialPad2;
+	UINT MaterialPad0 = 0;
+	UINT MaterialPad1 = 0;
+	UINT MaterialPad2 = 0;
 };
 
 struct InstanceData
@@ -27,7 +27,7 @@ struct InstanceData
 	UINT MaterialIndex = 0;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
 	float GridSpatialStep = 1.0f;
-	float Pad;
+	float Pad = 0.0f;
 };
 
 struct PassConstants

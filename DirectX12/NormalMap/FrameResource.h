@@ -15,8 +15,8 @@ struct MaterialData
 
 	UINT DiffMapIndex = 0;
 	UINT NormMapIndex = 0;
-	UINT MaterialPad1;
-	UINT MaterialPad2;
+	UINT MaterialPad1 = 0;
+	UINT MaterialPad2 = 0;
 };
 
 struct InstanceData
@@ -27,7 +27,7 @@ struct InstanceData
 	UINT MaterialIndex = 0;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
 	float GridSpatialStep = 1.0f;
-	float Pad;
+	float Pad = 0.0f;
 };
 
 struct PassConstants
@@ -52,7 +52,7 @@ struct PassConstants
 	DirectX::XMFLOAT4 FogColor = { 0.7f, 0.7f, 0.7f, 1.0f };
 	float gFogStart = 5.0f;
 	float gFogRange = 150.0f;
-	DirectX::XMFLOAT2 cbPerObjectPad2;
+	DirectX::XMFLOAT2 cbPerObjectPad2 = { 0.0f, 0.0f };
 
 	Light Lights[MaxLights];
 
@@ -62,20 +62,6 @@ struct PassConstants
 struct InstanceConstants
 {
 	UINT BaseInstanceIndex;
-};
-
-struct Vertex
-{
-	Vertex() = default;
-	Vertex(float x, float y, float z, float nx, float ny, float nz, float u, float v) :
-		Pos(x, y, z),
-		Normal(nx, ny, nz),
-		TexC(u, v) {}
-
-	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT3 Normal;
-	DirectX::XMFLOAT2 TexC;
-	DirectX::XMFLOAT3 TangentU;
 };
 
 struct FrameResource

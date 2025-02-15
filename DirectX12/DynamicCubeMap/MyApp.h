@@ -154,7 +154,7 @@ private:
 			InstanceData.MaterialIndex = matIdx;
 		}
 
-		InstanceData InstanceData; // GPU Àü¼Û Àü¿ë µ¥ÀÌÅÍ
+		InstanceData InstanceData; // GPU ì „ì†¡ ì „ìš© ë°ì´í„°
 
 		DirectX::BoundingBox BoundingBox;
 		DirectX::BoundingSphere BoundingSphere;
@@ -162,7 +162,7 @@ private:
 		DirectX::SimpleMath::Vector3 Translation;
 		DirectX::SimpleMath::Vector3 Scale;
 		DirectX::SimpleMath::Quaternion RotationQuat;
-		UINT BoundingCount;	// ÃßÈÄ BoundingBox, BoundingSphere Ç¥ÇöÀ» À§ÇÑ ±¸Á¶¿¡¼­ ¿¬µ¿ÇÏ¿© È°¿ë
+		UINT BoundingCount;	// ì¶”í›„ BoundingBox, BoundingSphere í‘œí˜„ì„ ìœ„í•œ êµ¬ì¡°ì—ì„œ ì—°ë™í•˜ì—¬ í™œìš©
 		bool FrustumCullingEnabled;
 		bool ShowBoundingBox;
 		bool ShowBoundingSphere;
@@ -203,7 +203,7 @@ private:
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
-		std::vector<RootData> Datas;			// CPU ¹× ¾Ë°í¸®Áò ¿¬»êÀ» À§ÇÑ µ¥ÀÌÅÍ
+		std::vector<RootData> Datas;			// CPU ë° ì•Œê³ ë¦¬ì¦˜ ì—°ì‚°ì„ ìœ„í•œ ë°ì´í„°
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)

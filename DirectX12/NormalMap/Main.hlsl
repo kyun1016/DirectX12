@@ -4,8 +4,8 @@ struct VertexIn
 {
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
-    float2 TexC : TEXCOORD;
     float3 TangentU : TANGENT;
+    float2 TexC : TEXCOORD;
 };
 
 struct VertexOut
@@ -126,7 +126,7 @@ PixelOut PS(VertexOut pin)
     // Vector from point being lit to eye. 
     float3 toEyeW = gEyePosW - pin.PosW;
     float distToEye = length(toEyeW);
-    toEyeW /= distToEye; // Á¤±ÔÈ­
+    toEyeW /= distToEye; // ì •ê·œí™”
 
     // Light terms.
     float4 ambient = gAmbientLight * diffuseAlbedo;

@@ -21,13 +21,13 @@
 class GeometryGenerator
 {
 public:
-	GeometryGenerator() = delete;
-	using uint16 = std::uint16_t;
-	using uint32 = std::uint32_t;
-
 	struct Vertex
 	{
-		Vertex() {}
+		Vertex()
+			: Position(0.0f, 0.0f, 0.0f)
+			, Normal(0.0f, 0.0f, 0.0f)
+			, TangentU(0.0f, 0.0f, 0.0f)
+			, TexC(0.0f, 0.0f) {}
 		Vertex(
 			const DirectX::XMFLOAT3& p,
 			const DirectX::XMFLOAT3& n,
@@ -56,23 +56,28 @@ public:
 	struct MeshData
 	{
 		std::vector<Vertex> Vertices;
-		std::vector<uint32> Indices32;
+		std::vector<std::uint32_t> Indices32;
 
-		std::vector<uint16>& GetIndices16()
+		std::vector<std::uint16_t>& GetIndices16()
 		{
 			if (mIndices16.empty())
 			{
 				mIndices16.resize(Indices32.size());
 				for (size_t i = 0; i < Indices32.size(); ++i)
-					mIndices16[i] = static_cast<uint16>(Indices32[i]);
+					mIndices16[i] = static_cast<std::uint16_t>(Indices32[i]);
 			}
 
 			return mIndices16;
 		}
 
 	private:
-		std::vector<uint16> mIndices16;
+		std::vector<std::uint16_t> mIndices16;
 	};
+
+public:
+	GeometryGenerator() = delete;
+	using uint16 = std::uint16_t;
+	using uint32 = std::uint32_t;
 
 	///<summary>
 	/// Creates a box centered at the origin with the given dimensions, where each

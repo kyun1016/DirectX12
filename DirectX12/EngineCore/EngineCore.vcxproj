@@ -167,6 +167,7 @@
     <ClInclude Include="D3DUtil.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DirectXMesh.h" />
     <ClInclude Include="EngineCorePch.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GeometryGenerator.h" />
@@ -194,6 +195,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="DirectXMesh.inl" />
     <None Include="SimpleMath.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

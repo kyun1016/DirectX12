@@ -16,12 +16,12 @@
 #include <wrl/client.h> // ComPtr
 
 #include "SimpleMath.h"
+#include "DirectXMesh.h"
 #include <d3d12.h>
 #include <DirectXCollision.h>
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
-#include <DirectXMesh.h>
 #include <DirectXPackedVector.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>

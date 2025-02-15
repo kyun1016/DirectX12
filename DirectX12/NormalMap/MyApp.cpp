@@ -70,13 +70,8 @@ bool MyApp::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildShapeGeometry();
-	BuildModelGeometry();
-	BuildLandGeometry();
-	BuildCSWavesGeometry();
+	BuildMeshes();
 	BuildTreeSpritesGeometry();
-	BuildQuadPatchGeometry();
-	BuildBoundingGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSO();
@@ -445,8 +440,8 @@ void MyApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 
 	mTreeSpriteInputLayout =
@@ -456,118 +451,99 @@ void MyApp::BuildShadersAndInputLayout()
 	};
 }
 
-void MyApp::BuildLandGeometry()
+GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
 {
-	GeometryGenerator::MeshData grid = GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50);
+	using namespace DirectX;
+	GeometryGenerator::MeshData mesh;
 
-	std::vector<Vertex> vertices(grid.Vertices.size());
-	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	std::ifstream fin(dir);
 
-	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	if (!fin)
 	{
-		auto& p = grid.Vertices[i].Position;
-		vertices[i].Pos = p;
-		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
-		vertices[i].Normal = GetHillsNormal(p.x, p.z);
-		vertices[i].TexC = grid.Vertices[i].TexC;
-		vertices[i].TangentU = grid.Vertices[i].TangentU;
+		MessageBox(0, dir.c_str(), 0, 0);
+		return mesh;
 	}
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	UINT vcount = 0;
+	UINT tcount = 0;
+	std::string ignore;
 
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[2].first;
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+	fin >> ignore >> vcount;
+	fin >> ignore >> tcount;
+	fin >> ignore >> ignore >> ignore >> ignore;
 
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs[GEO_MESH_NAMES[2].second[0]] = submesh;
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void MyApp::BuildCSWavesGeometry()
-{
-	GeometryGenerator::MeshData grid = GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount());
-
-	std::vector<Vertex> vertices(grid.Vertices.size());
-	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	mesh.Vertices.resize(vcount);
+	for (UINT i = 0; i < vcount; ++i)
 	{
-		vertices[i].Pos = grid.Vertices[i].Position;
-		vertices[i].Normal = grid.Vertices[i].Normal;
-		vertices[i].TexC = grid.Vertices[i].TexC;
-		vertices[i].TangentU = grid.Vertices[i].TangentU;
+		fin >> mesh.Vertices[i].Position.x >> mesh.Vertices[i].Position.y >> mesh.Vertices[i].Position.z;
+		fin >> mesh.Vertices[i].Normal.x >> mesh.Vertices[i].Normal.y >> mesh.Vertices[i].Normal.z;
+
+		XMVECTOR P = XMLoadFloat3(&mesh.Vertices[i].Position);
+
+		// Project point onto unit sphere and generate spherical texture coordinates.
+		XMFLOAT3 spherePos;
+		DirectX::XMStoreFloat3(&spherePos, XMVector3Normalize(P));
+
+		float theta = atan2f(spherePos.z, spherePos.x);
+
+		// Put in [0, 2pi].
+		if (theta < 0.0f)
+			theta += XM_2PI;
+
+		float phi = acosf(spherePos.y);
+
+		float u = theta / (2.0f * XM_PI);
+		float v = phi / XM_PI;
+
+		mesh.Vertices[i].TexC = { u, v };
 	}
 
-	std::vector<std::uint32_t> indices = grid.Indices32;
+	fin >> ignore;
+	fin >> ignore;
+	fin >> ignore;
 
-	UINT vbByteSize = mCSWaves->VertexCount() * sizeof(Vertex);
-	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
+	mesh.Indices32.resize(3 * tcount);
+	for (UINT i = 0; i < tcount; ++i)
+	{
+		fin >> mesh.Indices32[i * 3 + 0] >> mesh.Indices32[i * 3 + 1] >> mesh.Indices32[i * 3 + 2];
+	}
 
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[3].first;
+	fin.close();
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs[GEO_MESH_NAMES[3].second[0]] = submesh;
-
-	mGeometries[geo->Name] = std::move(geo);
+	return mesh;
 }
 
-void MyApp::BuildShapeGeometry()
+void MyApp::BuildMeshes()
+{
+	mMeshes.push_back(GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
+	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
+	mMeshes.push_back(GeometryGenerator::CreateSphere(0.5f, 20, 20));
+	mMeshes.push_back(GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20));
+	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50));
+	for (size_t i = 0; i < mMeshes[4].Vertices.size(); ++i)
+	{
+		mMeshes[4].Vertices[i].Position.y = GetHillsHeight(mMeshes[4].Vertices[i].Position.x, mMeshes[4].Vertices[i].Position.z);
+		mMeshes[4].Vertices[i].Normal = GetHillsNormal(mMeshes[4].Vertices[i].Position.x, mMeshes[4].Vertices[i].Position.z);
+	}
+
+	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));
+	mMeshes.push_back(LoadModelMesh(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]));
+
+	BuildGeometry(mMeshes);
+}
+
+void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat)
 {
 	using namespace DirectX;
 	//=========================================================
-	// Part 1. Mesh 생성
-	//=========================================================
-	std::vector<GeometryGenerator::MeshData> meshes(GEO_MESH_NAMES[0].second.size());
-	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3);
-	meshes[1] = GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40);
-	meshes[2] = GeometryGenerator::CreateSphere(0.5f, 20, 20);
-	meshes[3] = GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20);
-
-	//=========================================================
 	// Part 1-1. Culling을 위한 Bounding Box 생성
 	//=========================================================
-	DirectX::BoundingBox BoundingBox[4];
-	DirectX::BoundingSphere BoundingSphere[4];
+	std::vector<DirectX::BoundingBox> BoundingBox(meshes.size());
+	std::vector<DirectX::BoundingSphere> BoundingSphere(meshes.size());
 	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
 	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
 
-	for (size_t i = 0; i < 4; ++i)
+	for (size_t i = 0; i < BoundingBox.size(); ++i)
 	{
 		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
 		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
@@ -592,17 +568,21 @@ void MyApp::BuildShapeGeometry()
 		BoundingSphere[i].Radius = maxRadius;
 	}
 	//=========================================================
-	// Part 2. Sub Mesh 생성 및 통합 vertices & indices 생성
+	// Part 2. vertices & indices 생성
 	//=========================================================
-	size_t totalVertexCount = 0;
-	for (const auto& a : meshes)
-		totalVertexCount += a.Vertices.size();
-
-	std::vector<SubmeshGeometry> submeshes(GEO_MESH_NAMES[0].second.size());
-	std::vector<Vertex> vertices(totalVertexCount);
+	std::vector<GeometryGenerator::Vertex> vertices;
 	std::vector<std::uint16_t> indices;
-	UINT k = 0;
-	for (size_t i = 0; i < GEO_MESH_NAMES[0].second.size(); ++i)
+	for (size_t i = 0; i < meshes.size(); ++i)
+	{
+		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
+		vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
+	}
+
+	//=========================================================
+	// Part 2. SubmeshGeometry 생성
+	//=========================================================
+	std::vector<SubmeshGeometry> submeshes(meshes.size());
+	for (size_t i = 0; i < meshes.size(); ++i)
 	{
 		submeshes[i].BoundingBox = BoundingBox[i];
 		submeshes[i].BoundingSphere = BoundingSphere[i];
@@ -618,24 +598,16 @@ void MyApp::BuildShapeGeometry()
 			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
 			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 		}
-		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-		for (const auto& ver : meshes[i].Vertices)
-		{
-			vertices[k].Pos = ver.Position;
-			vertices[k].Normal = ver.Normal;
-			vertices[k].TexC = ver.TexC;
-			vertices[k++].TangentU = ver.TangentU;
-		}
 	}
 
 	//=========================================================
-	// Part 3. Indices 할당 (16bit)
+	// Part 3. GPU 할당 (16bit)
 	//=========================================================
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(GeometryGenerator::Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[0].first;
+	geo->Name = mGeometries.size();
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -643,140 +615,16 @@ void MyApp::BuildShapeGeometry()
 	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexByteStride = sizeof(GeometryGenerator::Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexFormat = indexFormat;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	for (size_t i = 0; i < GEO_MESH_NAMES[0].second.size(); ++i)
+	for (size_t i = 0; i < submeshes.size(); ++i)
 	{
-		geo->DrawArgs[GEO_MESH_NAMES[0].second[i]] = submeshes[i];
+		geo->DrawArgs[std::to_string(i)] = submeshes[i];
 	}
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void MyApp::BuildModelGeometry()
-{
-	using namespace DirectX;
-
-	std::ifstream fin(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]);
-
-	if (!fin)
-	{
-		MessageBox(0, L"../Data/Models/skull.txt not found.", 0, 0);
-		return;
-	}
-
-	UINT vcount = 0;
-	UINT tcount = 0;
-	std::string ignore;
-
-	fin >> ignore >> vcount;
-	fin >> ignore >> tcount;
-	fin >> ignore >> ignore >> ignore >> ignore;
-
-	XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-	XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-
-	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-	std::vector<Vertex> vertices(vcount);
-	for (UINT i = 0; i < vcount; ++i)
-	{
-		fin >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
-		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
-
-		XMVECTOR P = XMLoadFloat3(&vertices[i].Pos);
-
-		// Project point onto unit sphere and generate spherical texture coordinates.
-		XMFLOAT3 spherePos;
-		DirectX::XMStoreFloat3(&spherePos, XMVector3Normalize(P));
-
-		float theta = atan2f(spherePos.z, spherePos.x);
-
-		// Put in [0, 2pi].
-		if (theta < 0.0f)
-			theta += XM_2PI;
-
-		float phi = acosf(spherePos.y);
-
-		float u = theta / (2.0f * XM_PI);
-		float v = phi / XM_PI;
-
-		vertices[i].TexC = { u, v };
-		// vertices[i].TangentU = { u, v };
-
-		vMin = XMVectorMin(vMin, P);
-		vMax = XMVectorMax(vMax, P);
-	}
-	// DirectX::ComputeTangentFrame(vertices.);
-
-
-	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-	BoundingBox BoundingBox;
-	DirectX::XMStoreFloat3(&BoundingBox.Center, center);
-	DirectX::XMStoreFloat3(&BoundingBox.Extents, 0.5f * (vMax - vMin));
-
-	float maxRadius = 0.0f;
-	for (UINT i = 0; i < vcount; ++i)
-	{
-		maxRadius = max(maxRadius, (center - vertices[i].Pos).Length());
-	}
-	maxRadius += 1e-2f;
-	BoundingSphere BoundingSphere(BoundingBox.Center, maxRadius);
-
-	fin >> ignore;
-	fin >> ignore;
-	fin >> ignore;
-
-	std::vector<std::int32_t> indices(3 * tcount);
-	for (UINT i = 0; i < tcount; ++i)
-	{
-		fin >> indices[i * 3 + 0] >> indices[i * 3 + 1] >> indices[i * 3 + 2];
-	}
-
-	fin.close();
-
-	//
-	// Pack the indices of all the meshes into one index buffer.
-	//
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::int32_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[1].first;
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-	submesh.BoundingBox = BoundingBox;
-	submesh.BoundingSphere = BoundingSphere;
-
-	geo->DrawArgs[GEO_MESH_NAMES[1].second[0]] = submesh;
-
-	mGeometries[geo->Name] = std::move(geo);
+	mGeometries.push_back(std::move(geo));
 }
 
 void MyApp::BuildTreeSpritesGeometry()
@@ -808,19 +656,14 @@ void MyApp::BuildTreeSpritesGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[5].first;
+	geo->Name = "TreeSpriteGeo";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
 	geo->VertexByteStride = sizeof(TreeSpriteVertex);
 	geo->VertexBufferByteSize = vbByteSize;
@@ -832,120 +675,9 @@ void MyApp::BuildTreeSpritesGeometry()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs[GEO_MESH_NAMES[5].second[0]] = submesh;
+	geo->DrawArgs["0"] = submesh;
 
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void MyApp::BuildQuadPatchGeometry()
-{
-	std::array<Vertex, 4> vertices =
-	{		// Floor: Observe we tile texture coordinates.
-		Vertex(-10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f), // 0 
-		Vertex(+10.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f),
-		Vertex(-10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f),
-		Vertex(+10.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f)
-	};
-
-	std::array<std::int16_t, 4> indices = { 0, 1, 2, 3 };
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[6].first;
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry quadSubmesh;
-	quadSubmesh.IndexCount = 4;
-	quadSubmesh.StartIndexLocation = 0;
-	quadSubmesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs[GEO_MESH_NAMES[6].second[0]] = quadSubmesh;
-
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void MyApp::BuildBoundingGeometry()
-{
-	using namespace DirectX;
-	
-	std::vector<GeometryGenerator::MeshData> meshes(GEO_MESH_NAMES[7].second.size());
-	meshes[0] = GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 0);
-	meshes[1] = GeometryGenerator::CreateSphere(1.0f, 10, 10);
-
-	//=========================================================
-	// Part 2. Sub Mesh 생성 및 통합 vertices & indices 생성
-	//=========================================================
-	size_t totalVertexCount = 0;
-	for (const auto& a : meshes)
-		totalVertexCount += a.Vertices.size();
-
-	std::vector<SubmeshGeometry> submeshes(GEO_MESH_NAMES[7].second.size());
-	std::vector<Vertex> vertices(totalVertexCount);
-	std::vector<std::uint16_t> indices;
-	UINT k = 0;
-	for (size_t i = 0; i < GEO_MESH_NAMES[7].second.size(); ++i)
-	{
-		if (i == 0)
-		{
-			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
-			submeshes[0].StartIndexLocation = 0;
-			submeshes[0].BaseVertexLocation = 0;
-		}
-		else
-		{
-			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
-			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
-			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
-		}
-		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-		for (const auto& ver : meshes[i].Vertices)
-		{
-			vertices[k].Pos = ver.Position;
-			vertices[k].Normal = ver.Normal;
-			vertices[k++].TexC = ver.TexC;
-		}
-	}
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = GEO_MESH_NAMES[7].first;
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	for (size_t i = 0; i < GEO_MESH_NAMES[7].second.size(); ++i)
-	{
-		geo->DrawArgs[GEO_MESH_NAMES[7].second[i]] = submeshes[i];
-	}
-	mGeometries[geo->Name] = std::move(geo);
+	mGeometries.push_back(std::move(geo));
 }
 
 void MyApp::BuildMaterials()
@@ -1017,22 +749,22 @@ void MyApp::BuildMaterials()
 
 void MyApp::BuildRenderItems()
 {
-	auto boxRitem = std::make_unique<RenderItem>(0, 0, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto gridRitem = std::make_unique<RenderItem>(0, 1, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto sphereRitem = std::make_unique<RenderItem>(0, 2, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto cylinderRitem = std::make_unique<RenderItem>(0, 3, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto alphaBoxRitem = std::make_unique<RenderItem>(0, 0, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto mirrorGridRitem = std::make_unique<RenderItem>(0, 1, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto subBoxRitem = std::make_unique<RenderItem>(0, 0, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto subSphereRitem = std::make_unique<RenderItem>(0, 2, mGeometries[GEO_MESH_NAMES[0].first].get());
-	auto skullRitem = std::make_unique<RenderItem>(1, 0, mGeometries[GEO_MESH_NAMES[1].first].get());
-	auto landRitem = std::make_unique<RenderItem>(2, 0, mGeometries[GEO_MESH_NAMES[2].first].get(), false);
-	auto wavesRitem = std::make_unique<RenderItem>(3, 0, mGeometries[GEO_MESH_NAMES[3].first].get(), false);
-	auto treeSpritesRitem = std::make_unique<RenderItem>(5, 0, mGeometries[GEO_MESH_NAMES[5].first].get(), false);
-	auto tessPatchRitem = std::make_unique<RenderItem>(6, 0, mGeometries[GEO_MESH_NAMES[6].first].get());
-	auto boundingBoxRitem = std::make_unique<RenderItem>(7, 0, mGeometries[GEO_MESH_NAMES[7].first].get());
-	auto boundingSphereRitem = std::make_unique<RenderItem>(7, 1, mGeometries[GEO_MESH_NAMES[7].first].get());
-	auto cubeBoxRitem = std::make_unique<RenderItem>(0, 2, mGeometries[GEO_MESH_NAMES[0].first].get());
+	auto boxRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+	auto alphaBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+	auto subBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+	auto gridRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
+	auto mirrorGridRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
+	auto tessGridRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
+	auto sphereRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
+	auto subSphereRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
+	auto cubeSphereRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
+	auto cylinderRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["3"]);
+	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["4"], false);
+	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"], false);
+	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"]);
+	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
+	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"], false);
 
 	subBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1064,7 +796,7 @@ void MyApp::BuildRenderItems()
 		| (1 << (int)RenderLayer::TreeSpritesWireframe)
 		| (1 << (int)RenderLayer::Normal);
 
-	tessPatchRitem->LayerFlag
+	tessGridRitem->LayerFlag
 		= (1 << (int)RenderLayer::Tessellation)
 		| (1 << (int)RenderLayer::TessellationWireframe)
 		| (1 << (int)RenderLayer::Normal);
@@ -1075,7 +807,7 @@ void MyApp::BuildRenderItems()
 	boundingSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::BoundingSphere);
 
-	cubeBoxRitem->LayerFlag
+	cubeSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::CubeMap);
 
 	//=========================================================
@@ -1090,7 +822,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 10.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 2.0f;
 		scale.y = 2.0f;
 		scale.z = 2.0f;
@@ -1102,7 +834,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 20.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1114,7 +846,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 30.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1126,7 +858,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 40.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1138,7 +870,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 50.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1204,7 +936,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 60.0f;
-		translation.z = 5.0 + 5.0 * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 5);
 		scale.x = 0.3f;
 		scale.y = 0.3f;
 		scale.z = 0.3f;
@@ -1279,7 +1011,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(landRitem));
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
-	mAllRitems.push_back(std::move(tessPatchRitem));
+	mAllRitems.push_back(std::move(tessGridRitem));
 
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
@@ -1305,9 +1037,9 @@ void MyApp::BuildRenderItems()
 		scale.x = 5000.0f;
 		scale.y = 5000.0f;
 		scale.z = 5000.0f;
-		cubeBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size(), false);
+		cubeSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size(), false);
 	}
-	mAllRitems.push_back(std::move(cubeBoxRitem));
+	mAllRitems.push_back(std::move(cubeSphereRitem));
 
 	mUpdateBoundingMesh = true;
 }
@@ -1841,41 +1573,40 @@ void MyApp::AnimateMaterials()
 
 void MyApp::UpdateTangents()
 {
-	using namespace std;
-	using namespace DirectX;
+	//using namespace std;
+	//using namespace DirectX;
 
-	// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
+	//// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
 
-	for (auto& m : mGeometries) {
+	//for (auto& m : mMeshes) {
+	//	vector<XMFLOAT3> positions(m.Vertices.size());
+	//	vector<XMFLOAT3> normals(m.Vertices.size());
+	//	vector<XMFLOAT2> texcoords(m.Vertices.size());
+	//	vector<XMFLOAT3> tangents(m.Vertices.size());
+	//	vector<XMFLOAT3> bitangents(m.Vertices.size());
 
-		vector<XMFLOAT3> positions(m.vertices.size());
-		vector<XMFLOAT3> normals(m.vertices.size());
-		vector<XMFLOAT2> texcoords(m.vertices.size());
-		vector<XMFLOAT3> tangents(m.vertices.size());
-		vector<XMFLOAT3> bitangents(m.vertices.size());
+	//	for (size_t i = 0; i < m.Vertices.size(); i++) {
+	//		auto& v = m.Vertices[i];
+	//		positions[i] = v.Position;
+	//		normals[i] = v.Normal;
+	//		texcoords[i] = v.TexC;
+	//	}
 
-		for (size_t i = 0; i < m.vertices.size(); i++) {
-			auto& v = m.vertices[i];
-			positions[i] = v.position;
-			normals[i] = v.normalModel;
-			texcoords[i] = v.texcoord;
-		}
+	//	ComputeTangentFrame(m.Indices32.data(), m.Indices32.size() / 3,
+	//		positions.data(), normals.data(), texcoords.data(),
+	//		m.Vertices.size(), tangents.data(),
+	//		bitangents.data());
 
-		ComputeTangentFrame(m.indices.data(), m.indices.size() / 3,
-			positions.data(), normals.data(), texcoords.data(),
-			m.vertices.size(), tangents.data(),
-			bitangents.data());
+	//	for (size_t i = 0; i < m.Vertices.size(); i++) {
+	//		m.Vertices[i].TangentU = tangents[i];
+	//	}
 
-		for (size_t i = 0; i < m.vertices.size(); i++) {
-			m.vertices[i].tangentModel = tangents[i];
-		}
-
-		if (m.skinnedVertices.size() > 0) {
-			for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
-				m.skinnedVertices[i].tangentModel = tangents[i];
-			}
-		}
-	}
+	//	//if (m.skinnedVertices.size() > 0) {
+	//	//	for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
+	//	//		m.skinnedVertices[i].tangentModel = tangents[i];
+	//	//	}
+	//	//}
+	//}
 }
 
 void MyApp::UpdateInstanceBuffer()
@@ -2038,7 +1769,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 	UINT offset
 		= (flag == RenderLayer::Reflected || flag == RenderLayer::ReflectedWireframe)
 		? mAllRitems.size()
-		: 0u;
+		: 0;
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(InstanceConstants));
 	auto currInstanceCB = mCurrFrameResource->InstanceCB->Resource();
 
@@ -2324,13 +2055,13 @@ void MyApp::ShowTextureWindow()
 	static int texIdx;
 
 	int size
-		= SRV_USER_SIZE
-		+ TEX_DIFF_FILENAMES.size()
-		+ TEX_NORM_FILENAMES.size()
-		+ TEX_ARRAY_FILENAMES.size()
-		+ mCSBlurFilter->DescriptorCount()
-		+ mCSWaves->DescriptorCount()
-		+ (UINT)TEX_CUBE_FILENAMES.size();
+		= (int) SRV_USER_SIZE
+		+ (int) TEX_DIFF_FILENAMES.size()
+		+ (int) TEX_NORM_FILENAMES.size()
+		+ (int) TEX_ARRAY_FILENAMES.size()
+		+ (int) mCSBlurFilter->DescriptorCount()
+		+ (int) mCSWaves->DescriptorCount()
+		+ (int) TEX_CUBE_FILENAMES.size();
 		
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 	ImGui::SliderInt(
@@ -2360,19 +2091,19 @@ void MyApp::ShowMaterialWindow()
 
 	int dataSize
 		= SRV_USER_SIZE
-		+ TEX_DIFF_FILENAMES.size()
-		+ TEX_NORM_FILENAMES.size()
-		+ TEX_ARRAY_FILENAMES.size()
-		+ TEX_CUBE_FILENAMES.size()
-		+ mCSBlurFilter->DescriptorCount()
-		+ mCSWaves->DescriptorCount();
+		+ (int) TEX_DIFF_FILENAMES.size()
+		+ (int) TEX_NORM_FILENAMES.size()
+		+ (int) TEX_ARRAY_FILENAMES.size()
+		+ (int) TEX_CUBE_FILENAMES.size()
+		+ (int) mCSBlurFilter->DescriptorCount()
+		+ (int) mCSWaves->DescriptorCount();
 
 	int texDiffSize
-		= SRV_USER_SIZE
-		+ TEX_DIFF_FILENAMES.size();
+		= (int) SRV_USER_SIZE
+		+ (int) TEX_DIFF_FILENAMES.size();
 
 	int texNormSize
-		= TEX_NORM_FILENAMES.size();
+		= (int) TEX_NORM_FILENAMES.size();
 
 	ImGui::LabelText("label", "Value");
 	ImGui::SeparatorText("Inputs");

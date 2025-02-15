@@ -56,17 +56,6 @@ private:
 		"skullMat", "shadowMat", "viewport"
 	};
 
-	static const inline std::vector<std::pair<std::string, std::vector<std::string>>> GEO_MESH_NAMES = {
-		{"ShapeGeo", std::vector<std::string>({"box", "grid", "sphere", "cylinder"})},
-		{"ModelGeo", std::vector<std::string>({"skull"})},
-		{"LandGeo",	std::vector<std::string>({"land"})},
-		{"WaterGeo", std::vector<std::string>({"water"})},
-		{"RoomGeo", std::vector<std::string>({"floor", "wall", "mirror"})},
-		{"TreeSpritesGeo", std::vector<std::string>({"points"})},
-		{"QuadPatchGeo", std::vector<std::string>({"quadpatch"})},
-		{"BoundingGeo", std::vector<std::string>({"boundingBox", "boundingSphere"})}
-	};
-
 	static const inline std::wstring				MESH_MODEL_DIR = L"../Data/Models/";
 	static const inline std::vector<std::wstring>	MESH_MODEL_FILE_NAMES = {
 		L"skull.txt"
@@ -168,7 +157,7 @@ private:
 			InstanceData.MaterialIndex = matIdx;
 		}
 
-		InstanceData InstanceData; // GPU ¿¸º€ ¿¸øÎ µ•¿Ã≈Õ
+		InstanceData InstanceData; // GPU Ï†ÑÏÜ° Ï†ÑÏö© Îç∞Ïù¥ÌÑ∞
 
 		DirectX::BoundingBox BoundingBox;
 		DirectX::BoundingSphere BoundingSphere;
@@ -177,7 +166,7 @@ private:
 		DirectX::SimpleMath::Vector3 Scale;
 		DirectX::SimpleMath::Quaternion RotationQuat;
 		DirectX::SimpleMath::Vector3 TexScale;
-		UINT BoundingCount;	// √ﬂ»ƒ BoundingBox, BoundingSphere «•«ˆ¿ª ¿ß«— ±∏¡∂ø°º≠ ø¨µø«œø© »∞øÎ
+		UINT BoundingCount;	// Ï∂îÌõÑ BoundingBox, BoundingSphere ÌëúÌòÑÏùÑ ÏúÑÌïú Íµ¨Ï°∞ÏóêÏÑú Ïó∞ÎèôÌïòÏó¨ ÌôúÏö©
 		bool FrustumCullingEnabled;
 		bool ShowBoundingBox;
 		bool ShowBoundingSphere;
@@ -187,13 +176,13 @@ private:
 	struct RenderItem
 	{
 		RenderItem() = default;
-		RenderItem(int idx1, int idx2, MeshGeometry* geo, bool culling = true)
+		RenderItem(MeshGeometry* geo, SubmeshGeometry submesh, bool culling = true)
 			: Geo(geo)
-			, IndexCount(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].IndexCount)
-			, StartIndexLocation(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].StartIndexLocation)
-			, BaseVertexLocation(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BaseVertexLocation)
-			, BoundingBox(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BoundingBox)
-			, BoundingSphere(geo->DrawArgs[GEO_MESH_NAMES[idx1].second[idx2]].BoundingSphere)
+			, IndexCount(submesh.IndexCount)
+			, StartIndexLocation(submesh.StartIndexLocation)
+			, BaseVertexLocation(submesh.BaseVertexLocation)
+			, BoundingBox(submesh.BoundingBox)
+			, BoundingSphere(submesh.BoundingSphere)
 			, mFrustumCullingEnabled(culling)
 		{
 		}
@@ -218,7 +207,7 @@ private:
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
-		std::vector<RootData> Datas;			// CPU π◊ æÀ∞Ì∏Æ¡Ú ø¨ªÍ¿ª ¿ß«— µ•¿Ã≈Õ
+		std::vector<RootData> Datas;			// CPU Î∞è ÏïåÍ≥†Î¶¨Ï¶ò Ïó∞ÏÇ∞ÏùÑ ÏúÑÌïú Îç∞Ïù¥ÌÑ∞
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
@@ -250,13 +239,10 @@ public:
 	void BuildDescriptorHeaps();
 	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
-	void BuildShapeGeometry();
-	void BuildModelGeometry();
-	void BuildLandGeometry();
-	void BuildCSWavesGeometry();
+	GeometryGenerator::MeshData LoadModelMesh(std::wstring dir);
+	void BuildMeshes();
+	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT);
 	void BuildTreeSpritesGeometry();
-	void BuildQuadPatchGeometry();
-	void BuildBoundingGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
@@ -339,7 +325,7 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
 
 	std::vector<GeometryGenerator::MeshData> mMeshes;
-	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
+	std::vector<std::unique_ptr<MeshGeometry>> mGeometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
