@@ -20,6 +20,7 @@ public:
 	ShadowMap& operator=(const ShadowMap& rhs) = delete;
 	~ShadowMap() = default;
 
+	PassConstants GetPassCB() const;
 	UINT Width()const;
 	UINT Height()const;
 	ID3D12Resource* Resource();
@@ -43,17 +44,16 @@ public:
 	void SetBaseDir(const DirectX::SimpleMath::Vector3& dir);
 	void SetRotate(const float angle);
 	void SetTarget(const DirectX::SimpleMath::Vector3& targetPos);
-	
+
+private:
 	void Update();
 	void UpdateMatrix();
 	void UpdatePassCB();
 
-private:
 	void BuildDescriptors();
 	void BuildResource();
 
 private:
-
 	ID3D12Device* md3dDevice;
 
 	D3D12_VIEWPORT mViewport;
@@ -82,6 +82,5 @@ private:
 	DirectX::XMVECTOR mTargetPos;
 	float mOrthoBoxLength;
 	DirectX::XMMATRIX mShadowTransform;
-
 	PassConstants mPassCB;
 };

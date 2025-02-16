@@ -62,7 +62,6 @@ private:
 		Reflected,
 		AlphaTested,
 		Transparent,
-		Shadow,
 		Subdivision,
 		Normal,
 		TreeSprites,
@@ -70,12 +69,13 @@ private:
 		BoundingBox,
 		BoundingSphere,
 		CubeMap,
+		ShadowMap,
+		DebugShadowMap,
 		OpaqueWireframe,
 		MirrorWireframe,
 		ReflectedWireframe,
 		AlphaTestedWireframe,
 		TransparentWireframe,
-		ShadowWireframe,
 		SubdivisionWireframe,
 		NormalWireframe,
 		TreeSpritesWireframe,
@@ -205,11 +205,9 @@ private:
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
 			| (1 << (int)RenderLayer::Reflected)
-			| (1 << (int)RenderLayer::Shadow)
 			| (1 << (int)RenderLayer::Normal)
 			| (1 << (int)RenderLayer::OpaqueWireframe)
 			| (1 << (int)RenderLayer::ReflectedWireframe)
-			| (1 << (int)RenderLayer::ShadowWireframe)
 			| (1 << (int)RenderLayer::NormalWireframe);
 
 		// DrawIndexedInstanced parameters.
@@ -245,7 +243,7 @@ public:
 #pragma endregion Initialize
 
 private:
-	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = 4, UINT numDSV = 2)override;
+	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = APP_NUM_BACK_BUFFERS + 1, UINT numDSV = 1 + MAX_LIGHTS)override;
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
@@ -254,11 +252,11 @@ private:
 
 	void AnimateMaterials();
 	void UpdateTangents();
+	void UpdateShadowMap();
 	void UpdateInstanceBuffer();
 	void UpdateMaterialBuffer();
-	void UpdateShadowTransform();
 	void UpdateMainPassCB();
-	void UpdateReflectedPassCB();
+	void UpdateShadowPassCB();
 
 	void DrawRenderItems(const RenderLayer ritems);
 
@@ -310,10 +308,9 @@ private:
 	std::unique_ptr<CSAdd> mCSAdd;
 	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
-	std::unique_ptr<ShadowMap> mShadowMap;
+	std::array<std::unique_ptr<ShadowMap>, MAX_LIGHTS> mShadowMap;
 
 	PassConstants mMainPassCB;
-	PassConstants mReflectedPassCB;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 

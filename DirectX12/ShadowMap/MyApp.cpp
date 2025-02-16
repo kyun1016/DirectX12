@@ -64,7 +64,13 @@ bool MyApp::Initialize()
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality);
-	mShadowMap = std::make_unique<ShadowMap>(mDevice.Get(), 2048, 2048);
+	for (int i = 0; i < MAX_LIGHTS; ++i)
+	{
+		mShadowMap[i] = std::make_unique<ShadowMap>(mDevice.Get(), 2048, 2048);
+	}
+	mShadowMap[0]->SetBaseDir({ 0.57735f, -0.57735f, 0.57735f });
+	mShadowMap[1]->SetBaseDir({ -0.57735f, -0.57735f, 0.57735f });
+	mShadowMap[2]->SetBaseDir({ 0.0f, -0.707f, -0.707f });
 
 	LoadTextures();
 	BuildMaterials();
@@ -166,18 +172,26 @@ void MyApp::BuildRootSignature()
 		/* UINT RegisterSpace						*/.RegisterSpace = 3,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t2 (Space4)
+	D3D12_DESCRIPTOR_RANGE ShadowMapTable // register t0[0] (Space4)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)MAX_LIGHTS,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 4,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t2 (Space5)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 		/* UINT NumDescriptors						*/.NumDescriptors = 1,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 2,
-		/* UINT RegisterSpace						*/.RegisterSpace = 4,
+		/* UINT RegisterSpace						*/.RegisterSpace = 5,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
 	
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[9];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[10];
 
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -193,20 +207,21 @@ void MyApp::BuildRootSignature()
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(1);		// gBaseInstanceIndex b1
-	slotRootParameter[1].InitAsShaderResourceView(0, 4);	// InstanceData t0 (Space4)
-	slotRootParameter[2].InitAsShaderResourceView(1, 4);	// MaterialData t1 (Space4)
+	slotRootParameter[1].InitAsShaderResourceView(0, 5);	// InstanceData t0 (Space5)
+	slotRootParameter[2].InitAsShaderResourceView(1, 5);	// MaterialData t1 (Space5)
 	slotRootParameter[3].InitAsConstantBufferView(0);		// cbPass b0
 	slotRootParameter[4].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[5].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[6].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[7].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[8].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+	slotRootParameter[9].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(9, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(10, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -359,16 +374,19 @@ void MyApp::BuildShaderResourceViews()
 
 void MyApp::BuildShadersAndInputLayout()
 {
+	char maxLights[100];
 	char texDiffSize[100];
 	char texNormSize[100];
 	char texArraySize[100];
 	char texCubeSize[100];
+	strcpy_s(maxLights, std::to_string(MAX_LIGHTS).c_str());
 	strcpy_s(texDiffSize, std::to_string(TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE).c_str());
 	strcpy_s(texNormSize, std::to_string(TEX_NORM_FILENAMES.size()).c_str());
 	strcpy_s(texArraySize, std::to_string(TEX_ARRAY_FILENAMES.size()).c_str());
 	strcpy_s(texCubeSize, std::to_string(TEX_CUBE_FILENAMES.size()).c_str());
 	const D3D_SHADER_MACRO defines[] =
 	{
+		"MAX_LIGHTS", maxLights,
 		"TEX_DIFF_SIZE", texDiffSize,
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
@@ -378,6 +396,7 @@ void MyApp::BuildShadersAndInputLayout()
 
 	const D3D_SHADER_MACRO fogDefines[] =
 	{
+		"MAX_LIGHTS", maxLights,
 		"TEX_DIFF_SIZE", texDiffSize,
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
@@ -388,17 +407,29 @@ void MyApp::BuildShadersAndInputLayout()
 
 	const D3D_SHADER_MACRO alphaTestDefines[] =
 	{
+		"MAX_LIGHTS", maxLights,
 		"TEX_DIFF_SIZE", texDiffSize,
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
 		"TEX_CUBE_SIZE", texCubeSize,
-		"FOG", "1",
 		"ALPHA_TEST", "1",
+		NULL, NULL
+	};
+	const D3D_SHADER_MACRO alphaFogTestDefines[] =
+	{
+		"MAX_LIGHTS", maxLights,
+		"TEX_DIFF_SIZE", texDiffSize,
+		"TEX_NORM_SIZE", texNormSize,
+		"TEX_ARRAY_SIZE", texArraySize,
+		"TEX_CUBE_SIZE", texCubeSize,
+		"ALPHA_TEST", "1",
+		"FOG", "1",
 		NULL, NULL
 	};
 
 	const D3D_SHADER_MACRO waveDefines[] =
 	{
+		"MAX_LIGHTS", maxLights,
 		"TEX_DIFF_SIZE", texDiffSize,
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
@@ -411,7 +442,7 @@ void MyApp::BuildShadersAndInputLayout()
 
 	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
 	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
-	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", fogDefines, "PS", "ps_5_1");
+	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
 	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
 	mShaders["DisplacementPS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "PS", "ps_5_1");
 
@@ -429,7 +460,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "VS", "vs_5_1");
 	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
 	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
-	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", fogDefines, "PS", "ps_5_1");
+	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
 
 	mShaders["BasicVS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "VS", "vs_5_1");
 	mShaders["BasicPS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "PS", "ps_5_1");
@@ -439,6 +470,10 @@ void MyApp::BuildShadersAndInputLayout()
 
 	mShaders["ShadowVS"] = D3DUtil::CompileShader(L"Shadow.hlsl", defines, "VS", "vs_5_1");
 	mShaders["ShadowPS"] = D3DUtil::CompileShader(L"Shadow.hlsl", defines, "PS", "ps_5_1");
+	mShaders["ShadowAlphaTestedPS"] = D3DUtil::CompileShader(L"Shadow.hlsl", alphaTestDefines, "PS", "ps_5_1");
+
+	mShaders["ShadowDebugVS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "VS", "vs_5_1");
+	mShaders["ShadowDebugPS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -529,14 +564,16 @@ void MyApp::BuildMeshes()
 	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
 	mMeshes.push_back(GeometryGenerator::CreateSphere(0.5f, 20, 20));
 	mMeshes.push_back(GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20));
-	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50));
-	for (size_t i = 0; i < mMeshes[4].Vertices.size(); ++i)
+	mMeshes.push_back(GeometryGenerator::CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f));
+
+	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, 50, 50));	// Land
+	for (auto& vertice : mMeshes[5].Vertices)
 	{
-		mMeshes[4].Vertices[i].Position.y = GetHillsHeight(mMeshes[4].Vertices[i].Position.x, mMeshes[4].Vertices[i].Position.z);
-		mMeshes[4].Vertices[i].Normal = GetHillsNormal(mMeshes[4].Vertices[i].Position.x, mMeshes[4].Vertices[i].Position.z);
+		vertice.Position.y = GetHillsHeight(vertice.Position.x, vertice.Position.z);
+		vertice.Normal = GetHillsNormal(vertice.Position.x, vertice.Position.z);
 	}
 
-	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));
+	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));	// Wave
 	mMeshes.push_back(LoadModelMesh(L"../Data/Models/skull.txt"));
 	mMeshes.push_back(LoadModelMesh(L"../Data/Models/car.txt"));
 
@@ -786,10 +823,10 @@ void MyApp::BuildRenderItems()
 	auto subSphereRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto cubeSphereRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto cylinderRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["3"]);
-	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["4"], false);
-	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"], false);
-	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"]);
-	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
+	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"], false);
+	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"], false);
+	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
+	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["8"]);
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"], false);
@@ -1261,29 +1298,6 @@ void MyApp::BuildPSO()
 	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
-	// PSO for shadow objects
-	//=====================================================
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = transparentPsoDesc;
-
-	shadowPsoDesc.DepthStencilState.DepthEnable = true;
-	shadowPsoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	shadowPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	shadowPsoDesc.DepthStencilState.StencilEnable = true;
-	shadowPsoDesc.DepthStencilState.StencilReadMask = 0xff;
-	shadowPsoDesc.DepthStencilState.StencilWriteMask = 0xff;
-
-	shadowPsoDesc.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowPsoDesc.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowPsoDesc.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowPsoDesc.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	// We are not rendering backfacing polygons, so these settings do not matter.
-	shadowPsoDesc.DepthStencilState.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowPsoDesc.DepthStencilState.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowPsoDesc.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowPsoDesc.DepthStencilState.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	//=====================================================
 	// PSO for Subdivision
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC subdivisionDesc = opaquePsoDesc;
@@ -1346,6 +1360,19 @@ void MyApp::BuildPSO()
 	cubeMapPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
+	// PSO for ShadowMap
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowMapPsoDesc = opaquePsoDesc;
+	shadowMapPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShadowVS"]->GetBufferPointer()), mShaders["ShadowVS"]->GetBufferSize() };
+	shadowMapPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShadowPS"]->GetBufferPointer()), mShaders["ShadowPS"]->GetBufferSize() };
+	shadowMapPsoDesc.RasterizerState.DepthBias = 100000;
+	shadowMapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+	shadowMapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+	shadowMapPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+	shadowMapPsoDesc.NumRenderTargets = 0;
+	shadowMapPsoDesc.BlendState.IndependentBlendEnable = false;
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
@@ -1353,7 +1380,6 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Reflected])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Transparent])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AlphaTested])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Shadow])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Subdivision])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Normal])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSprites])));
@@ -1362,6 +1388,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingSphere])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS_CS])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&cubeMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::CubeMap])));
+	//ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowMap])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -1371,7 +1398,6 @@ void MyApp::BuildPSO()
 	drawReflectionsPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	transparentPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	alphaTestedPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	shadowPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	subdivisionDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	normalDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	treeSpritePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
@@ -1383,7 +1409,6 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ReflectedWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TransparentWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AlphaTestedWireframe])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SubdivisionWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::NormalWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSpritesWireframe])));
@@ -1394,7 +1419,7 @@ void MyApp::BuildPSO()
 
 void MyApp::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)
 {
-	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + 1, 2);
+	AppBase::CreateRtvAndDsvDescriptorHeaps(numRTV, numDSV);
 }
 
 #pragma region Update
@@ -1455,12 +1480,12 @@ void MyApp::Update()
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, mFenceEvent));
 		WaitForSingleObject(mFenceEvent, INFINITE);
 	}
-
+	UpdateShadowMap();
 	AnimateMaterials();
 	UpdateInstanceBuffer();
 	UpdateMaterialBuffer();
 	UpdateMainPassCB();
-	UpdateReflectedPassCB();
+	UpdateShadowPassCB();
 }
 
 void MyApp::Render()
@@ -1621,8 +1646,6 @@ void MyApp::UpdateTangents()
 {
 	using namespace DirectX;
 
-	// https://github.com/microsoft/DirectXMesh/wiki/ComputeTangentFrame
-
 	for (auto& m : mMeshes) {
 		std::vector<XMFLOAT3> positions(m.Vertices.size());
 		std::vector<XMFLOAT3> normals(m.Vertices.size());
@@ -1651,6 +1674,16 @@ void MyApp::UpdateTangents()
 		//		m.skinnedVertices[i].tangentModel = tangents[i];
 		//	}
 		//}
+	}
+}
+
+void MyApp::UpdateShadowMap()
+{
+	static float rotationAngle = 0;
+	rotationAngle += 1.0f * mTimer.DeltaTime();
+	for (int i = 0; i < MAX_LIGHTS; ++i)
+	{
+		mShadowMap[i]->SetRotate(rotationAngle);
 	}
 }
 
@@ -1710,38 +1743,6 @@ void MyApp::UpdateInstanceBuffer()
 		<< L"Update objects " << visibleInstanceCount 
 		<< L" / All objects " << mInstanceCount;
 	mWndCaption = outs.str();
-
-//	for (auto& e : mAllRitems)
-//	{
-//		if (e->NumFramesDirty > 0)
-//		{
-//			
-//			//DirectX::XMMATRIX rotate = DirectX::XMMatrixRotationY(e->AngleY * MathHelper::Pi);
-//			//DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(e->ScaleX, e->ScaleY, e->ScaleZ);
-//			//DirectX::XMMATRIX offset = DirectX::XMMatrixTranslation(e->OffsetX, e->OffsetY, e->OffsetZ);
-//			//DirectX::XMMATRIX world = rotate * scale * offset;
-//
-//			// Update reflection world matrix.
-//			if (e->LayerFlag & (1 << (int)RenderLayer::Reflected))
-//			{
-//				DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&e->Instances.World);
-//				DirectX::XMMATRIX texTransform = DirectX::XMLoadFloat4x4(&e->Instances.TexTransform);
-//				DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-//
-//				DirectX::XMVECTOR mirrorPlane = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
-//				DirectX::XMMATRIX R = DirectX::XMMatrixReflect(mirrorPlane);
-//				InstanceData data;
-//				DirectX::XMStoreFloat4x4(&data.World, DirectX::XMMatrixTranspose(world * R));
-//				DirectX::XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
-//				DirectX::XMStoreFloat4x4(&data.WorldInvTranspose, DirectX::XMMatrixInverse(&det, world));
-//				data.MaterialIndex = e->Mat->MatCBIndex;
-//				data.DisplacementMapTexelSize = e->Instances.DisplacementMapTexelSize;
-//				data.GridSpatialStep = e->Instances.GridSpatialStep;
-//
-//				currInstanceBuffer->CopyData(mAllRitems.size() + e->InsIndex, data);
-//			}
-//		}
-//	}
 }
 
 void MyApp::UpdateMaterialBuffer()
@@ -1772,10 +1773,6 @@ void MyApp::UpdateMaterialBuffer()
 	}
 }
 
-void MyApp::UpdateShadowTransform()
-{
-}
-
 void MyApp::UpdateMainPassCB()
 {
 	DirectX::XMMATRIX view = mCamera.GetView();
@@ -1804,34 +1801,24 @@ void MyApp::UpdateMainPassCB()
 	mMainPassCB.TotalTime = mTimer.TotalTime();
 	mMainPassCB.DeltaTime = mTimer.DeltaTime();
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+	for (int i = 0; i < MAX_LIGHTS; ++i)
+	{
+		PassConstants shadowCB = mShadowMap[i]->GetPassCB();
+		mMainPassCB.Lights[i].Direction = shadowCB.Lights[0].Direction;
+		mMainPassCB.Lights[i].Strength = shadowCB.Lights[0].Strength;
+	}
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
 }
-void MyApp::UpdateReflectedPassCB()
+
+void MyApp::UpdateShadowPassCB()
 {
-	mReflectedPassCB = mMainPassCB;
-
-	DirectX::XMVECTOR mirrorPlane = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
-	DirectX::XMMATRIX R = DirectX::XMMatrixReflect(mirrorPlane);
-
-	// Reflect the lighting.
-	for (int i = 0; i < MaxLights; ++i)
-	{
-		DirectX::XMVECTOR lightDir = DirectX::XMLoadFloat3(&mMainPassCB.Lights[i].Direction);
-		DirectX::XMVECTOR reflectedLightDir = DirectX::XMVector3TransformNormal(lightDir, R);
-		DirectX::XMStoreFloat3(&mReflectedPassCB.Lights[i].Direction, reflectedLightDir);
-	}
-
-	// Reflected pass stored in index 1
 	auto currPassCB = mCurrFrameResource->PassCB.get();
-	currPassCB->CopyData(1, mReflectedPassCB);
+	for (int i = 0; i < MAX_LIGHTS; ++i)
+	{
+		currPassCB->CopyData(1 + i, mShadowMap[i]->GetPassCB());
+	}
 }
 
 #pragma endregion Update
@@ -2056,7 +2043,6 @@ void MyApp::ShowMainWindow()
 				"Reflected",
 				"AlphaTested",
 				"Transparent",
-				"Shadow",
 				"Subdivision",
 				"Normal",
 				"TreeSprites",
@@ -2064,12 +2050,13 @@ void MyApp::ShowMainWindow()
 				"BoundingBox",
 				"BoundingSphere",
 				"CubeMap",
+				"ShadowMap",
+				"DebugShadowMap",
 				"OpaqueWireframe",
 				"MirrorWireframe",
 				"ReflectedWireframe",
 				"AlphaTestedWireframe",
 				"TransparentWireframe",
-				"ShadowWireframe",
 				"SubdivisionWireframe",
 				"NormalWireframe",
 				"TreeSpritesWireframe",
@@ -2099,7 +2086,19 @@ void MyApp::ShowMainWindow()
 		}
 		ImGui::TreePop();
 	}
-
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Culling")) {
+		int flag = 0;
+		flag += ImGui::Checkbox("Enable Culling", &mCullingEnable);
+		if (flag)
+		{
+			for (auto& e : mAllRitems)
+			{
+				e->NumFramesDirty = APP_NUM_BACK_BUFFERS;
+			}
+		}
+		ImGui::TreePop();
+	}
 
 	ImGui::End();
 }

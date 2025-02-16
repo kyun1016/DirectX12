@@ -4,6 +4,8 @@
 #include "../EngineCore/MathHelper.h"
 #include "../EngineCore/UploadBuffer.h"
 
+static constexpr int MAX_LIGHTS = 3;
+
 struct MaterialData
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -54,7 +56,7 @@ struct PassConstants
 	float gFogRange = 150.0f;
 	DirectX::XMFLOAT2 cbPerObjectPad2 = { 0.0f, 0.0f };
 
-	Light Lights[MaxLights];
+	Light Lights[MAX_LIGHTS];
 
 	UINT gCubeMapIndex = 0;
 };

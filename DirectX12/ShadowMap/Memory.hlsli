@@ -12,7 +12,26 @@
 #define NUM_SPOT_LIGHTS 0
 #endif
 
-#define MaxLights 16
+#ifndef MAX_LIGHTS
+#define MAX_LIGHTS 16
+#endif
+
+#ifndef TEX_DIFF_SIZE
+#define TEX_DIFF_SIZE 1
+#endif
+
+#ifndef TEX_NORM_SIZE
+#define TEX_NORM_SIZE 1
+#endif
+
+#ifndef TEX_ARRAY_SIZE
+#define TEX_ARRAY_SIZE 1
+#endif
+
+#ifndef TEX_CUBE_SIZE
+#define TEX_CUBE_SIZE 1
+#endif
+
 #include "LightingUtil.hlsli"
 
 struct InstanceData
@@ -38,35 +57,18 @@ struct MaterialData
     uint MatPad2;
 };
 
-#ifdef TEX_DIFF_SIZE
 Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space0);
-#else
-Texture2D gDiffuseMap[16] : register(t0, space0);
-#endif
-
-#ifdef TEX_NORM_SIZE
 Texture2D gNormalMap[TEX_NORM_SIZE] : register(t0, space1);
-#else
-Texture2D gNormalMap[16] : register(t0, space1);
-#endif
-
-#ifdef TEX_ARRAY_SIZE
 Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space2);
-#else
-Texture2DArray gTreeMapArray[2] : register(t0, space2);
-#endif
-
-#ifdef TEX_CUBE_SIZE
 TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space3);
-#else
-TextureCube gCubeMap[1] : register(t0, space3);
-#endif
+Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space4);
+
 
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
-StructuredBuffer<InstanceData> gInstanceData : register(t0, space4); 
-StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
-Texture2D gDisplacementMap : register(t2, space4);
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space5);
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space5);
+Texture2D gDisplacementMap : register(t2, space5);
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
@@ -104,8 +106,8 @@ cbuffer cbPass : register(b0)
     // Indices [0, NUM_DIR_LIGHTS) are directional lights;
     // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
-    // are spot lights for a maximum of MaxLights per object.
-    Light gLights[MaxLights];
+    // are spot lights for a maximum of MAX_LIGHTS per object.
+    Light gLights[MAX_LIGHTS];
     
     uint gCubeMapIndex;
 };

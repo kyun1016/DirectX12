@@ -28,6 +28,11 @@ ShadowMap::ShadowMap(
 	BuildResource();
 }
 
+PassConstants ShadowMap::GetPassCB() const
+{
+	return mPassCB;
+}
+
 UINT ShadowMap::Width()const
 {
 	return mWidth;
