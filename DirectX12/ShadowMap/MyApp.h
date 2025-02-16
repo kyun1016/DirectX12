@@ -216,6 +216,8 @@ private:
 		UINT IndexCount = 0;
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
+
+		int NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	};
 
 	using Super = typename AppBase;
@@ -243,7 +245,7 @@ public:
 #pragma endregion Initialize
 
 private:
-	virtual void CreateRtvAndDsvDescriptorHeaps()override;
+	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = 4, UINT numDSV = 2)override;
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
@@ -323,6 +325,8 @@ private:
 	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
+
+	bool mCullingEnable = false;
 
 	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;

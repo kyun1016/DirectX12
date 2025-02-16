@@ -1392,36 +1392,9 @@ void MyApp::BuildPSO()
 }
 #pragma endregion Initialize
 
-void MyApp::CreateRtvAndDsvDescriptorHeaps()
+void MyApp::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)
 {
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
-	{
-		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1,
-		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-		/* UINT NodeMask					*/0
-	};
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
-
-	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS + 1; i++)
-	{
-		mSwapChainDescriptor[i] = rtvHandle;
-		rtvHandle.ptr += mRtvDescriptorSize;
-	}
-
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
-	{
-		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-		/* UINT NumDescriptors				*/1,
-		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-		/* UINT NodeMask					*/0
-	};
-	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
-
-	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	mDepthStencilDescriptor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + 1, 2);
 }
 
 #pragma region Update
@@ -1548,15 +1521,15 @@ void MyApp::Render()
 
 	
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
-	mCommandList->ClearRenderTargetView(mSwapChainDescriptor[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
-	mCommandList->ClearDepthStencilView(mDepthStencilDescriptor, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
-	rtvs[0] = mSwapChainDescriptor[mCurrBackBuffer];		// 기존
-	rtvs[1] = mSwapChainDescriptor[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
-	mCommandList->OMSetRenderTargets(2, rtvs, false, &mDepthStencilDescriptor);
+	rtvs[0] = mhCPUSwapChainBuffer[mCurrBackBuffer];		// 기존
+	rtvs[1] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
+	mCommandList->OMSetRenderTargets(2, rtvs, false, &mhCPUDSVBuffer[0]);
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
@@ -1693,26 +1666,49 @@ void MyApp::UpdateInstanceBuffer()
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
 		auto& e = mAllRitems[i];
-		
-		InstanceConstants insCB;
-		insCB.BaseInstanceIndex = visibleInstanceCount;
-		e->StartInstanceLocation = visibleInstanceCount;
-		currInstanceCB->CopyData(i, insCB);
-
-		for (size_t i = 0; i < e->Datas.size(); ++i)
+		if (mCullingEnable)
 		{
-			if ((mCamFrustum.Contains(e->Datas[i].BoundingBox) != DirectX::DISJOINT) || (e->Datas[i].FrustumCullingEnabled == false))
+			InstanceConstants insCB;
+			insCB.BaseInstanceIndex = visibleInstanceCount;
+			e->StartInstanceLocation = visibleInstanceCount;
+			currInstanceCB->CopyData(i, insCB);
+
+			// 컬링을 활용하며, 매 Frame 간 데이터를 복사하는 로직으로 구현
+			for (const auto& d : e->Datas)
 			{
-				currInstanceBuffer->CopyData(visibleInstanceCount++, e->Datas[i].InstanceData);
+				if ((mCamFrustum.Contains(d.BoundingBox) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
+				{
+					currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
+				}
+			}
+			e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
+		}
+		else
+		{
+			if (e->NumFramesDirty)
+			{
+				InstanceConstants insCB;
+				insCB.BaseInstanceIndex = visibleInstanceCount;
+				e->StartInstanceLocation = visibleInstanceCount;
+				currInstanceCB->CopyData(i, insCB);
+
+				// 컬링을 활용하며, 매 Frame 간 데이터를 복사하는 로직으로 구현
+				for (const auto& d : e->Datas)
+				{
+					currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
+				}
+				e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
+
+				e->NumFramesDirty--;
 			}
 		}
-		e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
+		
 	}
 	std::wostringstream outs;
 	outs.precision(6);
-	outs << L"Instancing and Culling Demo" <<
-		L"    " << visibleInstanceCount <<
-		L" objects visible out of " << mInstanceCount;
+	outs 
+		<< L"Update objects " << visibleInstanceCount 
+		<< L" / All objects " << mInstanceCount;
 	mWndCaption = outs.str();
 
 //	for (auto& e : mAllRitems)

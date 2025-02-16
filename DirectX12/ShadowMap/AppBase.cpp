@@ -239,36 +239,46 @@ void AppBase::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 	}
 }
 
-void AppBase::CreateRtvAndDsvDescriptorHeaps()
+void AppBase::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		/* UINT NumDescriptors				*/APP_NUM_BACK_BUFFERS + 1,
+		/* UINT NumDescriptors				*/numRTV,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		/* UINT NodeMask					*/0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
 	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS + 1; i++)
 	{
-		mSwapChainDescriptor[i] = rtvHandle;
-		rtvHandle.ptr += mRtvDescriptorSize;
+		mhCPUSwapChainBuffer.resize(rtvHeapDesc.NumDescriptors);
+		mhCPUSwapChainBuffer[0] = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
+		for (UINT i = 1; i < rtvHeapDesc.NumDescriptors; i++)
+		{
+			mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mRtvDescriptorSize;
+		}
 	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
 	{
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-		/* UINT NumDescriptors				*/1,
+		/* UINT NumDescriptors				*/numDSV,
 		/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		/* UINT NodeMask					*/0
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
 
 	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	mDepthStencilDescriptor = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+	{
+		mhCPUDSVBuffer.resize(dsvHeapDesc.NumDescriptors);
+		mhCPUDSVBuffer[0] = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+		for (UINT i = 1; i < dsvHeapDesc.NumDescriptors; i++)
+		{
+			mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mDsvDescriptorSize;
+		}
+	}
+	
 }
 // DX12 Debug Layer <- GPU에서 에러나는 걸 로그로 출력
 void AppBase::OnResize()
@@ -301,7 +311,7 @@ void AppBase::OnResize()
 	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mhCPUSwapChainBuffer[i]);
 	}
 
 	//=====================================
@@ -357,7 +367,7 @@ void AppBase::OnResize()
 		/* 	D3D12_TEX3D_RTV Texture3D				*/
 		/* 	}										*/
 	};
-	mDevice->CreateRenderTargetView(mSRVUserBuffer[0].Get(), &rtvDesc, mSwapChainDescriptor[APP_NUM_BACK_BUFFERS]);
+	mDevice->CreateRenderTargetView(mSRVUserBuffer[0].Get(), &rtvDesc, mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS]);
 	// RTV Render in a Texture
 	//=====================================
 
@@ -425,7 +435,7 @@ void AppBase::OnResize()
 		/*		}											*/
 		/* } D3D12_DEPTH_STENCIL_VIEW_DESC					*/
 	};
-	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mDepthStencilDescriptor);
+	mDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mhCPUDSVBuffer[0]);
 
 	// Transition the resource from its initial state to be used as a depth buffer.
 	CD3DX12_RESOURCE_BARRIER ResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -714,7 +724,7 @@ void AppBase::CreateSwapChain()
 	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mSwapChainDescriptor[i]);
+		mDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, mhCPUSwapChainBuffer[i]);
 	}
 }
 

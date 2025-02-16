@@ -95,7 +95,7 @@ public:
 
 	void FlushCommandQueue();
 protected:
-	virtual void CreateRtvAndDsvDescriptorHeaps();
+	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = APP_NUM_BACK_BUFFERS + 1, UINT numDSV = 1);
 	virtual void OnResize();
 	virtual void Update() = 0;
 	virtual void Render() = 0;
@@ -179,7 +179,7 @@ public:
 	UINT mRtvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
-	D3D12_CPU_DESCRIPTOR_HANDLE mSwapChainDescriptor[APP_NUM_BACK_BUFFERS+1];
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUSwapChainBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
@@ -190,7 +190,7 @@ public:
 	UINT mDsvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
-	D3D12_CPU_DESCRIPTOR_HANDLE mDepthStencilDescriptor;
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUDSVBuffer;
 
 	UINT mCbvSrvUavDescriptorSize = 0;
 
