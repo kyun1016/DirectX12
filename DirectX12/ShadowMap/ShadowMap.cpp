@@ -76,6 +76,105 @@ void ShadowMap::OnResize(UINT newWidth, UINT newHeight)
 	}
 }
 
+void ShadowMap::SetBoxLength(float orthoBoxLength)
+{
+	mOrthoBoxLength = orthoBoxLength;
+	Update();
+}
+
+void ShadowMap::SetAmbientLight(const DirectX::SimpleMath::Vector4& ambientLight)
+{
+	mPassCB.AmbientLight = ambientLight;
+}
+
+void ShadowMap::SetPosition(const DirectX::SimpleMath::Vector3& pos)
+{
+	mLightPosW = XMLoadFloat3(&pos);
+	Update();
+}
+
+void ShadowMap::SetBaseDir(const DirectX::SimpleMath::Vector3& dir)
+{
+	mBaseLightDir = XMLoadFloat3(&dir);
+}
+
+void ShadowMap::SetRotate(const float angle)
+{
+	DirectX::XMMATRIX R = DirectX::XMMatrixRotationY(angle);
+	mLightDir = DirectX::XMVector3TransformNormal(mBaseLightDir, R);
+	Update();
+}
+
+void ShadowMap::SetTarget(const DirectX::SimpleMath::Vector3& targetPos)
+{
+	mTargetPos = XMLoadFloat3(&targetPos);
+	Update();
+}
+
+void ShadowMap::Update()
+{
+	UpdateMatrix();
+	UpdatePassCB();
+}
+
+void ShadowMap::UpdateMatrix()
+{
+	DirectX::XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(mLightPosW, mTargetPos, lightUp);
+
+	// Transform bounding sphere to light space.
+	DirectX::XMFLOAT3 center;
+	DirectX::XMStoreFloat3(&center, XMVector3TransformCoord(mTargetPos, lightView));
+
+	// Ortho frustum in light space encloses scene.
+	float l = center.x - mOrthoBoxLength;
+	float b = center.y - mOrthoBoxLength;
+	float n = center.z - mOrthoBoxLength;
+	float r = center.x + mOrthoBoxLength;
+	float t = center.y + mOrthoBoxLength;
+	float f = center.z + mOrthoBoxLength;
+
+	mLightNearZ = n;
+	mLightFarZ = f;
+	mLightProj = DirectX::XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+	DirectX::XMMATRIX T(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	mShadowTransform = mLightView * mLightProj * T;
+}
+
+void ShadowMap::UpdatePassCB()
+{
+	DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(mLightView, mLightProj);
+
+	DirectX::XMVECTOR viewDeterminant = DirectX::XMMatrixDeterminant(mLightView);
+	DirectX::XMVECTOR projDeterminant = DirectX::XMMatrixDeterminant(mLightProj);
+	DirectX::XMVECTOR viewProjDeterminant = DirectX::XMMatrixDeterminant(viewProj);
+
+	DirectX::XMMATRIX invView = DirectX::XMMatrixInverse(&viewDeterminant, mLightView);
+	DirectX::XMMATRIX invProj = DirectX::XMMatrixInverse(&projDeterminant, mLightProj);
+	DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(&viewProjDeterminant, viewProj);
+
+	DirectX::XMStoreFloat4x4(&mPassCB.View, DirectX::XMMatrixTranspose(mLightView));
+	DirectX::XMStoreFloat4x4(&mPassCB.InvView, DirectX::XMMatrixTranspose(invView));
+	DirectX::XMStoreFloat4x4(&mPassCB.Proj, DirectX::XMMatrixTranspose(mLightProj));
+	DirectX::XMStoreFloat4x4(&mPassCB.InvProj, DirectX::XMMatrixTranspose(invProj));
+	DirectX::XMStoreFloat4x4(&mPassCB.ViewProj, DirectX::XMMatrixTranspose(viewProj));
+	DirectX::XMStoreFloat4x4(&mPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewProj));
+	DirectX::XMStoreFloat3(&mPassCB.EyePosW, mLightPosW);
+	mPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)mWidth, (float)mHeight);
+	mPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mWidth, 1.0f / mHeight);
+	mPassCB.NearZ = mLightNearZ;
+	mPassCB.FarZ = mLightFarZ;
+	DirectX::XMStoreFloat3(&mPassCB.Lights[0].Direction, mLightDir);
+	mPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+}
+
 void ShadowMap::BuildDescriptors()
 {
 	// Create SRV to resource so we can sample the shadow map in a shader program.
