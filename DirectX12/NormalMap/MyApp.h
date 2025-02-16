@@ -53,11 +53,6 @@ private:
 		"skullMat", "shadowMat", "viewport"
 	};
 
-	static const inline std::wstring				MESH_MODEL_DIR = L"../Data/Models/";
-	static const inline std::vector<std::wstring>	MESH_MODEL_FILE_NAMES = {
-		L"skull.txt"
-	};
-
 	enum class RenderLayer : int
 	{
 		None = 0,

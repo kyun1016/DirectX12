@@ -516,6 +516,11 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
 
 void MyApp::BuildMeshes()
 {
+	//static const std::wstring MESH_MODEL_DIR = L"../Data/Models/";
+	//static const std::vector<std::wstring> MESH_MODEL_FILE_NAMES = {
+	//	L"skull.txt", L""
+	//};
+
 	mMeshes.push_back(GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
 	mMeshes.push_back(GeometryGenerator::CreateSphere(0.5f, 20, 20));
@@ -528,7 +533,8 @@ void MyApp::BuildMeshes()
 	}
 
 	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));
-	mMeshes.push_back(LoadModelMesh(MESH_MODEL_DIR + MESH_MODEL_FILE_NAMES[0]));
+	mMeshes.push_back(LoadModelMesh(L"../Data/Models/skull.txt"));
+	mMeshes.push_back(LoadModelMesh(L"../Data/Models/car.txt"));
 
 	UpdateTangents();
 
@@ -779,6 +785,7 @@ void MyApp::BuildRenderItems()
 	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["4"], false);
 	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"], false);
 	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"]);
+	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"], false);
@@ -954,11 +961,23 @@ void MyApp::BuildRenderItems()
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 60.0f;
 		translation.z = 5.0f + 5.0f * (i / 5);
-		scale.x = 0.3f;
-		scale.y = 0.3f;
-		scale.z = 0.3f;
+		scale.x = 1.0f;
+		scale.y = 1.0f;
+		scale.z = 1.0f;
 
 		skullRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
+	}
+
+	for (int i = 0; i < MATERIAL_NAMES.size() * 20; ++i)
+	{
+		translation.x = (i % 10) * 8.0f;
+		translation.y = 70.0f;
+		translation.z = 5.0f + 5.0f * (i / 5);
+		scale.x = 1.0f;
+		scale.y = 1.0f;
+		scale.z = 1.0f;
+
+		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % MATERIAL_NAMES.size());
 	}
 
 	////=========================================================
@@ -1000,7 +1019,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size());
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, TEX_DIFF_FILENAMES.size());
 	}
 
 	////=========================================================
@@ -1013,7 +1032,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
+		tessGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
 	}
 
 	mAllRitems.push_back(std::move(boxRitem));
@@ -1025,6 +1044,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(subBoxRitem));
 	mAllRitems.push_back(std::move(subSphereRitem));
 	mAllRitems.push_back(std::move(skullRitem));
+	mAllRitems.push_back(std::move(carRitem));
 	mAllRitems.push_back(std::move(landRitem));
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
