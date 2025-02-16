@@ -230,7 +230,6 @@ public:
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
-	void BuildShaderResourceViews();
 	void BuildShadersAndInputLayout();
 	GeometryGenerator::MeshData LoadModelMesh(std::wstring dir);
 	void BuildMeshes();
@@ -243,7 +242,7 @@ public:
 #pragma endregion Initialize
 
 private:
-	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = APP_NUM_BACK_BUFFERS + 1, UINT numDSV = 1 + MAX_LIGHTS)override;
+	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)override;
 #pragma region Update
 	virtual void OnResize()override;
 	virtual void Update()override;
@@ -259,6 +258,7 @@ private:
 	void UpdateShadowPassCB();
 
 	void DrawRenderItems(const RenderLayer ritems);
+	void DrawSceneToShadowMap(int index = 0);
 
 	void Pick();
 	std::pair<int, int> PickClosest(const DirectX::SimpleMath::Ray& pickingRay, float& minDist);
@@ -333,6 +333,7 @@ private:
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUUser;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUDiff;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUNorm;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUShadow;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUArray;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUCube;
 };

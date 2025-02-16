@@ -59,9 +59,9 @@ struct MaterialData
 
 Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space0);
 Texture2D gNormalMap[TEX_NORM_SIZE] : register(t0, space1);
-Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space2);
-TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space3);
-Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space4);
+Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space2);
+Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space3);
+TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space4);
 
 
 // Put in space1, so the texture array does not overlap with these resources.  
