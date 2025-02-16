@@ -6,8 +6,15 @@
 class ShadowMap
 {
 public:
-	ShadowMap(ID3D12Device* device,
-		UINT width, UINT height);
+	ShadowMap(
+		ID3D12Device* device,
+		UINT width,
+		UINT height,
+		const DirectX::SimpleMath::Vector3 lightDirection = { 0.57735f, -0.57735f, 0.57735f },
+		const DirectX::SimpleMath::Vector3 lightStrength = { 0.6f, 0.6f, 0.6f },
+		const DirectX::SimpleMath::Vector3 targetPosition = {0.0f, 0.0f, 0.0f},
+		const DirectX::SimpleMath::Vector4 ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f },
+		float orthoBoxLength = 100.0f);
 
 	ShadowMap(const ShadowMap& rhs) = delete;
 	ShadowMap& operator=(const ShadowMap& rhs) = delete;
@@ -32,11 +39,10 @@ public:
 	void SetBoxLength(float orthoBoxLength);
 	// Light
 	void SetAmbientLight(const DirectX::SimpleMath::Vector4& ambientLight);
-	void SetPosition(const DirectX::SimpleMath::Vector3& pos);
+	void SetLightStrength(const DirectX::SimpleMath::Vector3& strength);
 	void SetBaseDir(const DirectX::SimpleMath::Vector3& dir);
 	void SetRotate(const float angle);
 	void SetTarget(const DirectX::SimpleMath::Vector3& targetPos);
-	
 	
 	void Update();
 	void UpdateMatrix();
@@ -48,22 +54,20 @@ private:
 
 private:
 
-	ID3D12Device* md3dDevice = nullptr;
+	ID3D12Device* md3dDevice;
 
 	D3D12_VIEWPORT mViewport;
 	D3D12_RECT mScissorRect;
 
-	UINT mWidth = 0;
-	UINT mHeight = 0;
-	DXGI_FORMAT mFormat = DXGI_FORMAT_R24G8_TYPELESS;
+	UINT mWidth;
+	UINT mHeight;
+	DXGI_FORMAT mFormat;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuSrv;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mhGpuSrv;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuDsv;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mShadowMap = nullptr;
-
-	DirectX::BoundingSphere mSceneBounds;
 
 	// Light
 	DirectX::XMVECTOR mBaseLightDir;
@@ -73,10 +77,10 @@ private:
 	DirectX::XMMATRIX mLightProj;
 
 	// Shadow
-	float mLightNearZ = 0.0f;
-	float mLightFarZ = 0.0f;
+	float mLightNearZ;
+	float mLightFarZ;
 	DirectX::XMVECTOR mTargetPos;
-	float mOrthoBoxLength = 100.0f;
+	float mOrthoBoxLength;
 	DirectX::XMMATRIX mShadowTransform;
 
 	PassConstants mPassCB;

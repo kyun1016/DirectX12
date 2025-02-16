@@ -1,15 +1,29 @@
 #include "pch.h"
 #include "ShadowMap.h"
 
-ShadowMap::ShadowMap(ID3D12Device* device, UINT width, UINT height)
+ShadowMap::ShadowMap(
+	ID3D12Device* device,
+	UINT width, 
+	UINT height, 
+	const DirectX::SimpleMath::Vector3 lightDirection,
+	const DirectX::SimpleMath::Vector3 lightStrength,
+	const DirectX::SimpleMath::Vector3 targetPosition,
+	const DirectX::SimpleMath::Vector4 ambientLight,
+	float orthoBoxLength)
+	: md3dDevice(device)
+	, mWidth(width)
+	, mHeight(height)
+	, mViewport({ 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f })
+	, mScissorRect({ 0, 0, (int)width, (int)height })
+	, mFormat(DXGI_FORMAT_R24G8_TYPELESS)
+	, mOrthoBoxLength(orthoBoxLength)
 {
-	md3dDevice = device;
-
-	mWidth = width;
-	mHeight = height;
-
-	mViewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-	mScissorRect = { 0, 0, (int)width, (int)height };
+	mBaseLightDir = XMLoadFloat3(&lightDirection);
+	mLightDir = XMLoadFloat3(&lightDirection);
+	mTargetPos = XMLoadFloat3(&targetPosition);
+	mPassCB.AmbientLight = ambientLight;
+	mPassCB.Lights[0].Strength = lightStrength;
+	Update();
 
 	BuildResource();
 }
@@ -87,10 +101,9 @@ void ShadowMap::SetAmbientLight(const DirectX::SimpleMath::Vector4& ambientLight
 	mPassCB.AmbientLight = ambientLight;
 }
 
-void ShadowMap::SetPosition(const DirectX::SimpleMath::Vector3& pos)
+void ShadowMap::SetLightStrength(const DirectX::SimpleMath::Vector3& strength)
 {
-	mLightPosW = XMLoadFloat3(&pos);
-	Update();
+	mPassCB.Lights[0].Strength = strength;
 }
 
 void ShadowMap::SetBaseDir(const DirectX::SimpleMath::Vector3& dir)
@@ -119,6 +132,9 @@ void ShadowMap::Update()
 
 void ShadowMap::UpdateMatrix()
 {
+	using namespace DirectX;
+	mLightPosW = -2.0f * mOrthoBoxLength * mLightDir;
+
 	DirectX::XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(mLightPosW, mTargetPos, lightUp);
 
@@ -172,7 +188,6 @@ void ShadowMap::UpdatePassCB()
 	mPassCB.NearZ = mLightNearZ;
 	mPassCB.FarZ = mLightFarZ;
 	DirectX::XMStoreFloat3(&mPassCB.Lights[0].Direction, mLightDir);
-	mPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
 }
 
 void ShadowMap::BuildDescriptors()
