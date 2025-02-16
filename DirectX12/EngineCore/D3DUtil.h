@@ -13,6 +13,7 @@
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 #include "d3dx12.h"
+#include "SimpleMath.h"
 
 #pragma comment(lib, "dxguid.lib")
 

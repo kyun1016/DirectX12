@@ -1685,7 +1685,7 @@ void MyApp::UpdateInstanceBuffer()
 		}
 		else
 		{
-			if (e->NumFramesDirty)
+			if (e->NumFramesDirty > 0)
 			{
 				InstanceConstants insCB;
 				insCB.BaseInstanceIndex = visibleInstanceCount;
@@ -1770,6 +1770,10 @@ void MyApp::UpdateMaterialBuffer()
 			mat->NumFramesDirty--;
 		}
 	}
+}
+
+void MyApp::UpdateShadowTransform()
+{
 }
 
 void MyApp::UpdateMainPassCB()

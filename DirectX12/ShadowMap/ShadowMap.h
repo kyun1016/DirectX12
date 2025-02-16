@@ -48,4 +48,19 @@ private:
 	CD3DX12_CPU_DESCRIPTOR_HANDLE mhCpuDsv;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mShadowMap = nullptr;
+
+	DirectX::BoundingSphere mSceneBounds;
+
+	float mLightNearZ = 0.0f;
+	float mLightFarZ = 0.0f;
+	float mLightRotationAngle = 0.0f;
+	DirectX::SimpleMath::Vector3 mBaseLightDirections;
+	DirectX::SimpleMath::Vector3 mRotatedLightDirections;
+
+	DirectX::SimpleMath::Vector3 mLightPosW;
+	DirectX::SimpleMath::Matrix mLightView;
+	DirectX::SimpleMath::Matrix mLightProj;
+	DirectX::SimpleMath::Matrix mShadowTransform;
+
+	
 };

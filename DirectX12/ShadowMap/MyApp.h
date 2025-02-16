@@ -256,6 +256,7 @@ private:
 	void UpdateTangents();
 	void UpdateInstanceBuffer();
 	void UpdateMaterialBuffer();
+	void UpdateShadowTransform();
 	void UpdateMainPassCB();
 	void UpdateReflectedPassCB();
 
