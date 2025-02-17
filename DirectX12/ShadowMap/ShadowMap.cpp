@@ -22,7 +22,7 @@ ShadowMap::ShadowMap(
 	mLightDir = XMLoadFloat3(&lightDirection);
 	mTargetPos = XMLoadFloat3(&targetPosition);
 	mPassCB.AmbientLight = ambientLight;
-	mPassCB.Lights[0].Strength = lightStrength;
+	mLight.Strength = lightStrength;
 	Update();
 
 	BuildResource();
@@ -108,7 +108,7 @@ void ShadowMap::SetAmbientLight(const DirectX::SimpleMath::Vector4& ambientLight
 
 void ShadowMap::SetLightStrength(const DirectX::SimpleMath::Vector3& strength)
 {
-	mPassCB.Lights[0].Strength = strength;
+	mLight.Strength = strength;
 }
 
 void ShadowMap::SetBaseDir(const DirectX::SimpleMath::Vector3& dir)
@@ -192,7 +192,21 @@ void ShadowMap::UpdatePassCB()
 	mPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mWidth, 1.0f / mHeight);
 	mPassCB.NearZ = mLightNearZ;
 	mPassCB.FarZ = mLightFarZ;
-	DirectX::XMStoreFloat3(&mPassCB.Lights[0].Direction, mLightDir);
+
+	mLight.FalloffStart = mLightNearZ;
+	mLight.FalloffEnd = mLightFarZ;
+	mLight.SpotPower = 64.0f;
+	mLight.type = 1;
+	mLight.radius = 1.0f;
+	mLight.haloRadius = 1.0f;
+	mLight.haloStrength = 1.0f;
+	DirectX::XMStoreFloat3(&mLight.Direction, mLightDir);
+	DirectX::XMStoreFloat3(&mLight.Position, mLightPosW);
+	DirectX::XMStoreFloat4x4(&mLight.viewProj, DirectX::XMMatrixTranspose(mLightView));
+	DirectX::XMStoreFloat4x4(&mLight.invProj, DirectX::XMMatrixTranspose(invProj));
+	DirectX::XMStoreFloat4x4(&mLight.shadowTransform, DirectX::XMMatrixTranspose(mShadowTransform));
+
+	mPassCB.Lights[0] = mLight;
 }
 
 void ShadowMap::BuildDescriptors()

@@ -83,4 +83,5 @@ private:
 	float mOrthoBoxLength;
 	DirectX::XMMATRIX mShadowTransform;
 	PassConstants mPassCB;
+	LightData mLight;
 };

@@ -48,6 +48,7 @@ struct Light
 
     float4x4 viewProj;
     float4x4 invProj;
+    float4x4 shadowTransform;
 };
 
 struct InstanceData

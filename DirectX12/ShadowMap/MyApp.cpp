@@ -1920,8 +1920,7 @@ void MyApp::UpdateMainPassCB()
 	for (int i = 0; i < MAX_LIGHTS; ++i)
 	{
 		PassConstants shadowCB = mShadowMap[i]->GetPassCB();
-		mMainPassCB.Lights[i].Direction = shadowCB.Lights[0].Direction;
-		mMainPassCB.Lights[i].Strength = shadowCB.Lights[0].Strength;
+		mMainPassCB.Lights[i] = shadowCB.Lights[0];
 	}
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();

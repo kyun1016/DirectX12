@@ -22,6 +22,7 @@ struct LightData
 
 	DirectX::SimpleMath::Matrix viewProj = MathHelper::Identity4x4();
 	DirectX::SimpleMath::Matrix invProj = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix shadowTransform = MathHelper::Identity4x4();
 };
 
 struct MaterialData
