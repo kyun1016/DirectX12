@@ -223,7 +223,7 @@ private:
 public:
 	MyApp();
 	MyApp(uint32_t width, uint32_t height, std::wstring name);
-	virtual ~MyApp() {};
+	virtual ~MyApp();
 
 #pragma region Initialize
 	virtual bool Initialize() override;

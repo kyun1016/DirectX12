@@ -52,6 +52,11 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 		mLayerCBIdx[i] = 0;
 	}
 }
+MyApp::~MyApp()
+{
+	if (mDevice != nullptr)
+		FlushCommandQueue();
+}
 #pragma region Initialize
 bool MyApp::Initialize()
 {
@@ -64,13 +69,23 @@ bool MyApp::Initialize()
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality);
-	for (int i = 0; i < MAX_LIGHTS; ++i)
 	{
-		mShadowMap[i] = std::make_unique<ShadowMap>(mDevice.Get(), 2048, 2048);
+		for (int i = 0; i < MAX_LIGHTS; ++i)
+		{
+			mShadowMap[i] = std::make_unique<ShadowMap>(mDevice.Get(), 2048, 2048);
+		}
+		mShadowMap[0]->SetBaseDir({ 0.57735f, -0.57735f, 0.57735f });
+		mShadowMap[1]->SetBaseDir({ -0.57735f, -0.57735f, 0.57735f });
+		mShadowMap[2]->SetBaseDir({ 0.0f, -0.707f, -0.707f });
+
+		mShadowMap[0]->SetBoxLength({ 20.0f });
+		mShadowMap[1]->SetBoxLength({ 20.0f });
+		mShadowMap[2]->SetBoxLength({ 20.0f });
+
+		mShadowMap[0]->SetTarget({ 0.0f, 5.0f, 0.0f });
+		mShadowMap[1]->SetTarget({ 0.0f, 5.0f, 0.0f });
+		mShadowMap[2]->SetTarget({ 0.0f, 5.0f, 0.0f });
 	}
-	mShadowMap[0]->SetBaseDir({ 0.57735f, -0.57735f, 0.57735f });
-	mShadowMap[1]->SetBaseDir({ -0.57735f, -0.57735f, 0.57735f });
-	mShadowMap[2]->SetBaseDir({ 0.0f, -0.707f, -0.707f });
 
 	LoadTextures();
 	BuildMaterials();
@@ -1201,7 +1216,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 2, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mMaterials.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mMaterials.size()));
 }
 
 void MyApp::BuildPSO()
@@ -1633,8 +1648,7 @@ void MyApp::Render()
 		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	for (int i = 0; i < SRV_USER_SIZE; ++i)
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
+	mCommandList->ResourceBarrier(SRV_USER_SIZE, &SRVUserBufBarrier[0]);
 
 	
 	// Clear the back buffer and depth buffer.
@@ -1701,8 +1715,7 @@ void MyApp::Render()
 	}
 
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
-	for (int i = 0; i < SRV_USER_SIZE; ++i)
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[i]);
+	mCommandList->ResourceBarrier(SRV_USER_SIZE, &SRVUserBufBarrier[0]);
 }
 
 void MyApp::Sync()
@@ -1972,8 +1985,6 @@ void MyApp::DrawSceneToShadowMap(int index)
 	// Change to DEPTH_WRITE.
 	mCommandList->ResourceBarrier(1, &barrier);
 
-	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearDepthStencilView(mShadowMap[index]->Dsv(),
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -1986,6 +1997,7 @@ void MyApp::DrawSceneToShadowMap(int index)
 
 	// Bind the pass constant buffer for the shadow map pass.
 	auto passCB = mCurrFrameResource->PassCB->Resource();
+	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + index) * passCBByteSize;
 	mCommandList->SetGraphicsRootConstantBufferView(3, passCBAddress);
 
