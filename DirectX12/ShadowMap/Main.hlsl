@@ -112,10 +112,10 @@ PixelOut PS(VertexOut pin)
 
     const float shininess = (1.0f - roughness) * normalMapSample.a;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
-    float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
+    float shadowFactor[NUM_DIR_LIGHTS];
     
     [unroll]
-    for (int i = 0; i < MAX_LIGHTS; ++i)
+    for (int i = 0; i < NUM_DIR_LIGHTS; ++i)
     {
         float4 ShadowPosH = mul(float4(pin.PosW, 1.0f), gLights[i].shadowTransform);
         shadowFactor[i] = CalcShadowFactor(ShadowPosH, i);

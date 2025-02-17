@@ -20,7 +20,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[5] = RenderLayer::Normal;
 	mLayerType[6] = RenderLayer::WaveVS_CS;
 	mLayerType[7] = RenderLayer::CubeMap;
-	mLayerType[8] = RenderLayer::DebugShadowMap;
+	mLayerType[8] = RenderLayer::BoundingSphere;
 
 	mLayerStencil[0] = 0;
 	mLayerStencil[1] = 0;
@@ -547,7 +547,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["TessVS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "VS", "vs_5_1");
 	mShaders["TessHS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "HS", "hs_5_1");
 	mShaders["TessDS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "DS", "ds_5_1");
-	mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
+	// mShaders["TessPS"] = D3DUtil::CompileShader(L"Tessellation.hlsl", defines, "PS", "ps_5_1");
 
 	mShaders["BasicVS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "VS", "vs_5_1");
 	mShaders["BasicPS"] = D3DUtil::CompileShader(L"Basic.hlsl", defines, "PS", "ps_5_1");
@@ -1441,7 +1441,7 @@ void MyApp::BuildPSO()
 	tessPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["TessVS"]->GetBufferPointer()), mShaders["TessVS"]->GetBufferSize() };
 	tessPsoDesc.HS = { reinterpret_cast<BYTE*>(mShaders["TessHS"]->GetBufferPointer()), mShaders["TessHS"]->GetBufferSize() };
 	tessPsoDesc.DS = { reinterpret_cast<BYTE*>(mShaders["TessDS"]->GetBufferPointer()), mShaders["TessDS"]->GetBufferSize() };
-	tessPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["TessPS"]->GetBufferPointer()), mShaders["TessPS"]->GetBufferSize() };
+	// tessPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["TessPS"]->GetBufferPointer()), mShaders["TessPS"]->GetBufferSize() };
 	tessPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
 
 	//=====================================================

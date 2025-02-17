@@ -125,7 +125,14 @@ PixelOut PS(BillboardGeometryOut pin)
 	
     const float shininess = 1.0f - roughness;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
+    float shadowFactor[NUM_DIR_LIGHTS];
+     [unroll]
+    for (int i = 0; i < NUM_DIR_LIGHTS; ++i)
+    {
+        float4 ShadowPosH = mul(float4(pin.PosW, 1.0f), gLights[i].shadowTransform);
+        shadowFactor[i] = CalcShadowFactor(ShadowPosH, i);
+    }
+    
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
     
     float4 litColor = ambient + directLight;

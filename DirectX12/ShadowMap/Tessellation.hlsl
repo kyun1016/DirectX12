@@ -13,6 +13,7 @@ struct VertexOut
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    float3 TangentU : TANGENT;
     
     // nointerpolation is used so the index is not interpolated 
 	// across the triangle.
@@ -26,6 +27,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     vout.PosL = vin.PosL;
     vout.NormalL = vin.NormalL;
     vout.TexC = vin.TexC;
+    vout.TangentU = vin.TangentU;
     vout.InsIndex = instanceID + gBaseInstanceIndex;
     
     return vout;
@@ -78,6 +80,7 @@ struct HullOut
     float3 PosL : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
+    float3 TangentU : TANGENT;
     
     // nointerpolation is used so the index is not interpolated 
 	// across the triangle.
@@ -99,6 +102,7 @@ HullOut HS(InputPatch<VertexOut, 4> p,
     hout.PosL = p[i].PosL;
     hout.NormalL = p[i].NormalL;
     hout.TexC = p[i].TexC;
+    hout.TangentU = p[i].TangentU;
     hout.InsIndex = p[i].InsIndex;
 	
     return hout;
@@ -109,6 +113,7 @@ struct DomainOut
     float4 PosH : SV_POSITION;
     float3 PosW : POSITION;
     float3 NormalW : NORMAL;
+    float3 TangentW : TANGENT;
     float2 TexC : TEXCOORD;
     
     // nointerpolation is used so the index is not interpolated 
@@ -151,12 +156,17 @@ DomainOut DS(PatchTess patchTess,
     float2 t1 = lerp(quad[0].TexC, quad[1].TexC, uv.x);
     float2 t2 = lerp(quad[2].TexC, quad[3].TexC, uv.x);
     float2 t = lerp(t1, t2, uv.y);
+    
+    float3 tan1 = lerp(quad[0].TangentU, quad[1].TangentU, uv.x);
+    float3 tan2 = lerp(quad[2].TangentU, quad[3].TangentU, uv.x);
+    float3 tan = lerp(tan1, tan2, uv.y);
 	
 	
     float4 posW = mul(float4(p, 1.0f), world);
     dout.PosW = posW.xyz;
     
-    dout.NormalW = mul(n, (float3x3) world);
+    dout.NormalW = mul(n, (float3x3) worldInvTranspose);
+    dout.TangentW = mul(tan, (float3x3) worldInvTranspose);
     
     dout.PosH = mul(posW, gViewProj);
     
@@ -164,63 +174,8 @@ DomainOut DS(PatchTess patchTess,
     dout.TexC = mul(texC, matData.MatTransform).xy;
     
     dout.MatIndex = matIndex;
+    
+    // TODO: TangentW 관리 로직 추가
 	
     return dout;
-}
-
-struct PixelOut
-{
-    float4 color0 : SV_Target0;
-    float4 color1 : SV_Target1;
-};
-
-PixelOut PS(DomainOut pin)
-{
-    // Fetch the material data.
-    MaterialData matData = gMaterialData[pin.MatIndex];
-    float4 diffuseAlbedo = matData.DiffuseAlbedo;
-    float3 fresnelR0 = matData.FresnelR0;
-    float roughness = matData.Roughness;
-    uint diffuseTexIndex = matData.DiffMapIndex;
-    
-    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
-	
-#ifdef ALPHA_TEST
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
-	// as possible in the shader so that we can potentially exit the
-	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
-#endif
-
-    // Interpolating normal can unnormalize it, so renormalize it.
-    pin.NormalW = normalize(pin.NormalW);
-
-    // Vector from point being lit to eye. 
-    float3 toEyeW = gEyePosW - pin.PosW;
-    float distToEye = length(toEyeW);
-    toEyeW /= distToEye; // normalize
-
-    // Light terms.
-    float4 ambient = gAmbientLight * diffuseAlbedo;
-
-    const float shininess = 1.0f - roughness;
-    Material mat = { diffuseAlbedo, fresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-        pin.NormalW, toEyeW, shadowFactor);
-
-    float4 litColor = ambient + directLight;
-
-#ifdef FOG
-    float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-    litColor = lerp(litColor, gFogColor, fogAmount);
-#endif
-
-    // Common convention to take alpha from diffuse albedo.
-    litColor.a = diffuseAlbedo.a;
-
-    PixelOut ret;
-    ret.color0 = litColor;
-    ret.color1 = litColor;
-    return ret;
 }
