@@ -141,11 +141,11 @@ void ShadowMap::UpdateMatrix()
 	mLightPosW = -2.0f * mOrthoBoxLength * mLightDir;
 
 	DirectX::XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	DirectX::XMMATRIX lightView = DirectX::XMMatrixLookAtLH(mLightPosW, mTargetPos, lightUp);
+	mLightView = DirectX::XMMatrixLookAtLH(mLightPosW, mTargetPos, lightUp);
 
 	// Transform bounding sphere to light space.
 	DirectX::XMFLOAT3 center;
-	DirectX::XMStoreFloat3(&center, XMVector3TransformCoord(mTargetPos, lightView));
+	DirectX::XMStoreFloat3(&center, XMVector3TransformCoord(mTargetPos, mLightView));
 
 	// Ortho frustum in light space encloses scene.
 	float l = center.x - mOrthoBoxLength;

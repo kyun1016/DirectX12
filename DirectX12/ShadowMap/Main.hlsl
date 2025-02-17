@@ -21,27 +21,6 @@ struct VertexOut
     nointerpolation uint MatIndex : MATINDEX;
 };
 
-//---------------------------------------------------------------------------------------
-// Transforms a normal map sample to world space.
-//---------------------------------------------------------------------------------------
-float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
-{
-	// Uncompress each component from [0,1] to [-1,1].
-    float3 normalT = 2.0f * normalMapSample - 1.0f;
-
-	// Build orthonormal basis.
-    float3 N = unitNormalW;
-    float3 T = normalize(tangentW - dot(tangentW, N) * N);
-    float3 B = cross(N, T);
-
-    float3x3 TBN = float3x3(T, B, N);
-
-	// Transform from tangent space to world space.
-    float3 bumpedNormalW = mul(normalT, TBN);
-
-    return bumpedNormalW;
-}
-
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
     VertexOut vout = (VertexOut) 0.0f;
@@ -133,7 +112,9 @@ PixelOut PS(VertexOut pin)
 
     const float shininess = (1.0f - roughness) * normalMapSample.a;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
+    float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
+    // shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH);
+    
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
         bumpedNormalW, toEyeW, shadowFactor);
 

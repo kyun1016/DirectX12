@@ -35,7 +35,8 @@ struct PixelOut
 PixelOut PS(VertexOut pin)
 {
     PixelOut ret;
-    ret.color0 = float4(gShadowMap[pin.MatIndex % MAX_LIGHTS].Sample(gsamLinearWrap, pin.TexC).rrr, 1.0f);
+    // ret.color0 = float4(gShadowMap[pin.MatIndex % MAX_LIGHTS].Sample(gsamLinearWrap, pin.TexC).rrr, 1.0f);
+    ret.color0 = float4(gShadowMap[0].Sample(gsamLinearWrap, pin.TexC).rrr, 1.0f);
     ret.color1 = ret.color0;
     return ret;
 }

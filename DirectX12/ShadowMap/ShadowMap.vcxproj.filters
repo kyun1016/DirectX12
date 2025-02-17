@@ -117,9 +117,6 @@
     <None Include="imgui.ini">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="LightingUtil.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="Memory.hlsli">
       <Filter>Shaders</Filter>
     </None>

@@ -14,38 +14,49 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 {
 	mLayerType[0] = RenderLayer::Opaque;
 	mLayerType[1] = RenderLayer::AlphaTested;
-	mLayerType[2] = RenderLayer::Mirror;
-	mLayerType[3] = RenderLayer::Reflected;
-	mLayerType[4] = RenderLayer::Subdivision;
-	mLayerType[5] = RenderLayer::Transparent;
-	mLayerType[6] = RenderLayer::TreeSprites;
-	mLayerType[7] = RenderLayer::Normal;
-	mLayerType[8] = RenderLayer::WaveVS_CS;
-	mLayerType[9] = RenderLayer::CubeMap;
+	mLayerType[2] = RenderLayer::Subdivision;
+	mLayerType[3] = RenderLayer::Transparent;
+	mLayerType[4] = RenderLayer::TreeSprites;
+	mLayerType[5] = RenderLayer::Normal;
+	mLayerType[6] = RenderLayer::WaveVS_CS;
+	mLayerType[7] = RenderLayer::CubeMap;
+	mLayerType[8] = RenderLayer::DebugShadowMap;
 
 	mLayerStencil[0] = 0;
 	mLayerStencil[1] = 0;
-	mLayerStencil[2] = 1;
-	mLayerStencil[3] = 1;
 	mLayerStencil[4] = 0;
 	mLayerStencil[5] = 0;
 	mLayerStencil[6] = 0;
 	mLayerStencil[7] = 0;
 	mLayerStencil[8] = 0;
 	mLayerStencil[9] = 0;
+	mLayerStencil[10] = 0;
 
 	mLayerCBIdx[0] = 0;
 	mLayerCBIdx[1] = 0;
-	mLayerCBIdx[2] = 1;
-	mLayerCBIdx[3] = 1;
+	mLayerCBIdx[2] = 0;
+	mLayerCBIdx[3] = 0;
 	mLayerCBIdx[4] = 0;
 	mLayerCBIdx[5] = 0;
 	mLayerCBIdx[6] = 0;
 	mLayerCBIdx[7] = 0;
 	mLayerCBIdx[8] = 0;
-	mLayerCBIdx[9] = 0;
 
-	for (int i = 10; i < MAX_LAYER_DEPTH; ++i)
+	{
+		// 거울 반사 구현 시
+		// 1. 바라보는 시점관련 Constant buffer 구현
+		// 2. 스텐실 버퍼 설정
+		// 3. 물체의 월드좌표 시점에 맞춰 반전 후 InstanceData 저장 (현재는 Offset을 두어 접근하는 인덱스를 키우는 방식으로 활용 가능)
+		// 4. 시점 버퍼 설정 + 스텐실 버퍼 설정 + 물체의 월드자표 오프셋 설정 후 렌더링 시 거울 반사 구현 완료
+		// mLayerType[2] = RenderLayer::Mirror;
+		// mLayerType[3] = RenderLayer::Reflected;
+		// mLayerStencil[2] = 1;
+		// mLayerStencil[3] = 1;
+		// mLayerCBIdx[2] = 1;
+		// mLayerCBIdx[3] = 1;
+	}
+
+	for (int i = 11; i < MAX_LAYER_DEPTH; ++i)
 	{
 		mLayerType[i] = RenderLayer::None;
 		mLayerStencil[i] = 0;
@@ -78,9 +89,9 @@ bool MyApp::Initialize()
 		mShadowMap[1]->SetBaseDir({ -0.57735f, -0.57735f, 0.57735f });
 		mShadowMap[2]->SetBaseDir({ 0.0f, -0.707f, -0.707f });
 
-		mShadowMap[0]->SetBoxLength({ 20.0f });
-		mShadowMap[1]->SetBoxLength({ 20.0f });
-		mShadowMap[2]->SetBoxLength({ 20.0f });
+		mShadowMap[0]->SetBoxLength({ 100.0f });
+		mShadowMap[1]->SetBoxLength({ 100.0f });
+		mShadowMap[2]->SetBoxLength({ 100.0f });
 
 		mShadowMap[0]->SetTarget({ 0.0f, 5.0f, 0.0f });
 		mShadowMap[1]->SetTarget({ 0.0f, 5.0f, 0.0f });
@@ -1986,13 +1997,13 @@ void MyApp::DrawSceneToShadowMap(int index)
 	mCommandList->ResourceBarrier(1, &barrier);
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearDepthStencilView(mShadowMap[index]->Dsv(),
+	auto dsv = mShadowMap[index]->Dsv();
+	mCommandList->ClearDepthStencilView(dsv,
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Set null render target because we are only going to draw to
 	// depth buffer.  Setting a null render target will disable color writes.
 	// Note the active PSO also must specify a render target count of 0.
-	auto dsv = mShadowMap[index]->Dsv();
 	mCommandList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
 	// Bind the pass constant buffer for the shadow map pass.
@@ -2003,6 +2014,8 @@ void MyApp::DrawSceneToShadowMap(int index)
 
 	mCommandList->SetPipelineState(mPSOs[RenderLayer::ShadowMap].Get());
 	DrawRenderItems(RenderLayer::Opaque);
+	DrawRenderItems(RenderLayer::AlphaTested);
+	DrawRenderItems(RenderLayer::Subdivision);
 
 	// Change back to GENERIC_READ so we can read the texture in a shader.
 	barrier.Transition.StateBefore = barrier.Transition.StateAfter;
@@ -2227,7 +2240,7 @@ void MyApp::ShowMainWindow()
 			}
 
 			ImGui::SliderInt("Stencli [0, 7]", &mLayerStencil[layerIdx], 0, 7, "%d", flags);
-			ImGui::SliderInt("Constant Buffer [0, 1]", &mLayerCBIdx[layerIdx], 0, 1, "%d", flags);
+			ImGui::SliderInt("Constant Buffer [0, 4]", &mLayerCBIdx[layerIdx], 0, 4, "%d", flags);
 		}
 		ImGui::TreePop();
 	}
