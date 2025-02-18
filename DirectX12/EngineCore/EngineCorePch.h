@@ -33,6 +33,7 @@
 #include "DDSTextureLoader.h"
 #include "D3DUtil.h"
 #include "Camera.h"
+#include "LoadM3d.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12")

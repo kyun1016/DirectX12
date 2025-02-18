@@ -181,10 +181,7 @@ cbuffer cbInstance : register(b1)
     uint gBaseInstanceIndex;
 }
 
-cbuffer cbSkinned : register(b2)
-{
-    float4x4 gBoneTransforms[96];
-};
+
 
 //***************************************************************************************
 // Algorithm

@@ -69,6 +69,12 @@
     <ClInclude Include="SimpleMath.h">
       <Filter>SimpleMath</Filter>
     </ClInclude>
+    <ClInclude Include="LoadM3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SkinnedData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GeometryGenerator.cpp">
@@ -133,6 +139,12 @@
     </ClCompile>
     <ClCompile Include="DirectXMeshNormals.cpp">
       <Filter>DirectXMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadM3d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SkinnedData.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
