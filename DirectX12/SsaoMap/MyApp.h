@@ -40,20 +40,6 @@ private:
 		L"desertcube1024.dds", L"grasscube1024.dds",L"snowcube1024.dds",L"sunsetcube1024.dds",
 	};
 
-	static const inline std::vector<std::string>	MATERIAL_NAMES = {
-		// STD TEX Material
-		"bricks", "bricks2", "bricks3", "checkboard", "grass",
-		"ice", "stone", "tile", "WireFence", "WoodCrate01",
-		"WoodCrate02", "water1", "white1x1", "tree01S", "tree02S",
-		"tree35S",
-
-		// Array TEX Material
-		"treearray", "treeArray2",
-
-		// User Define Material
-		"skullMat", "shadowMat", "viewport"
-	};
-
 	enum class RenderLayer : int
 	{
 		None = 0,

@@ -29,19 +29,19 @@ struct MaterialData
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float Roughness = 64.0f;
+	float Roughness = 0.1f;
 
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 
 	float Matalic = 1.0f;
-	UINT DiffMapIndex = 0; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
-	UINT NormMapIndex = 0;
-	UINT AOMapIndex = 0;
+	int DiffMapIndex = 0; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
+	int NormMapIndex = 0;
+	int AOMapIndex = 0;
 
-	UINT MetalicMapIndex = 0;
-	UINT RoughnessMapIndex = 0;
-	UINT EmissiveMapIndex = 0;
+	int MetalicMapIndex = 0;
+	int RoughnessMapIndex = 0;
+	int EmissiveMapIndex = 0;
 	int useAlbedoMap = 0;
 
 	int useNormalMap = 0;
@@ -72,37 +72,15 @@ struct InstanceData
 
 struct EXMaterialData
 {
-	EXMaterialData() = delete;
-	EXMaterialData(
-		bool useAlbedo = false,
-		UINT albedoIdx = 0,
-		bool useNorm = false,
-		UINT normIdx = 0,
-		bool useAO = false,
-		UINT aoIdx = 0,
-		bool useMetal = false,
-		UINT metalIdx = 0,
-		bool useRoughness = false,
-		UINT roughnessIdx = 0,
-		bool useEmissive = false,
-		UINT emissiveIdx = 0)
+	EXMaterialData()
 	{
-		MaterialData.DiffMapIndex = albedoIdx;
-		MaterialData.NormMapIndex = normIdx;
-		MaterialData.AOMapIndex = aoIdx;
-		MaterialData.MetalicMapIndex = metalIdx;
-		MaterialData.RoughnessMapIndex = roughnessIdx;
-		MaterialData.EmissiveMapIndex = emissiveIdx;
-
-		MaterialData.useAlbedoMap = useAlbedo;
-		MaterialData.useNormalMap = useNorm;
-		MaterialData.useAOMap = useAO;
-		MaterialData.useMetallicMap = useMetal;
-		MaterialData.useRoughnessMap = useRoughness;
-		MaterialData.useEmissiveMap = useEmissive;
+		MaterialData.DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+		MaterialData.FresnelR0 = { 0.01f, 0.01f, 0.01f };
+		MaterialData.Roughness = 0.1f;
 	}
 	MaterialData MaterialData;
 
+	// std::string Name;
 	int NumFramesDirty = 3;
 };
 

@@ -76,6 +76,7 @@ struct InstanceData
     float4x4 World;
     float4x4 TexTransform;
     float4x4 WorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
+    
     float2 DisplacementMapTexelSize;
     float GridSpatialStep;
     int useDisplacementMap;
@@ -94,13 +95,13 @@ struct MaterialData
     float4x4 MatTransform;
     
     float Matalic;
-    uint DiffMapIndex; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
-    uint NormMapIndex;
-    uint AOMapIndex;
+    int DiffMapIndex; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
+    int NormMapIndex;
+    int AOMapIndex;
     
-    uint MetallicMapIndex;
-    uint RoughnessMapIndex;
-    uint EmissiveMapIndex;
+    int MetallicMapIndex;
+    int RoughnessMapIndex;
+    int EmissiveMapIndex;
     int useAlbedoMap;
     
     int useNormalMap;
