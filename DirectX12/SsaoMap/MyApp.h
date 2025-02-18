@@ -87,85 +87,6 @@ private:
 		Count
 	};
 #pragma endregion Constant
-	struct RootData
-	{
-		RootData() = delete;
-
-		RootData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
-			: Translation(translation)
-			, Scale(scale)
-			, RotationQuat(rot)
-			, TexScale(texScale)
-			, BoundingCount(boundingCount)
-			, FrustumCullingEnabled(cull)
-			, ShowBoundingBox(false)
-			, ShowBoundingSphere(false)
-			, IsPickable(true)
-		{
-			DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
-			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-
-			InstanceData.World = DirectX::XMMatrixTranspose(world);
-			InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
-			InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
-			InstanceData.MaterialIndex = matIdx;
-		}
-
-		RootData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
-			: BoundingBox(boundingBox)
-			, BoundingSphere(boundingSphere)
-			, Translation(translation)
-			, Scale(scale)
-			, TexScale(texScale)
-			, RotationQuat(rot)
-			, BoundingCount(boundingCount)
-			, FrustumCullingEnabled(cull)
-			, ShowBoundingBox(false)
-			, ShowBoundingSphere(false)
-			, IsPickable(true)
-		{
-			BoundingBox.Center.x += translation.x;
-			BoundingBox.Center.y += translation.y;
-			BoundingBox.Center.z += translation.z;
-
-			BoundingBox.Extents.x *= scale.x;
-			BoundingBox.Extents.y *= scale.y;
-			BoundingBox.Extents.z *= scale.z;
-
-			BoundingSphere.Center.x += translation.x;
-			BoundingSphere.Center.y += translation.y;
-			BoundingSphere.Center.z += translation.z;
-			BoundingSphere.Radius *= scale.Length();
-
-			DirectX::XMMATRIX world 
-				= DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) 
-				* DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-			DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
-			DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-
-			InstanceData.World = DirectX::XMMatrixTranspose(world);
-			InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
-			InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
-			InstanceData.MaterialIndex = matIdx;
-		}
-
-		InstanceData InstanceData; // GPU 전송 전용 데이터
-
-		DirectX::BoundingBox BoundingBox;
-		DirectX::BoundingSphere BoundingSphere;
-
-		DirectX::SimpleMath::Vector3 Translation;
-		DirectX::SimpleMath::Vector3 Scale;
-		DirectX::SimpleMath::Quaternion RotationQuat;
-		DirectX::SimpleMath::Vector3 TexScale;
-		UINT BoundingCount;	// 추후 BoundingBox, BoundingSphere 표현을 위한 구조에서 연동하여 활용
-		bool FrustumCullingEnabled;
-		bool ShowBoundingBox;
-		bool ShowBoundingSphere;
-		bool IsPickable;
-	};
-
 	struct RenderItem
 	{
 		RenderItem() = default;
@@ -182,10 +103,10 @@ private:
 
 		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		{
-			Datas.push_back(RootData(BoundingBox, BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
+			Datas.push_back(EXInstanceData(BoundingBox, BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 		}
 
-		void Push(RootData data)
+		void Push(EXInstanceData data)
 		{
 			Datas.push_back(data);
 		}
@@ -200,7 +121,7 @@ private:
 		UINT StartInstanceLocation = 0;
 		UINT InstanceCount = 0;
 		bool mFrustumCullingEnabled = false;
-		std::vector<RootData> Datas;			// CPU 및 알고리즘 연산을 위한 데이터
+		std::vector<EXInstanceData> Datas;			// CPU 및 알고리즘 연산을 위한 데이터
 
 		int LayerFlag
 			= (1 << (int)RenderLayer::Opaque)
@@ -301,6 +222,7 @@ private:
 	int mLayerCBIdx[MAX_LAYER_DEPTH];
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	std::vector<std::unique_ptr<EXMaterialData>> mAllMatItems;
 	std::pair<int, int> mPickModel = { -1,-1 };
 	UINT mInstanceCount = 0;
 
@@ -319,6 +241,7 @@ private:
 
 	std::vector<GeometryGenerator::MeshData> mMeshes;
 	std::vector<std::unique_ptr<MeshGeometry>> mGeometries;
+	
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;

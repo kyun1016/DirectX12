@@ -68,10 +68,26 @@ struct MaterialData
     float3 FresnelR0;
     float Roughness;
     float4x4 MatTransform;
+    
+    float Matalic;
     uint DiffMapIndex; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
     uint NormMapIndex;
-    uint MatPad1;
-    uint MatPad2;
+    uint AOMapIndex;
+    
+    uint MetalicMapIndex;
+    uint RoughnessMapIndex;
+    uint EmissiveMapIndex;
+    int useAlbedoMap;
+    
+    int useNormalMap;
+    int invertNormalMap;
+    int useAOMap;
+    int useMetallicMap;
+    
+    int useRoughnessMap;
+    int useEmissiveMap;
+    int dummy1;
+    int dummy2;
 };
 
 

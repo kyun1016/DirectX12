@@ -34,10 +34,25 @@ struct MaterialData
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 
-	UINT DiffMapIndex = 0;
+	float Matalic = 1.0f;
+	UINT DiffMapIndex = 0; // *Warn, Billboard에서 DiffMapIndex를 gTreeMapArray 배열에 적용하여 활용 중
 	UINT NormMapIndex = 0;
-	UINT MaterialPad1 = 0;
-	UINT MaterialPad2 = 0;
+	UINT AOMapIndex = 0;
+
+	UINT MetalicMapIndex = 0;
+	UINT RoughnessMapIndex = 0;
+	UINT EmissiveMapIndex = 0;
+	int useAlbedoMap = 0;
+
+	int useNormalMap = 0;
+	int invertNormalMap = 0;
+	int useAOMap = 0;
+	int useMetallicMap = 0;
+
+	int useRoughnessMap = 0;
+	int useEmissiveMap = 0;
+	int dummy1 = 0;
+	int dummy2 = 0;
 };
 
 struct InstanceData
@@ -49,6 +64,121 @@ struct InstanceData
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
 	float GridSpatialStep = 1.0f;
 	float Pad = 0.0f;
+};
+
+struct EXMaterialData
+{
+	EXMaterialData() = delete;
+	EXMaterialData(
+		bool useAlbedo = false,
+		UINT albedoIdx = 0,
+		bool useNorm = false,
+		UINT normIdx = 0,
+		bool useAO = false,
+		UINT aoIdx = 0,
+		bool useMetal = false,
+		UINT metalIdx = 0,
+		bool useRoughness = false,
+		UINT roughnessIdx = 0,
+		bool useEmissive = false,
+		UINT emissiveIdx = 0)
+	{
+		MaterialData.DiffMapIndex = albedoIdx;
+		MaterialData.NormMapIndex = normIdx;
+		MaterialData.AOMapIndex = aoIdx;
+		MaterialData.MetalicMapIndex = metalIdx;
+		MaterialData.RoughnessMapIndex = roughnessIdx;
+		MaterialData.EmissiveMapIndex = emissiveIdx;
+
+		MaterialData.useAlbedoMap = useAlbedo;
+		MaterialData.useNormalMap = useNorm;
+		MaterialData.useAOMap = useAO;
+		MaterialData.useMetallicMap = useMetal;
+		MaterialData.useRoughnessMap = useRoughness;
+		MaterialData.useEmissiveMap = useEmissive;
+	}
+	MaterialData MaterialData;
+
+	int NumFramesDirty = 3;
+};
+
+struct EXInstanceData
+{
+	EXInstanceData() = delete;
+
+	EXInstanceData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		: Translation(translation)
+		, Scale(scale)
+		, RotationQuat(rot)
+		, TexScale(texScale)
+		, BoundingCount(boundingCount)
+		, FrustumCullingEnabled(cull)
+		, ShowBoundingBox(false)
+		, ShowBoundingSphere(false)
+		, IsPickable(true)
+	{
+		DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
+		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+		InstanceData.World = DirectX::XMMatrixTranspose(world);
+		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
+		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
+		InstanceData.MaterialIndex = matIdx;
+	}
+
+	EXInstanceData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		: BoundingBox(boundingBox)
+		, BoundingSphere(boundingSphere)
+		, Translation(translation)
+		, Scale(scale)
+		, TexScale(texScale)
+		, RotationQuat(rot)
+		, BoundingCount(boundingCount)
+		, FrustumCullingEnabled(cull)
+		, ShowBoundingBox(false)
+		, ShowBoundingSphere(false)
+		, IsPickable(true)
+	{
+		BoundingBox.Center.x += translation.x;
+		BoundingBox.Center.y += translation.y;
+		BoundingBox.Center.z += translation.z;
+
+		BoundingBox.Extents.x *= scale.x;
+		BoundingBox.Extents.y *= scale.y;
+		BoundingBox.Extents.z *= scale.z;
+
+		BoundingSphere.Center.x += translation.x;
+		BoundingSphere.Center.y += translation.y;
+		BoundingSphere.Center.z += translation.z;
+		BoundingSphere.Radius *= scale.Length();
+
+		DirectX::XMMATRIX world
+			= DirectX::XMMatrixScaling(scale.x, scale.y, scale.z)
+			* DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
+		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
+		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+		InstanceData.World = DirectX::XMMatrixTranspose(world);
+		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
+		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
+		InstanceData.MaterialIndex = matIdx;
+	}
+
+	InstanceData InstanceData; // GPU 전송 전용 데이터
+
+	DirectX::BoundingBox BoundingBox;
+	DirectX::BoundingSphere BoundingSphere;
+
+	DirectX::SimpleMath::Vector3 Translation;
+	DirectX::SimpleMath::Vector3 Scale;
+	DirectX::SimpleMath::Quaternion RotationQuat;
+	DirectX::SimpleMath::Vector3 TexScale;
+	UINT BoundingCount;	// 추후 BoundingBox, BoundingSphere 표현을 위한 구조에서 연동하여 활용
+	bool FrustumCullingEnabled;
+	bool ShowBoundingBox;
+	bool ShowBoundingSphere;
+	bool IsPickable;
 };
 
 struct PassConstants
