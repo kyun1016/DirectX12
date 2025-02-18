@@ -60,10 +60,14 @@ struct InstanceData
 	DirectX::SimpleMath::Matrix World = MathHelper::Identity4x4();
 	DirectX::SimpleMath::Matrix TexTransform = MathHelper::Identity4x4();
 	DirectX::SimpleMath::Matrix WorldInvTranspose = MathHelper::Identity4x4();
-	UINT MaterialIndex = 0;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
 	float GridSpatialStep = 1.0f;
-	float Pad = 0.0f;
+	int useDisplacementMap = 0;
+
+	UINT DisplacementIndex = 0;
+	UINT MaterialIndex = 0;
+	UINT dummy1 = 0;
+	UINT dummy2 = 0;
 };
 
 struct EXMaterialData

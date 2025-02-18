@@ -16,12 +16,32 @@
 #define MAX_LIGHTS 16
 #endif
 
+#ifndef TEX_DISPLACEMENT_SIZE
+#define TEX_DISPLACEMENT_SIZE 1
+#endif
+
 #ifndef TEX_DIFF_SIZE
 #define TEX_DIFF_SIZE 1
 #endif
 
 #ifndef TEX_NORM_SIZE
 #define TEX_NORM_SIZE 1
+#endif
+
+#ifndef TEX_AO_SIZE
+#define TEX_AO_SIZE 1
+#endif
+
+#ifndef TEX_METALLIC_SIZE
+#define TEX_METALLIC_SIZE 1
+#endif
+
+#ifndef TEX_ROUGHNESS_SIZE
+#define TEX_ROUGHNESS_SIZE 1
+#endif
+
+#ifndef TEX_EMISSIVE_SIZE
+#define TEX_EMISSIVE_SIZE 1
 #endif
 
 #ifndef TEX_ARRAY_SIZE
@@ -56,10 +76,14 @@ struct InstanceData
     float4x4 World;
     float4x4 TexTransform;
     float4x4 WorldInvTranspose; // Geometery Shader 동작 간 법선 벡터 변환 시 직교 성질 유지를 위함
-    uint MaterialIndex;
     float2 DisplacementMapTexelSize;
     float GridSpatialStep;
-    float bPerObjectPad1;
+    int useDisplacementMap;
+    
+    uint DisplacementIndex;
+    uint MaterialIndex;
+    uint dummy1;
+    uint dummy2;
 };
 
 struct MaterialData
@@ -74,7 +98,7 @@ struct MaterialData
     uint NormMapIndex;
     uint AOMapIndex;
     
-    uint MetalicMapIndex;
+    uint MetallicMapIndex;
     uint RoughnessMapIndex;
     uint EmissiveMapIndex;
     int useAlbedoMap;
@@ -90,22 +114,24 @@ struct MaterialData
     int dummy2;
 };
 
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space0);
 
-
-Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space0);
-Texture2D gNormalMap[TEX_NORM_SIZE] : register(t0, space1);
-Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space2);
-Texture2D gSsaoMap[MAX_LIGHTS] : register(t0, space3);
-Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space4);
-TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space5);
+Texture2D gDisplacementMap[TEX_DISPLACEMENT_SIZE] : register(t0, space1);
+Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space2);
+Texture2D gNormalMap[TEX_NORM_SIZE] : register(t0, space3);
+Texture2D gAOMap[TEX_AO_SIZE] : register(t0, space4);
+Texture2D gMetallicMap[TEX_METALLIC_SIZE] : register(t0, space5);
+Texture2D gRoughnessMap[TEX_ROUGHNESS_SIZE] : register(t0, space6);
+Texture2D gEmissiveMap[TEX_EMISSIVE_SIZE] : register(t0, space7);
+Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space8);
+Texture2D gSsaoMap[MAX_LIGHTS] : register(t0, space9);
+Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space10);
+TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space11);
 
 
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
-StructuredBuffer<InstanceData> gInstanceData : register(t0, space6);
-StructuredBuffer<MaterialData> gMaterialData : register(t1, space6);
-Texture2D gDisplacementMap : register(t2, space6);
-
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
 SamplerState gsamLinearWrap : register(s2);

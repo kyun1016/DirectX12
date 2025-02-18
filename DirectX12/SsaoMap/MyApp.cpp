@@ -166,66 +166,99 @@ void MyApp::LoadTextures()
 void MyApp::BuildRootSignature()
 {
 	// Create root CBVs.
-	D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space0)
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t0 (Space1)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
-		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
-		/* UINT RegisterSpace						*/.RegisterSpace = 0,
-		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
-	};
-	D3D12_DESCRIPTOR_RANGE TexNormTable // register t0[16] (Space1)
-	{
-		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 1,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE ShadowMapTable // register t0[0] (Space2)
+
+	D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space2)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)MAX_LIGHTS,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE SsaoMapTable // register t0[0] (Space3)
+	D3D12_DESCRIPTOR_RANGE TexNormTable // register t0[16] (Space3)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)MAX_LIGHTS,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 3,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t0[0] (Space4)
+	D3D12_DESCRIPTOR_RANGE TexAOTable // register t0 (Space4)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_ARRAY_FILENAMES.size(),
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 4,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE TexCubeTable // register t0[0] (Space5)
+	D3D12_DESCRIPTOR_RANGE TexMetallicTable // register t0 (Space5)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_CUBE_FILENAMES.size(),
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 5,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t2 (Space6)
+	D3D12_DESCRIPTOR_RANGE TexRoughnessTable // register t0 (Space6)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 		/* UINT NumDescriptors						*/.NumDescriptors = 1,
-		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 2,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 6,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE TexEmissiveTable // register t0 (Space7)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 7,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE ShadowMapTable // register t0[0] (Space8)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)MAX_LIGHTS,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 8,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE SsaoMapTable // register t0[0] (Space9)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)MAX_LIGHTS,
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 9,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t0[0] (Space10)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_ARRAY_FILENAMES.size(),
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 10,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
+	D3D12_DESCRIPTOR_RANGE TexCubeTable // register t0[0] (Space11)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_CUBE_FILENAMES.size(),
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 11,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
 	
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[11];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[15];
 
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -241,21 +274,25 @@ void MyApp::BuildRootSignature()
 
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(1);		// gBaseInstanceIndex b1
-	slotRootParameter[1].InitAsShaderResourceView(0, 6);	// InstanceData t0 (Space5)
-	slotRootParameter[2].InitAsShaderResourceView(1, 6);	// MaterialData t1 (Space5)
+	slotRootParameter[1].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
+	slotRootParameter[2].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
 	slotRootParameter[3].InitAsConstantBufferView(0);		// cbPass b0
-	slotRootParameter[4].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[5].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[6].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[7].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[8].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[9].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[10].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+	slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[6].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[7].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[8].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[9].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[10].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[11].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[12].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[13].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[14].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(11, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(15, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -1630,28 +1667,31 @@ void MyApp::Render()
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 		// slotRootParameter[0].InitAsConstantBufferView(1);		// gBaseInstanceIndex b1
-		// slotRootParameter[1].InitAsShaderResourceView(0, 5);	// InstanceData t0 (Space5)
-		// slotRootParameter[2].InitAsShaderResourceView(1, 5);	// MaterialData t1 (Space5)
+		// slotRootParameter[1].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space5)
+		// slotRootParameter[2].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space5)
 		// slotRootParameter[3].InitAsConstantBufferView(0);		// cbPass b0
-		// slotRootParameter[4].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[5].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[6].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[7].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[8].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[9].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[10].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+		// slotRootParameter[4].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+		// slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[6].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[7].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[8].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[9].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[10].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[11].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[12].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[13].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[14].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		mCommandList->SetGraphicsRootShaderResourceView(1, instanceBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(4, mhGPUDiff);
-		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUNorm);
-		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUShadow);
+		mCommandList->SetGraphicsRootDescriptorTable(4, mCSWaves->DisplacementMap());
+		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUDiff);
+		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUNorm);
+		mCommandList->SetGraphicsRootDescriptorTable(11, mhGPUShadow);
 		// mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUSsao);
-		mCommandList->SetGraphicsRootDescriptorTable(8, mhGPUArray);
-		mCommandList->SetGraphicsRootDescriptorTable(9, mhGPUCube);
-		mCommandList->SetGraphicsRootDescriptorTable(10, mCSWaves->DisplacementMap());
-		
+		mCommandList->SetGraphicsRootDescriptorTable(13, mhGPUArray);
+		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUCube);
 	}
 	
 	for (int i = 0; i < MAX_LIGHTS; ++i)
