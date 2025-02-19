@@ -94,12 +94,12 @@ bool MyApp::Initialize()
 		mShadowMap[2]->SetTarget({ 0.0f, 5.0f, 0.0f });
 	}
 
+	BuildMeshes();
 	LoadTextures();
 	BuildMaterials();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildMeshes();
 	BuildTreeSpritesGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -122,40 +122,51 @@ bool MyApp::Initialize()
 
 void MyApp::LoadTextures()
 {
-	static const std::wstring TEXTURE_DIR = L"../Data/Textures/";
-	for (const auto& a : TEX_DIFF_FILENAMES)
-	{
-		auto texture = std::make_unique<Texture>();
-		texture->Filename = TEXTURE_DIR + a;
-		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
+	const std::wstring dir = L"../Data/Textures/";
+	std::vector<std::wstring> diffuseFilename = {
+		// STD TEX
+		L"bricks.dds",L"bricks2.dds",L"bricks3.dds", L"checkboard.dds", L"grass.dds",
+		L"ice.dds", L"stone.dds", L"tile.dds", L"WireFence.dds", L"WoodCrate01.dds",
+		L"WoodCrate02.dds", L"water1.dds", L"white1x1.dds", L"tree01S.dds", L"tree02S.dds",
+		L"tree35S.dds",
+	};
+	std::vector<std::wstring> normalFilename = {
+		// STD TEX
+		L"default_nmap.dds", L"bricks_nmap.dds",L"bricks2_nmap.dds",L"tile_nmap.dds"
+	};
+	std::vector<std::wstring> arrayFilename = {
+		// Array Tex (for Billboard Shader)
+		L"treearray.dds", L"treeArray2.dds",
+	};
+	std::vector<std::wstring>	cubeFilename = {
+		// Array Tex (for Billboard Shader)
+		L"desertcube1024.dds", L"grasscube1024.dds",L"snowcube1024.dds",L"sunsetcube1024.dds",
+	};
 
-		mTextures[a] = std::move(texture);
+	for (const auto& data : mSkinnedMats)
+	{
+		std::wstring diffuseFile = AnsiToWString(data.DiffuseMapName);
+		std::wstring normalFile = AnsiToWString(data.NormalMapName);
+
+		diffuseFilename.push_back(diffuseFile);
+		// normalFilename.push_back(normalFile);
 	}
 
-	for (const auto& a : TEX_NORM_FILENAMES)
+	LoadTextures(dir, diffuseFilename, mDiffuseTex);
+	LoadTextures(dir, normalFilename, mNormalTex);
+	LoadTextures(dir, arrayFilename, mTreeMapTex);
+	LoadTextures(dir, cubeFilename, mCubeMapTex);
+}
+
+void MyApp::LoadTextures(const std::wstring& dir, const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap)
+{
+	for (const auto& name : filename)
 	{
 		auto texture = std::make_unique<Texture>();
-		texture->Filename = TEXTURE_DIR + a;
+		texture->Filename = dir + name;
 		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
 
-		mTextures[a] = std::move(texture);
-	}
-	for (const auto& a : TEX_ARRAY_FILENAMES)
-	{
-		auto texture = std::make_unique<Texture>();
-		texture->Filename = TEXTURE_DIR + a;
-		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
-
-		mTextures[a] = std::move(texture);
-	}
-
-	for (const auto& a : TEX_CUBE_FILENAMES)
-	{
-		auto texture = std::make_unique<Texture>();
-		texture->Filename = TEXTURE_DIR + a;
-		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
-
-		mTextures[a] = std::move(texture);
+		texMap[name] = std::move(texture);
 	}
 }
 
@@ -174,7 +185,7 @@ void MyApp::BuildRootSignature()
 	D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space2)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mDiffuseTex.size() + SRV_USER_SIZE,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -182,7 +193,7 @@ void MyApp::BuildRootSignature()
 	D3D12_DESCRIPTOR_RANGE TexNormTable // register t0[16] (Space3)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mNormalTex.size(),
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 3,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -238,7 +249,7 @@ void MyApp::BuildRootSignature()
 	D3D12_DESCRIPTOR_RANGE TexArrayTable // register t0[0] (Space10)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_ARRAY_FILENAMES.size(),
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mTreeMapTex.size(),
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 10,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -246,7 +257,7 @@ void MyApp::BuildRootSignature()
 	D3D12_DESCRIPTOR_RANGE TexCubeTable // register t0[0] (Space11)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)TEX_CUBE_FILENAMES.size(),
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mCubeMapTex.size(),
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 11,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -317,10 +328,15 @@ void MyApp::BuildDescriptorHeaps()
 		/* UINT NumDescriptors				*/.NumDescriptors 
 												= SRV_IMGUI_SIZE 
 												+ SRV_USER_SIZE 
-												+ (UINT)TEX_DIFF_FILENAMES.size() 
-												+ (UINT)TEX_NORM_FILENAMES.size()
-												+ (UINT)TEX_ARRAY_FILENAMES.size() 
-												+ (UINT)TEX_CUBE_FILENAMES.size()
+												+ (UINT)mDisplacementTex.size()
+												+ (UINT)mDiffuseTex.size()
+												+ (UINT)mNormalTex.size()
+												+ (UINT)mAOTex.size()
+												+ (UINT)mMetallicTex.size()
+												+ (UINT)mRoughnessTex.size()
+												+ (UINT)mEmissiveTex.size()
+												+ (UINT)mTreeMapTex.size()
+												+ (UINT)mCubeMapTex.size()
 												+ (UINT)MAX_LIGHTS
 												+ mCSBlurFilter->DescriptorCount() 
 												+ mCSWaves->DescriptorCount(),
@@ -377,37 +393,10 @@ void MyApp::BuildDescriptorHeaps()
 			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 		}
 
-		//=========================================
-		// gDiffuseMap - TEX_DIFF_FILENAMES (Texture2D)
-		//=========================================
-		for (int i = 0; i < TEX_DIFF_FILENAMES.size(); ++i)
-		{
-			auto texture = mTextures[TEX_DIFF_FILENAMES[i]]->Resource;
-
-			srvDesc.Format = texture->GetDesc().Format;
-			srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
-			mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-		}
-	}
-	
-
-	{
-		//=========================================
-		// gNormalMap - TEX_NORM_FILENAMES (Texture2D)
-		//=========================================
+		BuildTexture2DSrv(mDiffuseTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
 		mhGPUNorm = hGPUDescriptor;
-		for (int i = 0; i < TEX_NORM_FILENAMES.size(); ++i)
-		{
-			auto texture = mTextures[TEX_NORM_FILENAMES[i]]->Resource;
-
-			srvDesc.Format = texture->GetDesc().Format;
-			srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
-			mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-		}
+		BuildTexture2DSrv(mNormalTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+		
 	}
 
 	{
@@ -429,45 +418,10 @@ void MyApp::BuildDescriptorHeaps()
 	}
 
 	{
-		//=========================================
-		// gTreeMapArray - TEX_ARRAY_FILENAMES (Texture2DArray)
-		//=========================================
 		mhGPUArray = hGPUDescriptor;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-		srvDesc.Texture2DArray.MostDetailedMip = 0;
-		srvDesc.Texture2DArray.MipLevels = -1;
-		srvDesc.Texture2DArray.FirstArraySlice = 0;
-		for (int i = 0; i < TEX_ARRAY_FILENAMES.size(); ++i)
-		{
-			auto texture = mTextures[TEX_ARRAY_FILENAMES[i]]->Resource;
-
-			srvDesc.Format = texture->GetDesc().Format;
-			srvDesc.Texture2DArray.ArraySize = texture->GetDesc().DepthOrArraySize;
-			mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-		}
-	}
-
-	{
-		//=========================================
-		// gCubeMap - TEX_CUBE_FILENAMES (TextureCube)
-		//=========================================
-
+		BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
 		mhGPUCube = hGPUDescriptor;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-		srvDesc.TextureCube.MostDetailedMip = 0;
-		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-		for (int i = 0; i < TEX_CUBE_FILENAMES.size(); ++i)
-		{
-			auto texture = mTextures[TEX_CUBE_FILENAMES[i]]->Resource;
-
-			srvDesc.TextureCube.MipLevels = texture->GetDesc().MipLevels;
-			srvDesc.Format = texture->GetDesc().Format;
-			mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCPUDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-		}
+		BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
 	}
 
 	{
@@ -501,6 +455,66 @@ void MyApp::BuildDescriptorHeaps()
 	}
 }
 
+void MyApp::BuildTexture2DSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
+{
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	for (const auto& tex : texMap)
+	{
+		auto texture = tex.second.get()->Resource;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCpuSrv);
+		hCpuSrv.Offset(1, descriptorSize);
+		hGpuSrv.Offset(1, descriptorSize);
+	}
+}
+
+void MyApp::BuildTexture2DArraySrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
+{
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.MipLevels = -1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+
+	for (const auto& tex : texMap)
+	{
+		auto texture = tex.second.get()->Resource;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.Texture2DArray.ArraySize = texture->GetDesc().DepthOrArraySize;
+		// srvDesc.Texture2DArray.MipLevels = texture->GetDesc().MipLevels;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCpuSrv);
+		hCpuSrv.Offset(1, descriptorSize);
+		hGpuSrv.Offset(1, descriptorSize);
+	}
+}
+
+void MyApp::BuildTextureCubeSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
+{
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+	for (const auto& tex : texMap)
+	{
+		auto texture = tex.second.get()->Resource;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.TextureCube.MipLevels = texture->GetDesc().MipLevels;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCpuSrv);
+		hCpuSrv.Offset(1, descriptorSize);
+		hGpuSrv.Offset(1, descriptorSize);
+	}
+}
+
+
+
 void MyApp::BuildShadersAndInputLayout()
 {
 	char maxLights[100];
@@ -509,10 +523,10 @@ void MyApp::BuildShadersAndInputLayout()
 	char texArraySize[100];
 	char texCubeSize[100];
 	strcpy_s(maxLights, std::to_string(MAX_LIGHTS).c_str());
-	strcpy_s(texDiffSize, std::to_string(TEX_DIFF_FILENAMES.size() + SRV_USER_SIZE).c_str());
-	strcpy_s(texNormSize, std::to_string(TEX_NORM_FILENAMES.size()).c_str());
-	strcpy_s(texArraySize, std::to_string(TEX_ARRAY_FILENAMES.size()).c_str());
-	strcpy_s(texCubeSize, std::to_string(TEX_CUBE_FILENAMES.size()).c_str());
+	strcpy_s(texDiffSize, std::to_string(mDiffuseTex.size() + SRV_USER_SIZE).c_str());
+	strcpy_s(texNormSize, std::to_string(mNormalTex.size()).c_str());
+	strcpy_s(texArraySize, std::to_string(mTreeMapTex.size()).c_str());
+	strcpy_s(texCubeSize, std::to_string(mCubeMapTex.size()).c_str());
 	const D3D_SHADER_MACRO defines[] =
 	{
 		"MAX_LIGHTS", maxLights,
@@ -619,7 +633,7 @@ void MyApp::BuildShadersAndInputLayout()
 	};
 }
 
-GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
+GeometryGenerator::MeshData MyApp::LoadModelMesh(std::string dir)
 {
 	using namespace DirectX;
 	GeometryGenerator::MeshData mesh;
@@ -628,7 +642,7 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
 
 	if (!fin)
 	{
-		MessageBox(0, dir.c_str(), 0, 0);
+		std::cout << "* Error, Fail Load File, dir: " << dir << std::endl;
 		return mesh;
 	}
 
@@ -681,10 +695,10 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
 	return mesh;
 }
 
-GeometryGenerator::MeshData MyApp::LoadSkinnedModelMesh()
+GeometryGenerator::MeshData MyApp::LoadSkinnedModelMesh(std::string dir)
 {
 	GeometryGenerator::MeshData data;
-	M3DLoader::LoadM3d(std::string("..\\Data\\Models\\soldier.m3d"), data.SkinnedVertices, data.Indices32,
+	M3DLoader::LoadM3d(dir, data.SkinnedVertices, data.Indices32,
 		mSkinnedSubsets, mSkinnedMats, mSkinnedInfo);
 	mSkinnedModelInst = std::make_unique<SkinnedModelInstance>();
 
@@ -692,6 +706,8 @@ GeometryGenerator::MeshData MyApp::LoadSkinnedModelMesh()
 	mSkinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
 	mSkinnedModelInst->ClipName = "Take1";
 	mSkinnedModelInst->TimePos = 0.0f;
+
+	return data;
 }
 
 void MyApp::BuildMeshes()
@@ -715,15 +731,18 @@ void MyApp::BuildMeshes()
 	}
 
 	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));	// Wave
-	mMeshes.push_back(LoadModelMesh(L"../Data/Models/skull.txt"));
-	mMeshes.push_back(LoadModelMesh(L"../Data/Models/car.txt"));
+	mMeshes.push_back(LoadModelMesh("../Data/Models/skull.txt"));
+	mMeshes.push_back(LoadModelMesh("../Data/Models/car.txt"));
+
+	mSkinnedMeshes.push_back(LoadSkinnedModelMesh("../Data/Models/soldier.m3d"));
 
 	UpdateTangents();
 
 	BuildGeometry(mMeshes);
+	BuildGeometry(mSkinnedMeshes, true, true);
 }
 
-void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16, bool useSkinnedMesh = false)
+void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16, bool useSkinnedMesh)
 {
 	using namespace DirectX;
 	//=========================================================
@@ -785,8 +804,8 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	//=========================================================
 	// Part 2. vertices & indices 생성
 	//=========================================================
-	std::vector<SkinnedVertex> skinnedVertices;
-	std::vector<Vertex> vertices;
+	std::vector<GeometryGenerator::SkinnedVertex> skinnedVertices;
+	std::vector<GeometryGenerator::Vertex> vertices;
 		
 	std::vector<std::uint16_t> indices16;
 	std::vector<std::uint32_t> indices32;
@@ -826,8 +845,8 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	// Part 3. GPU 할당 (16bit)
 	//=========================================================
 	const UINT vbByteSize = useSkinnedMesh 
-		? (UINT)skinnedVertices.size() * sizeof(SkinnedVertex)
-		: (UINT)vertices.size() * sizeof(Vertex);
+		? (UINT)skinnedVertices.size() * sizeof(GeometryGenerator::SkinnedVertex)
+		: (UINT)vertices.size() * sizeof(GeometryGenerator::Vertex);
 	const UINT ibByteSize = useIndex16 
 		? (UINT)indices16.size() * sizeof(std::uint16_t)
 		: (UINT)indices32.size() * sizeof(std::uint32_t);
@@ -858,7 +877,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices32.data(), ibByteSize, geo->IndexBufferUploader);
 	}	
 
-	geo->VertexByteStride = useSkinnedMesh ? sizeof(SkinnedVertex) : sizeof(Vertex);
+	geo->VertexByteStride = useSkinnedMesh ? sizeof(GeometryGenerator::SkinnedVertex) : sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = useIndex16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -926,7 +945,7 @@ void MyApp::BuildTreeSpritesGeometry()
 void MyApp::BuildMaterials()
 {
 	UINT idx = 0;
-	for (size_t i = 0; i < SRV_USER_SIZE + TEX_DIFF_FILENAMES.size(); ++i)
+	for (size_t i = 0; i < SRV_USER_SIZE + mDiffuseTex.size(); ++i)
 	{
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = i;
@@ -934,7 +953,7 @@ void MyApp::BuildMaterials()
 		mAllMatItems.push_back(std::move(mat));
 	}
 	// mAllMatItems[13]
-	for (size_t i = 0; i < TEX_ARRAY_FILENAMES.size(); ++i)
+	for (size_t i = 0; i < mTreeMapTex.size(); ++i)
 	{
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = i;
@@ -961,9 +980,10 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"], false);
 	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
 	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["8"]);
+	auto charRitem				= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"]);
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
-	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"], false);
+	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[2].get(), mGeometries[2]->DrawArgs["0"], false);
 
 	subBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1156,6 +1176,17 @@ void MyApp::BuildRenderItems()
 
 		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
+	for (int i = 0; i < mAllMatItems.size() * 20; ++i)
+	{
+		translation.x = (i % 10) * 8.0f;
+		translation.y = 80.0f;
+		translation.z = 5.0f + 5.0f * (i / 5);
+		scale.x = 0.5f;
+		scale.y = 0.5f;
+		scale.z = 0.5f;
+
+		charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
+	}
 
 	////=========================================================
 	//// GEO_MESH_NAMES[2]:LandGeo
@@ -1199,7 +1230,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, TEX_DIFF_FILENAMES.size());
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, mDiffuseTex.size());
 	}
 
 	////=========================================================
@@ -1225,6 +1256,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(subSphereRitem));
 	mAllRitems.push_back(std::move(skullRitem));
 	mAllRitems.push_back(std::move(carRitem));
+	mAllRitems.push_back(std::move(charRitem));
 	mAllRitems.push_back(std::move(landRitem));
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
@@ -1254,7 +1286,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 5000.0f;
 		scale.y = 5000.0f;
 		scale.z = 5000.0f;
-		cubeSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + TEX_DIFF_FILENAMES.size() + TEX_ARRAY_FILENAMES.size(), false);
+		cubeSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size() + mTreeMapTex.size(), false);
 	}
 	mAllRitems.push_back(std::move(cubeSphereRitem));
 
@@ -2328,13 +2360,13 @@ void MyApp::ShowTextureWindow()
 
 	int size
 		= (int) SRV_USER_SIZE
-		+ (int) TEX_DIFF_FILENAMES.size()
-		+ (int) TEX_NORM_FILENAMES.size()
+		+ (int) mDiffuseTex.size()
+		+ (int) mNormalTex.size()
 		+ (int) MAX_LIGHTS
-		+ (int) TEX_ARRAY_FILENAMES.size()
+		+ (int) mTreeMapTex.size()
 		+ (int) mCSBlurFilter->DescriptorCount()
 		+ (int) mCSWaves->DescriptorCount()
-		+ (int) TEX_CUBE_FILENAMES.size();
+		+ (int) mCubeMapTex.size();
 		
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 	ImGui::SliderInt(
@@ -2364,10 +2396,10 @@ void MyApp::ShowMaterialWindow()
 
 	int texDiffSize
 		= (int) SRV_USER_SIZE
-		+ (int) TEX_DIFF_FILENAMES.size();
+		+ (int) mDiffuseTex.size();
 
 	int texNormSize
-		= (int) TEX_NORM_FILENAMES.size();
+		= (int) mNormalTex.size();
 
 	ImGui::LabelText("label", "Value");
 	ImGui::SeparatorText("Inputs");
@@ -2494,7 +2526,7 @@ void MyApp::ShowCubeMapWindow()
 	ImGui::SeparatorText("Inputs");
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 	int flag = 0;
-	flag += ImGui::SliderInt((std::string("Cubemap [0, ") + std::to_string((UINT)TEX_CUBE_FILENAMES.size() - 1) + "]").c_str(), &idx, 0, (UINT)TEX_CUBE_FILENAMES.size() - 1, "%d", flags);
+	flag += ImGui::SliderInt((std::string("Cubemap [0, ") + std::to_string((UINT)mCubeMapTex.size() - 1) + "]").c_str(), &idx, 0, (UINT)mCubeMapTex.size() - 1, "%d", flags);
 	if (flag)
 	{
 		mMainPassCB.gCubeMapIndex = idx;

@@ -19,26 +19,6 @@ class MyApp : public AppBase
 private:
 	static constexpr int MAX_LAYER_DEPTH = 20;
 	static constexpr int SRV_IMGUI_SIZE = 64;
-	
-	static const inline std::vector<std::wstring>	TEX_DIFF_FILENAMES = {
-		// STD TEX
-		L"bricks.dds",L"bricks2.dds",L"bricks3.dds", L"checkboard.dds", L"grass.dds",
-		L"ice.dds", L"stone.dds", L"tile.dds", L"WireFence.dds", L"WoodCrate01.dds",
-		L"WoodCrate02.dds", L"water1.dds", L"white1x1.dds", L"tree01S.dds", L"tree02S.dds",
-		L"tree35S.dds",
-	};
-	static const inline std::vector<std::wstring>	TEX_NORM_FILENAMES = {
-		// STD TEX
-		L"default_nmap.dds", L"bricks_nmap.dds",L"bricks2_nmap.dds",L"tile_nmap.dds"
-	};
-	static const inline std::vector<std::wstring>	TEX_ARRAY_FILENAMES = {
-		// Array Tex (for Billboard Shader)
-		L"treearray.dds", L"treeArray2.dds",
-	};
-	static const inline std::vector<std::wstring>	TEX_CUBE_FILENAMES = {
-		// Array Tex (for Billboard Shader)
-		L"desertcube1024.dds", L"grasscube1024.dds",L"snowcube1024.dds",L"sunsetcube1024.dds",
-	};
 
 	enum class RenderLayer : int
 	{
@@ -162,11 +142,15 @@ public:
 #pragma region Initialize
 	virtual bool Initialize() override;
 	void LoadTextures();
+	void LoadTextures(const std::wstring& dir, const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap);
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
+	void BuildTexture2DSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
+	void BuildTexture2DArraySrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
+	void BuildTextureCubeSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
 	void BuildShadersAndInputLayout();
-	GeometryGenerator::MeshData LoadModelMesh(std::wstring dir);
-	GeometryGenerator::MeshData LoadSkinnedModelMesh();
+	GeometryGenerator::MeshData LoadModelMesh(std::string dir);
+	GeometryGenerator::MeshData LoadSkinnedModelMesh(std::string dir);
 	void BuildMeshes();
 	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16 = true, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
@@ -255,10 +239,18 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mSkinnedInputLayout;
 
 	std::vector<GeometryGenerator::MeshData> mMeshes;
+	std::vector<GeometryGenerator::MeshData> mSkinnedMeshes;
 	std::vector<std::unique_ptr<MeshGeometry>> mGeometries;
 	
-	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
-	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mDisplacementTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mDiffuseTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mNormalTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mAOTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mMetallicTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mRoughnessTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mEmissiveTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTreeMapTex;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mCubeMapTex;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
@@ -292,5 +284,5 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::vector<M3DLoader::Subset> mSkinnedSubsets;
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
-	std::vector<std::string> mSkinnedTextureNames;
+	std::vector<std::wstring> mSkinnedTextureNames;
 };
