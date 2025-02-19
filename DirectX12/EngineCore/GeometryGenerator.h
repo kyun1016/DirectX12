@@ -53,9 +53,20 @@ public:
 		DirectX::XMFLOAT3 TangentU;
 	};
 
+	struct SkinnedVertex
+	{
+		DirectX::XMFLOAT3 Position;
+		DirectX::XMFLOAT3 Normal;
+		DirectX::XMFLOAT2 TexC;
+		DirectX::XMFLOAT3 TangentU;
+		DirectX::XMFLOAT3 BoneWeights;
+		BYTE BoneIndices[4];
+	};
+
 	struct MeshData
 	{
 		std::vector<Vertex> Vertices;
+		std::vector<SkinnedVertex> SkinnedVertices;
 		std::vector<std::uint32_t> Indices32;
 
 		std::vector<std::uint16_t>& GetIndices16()

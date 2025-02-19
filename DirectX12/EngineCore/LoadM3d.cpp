@@ -4,8 +4,8 @@
 using namespace DirectX;
 
 bool M3DLoader::LoadM3d(const std::string& filename,
-	std::vector<Vertex>& vertices,
-	std::vector<USHORT>& indices,
+	std::vector<GeometryGenerator::Vertex>& vertices,
+	std::vector<std::uint32_t>& indices,
 	std::vector<Subset>& subsets,
 	std::vector<M3dMaterial>& mats)
 {
@@ -39,8 +39,8 @@ bool M3DLoader::LoadM3d(const std::string& filename,
 }
 
 bool M3DLoader::LoadM3d(const std::string& filename,
-	std::vector<SkinnedVertex>& vertices,
-	std::vector<USHORT>& indices,
+	std::vector<GeometryGenerator::SkinnedVertex>& vertices,
+	std::vector<std::uint32_t>& indices,
 	std::vector<Subset>& subsets,
 	std::vector<M3dMaterial>& mats,
 	SkinnedData& skinInfo)
@@ -121,7 +121,7 @@ void M3DLoader::ReadSubsetTable(std::ifstream& fin, UINT numSubsets, std::vector
 	}
 }
 
-void M3DLoader::ReadVertices(std::ifstream& fin, UINT numVertices, std::vector<Vertex>& vertices)
+void M3DLoader::ReadVertices(std::ifstream& fin, UINT numVertices, std::vector<GeometryGenerator::Vertex>& vertices)
 {
 	std::string ignore;
 	vertices.resize(numVertices);
@@ -129,14 +129,15 @@ void M3DLoader::ReadVertices(std::ifstream& fin, UINT numVertices, std::vector<V
 	fin >> ignore; // vertices header text
 	for (UINT i = 0; i < numVertices; ++i)
 	{
-		fin >> ignore >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
-		fin >> ignore >> vertices[i].TangentU.x >> vertices[i].TangentU.y >> vertices[i].TangentU.z >> vertices[i].TangentU.w;
+		float blah;
+		fin >> ignore >> vertices[i].Position.x >> vertices[i].Position.y >> vertices[i].Position.z;
+		fin >> ignore >> vertices[i].TangentU.x >> vertices[i].TangentU.y >> vertices[i].TangentU.z >> blah; // vertices[i].TangentU.w;
 		fin >> ignore >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
 		fin >> ignore >> vertices[i].TexC.x >> vertices[i].TexC.y;
 	}
 }
 
-void M3DLoader::ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::vector<SkinnedVertex>& vertices)
+void M3DLoader::ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::vector<GeometryGenerator::SkinnedVertex>& vertices)
 {
 	std::string ignore;
 	vertices.resize(numVertices);
@@ -147,7 +148,7 @@ void M3DLoader::ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::v
 	for (UINT i = 0; i < numVertices; ++i)
 	{
 		float blah;
-		fin >> ignore >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
+		fin >> ignore >> vertices[i].Position.x >> vertices[i].Position.y >> vertices[i].Position.z;
 		fin >> ignore >> vertices[i].TangentU.x >> vertices[i].TangentU.y >> vertices[i].TangentU.z >> blah /*vertices[i].TangentU.w*/;
 		fin >> ignore >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
 		fin >> ignore >> vertices[i].TexC.x >> vertices[i].TexC.y;
@@ -165,7 +166,7 @@ void M3DLoader::ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::v
 	}
 }
 
-void M3DLoader::ReadTriangles(std::ifstream& fin, UINT numTriangles, std::vector<USHORT>& indices)
+void M3DLoader::ReadTriangles(std::ifstream& fin, UINT numTriangles, std::vector<std::uint32_t>& indices)
 {
 	std::string ignore;
 	indices.resize(numTriangles * 3);

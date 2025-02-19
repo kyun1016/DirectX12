@@ -166,8 +166,9 @@ public:
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	GeometryGenerator::MeshData LoadModelMesh(std::wstring dir);
+	GeometryGenerator::MeshData LoadSkinnedModelMesh();
 	void BuildMeshes();
-	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT);
+	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
@@ -251,6 +252,7 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mSkinnedInputLayout;
 
 	std::vector<GeometryGenerator::MeshData> mMeshes;
 	std::vector<std::unique_ptr<MeshGeometry>> mGeometries;
@@ -266,10 +268,29 @@ private:
 	DirectX::BoundingFrustum mCamFrustum;
 	Camera mCamera;
 
+	UINT mHeapDisplacementIdx = 0;
+	UINT mHeapDiffIdx = 0;
+	UINT mHeapNormIdx = 0;
+	UINT mHeapAOIdx = 0;
+	UINT mHeapMetallicIdx = 0;
+	UINT mHeapRoughnessIdx = 0;
+	UINT mHeapEmissiveIdx = 0;
+	UINT mHeapShadowIdx = 0;
+	UINT mHeapSsaoIdx = 0;
+	UINT mHeapArrayIdx = 0;
+	UINT mHeapCubeIdx = 0;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUUser;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUDiff;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUNorm;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUShadow;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUArray;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUCube;
+
+
+	// Temp
+	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
+	SkinnedData mSkinnedInfo;
+	std::vector<M3DLoader::Subset> mSkinnedSubsets;
+	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
+	std::vector<std::string> mSkinnedTextureNames;
 };

@@ -681,6 +681,19 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::wstring dir)
 	return mesh;
 }
 
+GeometryGenerator::MeshData MyApp::LoadSkinnedModelMesh()
+{
+	GeometryGenerator::MeshData data;
+	M3DLoader::LoadM3d(std::string("..\\Data\\Models\\soldier.m3d"), data.SkinnedVertices, data.Indices32,
+		mSkinnedSubsets, mSkinnedMats, mSkinnedInfo);
+	mSkinnedModelInst = std::make_unique<SkinnedModelInstance>();
+
+	mSkinnedModelInst->SkinnedInfo = &mSkinnedInfo;
+	mSkinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
+	mSkinnedModelInst->ClipName = "Take1";
+	mSkinnedModelInst->TimePos = 0.0f;
+}
+
 void MyApp::BuildMeshes()
 {
 	//static const std::wstring MESH_MODEL_DIR = L"../Data/Models/";
@@ -710,7 +723,7 @@ void MyApp::BuildMeshes()
 	BuildGeometry(mMeshes);
 }
 
-void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat)
+void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat, bool useSkinnedMesh = false)
 {
 	using namespace DirectX;
 	//=========================================================
@@ -725,22 +738,46 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	{
 		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
 		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-		for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
-		{
-			DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].Vertices[j].Position);
-			vMin = DirectX::XMVectorMin(vMin, P);
-			vMax = DirectX::XMVectorMax(vMax, P);
+
+		if (useSkinnedMesh) {
+			for (size_t j = 0; j < meshes[i].SkinnedVertices.size(); ++j)
+			{
+				DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].SkinnedVertices[j].Position);
+				vMin = DirectX::XMVectorMin(vMin, P);
+				vMax = DirectX::XMVectorMax(vMax, P);
+			}
 		}
+		else
+		{
+			for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
+			{
+				DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].Vertices[j].Position);
+				vMin = DirectX::XMVectorMin(vMin, P);
+				vMax = DirectX::XMVectorMax(vMax, P);
+			}
+		}
+		
 		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
 
 		BoundingBox[i].Center = center;
 		DirectX::XMStoreFloat3(&BoundingBox[i].Extents, 0.5f * (vMax - vMin));
 
 		float maxRadius = 0.0f;
-		for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
+		if (useSkinnedMesh)
 		{
-			maxRadius = max(maxRadius, (center - meshes[i].Vertices[j].Position).Length());
+			for (size_t j = 0; j < meshes[i].SkinnedVertices.size(); ++j)
+			{
+				maxRadius = max(maxRadius, (center - meshes[i].SkinnedVertices[j].Position).Length());
+			}
 		}
+		else
+		{
+			for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
+			{
+				maxRadius = max(maxRadius, (center - meshes[i].Vertices[j].Position).Length());
+			}
+		}
+		
 		maxRadius += 1e-2f;
 		BoundingSphere[i].Center = center;
 		BoundingSphere[i].Radius = maxRadius;
@@ -748,22 +785,15 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	//=========================================================
 	// Part 2. vertices & indices 생성
 	//=========================================================
-	size_t totalVertexCount = 0;
-	for (const auto& a : meshes)
-		totalVertexCount += a.Vertices.size();
-	UINT k = 0;
-	std::vector<Vertex> vertices(totalVertexCount);
+	std::vector<SkinnedVertex> skinnedVertices;
+	std::vector<Vertex> vertices;
+		
 	std::vector<std::uint16_t> indices;
 	for (size_t i = 0; i < meshes.size(); ++i)
 	{
 		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-		for (const auto& ver : meshes[i].Vertices)
-		{
-			vertices[k].Position = ver.Position;
-			vertices[k].Normal = ver.Normal;
-			vertices[k].TangentU = ver.TangentU;
-			vertices[k++].TexC = ver.TexC;
-		}
+		vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
+		skinnedVertices.insert(skinnedVertices.end(), meshes[i].SkinnedVertices.begin(), meshes[i].SkinnedVertices.end());
 	}
 
 	//=========================================================
@@ -784,14 +814,16 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 		{
 			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
 			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
-			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+			submeshes[i].BaseVertexLocation = useSkinnedMesh 
+				? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
+				: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 		}
 	}
 
 	//=========================================================
 	// Part 3. GPU 할당 (16bit)
 	//=========================================================
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT vbByteSize = useSkinnedMesh ? (UINT)vertices.size() * sizeof(SkinnedVertex) : (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -803,7 +835,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
 	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexByteStride = useSkinnedMesh ? sizeof(SkinnedVertex) : sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = indexFormat;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -1219,7 +1251,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mAllMatItems.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mAllMatItems.size(), 1));
 }
 
 void MyApp::BuildPSO()

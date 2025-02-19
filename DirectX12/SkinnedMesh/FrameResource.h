@@ -25,6 +25,30 @@ struct LightData
 	DirectX::SimpleMath::Matrix shadowTransform = MathHelper::Identity4x4();
 };
 
+struct SkinnedConstants
+{
+	DirectX::XMFLOAT4X4 BoneTransforms[96];
+};
+
+struct SsaoConstants
+{
+	DirectX::XMFLOAT4X4 Proj;
+	DirectX::XMFLOAT4X4 InvProj;
+	DirectX::XMFLOAT4X4 ProjTex;
+	DirectX::XMFLOAT4   OffsetVectors[14];
+
+	// For SsaoBlur.hlsl
+	DirectX::XMFLOAT4 BlurWeights[3];
+
+	DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
+
+	// Coordinates given in view space.
+	float OcclusionRadius = 0.5f;
+	float OcclusionFadeStart = 0.2f;
+	float OcclusionFadeEnd = 2.0f;
+	float SurfaceEpsilon = 0.05f;
+};
+
 struct MaterialData
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -229,10 +253,20 @@ struct Vertex
 	DirectX::XMFLOAT3 TangentU;
 };
 
+struct SkinnedVertex
+{
+	DirectX::XMFLOAT3 Position;
+	DirectX::XMFLOAT3 Normal;
+	DirectX::XMFLOAT2 TexC;
+	DirectX::XMFLOAT3 TangentU;
+	DirectX::XMFLOAT3 BoneWeights;
+	BYTE BoneIndices[4];
+};
+
 struct FrameResource
 {
 public:
-	FrameResource(ID3D12Device* device, UINT passCount, UINT baseInstanceCount, UINT maxInstanceCount, UINT materialCount)
+	FrameResource(ID3D12Device* device, UINT passCount, UINT baseInstanceCount, UINT maxInstanceCount, UINT materialCount, UINT skinnedObjectCount)
 	{
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
@@ -240,6 +274,8 @@ public:
 		MaterialBuffer = std::make_unique<UploadBuffer<MaterialData>>(device, materialCount, false);
 		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
 		InstanceCB = std::make_unique<UploadBuffer<InstanceConstants>>(device, baseInstanceCount, true);
+		SkinnedCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, skinnedObjectCount, true);
+		SsaoCB = std::make_unique<UploadBuffer<SsaoConstants>>(device, 1, true);
 	}
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
@@ -253,6 +289,8 @@ public:
 
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<InstanceConstants>> InstanceCB = nullptr;
+	std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
+	std::unique_ptr<UploadBuffer<SsaoConstants>> SsaoCB = nullptr;
 
 	UINT64 Fence = 0;
 };

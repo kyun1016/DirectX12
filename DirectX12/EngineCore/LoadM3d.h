@@ -2,29 +2,12 @@
 #define LOADM3D_H
 
 #include "SkinnedData.h"
-
-
+#include "GeometryGenerator.h"
 
 class M3DLoader
 {
 public:
-    struct Vertex
-    {
-        DirectX::XMFLOAT3 Pos;
-        DirectX::XMFLOAT3 Normal;
-        DirectX::XMFLOAT2 TexC;
-        DirectX::XMFLOAT4 TangentU;
-    };
-
-    struct SkinnedVertex
-    {
-        DirectX::XMFLOAT3 Pos;
-        DirectX::XMFLOAT3 Normal;
-        DirectX::XMFLOAT2 TexC;
-        DirectX::XMFLOAT3 TangentU;
-        DirectX::XMFLOAT3 BoneWeights;
-        BYTE BoneIndices[4];
-    };
+    M3DLoader() = delete;
 
     struct Subset
     {
@@ -49,28 +32,28 @@ public:
         std::string NormalMapName;
     };
 
-    bool LoadM3d(const std::string& filename,
-        std::vector<Vertex>& vertices,
-        std::vector<USHORT>& indices,
+    static bool LoadM3d(const std::string& filename,
+        std::vector<GeometryGenerator::Vertex>& vertices,
+        std::vector<std::uint32_t>& indices,
         std::vector<Subset>& subsets,
         std::vector<M3dMaterial>& mats);
-    bool LoadM3d(const std::string& filename,
-        std::vector<SkinnedVertex>& vertices,
-        std::vector<USHORT>& indices,
+    static bool LoadM3d(const std::string& filename,
+        std::vector<GeometryGenerator::SkinnedVertex>& vertices,
+        std::vector<std::uint32_t>& indices,
         std::vector<Subset>& subsets,
         std::vector<M3dMaterial>& mats,
         SkinnedData& skinInfo);
 
 private:
-    void ReadMaterials(std::ifstream& fin, UINT numMaterials, std::vector<M3dMaterial>& mats);
-    void ReadSubsetTable(std::ifstream& fin, UINT numSubsets, std::vector<Subset>& subsets);
-    void ReadVertices(std::ifstream& fin, UINT numVertices, std::vector<Vertex>& vertices);
-    void ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::vector<SkinnedVertex>& vertices);
-    void ReadTriangles(std::ifstream& fin, UINT numTriangles, std::vector<USHORT>& indices);
-    void ReadBoneOffsets(std::ifstream& fin, UINT numBones, std::vector<DirectX::XMFLOAT4X4>& boneOffsets);
-    void ReadBoneHierarchy(std::ifstream& fin, UINT numBones, std::vector<int>& boneIndexToParentIndex);
-    void ReadAnimationClips(std::ifstream& fin, UINT numBones, UINT numAnimationClips, std::unordered_map<std::string, AnimationClip>& animations);
-    void ReadBoneKeyframes(std::ifstream& fin, UINT numBones, BoneAnimation& boneAnimation);
+    static void ReadMaterials(std::ifstream& fin, UINT numMaterials, std::vector<M3dMaterial>& mats);
+    static void ReadSubsetTable(std::ifstream& fin, UINT numSubsets, std::vector<Subset>& subsets);
+    static void ReadVertices(std::ifstream& fin, UINT numVertices, std::vector<GeometryGenerator::Vertex>& vertices);
+    static void ReadSkinnedVertices(std::ifstream& fin, UINT numVertices, std::vector<GeometryGenerator::SkinnedVertex>& vertices);
+    static void ReadTriangles(std::ifstream& fin, UINT numTriangles, std::vector<std::uint32_t>& indices);
+    static void ReadBoneOffsets(std::ifstream& fin, UINT numBones, std::vector<DirectX::XMFLOAT4X4>& boneOffsets);
+    static void ReadBoneHierarchy(std::ifstream& fin, UINT numBones, std::vector<int>& boneIndexToParentIndex);
+    static void ReadAnimationClips(std::ifstream& fin, UINT numBones, UINT numAnimationClips, std::unordered_map<std::string, AnimationClip>& animations);
+    static void ReadBoneKeyframes(std::ifstream& fin, UINT numBones, BoneAnimation& boneAnimation);
 };
 
 
