@@ -168,7 +168,7 @@ public:
 	GeometryGenerator::MeshData LoadModelMesh(std::wstring dir);
 	GeometryGenerator::MeshData LoadSkinnedModelMesh();
 	void BuildMeshes();
-	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT, bool useSkinnedMesh = false);
+	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16 = true, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();

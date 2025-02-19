@@ -723,7 +723,7 @@ void MyApp::BuildMeshes()
 	BuildGeometry(mMeshes);
 }
 
-void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, const DXGI_FORMAT indexFormat, bool useSkinnedMesh = false)
+void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16, bool useSkinnedMesh = false)
 {
 	using namespace DirectX;
 	//=========================================================
@@ -788,10 +788,12 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	std::vector<SkinnedVertex> skinnedVertices;
 	std::vector<Vertex> vertices;
 		
-	std::vector<std::uint16_t> indices;
+	std::vector<std::uint16_t> indices16;
+	std::vector<std::uint32_t> indices32;
 	for (size_t i = 0; i < meshes.size(); ++i)
 	{
-		indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
+		indices16.insert(indices16.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
+		indices32.insert(indices32.end(), meshes[i].Indices32.begin(), meshes[i].Indices32.end());
 		vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
 		skinnedVertices.insert(skinnedVertices.end(), meshes[i].SkinnedVertices.begin(), meshes[i].SkinnedVertices.end());
 	}
@@ -823,21 +825,42 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, cons
 	//=========================================================
 	// Part 3. GPU 할당 (16bit)
 	//=========================================================
-	const UINT vbByteSize = useSkinnedMesh ? (UINT)vertices.size() * sizeof(SkinnedVertex) : (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	const UINT vbByteSize = useSkinnedMesh 
+		? (UINT)skinnedVertices.size() * sizeof(SkinnedVertex)
+		: (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = useIndex16 
+		? (UINT)indices16.size() * sizeof(std::uint16_t)
+		: (UINT)indices32.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = mGeometries.size();
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+	if (useSkinnedMesh)
+	{
+		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), skinnedVertices.data(), vbByteSize);
+		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), skinnedVertices.data(), vbByteSize, geo->VertexBufferUploader);
+	}
+	else
+	{
+		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+	}
+		
+	if (useIndex16)
+	{
+		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices16.data(), ibByteSize);
+		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices16.data(), ibByteSize, geo->IndexBufferUploader);
+	}
+	else
+	{
+		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices32.data(), ibByteSize);
+		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices32.data(), ibByteSize, geo->IndexBufferUploader);
+	}	
 
 	geo->VertexByteStride = useSkinnedMesh ? sizeof(SkinnedVertex) : sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = indexFormat;
+	geo->IndexFormat = useIndex16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
 	for (size_t i = 0; i < submeshes.size(); ++i)
