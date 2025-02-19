@@ -49,8 +49,7 @@ private:
 		TessellationWireframe,
 		AddCS,
 		BlurCS,
-		WaveVS_CS,
-		WaveVS_CS_Wireframe,
+		WaveCS,
 		Count
 	};
 #pragma endregion Constant
@@ -71,7 +70,7 @@ private:
 
 		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		{
-			Datas.push_back(EXInstanceData(BoundingBox, BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
+			Datas.push_back(EXInstanceData(&BoundingBox, &BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 		}
 
 		void Push(EXInstanceData data)
@@ -142,7 +141,7 @@ public:
 #pragma region Initialize
 	virtual bool Initialize() override;
 	void LoadTextures();
-	void LoadTextures(const std::wstring& dir, const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap);
+	void LoadTextures(const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap);
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildTexture2DSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
@@ -194,13 +193,13 @@ private:
 	void MakePSOCheckbox(const std::string type, bool& flag, bool& flag2);
 	void ShowTextureWindow();
 	void ShowMaterialWindow();
-	void ShowRenderItemWindow();
+	void ShowInstanceWindow();
 	void ShowViewportWindow();
 	void ShowCubeMapWindow();
 	bool mShowDemoWindow = false;
 	bool mShowTextureWindow = false;
 	bool mShowMaterialWindow = false;
-	bool mShowRenderItemWindow = false;
+	bool mShowInstanceWindow = false;
 	bool mShowViewportWindow = false;
 	bool mShowCubeMapWindow = false;
 

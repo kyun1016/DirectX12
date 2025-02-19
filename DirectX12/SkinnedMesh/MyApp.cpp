@@ -17,7 +17,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[2] = RenderLayer::Subdivision;
 	mLayerType[3] = RenderLayer::Transparent;
 	mLayerType[4] = RenderLayer::TreeSprites;
-	mLayerType[5] = RenderLayer::WaveVS_CS;
+	mLayerType[5] = RenderLayer::WaveCS;
 	mLayerType[6] = RenderLayer::CubeMap;
 	// mLayerType[7] = RenderLayer::Normal;
 	// mLayerType[8] = RenderLayer::BoundingSphere;
@@ -122,51 +122,72 @@ bool MyApp::Initialize()
 
 void MyApp::LoadTextures()
 {
-	const std::wstring dir = L"../Data/Textures/";
 	std::vector<std::wstring> diffuseFilename = {
 		// STD TEX
-		L"bricks.dds",L"bricks2.dds",L"bricks3.dds", L"checkboard.dds", L"grass.dds",
-		L"ice.dds", L"stone.dds", L"tile.dds", L"WireFence.dds", L"WoodCrate01.dds",
-		L"WoodCrate02.dds", L"water1.dds", L"white1x1.dds", L"tree01S.dds", L"tree02S.dds",
-		L"tree35S.dds",
+		L"../Data/Textures/bricks.dds",
+		L"../Data/Textures/bricks2.dds",
+		L"../Data/Textures/bricks3.dds",
+		L"../Data/Textures/checkboard.dds",
+		L"../Data/Textures/grass.dds",
+		L"../Data/Textures/ice.dds",
+		L"../Data/Textures/stone.dds",
+		L"../Data/Textures/tile.dds",
+		L"../Data/Textures/WireFence.dds",
+		L"../Data/Textures/WoodCrate01.dds",
+		L"../Data/Textures/WoodCrate02.dds",
+		L"../Data/Textures/water1.dds",
+		L"../Data/Textures/white1x1.dds",
+		L"../Data/Textures/tree01S.dds",
+		L"../Data/Textures/tree02S.dds",
+		L"../Data/Textures/tree35S.dds"
 	};
 	std::vector<std::wstring> normalFilename = {
 		// STD TEX
-		L"default_nmap.dds", L"bricks_nmap.dds",L"bricks2_nmap.dds",L"tile_nmap.dds"
+		L"../Data/Textures/default_nmap.dds",
+		L"../Data/Textures/bricks_nmap.dds",
+		L"../Data/Textures/bricks2_nmap.dds",
+		L"../Data/Textures/tile_nmap.dds"
 	};
 	std::vector<std::wstring> arrayFilename = {
 		// Array Tex (for Billboard Shader)
-		L"treearray.dds", L"treeArray2.dds",
+		L"../Data/Textures/treearray.dds",
+		L"../Data/Textures/treeArray2.dds",
 	};
 	std::vector<std::wstring>	cubeFilename = {
 		// Array Tex (for Billboard Shader)
-		L"desertcube1024.dds", L"grasscube1024.dds",L"snowcube1024.dds",L"sunsetcube1024.dds",
+		L"../Data/Textures/desertcube1024.dds",
+		L"../Data/Textures/grasscube1024.dds",
+		L"../Data/Textures/snowcube1024.dds",
+		L"../Data/Textures/sunsetcube1024.dds",
 	};
 
 	for (const auto& data : mSkinnedMats)
 	{
-		std::wstring diffuseFile = AnsiToWString(data.DiffuseMapName);
-		std::wstring normalFile = AnsiToWString(data.NormalMapName);
+		std::wstring diffuseFile = L"../Data/Textures/" + StrToWStr(data.DiffuseMapName);
+		std::wstring normalFile = L"../Data/Textures/" + StrToWStr(data.NormalMapName);
 
 		diffuseFilename.push_back(diffuseFile);
-		// normalFilename.push_back(normalFile);
+		normalFilename.push_back(normalFile);
 	}
 
-	LoadTextures(dir, diffuseFilename, mDiffuseTex);
-	LoadTextures(dir, normalFilename, mNormalTex);
-	LoadTextures(dir, arrayFilename, mTreeMapTex);
-	LoadTextures(dir, cubeFilename, mCubeMapTex);
+	LoadTextures(diffuseFilename, mDiffuseTex);
+	LoadTextures(normalFilename, mNormalTex);
+	LoadTextures(arrayFilename, mTreeMapTex);
+	LoadTextures(cubeFilename, mCubeMapTex);
 }
 
-void MyApp::LoadTextures(const std::wstring& dir, const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap)
+void MyApp::LoadTextures(const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap)
 {
 	for (const auto& name : filename)
 	{
-		auto texture = std::make_unique<Texture>();
-		texture->Filename = dir + name;
-		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), texture->Filename.c_str(), texture->Resource, texture->UploadHeap));
+		if (texMap.find(name) == std::end(texMap))
+		{
+			auto texture = std::make_unique<Texture>();
+			texture->Filename = name;
+			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice.Get(), mCommandList.Get(), name.c_str(), texture->Resource, texture->UploadHeap));
 
-		texMap[name] = std::move(texture);
+			texMap[name] = std::move(texture);
+		}
 	}
 }
 
@@ -457,6 +478,7 @@ void MyApp::BuildDescriptorHeaps()
 
 void MyApp::BuildTexture2DSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
 {
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	srvDesc.Texture2D.MostDetailedMip = 0;
@@ -478,6 +500,7 @@ void MyApp::BuildTexture2DSrv(const std::unordered_map<std::wstring, std::unique
 
 void MyApp::BuildTexture2DArraySrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
 {
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 	srvDesc.Texture2DArray.MipLevels = -1;
@@ -498,6 +521,7 @@ void MyApp::BuildTexture2DArraySrv(const std::unordered_map<std::wstring, std::u
 
 void MyApp::BuildTextureCubeSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
 {
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
@@ -534,6 +558,16 @@ void MyApp::BuildShadersAndInputLayout()
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
 		"TEX_CUBE_SIZE", texCubeSize,
+		NULL, NULL
+	};
+	const D3D_SHADER_MACRO skinnedDefines[] =
+	{
+		"MAX_LIGHTS", maxLights,
+		"TEX_DIFF_SIZE", texDiffSize,
+		"TEX_NORM_SIZE", texNormSize,
+		"TEX_ARRAY_SIZE", texArraySize,
+		"TEX_CUBE_SIZE", texCubeSize,
+		"SKINNED", "1",
 		NULL, NULL
 	};
 
@@ -584,6 +618,7 @@ void MyApp::BuildShadersAndInputLayout()
 	// 오직 Release 모드에서만 동작이 가능함 (Timeout 발생)
 
 	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
+	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
 	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
 	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
 	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
@@ -1011,7 +1046,8 @@ void MyApp::BuildRenderItems()
 		= (1 << (int)RenderLayer::DebugShadowMap);
 
 	wavesRitem->LayerFlag
-		= (1 << (int)RenderLayer::WaveVS_CS);
+		= (1 << (int)RenderLayer::Transparent)
+		| (1 << (int)RenderLayer::WaveCS);
 
 	treeSpritesRitem->LayerFlag
 		= (1 << (int)RenderLayer::TreeSprites)
@@ -1575,7 +1611,6 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Tessellation])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingBox])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingSphere])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS_CS])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&cubeMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::CubeMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&debugShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::DebugShadowMap])));
@@ -1603,7 +1638,6 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::NormalWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSpritesWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TessellationWireframe])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&wavesRenderPSO, IID_PPV_ARGS(&mPSOs[RenderLayer::WaveVS_CS_Wireframe])));
 }
 #pragma endregion Initialize
 
@@ -1771,9 +1805,12 @@ void MyApp::Render()
 		{
 			mCSBlurFilter->Execute(mCommandList.Get(), mSwapChainBuffer[mCurrBackBuffer].Get(), 4);
 		}
+		else if (mLayerType[i] == RenderLayer::WaveCS)
+		{
+			mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
+		}
 		else {
-			if(mLayerType[i] == RenderLayer::WaveVS_CS)
-				mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
+			
 			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
@@ -2232,8 +2269,8 @@ void MyApp::UpdateImGui()
 		ShowTextureWindow();
 	if (mShowMaterialWindow)
 		ShowMaterialWindow();
-	if (mShowRenderItemWindow)
-		ShowRenderItemWindow();
+	if (mShowInstanceWindow)
+		ShowInstanceWindow();
 	if (mShowViewportWindow)
 		ShowViewportWindow();
 	if (mShowCubeMapWindow)
@@ -2249,7 +2286,7 @@ void MyApp::ShowMainWindow()
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Texture", &mShowTextureWindow);
 		ImGui::Checkbox("Material", &mShowMaterialWindow);
-		ImGui::Checkbox("Render Item", &mShowRenderItemWindow);
+		ImGui::Checkbox("Render Item", &mShowInstanceWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
 		ImGui::Checkbox("Cubemap", &mShowCubeMapWindow);
 		ImGui::TreePop();
@@ -2295,7 +2332,7 @@ void MyApp::ShowMainWindow()
 				"TessellationWireframe",
 				"AddCS",
 				"BlurCS",
-				"WaveVS_CS"
+				"WaveCS"
 			};
 			if (ImGui::BeginListBox("Shader Type"))
 			{
@@ -2401,10 +2438,21 @@ void MyApp::ShowMaterialWindow()
 	int texNormSize
 		= (int) mNormalTex.size();
 
-	ImGui::LabelText("label", "Value");
-	ImGui::SeparatorText("Inputs");
+
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-	ImGui::SliderInt((std::string("Material [0, ") + std::to_string(mAllMatItems.size() - 1) + "]").c_str(), &matIdx, 0, mAllMatItems.size() - 1, "%d", flags);
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Select Material")) {
+		ImGui::SliderInt(
+			(std::string("Material [0, ") + std::to_string(mAllMatItems.size() - 1) + "]").c_str(),
+			&matIdx,
+			0,
+			mAllMatItems.size() - 1,
+			"%d",
+			flags);
+
+		ImGui::TreePop();
+	}
 	{
 		int flag = 0;
 		auto mat = mAllMatItems[matIdx].get();
@@ -2420,13 +2468,56 @@ void MyApp::ShowMaterialWindow()
 			fres3f[2] = mat->MaterialData.FresnelR0.z;
 		}
 		
-		flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::DragFloat("Roughness", &mat->MaterialData.Roughness, 0.01f, 0.0f, 1.0f);
-		flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
-		flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize-1, "%d", flags);
-		flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
-		flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize-1, "%d", flags);
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Default Factor")) {
+			flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
+			flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
+			flag += ImGui::DragFloat("Roughness", &mat->MaterialData.Roughness, 0.01f, 0.0f, 1.0f);
+			ImGui::TreePop();
+		}
+
+		ImTextureID my_tex_id;
+		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Diffuse Map")) {
+			flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
+			flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize - 1, "%d", flags);
+			my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
+			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Normal Map")) {
+			flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
+			flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
+			my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Normal Map")) {
+			flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
+			flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
+			my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+			ImGui::TreePop();
+		}
+		
+
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Alpha Test")) {
+			flag += ImGui::CheckboxFlags("Use Alpha Test", &mat->MaterialData.useAlphaTest, 1);
+
+			ImGui::TreePop();
+		}
+
 		if (flag)
 		{
 			mat->MaterialData.DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
@@ -2434,34 +2525,91 @@ void MyApp::ShowMaterialWindow()
 			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
 
-		ImTextureID my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
-		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
-		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
-
-		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
-		my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
-		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+		
 	}
 	ImGui::End();
 }
 
-void MyApp::ShowRenderItemWindow()
+void MyApp::ShowInstanceWindow()
 {
-	ImGui::Begin("render item", &mShowRenderItemWindow);
+	ImGui::Begin("render item", &mShowInstanceWindow);
 	static int ritmIdx;
+	static int instIdx;
 
 	static float world3f[3];
 	static float scale3f[3];
 	static float angle3f[3];
+	static float texScale3f[3];
+	static float displacementSize2f[2];
+
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Select Instance")) {
+		if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(mAllRitems.size() - 1) + "]").c_str(), &ritmIdx, 0, mAllRitems.size() - 1, "%d", flags))
+		{
+			instIdx = 0;
+		}
+			
+		ImGui::SliderInt((std::string("Instance [0, ") + std::to_string(mAllRitems[ritmIdx]->Datas.size() - 1) + "]").c_str(),
+			&instIdx,
+			0,
+			mAllRitems[ritmIdx]->Datas.size() - 1,
+			"%d",
+			flags);
+
+		ImGui::TreePop();
+	}
 
 	RenderItem* ritm = mAllRitems[ritmIdx].get();
 
-	ImGui::LabelText("label", "Value");
-	ImGui::SeparatorText("Inputs");
-	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+	if(ritm->Datas.size())
+	{
+		EXInstanceData& inst = ritm->Datas[instIdx];
+		// 초기 값 반영
+		world3f[0] = inst.Translation.x;
+		world3f[1] = inst.Translation.y;
+		world3f[2] = inst.Translation.z;
+		scale3f[0] = inst.Scale.x;
+		scale3f[1] = inst.Scale.y;
+		scale3f[2] = inst.Scale.z;
+		texScale3f[0] = inst.TexScale.x;
+		texScale3f[1] = inst.TexScale.y;
+		texScale3f[2] = inst.TexScale.z;
+		int flag = 0;
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Scale")) {
+			flag += ImGui::DragFloat3("World x/y/z", world3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("Scale x/y/z", scale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("Texture Scale x/y/z", texScale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("angle x/y/z", angle3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+			
+			ImGui::TreePop();
+		}
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Displacement Map")) {
+			flag += ImGui::CheckboxFlags("Use Alpha Test", &inst.InstanceData.useDisplacementMap, 1);
+			flag += ImGui::DragFloat2("Displacement Size", displacementSize2f, 0.01f, 0.0f, 10.0f);
+			flag += ImGui::DragFloat("Displacement Scale", &inst.InstanceData.GridSpatialStep, 0.01f, 0.0f, 10.0f);
 
-	int flag = 0;
-	flag += ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(mAllRitems.size() - 1) + "]").c_str(), &ritmIdx, 0, mAllRitems.size() - 1, "%d", flags);
+			ImGui::TreePop();
+		}
+
+		if (flag)
+		{
+			inst.UpdateTranslation({ world3f[0], world3f[1], world3f[2] });
+			inst.UpdateScale({ scale3f[0], scale3f[1], scale3f[2] });
+			inst.UpdateTexScale({ texScale3f[0], texScale3f[1], texScale3f[2] });
+			ritm->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+		}
+
+	}
+	else
+	{
+		ImGui::Text("have no item");
+	}
+
+	
 
 	//const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
 	//static int item_selected_idx = 0; // Here we store our selected data as an index.
@@ -2480,23 +2628,6 @@ void MyApp::ShowRenderItemWindow()
 	//	}
 	//	ImGui::EndListBox();
 	//}
-	if (flag)
-	{
-		ritm = mAllRitems[ritmIdx].get();
-	};
-	{
-		flag = 0;
-
-		flag += ImGui::DragFloat3("world x/y/z", world3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
-		flag += ImGui::DragFloat3("scale x/y/z", scale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
-		flag += ImGui::DragFloat3("angle x/y/z", angle3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
-
-		if (flag)
-		{
-			// ritm->NumFramesDirty = 1;
-			// TODO: 즉시 instance 데이터를 업데이트 하는 로직으로 수정
-		}
-	}
 
 	ImGui::End();
 }

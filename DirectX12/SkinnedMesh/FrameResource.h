@@ -75,8 +75,8 @@ struct MaterialData
 
 	int useRoughnessMap = 0;
 	int useEmissiveMap = 0;
+	int useAlphaTest = 0;
 	int dummy1 = 0;
-	int dummy2 = 0;
 };
 
 struct InstanceData
@@ -88,10 +88,10 @@ struct InstanceData
 	float GridSpatialStep = 1.0f;
 	int useDisplacementMap = 0;
 
-	UINT DisplacementIndex = 0;
-	UINT MaterialIndex = 0;
-	UINT dummy1 = 0;
-	UINT dummy2 = 0;
+	int DisplacementIndex = 0;
+	int MaterialIndex = 0;
+	int dummy1 = 0;
+	int dummy2 = 0;
 };
 
 struct EXMaterialData
@@ -123,19 +123,12 @@ struct EXInstanceData
 		, ShowBoundingSphere(false)
 		, IsPickable(true)
 	{
-		DirectX::XMMATRIX world = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z) * DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
-		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-
-		InstanceData.World = DirectX::XMMatrixTranspose(world);
-		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
-		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
-		InstanceData.MaterialIndex = matIdx;
+		Update();
 	}
 
-	EXInstanceData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
-		: BoundingBox(boundingBox)
-		, BoundingSphere(boundingSphere)
+	EXInstanceData(DirectX::BoundingBox* baseBoundingBox, DirectX::BoundingSphere* baseBoundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		: BaseBoundingBox(baseBoundingBox)
+		, BaseBoundingSphere(baseBoundingSphere)
 		, Translation(translation)
 		, Scale(scale)
 		, TexScale(texScale)
@@ -146,32 +139,32 @@ struct EXInstanceData
 		, ShowBoundingSphere(false)
 		, IsPickable(true)
 	{
-		BoundingBox.Center.x += translation.x;
-		BoundingBox.Center.y += translation.y;
-		BoundingBox.Center.z += translation.z;
-
-		BoundingBox.Extents.x *= scale.x;
-		BoundingBox.Extents.y *= scale.y;
-		BoundingBox.Extents.z *= scale.z;
-
-		BoundingSphere.Center.x += translation.x;
-		BoundingSphere.Center.y += translation.y;
-		BoundingSphere.Center.z += translation.z;
-		BoundingSphere.Radius *= scale.Length();
-
-		DirectX::XMMATRIX world
-			= DirectX::XMMatrixScaling(scale.x, scale.y, scale.z)
-			* DirectX::XMMatrixTranslation(translation.x, translation.y, translation.z);
-		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(texScale.x, texScale.y, texScale.z);
-		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
-
-		InstanceData.World = DirectX::XMMatrixTranspose(world);
-		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
-		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 		InstanceData.MaterialIndex = matIdx;
+		Update();
+	}
+
+	void UpdateTranslation(DirectX::SimpleMath::Vector3 translation)
+	{
+		Translation = translation;
+		Update();
+	}
+
+	void UpdateScale(DirectX::SimpleMath::Vector3 scale)
+	{
+		Scale = scale;
+		Update();
+	}
+
+	void UpdateTexScale(DirectX::SimpleMath::Vector3 scale)
+	{
+		TexScale = scale;
+		Update();
 	}
 
 	InstanceData InstanceData; // GPU 전송 전용 데이터
+
+	DirectX::BoundingBox* BaseBoundingBox;
+	DirectX::BoundingSphere* BaseBoundingSphere;
 
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
@@ -185,6 +178,38 @@ struct EXInstanceData
 	bool ShowBoundingBox;
 	bool ShowBoundingSphere;
 	bool IsPickable;
+
+private:
+	void Update()
+	{
+		if (BaseBoundingBox)
+		{
+			BoundingBox.Center.x = BaseBoundingBox->Center.x + Translation.x;
+			BoundingBox.Center.y = BaseBoundingBox->Center.y + Translation.y;
+			BoundingBox.Center.z = BaseBoundingBox->Center.z + Translation.z;
+
+			BoundingBox.Extents.x = BaseBoundingBox->Extents.x * Scale.x;
+			BoundingBox.Extents.y = BaseBoundingBox->Extents.y * Scale.y;
+			BoundingBox.Extents.z = BaseBoundingBox->Extents.z * Scale.z;
+		}
+		if (BaseBoundingSphere)
+		{
+			BoundingSphere.Center.x = BaseBoundingSphere->Center.x + Translation.x;
+			BoundingSphere.Center.y = BaseBoundingSphere->Center.y + Translation.y;
+			BoundingSphere.Center.z = BaseBoundingSphere->Center.z + Translation.z;
+			BoundingSphere.Radius = BaseBoundingSphere->Radius * Scale.Length();
+		}
+
+		DirectX::XMMATRIX world
+			= DirectX::XMMatrixScaling(Scale.x, Scale.y, Scale.z)
+			* DirectX::XMMatrixTranslation(Translation.x, Translation.y, Translation.z);
+		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(TexScale.x, TexScale.y, TexScale.z);
+		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
+
+		InstanceData.World = DirectX::XMMatrixTranspose(world);
+		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
+		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
+	}
 };
 
 struct PassConstants

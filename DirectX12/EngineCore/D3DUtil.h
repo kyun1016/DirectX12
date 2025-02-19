@@ -31,6 +31,22 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
+inline std::wstring UTF8ToWString(const std::string& str)
+{
+	WCHAR buffer[512];
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, 512);
+	return std::wstring(buffer);
+}
+inline std::wstring StrToWStr(const std::string& str)
+{
+	return std::wstring().assign(str.begin(), str.end());
+}
+
+inline std::string WStrToStr(const std::wstring& str)
+{
+	return std::string().assign(str.begin(), str.end());
+}
+
 class D3DUtil
 {
 public:

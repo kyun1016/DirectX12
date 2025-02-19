@@ -81,10 +81,10 @@ struct InstanceData
     float GridSpatialStep;
     int useDisplacementMap;
     
-    uint DisplacementIndex;
-    uint MaterialIndex;
-    uint dummy1;
-    uint dummy2;
+    int DisplacementIndex;
+    int MaterialIndex;
+    int dummy1;
+    int dummy2;
 };
 
 struct MaterialData
@@ -111,8 +111,8 @@ struct MaterialData
     
     int useRoughnessMap;
     int useEmissiveMap;
+    int useAlphaTest;
     int dummy1;
-    int dummy2;
 };
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);

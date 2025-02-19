@@ -36,8 +36,8 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     float4x4 worldInvTranspose = instData.WorldInvTranspose;
     float2 displacementMapTexelSize = instData.DisplacementMapTexelSize;
     float gridSpatialStep = instData.GridSpatialStep;
-    uint matIndex = instData.MaterialIndex;
-    uint displacementIndex = instData.DisplacementIndex;
+    int matIndex = instData.MaterialIndex;
+    int displacementIndex = instData.DisplacementIndex;
     
     vout.MatIndex = matIndex;
     
@@ -91,18 +91,14 @@ PixelOut PS(VertexOut pin)
     
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;
-    uint diffuseTexIndex = matData.DiffMapIndex;
-    uint normalMapIndex = matData.NormMapIndex;
+    int diffuseTexIndex = matData.DiffMapIndex;
+    int normalMapIndex = matData.NormMapIndex;
 
     float4 diffuseAlbedo = matData.useAlbedoMap ? gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC) * matData.DiffuseAlbedo
                                                 : matData.DiffuseAlbedo;
 	
-#ifdef ALPHA_TEST
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
-	// as possible in the shader so that we can potentially exit the
-	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
-#endif
+    if(matData.useAlphaTest)
+	    clip(diffuseAlbedo.a - 0.1f);
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
