@@ -37,6 +37,7 @@ private:
 		BoundingSphere,
 		CubeMap,
 		ShadowMap,
+		SkinnedShadowMap,
 		DebugShadowMap,
 		OpaqueWireframe,
 		MirrorWireframe,
@@ -149,7 +150,7 @@ public:
 	void BuildTextureCubeSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
 	void BuildShadersAndInputLayout();
 	GeometryGenerator::MeshData LoadModelMesh(std::string dir);
-	GeometryGenerator::MeshData LoadSkinnedModelMesh(std::string dir);
+	std::vector<GeometryGenerator::MeshData> LoadSkinnedModelMesh(std::string dir);
 	void BuildMeshes();
 	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16 = true, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
@@ -220,7 +221,7 @@ private:
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<std::unique_ptr<EXMaterialData>> mAllMatItems;
-	std::pair<int, int> mPickModel = { -1,-1 };
+	std::pair<int, int> mPickModel = { 0,0 };
 	UINT mInstanceCount = 0;
 
 	std::unique_ptr<Waves> mWaves;
@@ -280,8 +281,8 @@ private:
 
 	// Temp
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-	SkinnedData mSkinnedInfo;
-	std::vector<M3DLoader::Subset> mSkinnedSubsets;
+	
+	
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
 	std::vector<std::wstring> mSkinnedTextureNames;
 };

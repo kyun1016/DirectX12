@@ -38,12 +38,36 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     float gridSpatialStep = instData.GridSpatialStep;
     int matIndex = instData.MaterialIndex;
     int displacementIndex = instData.DisplacementIndex;
-    
     vout.MatIndex = matIndex;
     
     // Fetch the material data.
     MaterialData matData = gMaterialData[matIndex];
+    
+#ifdef SKINNED
+    float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    weights[0] = vin.BoneWeights.x;
+    weights[1] = vin.BoneWeights.y;
+    weights[2] = vin.BoneWeights.z;
+    weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
 
+    float3 posL = float3(0.0f, 0.0f, 0.0f);
+    float3 normalL = float3(0.0f, 0.0f, 0.0f);
+    float3 tangentL = float3(0.0f, 0.0f, 0.0f);
+    for(int i = 0; i < 4; ++i)
+    {
+        // Assume no nonuniform scaling when transforming normals, so 
+        // that we do not have to use the inverse-transpose.
+
+        posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
+        normalL += weights[i] * mul(vin.NormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
+        tangentL += weights[i] * mul(vin.TangentU.xyz, (float3x3) gBoneTransforms[vin.BoneIndices[i]]);
+    }
+
+    vin.PosL = posL;
+    vin.NormalL = normalL;
+    vin.TangentU.xyz = tangentL;
+#endif
+    
     if (instData.useDisplacementMap)
     {
 	    // Sample the displacement map using non-transformed [0,1]^2 tex-coords.
@@ -97,8 +121,11 @@ PixelOut PS(VertexOut pin)
     float4 diffuseAlbedo = matData.useAlbedoMap ? gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC) * matData.DiffuseAlbedo
                                                 : matData.DiffuseAlbedo;
 	
-    if(matData.useAlphaTest)
-	    clip(diffuseAlbedo.a - 0.1f);
+#ifdef ALPHA_TEST
+    clip(diffuseAlbedo.a - 0.1f);
+#endif
+//     if(matData.useAlphaTest)
+// 	    clip(diffuseAlbedo.a - 0.1f);
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);

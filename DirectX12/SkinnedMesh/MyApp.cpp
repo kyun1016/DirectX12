@@ -286,7 +286,7 @@ void MyApp::BuildRootSignature()
 	
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[15];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[16];
 
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -301,26 +301,27 @@ void MyApp::BuildRootSignature()
 	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Perfomance TIP: Order from most frequent to least frequent.
-	slotRootParameter[0].InitAsConstantBufferView(1);		// gBaseInstanceIndex b1
-	slotRootParameter[1].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
-	slotRootParameter[2].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
-	slotRootParameter[3].InitAsConstantBufferView(0);		// cbPass b0
-	slotRootParameter[4].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-	slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[6].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[7].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[8].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[9].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[10].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[11].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[12].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[13].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[14].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
+	slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
+	slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
+	slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
+	slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
+	slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+	slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[10].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[11].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[12].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[13].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[14].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[15].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(15, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(16, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -604,25 +605,14 @@ void MyApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	const D3D_SHADER_MACRO waveDefines[] =
-	{
-		"MAX_LIGHTS", maxLights,
-		"TEX_DIFF_SIZE", texDiffSize,
-		"TEX_NORM_SIZE", texNormSize,
-		"TEX_ARRAY_SIZE", texArraySize,
-		"TEX_CUBE_SIZE", texCubeSize,
-		"DISPLACEMENT_MAP", "1",
-		NULL, NULL
-	};
 
 	// 오직 Release 모드에서만 동작이 가능함 (Timeout 발생)
 
 	mShaders["MainVS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "VS", "vs_5_1");
-	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
-	mShaders["DisplacementVS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "VS", "vs_5_1");
+	mShaders["SkinnedVS"] = D3DUtil::CompileShader(L"Main.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
 	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
-	mShaders["DisplacementPS"] = D3DUtil::CompileShader(L"Main.hlsl", waveDefines, "PS", "ps_5_1");
+	
 
 	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "VS", "vs_5_1");
 	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "GS", "gs_5_1");
@@ -646,8 +636,8 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["CubeMapPS"] = D3DUtil::CompileShader(L"CubeMap.hlsl", defines, "PS", "ps_5_1");
 
 	mShaders["ShadowVS"] = D3DUtil::CompileShader(L"Shadow.hlsl", defines, "VS", "vs_5_1");
+	mShaders["SkinnedShadowVS"] = D3DUtil::CompileShader(L"Shadow.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["ShadowPS"] = D3DUtil::CompileShader(L"Shadow.hlsl", defines, "PS", "ps_5_1");
-	mShaders["ShadowAlphaTestedPS"] = D3DUtil::CompileShader(L"Shadow.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
 	mShaders["ShadowDebugVS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "VS", "vs_5_1");
 	mShaders["ShadowDebugPS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "PS", "ps_5_1");
@@ -665,6 +655,16 @@ void MyApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+
+	mSkinnedInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -730,17 +730,80 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::string dir)
 	return mesh;
 }
 
-GeometryGenerator::MeshData MyApp::LoadSkinnedModelMesh(std::string dir)
+std::vector<GeometryGenerator::MeshData> MyApp::LoadSkinnedModelMesh(std::string dir)
 {
-	GeometryGenerator::MeshData data;
-	M3DLoader::LoadM3d(dir, data.SkinnedVertices, data.Indices32,
-		mSkinnedSubsets, mSkinnedMats, mSkinnedInfo);
+	GeometryGenerator::MeshData mesh;
+	std::vector<M3DLoader::Subset> skinnedSubsets;
+	SkinnedData skinnedInfo;
+
+	M3DLoader::LoadM3d(dir, mesh.SkinnedVertices, mesh.Indices32,
+		skinnedSubsets, mSkinnedMats, skinnedInfo);
 	mSkinnedModelInst = std::make_unique<SkinnedModelInstance>();
 
-	mSkinnedModelInst->SkinnedInfo = &mSkinnedInfo;
-	mSkinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
+	mSkinnedModelInst->SkinnedInfo = &skinnedInfo;
+	mSkinnedModelInst->FinalTransforms.resize(skinnedInfo.BoneCount());
 	mSkinnedModelInst->ClipName = "Take1";
 	mSkinnedModelInst->TimePos = 0.0f;
+
+
+	using namespace DirectX;
+	//=========================================================
+	// Part 1-1. Culling을 위한 Bounding Box 생성
+	//=========================================================
+	DirectX::BoundingBox BoundingBox;
+	DirectX::BoundingSphere BoundingSphere;
+	
+	{
+		DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+		DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+		for (size_t j = 0; j < mesh.SkinnedVertices.size(); ++j)
+		{
+			DirectX::XMVECTOR P = XMLoadFloat3(&mesh.SkinnedVertices[j].Position);
+			vMin = DirectX::XMVectorMin(vMin, P);
+			vMax = DirectX::XMVectorMax(vMax, P);
+		}
+
+		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+
+		BoundingBox[i].Center = center;
+		DirectX::XMStoreFloat3(&BoundingBox[i].Extents, 0.5f * (vMax - vMin));
+
+		float maxRadius = 0.0f;
+		for (size_t j = 0; j < mesh.SkinnedVertices.size(); ++j)
+		{
+			maxRadius = max(maxRadius, (center - mesh.SkinnedVertices[j].Position).Length());
+		}
+
+		maxRadius += 1e-2f;
+		BoundingSphere[i].Center = center;
+		BoundingSphere[i].Radius = maxRadius;
+	}
+
+	//=========================================================
+	// Part 2. SubmeshGeometry 생성
+	//=========================================================
+	std::vector<SubmeshGeometry> submeshes(meshes.size());
+	for (size_t i = 0; i < skinnedSubsets.size(); ++i)
+	{
+		submeshes[i].BoundingBox = BoundingBox[i];
+		submeshes[i].BoundingSphere = BoundingSphere[i];
+		if (i == 0)
+		{
+			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
+			submeshes[0].StartIndexLocation = 0;
+			submeshes[0].BaseVertexLocation = 0;
+		}
+		else
+		{
+			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
+			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
+			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+		}
+	}
+		
 
 	return data;
 }
@@ -1068,6 +1131,8 @@ void MyApp::BuildRenderItems()
 	cubeSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::CubeMap);
 
+	charRitem->LayerFlag
+		= (1 << (int)RenderLayer::SkinnedOpaque);
 	//=========================================================
 	// GEO_MESH_NAMES[0]: ShapeGeo
 	//=========================================================
@@ -1312,6 +1377,11 @@ void MyApp::BuildRenderItems()
 			}
 		}
 	}
+	for (auto& a : boundingBoxRitem->Datas)
+		a.IsPickable = false;
+	for (auto& a : boundingSphereRitem->Datas)
+		a.IsPickable = false;
+
 	mAllRitems.push_back(std::move(boundingBoxRitem));
 	mAllRitems.push_back(std::move(boundingSphereRitem));
 
@@ -1429,6 +1499,13 @@ void MyApp::BuildPSO()
 	opaquePsoDesc.BlendState.IndependentBlendEnable = true;
 
 	//=====================================================
+	// PSO for marking skinned mesh.
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaquePsoDesc = opaquePsoDesc;
+	skinnedOpaquePsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	skinnedOpaquePsoDesc.VS ={reinterpret_cast<BYTE*>(mShaders["SkinnedVS"]->GetBufferPointer()), mShaders["SkinnedVS"]->GetBufferSize()};
+
+	//=====================================================
 	// PSO for marking stencil mirrors.
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC markMirrorsPsoDesc = opaquePsoDesc;
@@ -1543,13 +1620,6 @@ void MyApp::BuildPSO()
 	treeSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
-	// PSO for CS Wave
-	//=====================================================
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC wavesRenderPSO = transparentPsoDesc;
-	wavesRenderPSO.VS = { reinterpret_cast<BYTE*>(mShaders["DisplacementVS"]->GetBufferPointer()), mShaders["DisplacementVS"]->GetBufferSize() };
-	wavesRenderPSO.PS = { reinterpret_cast<BYTE*>(mShaders["DisplacementPS"]->GetBufferPointer()), mShaders["DisplacementPS"]->GetBufferSize() };
-
-	//=====================================================
 	// PSO for Tessellation
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC tessPsoDesc = opaquePsoDesc;
@@ -1590,6 +1660,10 @@ void MyApp::BuildPSO()
 	shadowMapPsoDesc.NumRenderTargets = 0;
 	shadowMapPsoDesc.BlendState.IndependentBlendEnable = false;
 
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedShadowMapPsoDesc = shadowMapPsoDesc;
+	skinnedShadowMapPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	skinnedShadowMapPsoDesc.VS = {reinterpret_cast<BYTE*>(mShaders["SkinnedShadowVS"]->GetBufferPointer()), mShaders["SkinnedShadowVS"]->GetBufferSize()};
+
 	//=====================================================
 	// PSO for Debug ShadowMap
 	//=====================================================
@@ -1601,6 +1675,7 @@ void MyApp::BuildPSO()
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&skinnedOpaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SkinnedOpaque])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Mirror])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Reflected])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Transparent])));
@@ -1613,6 +1688,7 @@ void MyApp::BuildPSO()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingSphere])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&cubeMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::CubeMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowMap])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&skinnedShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SkinnedShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&debugShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::DebugShadowMap])));
 
 	//=====================================================
@@ -1627,7 +1703,6 @@ void MyApp::BuildPSO()
 	normalDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	treeSpritePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	tessPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	wavesRenderPSO.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::OpaqueWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::MirrorWireframe])));
@@ -1734,32 +1809,33 @@ void MyApp::Render()
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-		// slotRootParameter[0].InitAsConstantBufferView(1);		// gBaseInstanceIndex b1
-		// slotRootParameter[1].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space5)
-		// slotRootParameter[2].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space5)
-		// slotRootParameter[3].InitAsConstantBufferView(0);		// cbPass b0
-		// slotRootParameter[4].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-		// slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[6].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[7].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[8].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[9].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[10].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[11].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[12].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[13].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		// slotRootParameter[14].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
+		//slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
+		//slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
+		//slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
+		//slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
+		//slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+		//slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[10].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[11].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[12].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[13].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[14].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[15].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-		mCommandList->SetGraphicsRootShaderResourceView(1, instanceBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(4, mCSWaves->DisplacementMap());
-		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUDiff);
-		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUNorm);
-		mCommandList->SetGraphicsRootDescriptorTable(11, mhGPUShadow);
+		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(3, instanceBuffer->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(4, matBuffer->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
+		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUDiff);
+		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUNorm);
+		mCommandList->SetGraphicsRootDescriptorTable(12, mhGPUShadow);
 		// mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUSsao);
-		mCommandList->SetGraphicsRootDescriptorTable(13, mhGPUArray);
-		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUCube);
+		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUArray);
+		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUCube);
 	}
 	
 	for (int i = 0; i < MAX_LIGHTS; ++i)
@@ -1812,7 +1888,7 @@ void MyApp::Render()
 		else {
 			
 			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-			mCommandList->SetGraphicsRootConstantBufferView(3, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
 			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
 			DrawRenderItems(mLayerType[i]);
@@ -2120,7 +2196,7 @@ void MyApp::DrawSceneToShadowMap(int index)
 	auto passCB = mCurrFrameResource->PassCB->Resource();
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + index) * passCBByteSize;
-	mCommandList->SetGraphicsRootConstantBufferView(3, passCBAddress);
+	mCommandList->SetGraphicsRootConstantBufferView(1, passCBAddress);
 
 	mCommandList->SetPipelineState(mPSOs[RenderLayer::ShadowMap].Get());
 	DrawRenderItems(RenderLayer::Opaque);
@@ -2152,13 +2228,9 @@ void MyApp::Pick()
 	dir.Normalize();
 	const Ray curRay = Ray(worldNear, dir);
 
-	// if (mPickModel.first == -1)
 	{
 		mPickModel = PickClosest(curRay, dist);
-		if (mPickModel.first != -1)
-		{
-			std::cout << "Newly selected model: " << mPickModel.first << " / " << mPickModel.second << std::endl;
-		}
+		std::cout << "Newly selected model: " << mPickModel.first << " / " << mPickModel.second << std::endl;
 	}
 }
 
@@ -2320,6 +2392,7 @@ void MyApp::ShowMainWindow()
 				"BoundingSphere",
 				"CubeMap",
 				"ShadowMap",
+				"SkinnedShadowMap",
 				"DebugShadowMap",
 				"OpaqueWireframe",
 				"MirrorWireframe",
@@ -2500,15 +2573,15 @@ void MyApp::ShowMaterialWindow()
 			ImGui::TreePop();
 		}
 
-		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-		if (ImGui::TreeNode("Normal Map")) {
-			flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
-			flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
-			my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
-			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+		//ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		//if (ImGui::TreeNode("Normal Map")) {
+		//	flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
+		//	flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
+		//	my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+		//	ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
-			ImGui::TreePop();
-		}
+		//	ImGui::TreePop();
+		//}
 		
 
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
@@ -2533,8 +2606,6 @@ void MyApp::ShowMaterialWindow()
 void MyApp::ShowInstanceWindow()
 {
 	ImGui::Begin("render item", &mShowInstanceWindow);
-	static int ritmIdx;
-	static int instIdx;
 
 	static float world3f[3];
 	static float scale3f[3];
@@ -2546,26 +2617,26 @@ void MyApp::ShowInstanceWindow()
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if (ImGui::TreeNode("Select Instance")) {
-		if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(mAllRitems.size() - 1) + "]").c_str(), &ritmIdx, 0, mAllRitems.size() - 1, "%d", flags))
+		if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(mAllRitems.size() - 1) + "]").c_str(), &mPickModel.first, 0, mAllRitems.size() - 1, "%d", flags))
 		{
-			instIdx = 0;
+			mPickModel.second = 0;
 		}
 			
-		ImGui::SliderInt((std::string("Instance [0, ") + std::to_string(mAllRitems[ritmIdx]->Datas.size() - 1) + "]").c_str(),
-			&instIdx,
+		ImGui::SliderInt((std::string("Instance [0, ") + std::to_string(mAllRitems[mPickModel.first]->Datas.size() - 1) + "]").c_str(),
+			&mPickModel.second,
 			0,
-			mAllRitems[ritmIdx]->Datas.size() - 1,
+			mAllRitems[mPickModel.first]->Datas.size() - 1,
 			"%d",
 			flags);
 
 		ImGui::TreePop();
 	}
 
-	RenderItem* ritm = mAllRitems[ritmIdx].get();
+	RenderItem* ritm = mAllRitems[mPickModel.first].get();
 
 	if(ritm->Datas.size())
 	{
-		EXInstanceData& inst = ritm->Datas[instIdx];
+		EXInstanceData& inst = ritm->Datas[mPickModel.second];
 		// 초기 값 반영
 		world3f[0] = inst.Translation.x;
 		world3f[1] = inst.Translation.y;
@@ -2588,7 +2659,7 @@ void MyApp::ShowInstanceWindow()
 		}
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Displacement Map")) {
-			flag += ImGui::CheckboxFlags("Use Alpha Test", &inst.InstanceData.useDisplacementMap, 1);
+			flag += ImGui::CheckboxFlags("Use DisplacementMap Test", &inst.InstanceData.useDisplacementMap, 1);
 			flag += ImGui::DragFloat2("Displacement Size", displacementSize2f, 0.01f, 0.0f, 10.0f);
 			flag += ImGui::DragFloat("Displacement Scale", &inst.InstanceData.GridSpatialStep, 0.01f, 0.0f, 10.0f);
 

@@ -141,8 +141,13 @@ SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 SamplerComparisonState gsamShadow : register(s6);
 
+cbuffer cbInstance : register(b0)
+{
+    uint gBaseInstanceIndex;
+}
+
 // Constant data that varies per material.
-cbuffer cbPass : register(b0)
+cbuffer cbPass : register(b1)
 {
     float4x4 gView;
     float4x4 gInvView;
@@ -175,11 +180,6 @@ cbuffer cbPass : register(b0)
     
     uint gCubeMapIndex;
 };
-
-cbuffer cbInstance : register(b1)
-{
-    uint gBaseInstanceIndex;
-}
 
 cbuffer cbSkinned : register(b2)
 {
