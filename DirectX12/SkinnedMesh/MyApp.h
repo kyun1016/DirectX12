@@ -104,6 +104,9 @@ private:
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
 
+		UINT ObjCBIndex = -1;
+		UINT SkinnedCBIndex = -1;
+
 		int NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	};
 
@@ -150,7 +153,9 @@ public:
 	void BuildTextureCubeSrv(const std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
 	void BuildShadersAndInputLayout();
 	GeometryGenerator::MeshData LoadModelMesh(std::string dir);
-	std::vector<GeometryGenerator::MeshData> LoadSkinnedModelMesh(std::string dir);
+	void LoadSkinnedModelMesh(const std::string& dir);
+	void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex);
+	void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex);
 	void BuildMeshes();
 	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16 = true, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
@@ -281,8 +286,6 @@ private:
 
 	// Temp
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-	
-	
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
 	std::vector<std::wstring> mSkinnedTextureNames;
 };

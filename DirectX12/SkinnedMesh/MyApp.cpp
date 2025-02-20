@@ -730,7 +730,7 @@ GeometryGenerator::MeshData MyApp::LoadModelMesh(std::string dir)
 	return mesh;
 }
 
-std::vector<GeometryGenerator::MeshData> MyApp::LoadSkinnedModelMesh(std::string dir)
+void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 {
 	GeometryGenerator::MeshData mesh;
 	std::vector<M3DLoader::Subset> skinnedSubsets;
@@ -747,65 +747,104 @@ std::vector<GeometryGenerator::MeshData> MyApp::LoadSkinnedModelMesh(std::string
 
 
 	using namespace DirectX;
-	//=========================================================
-	// Part 1-1. Culling을 위한 Bounding Box 생성
-	//=========================================================
-	DirectX::BoundingBox BoundingBox;
-	DirectX::BoundingSphere BoundingSphere;
-	
-	{
-		DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-		DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-		for (size_t j = 0; j < mesh.SkinnedVertices.size(); ++j)
-		{
-			DirectX::XMVECTOR P = XMLoadFloat3(&mesh.SkinnedVertices[j].Position);
-			vMin = DirectX::XMVectorMin(vMin, P);
-			vMax = DirectX::XMVectorMax(vMax, P);
-		}
-
-		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-		BoundingBox[i].Center = center;
-		DirectX::XMStoreFloat3(&BoundingBox[i].Extents, 0.5f * (vMax - vMin));
-
-		float maxRadius = 0.0f;
-		for (size_t j = 0; j < mesh.SkinnedVertices.size(); ++j)
-		{
-			maxRadius = max(maxRadius, (center - mesh.SkinnedVertices[j].Position).Length());
-		}
-
-		maxRadius += 1e-2f;
-		BoundingSphere[i].Center = center;
-		BoundingSphere[i].Radius = maxRadius;
-	}
 
 	//=========================================================
 	// Part 2. SubmeshGeometry 생성
 	//=========================================================
-	std::vector<SubmeshGeometry> submeshes(meshes.size());
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = dir;
+
+	const UINT vbByteSize = (UINT)mesh.SkinnedVertices.size() * sizeof(SkinnedVertex);
+	const UINT ibByteSize = (UINT)mesh.Indices32.size() * sizeof(std::uint16_t);
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), mesh.SkinnedVertices.data(), vbByteSize);
+	
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), mesh.GetIndices16().data(), ibByteSize);
+
+	geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), mesh.SkinnedVertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(),
+		mCommandList.Get(), mesh.GetIndices16().data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(SkinnedVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	std::vector<SubmeshGeometry> submeshes(skinnedSubsets.size());
 	for (size_t i = 0; i < skinnedSubsets.size(); ++i)
 	{
-		submeshes[i].BoundingBox = BoundingBox[i];
-		submeshes[i].BoundingSphere = BoundingSphere[i];
-		if (i == 0)
-		{
-			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
-			submeshes[0].StartIndexLocation = 0;
-			submeshes[0].BaseVertexLocation = 0;
-		}
-		else
-		{
-			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
-			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
-			submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
-		}
+		SubmeshGeometry submesh;
+		std::string name = "sm_" + std::to_string(i);
+
+		FindBounding(submesh.BoundingBox, submesh.BoundingSphere, mesh.SkinnedVertices);
+		submesh.IndexCount = (UINT)skinnedSubsets[i].FaceCount * 3;
+		submesh.StartIndexLocation = skinnedSubsets[i].FaceStart * 3;
+		submesh.BaseVertexLocation = 0;
+
+		geo->DrawArgs[name] = submesh;
 	}
 		
+	mGeometries.push_back(std::move(geo));
+}
 
-	return data;
+void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex)
+{
+	using namespace DirectX;
+	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+	DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+	for (size_t i = 0; i < vertex.size(); ++i)
+	{
+		DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
+		vMin = DirectX::XMVectorMin(vMin, P);
+		vMax = DirectX::XMVectorMax(vMax, P);
+	}
+	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+
+	outBoundingBox.Center = center;
+	DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
+
+	float maxRadius = 0.0f;
+	for (size_t i = 0; i < vertex.size(); ++i)
+	{
+		maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+	}
+	maxRadius += 1e-2f;
+	outBoundingSphere.Center = center;
+}
+
+void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
+{
+	using namespace DirectX;
+	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+	DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+	for (size_t i = 0; i < vertex.size(); ++i)
+	{
+		DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
+		vMin = DirectX::XMVectorMin(vMin, P);
+		vMax = DirectX::XMVectorMax(vMax, P);
+	}
+	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+
+	outBoundingBox.Center = center;
+	DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
+
+	float maxRadius = 0.0f;
+	for (size_t i = 0; i < vertex.size(); ++i)
+	{
+		maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+	}
+	maxRadius += 1e-2f;
+	outBoundingSphere.Center = center;
 }
 
 void MyApp::BuildMeshes()
@@ -832,75 +871,17 @@ void MyApp::BuildMeshes()
 	mMeshes.push_back(LoadModelMesh("../Data/Models/skull.txt"));
 	mMeshes.push_back(LoadModelMesh("../Data/Models/car.txt"));
 
-	mSkinnedMeshes.push_back(LoadSkinnedModelMesh("../Data/Models/soldier.m3d"));
-
 	UpdateTangents();
 
 	BuildGeometry(mMeshes);
-	BuildGeometry(mSkinnedMeshes, true, true);
+	LoadSkinnedModelMesh("../Data/Models/soldier.m3d");
 }
 
 void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16, bool useSkinnedMesh)
 {
 	using namespace DirectX;
 	//=========================================================
-	// Part 1-1. Culling을 위한 Bounding Box 생성
-	//=========================================================
-	std::vector<DirectX::BoundingBox> BoundingBox(meshes.size());
-	std::vector<DirectX::BoundingSphere> BoundingSphere(meshes.size());
-	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-
-	for (size_t i = 0; i < BoundingBox.size(); ++i)
-	{
-		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-		if (useSkinnedMesh) {
-			for (size_t j = 0; j < meshes[i].SkinnedVertices.size(); ++j)
-			{
-				DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].SkinnedVertices[j].Position);
-				vMin = DirectX::XMVectorMin(vMin, P);
-				vMax = DirectX::XMVectorMax(vMax, P);
-			}
-		}
-		else
-		{
-			for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
-			{
-				DirectX::XMVECTOR P = XMLoadFloat3(&meshes[i].Vertices[j].Position);
-				vMin = DirectX::XMVectorMin(vMin, P);
-				vMax = DirectX::XMVectorMax(vMax, P);
-			}
-		}
-		
-		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-		BoundingBox[i].Center = center;
-		DirectX::XMStoreFloat3(&BoundingBox[i].Extents, 0.5f * (vMax - vMin));
-
-		float maxRadius = 0.0f;
-		if (useSkinnedMesh)
-		{
-			for (size_t j = 0; j < meshes[i].SkinnedVertices.size(); ++j)
-			{
-				maxRadius = max(maxRadius, (center - meshes[i].SkinnedVertices[j].Position).Length());
-			}
-		}
-		else
-		{
-			for (size_t j = 0; j < meshes[i].Vertices.size(); ++j)
-			{
-				maxRadius = max(maxRadius, (center - meshes[i].Vertices[j].Position).Length());
-			}
-		}
-		
-		maxRadius += 1e-2f;
-		BoundingSphere[i].Center = center;
-		BoundingSphere[i].Radius = maxRadius;
-	}
-	//=========================================================
-	// Part 2. vertices & indices 생성
+	// Part 1. vertices & indices 생성
 	//=========================================================
 	std::vector<GeometryGenerator::SkinnedVertex> skinnedVertices;
 	std::vector<GeometryGenerator::Vertex> vertices;
@@ -921,8 +902,10 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	std::vector<SubmeshGeometry> submeshes(meshes.size());
 	for (size_t i = 0; i < meshes.size(); ++i)
 	{
-		submeshes[i].BoundingBox = BoundingBox[i];
-		submeshes[i].BoundingSphere = BoundingSphere[i];
+		if (useSkinnedMesh)
+			FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
+		else
+			FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
 		if (i == 0)
 		{
 			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
@@ -1078,7 +1061,6 @@ void MyApp::BuildRenderItems()
 	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"], false);
 	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
 	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["8"]);
-	auto charRitem				= std::make_unique<RenderItem>(mGeometries[1].get(), mGeometries[1]->DrawArgs["0"]);
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[2].get(), mGeometries[2]->DrawArgs["0"], false);
@@ -1131,8 +1113,6 @@ void MyApp::BuildRenderItems()
 	cubeSphereRitem->LayerFlag
 		= (1 << (int)RenderLayer::CubeMap);
 
-	charRitem->LayerFlag
-		= (1 << (int)RenderLayer::SkinnedOpaque);
 	//=========================================================
 	// GEO_MESH_NAMES[0]: ShapeGeo
 	//=========================================================
@@ -1240,16 +1220,6 @@ void MyApp::BuildRenderItems()
 		scale.z = 3.0f;
 		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
 	}
-
-	// {
-	// 	translation.x = 0.0f;
-	// 	translation.y = 100.0f;
-	// 	translation.z = 0.0f;
-	// 	scale.x = 1.0f;
-	// 	scale.y = 1.0f;
-	// 	scale.z = 1.0f;
-	// 	mirrorGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 13);
-	// }
 	
 	////=========================================================
 	//// GEO_MESH_NAMES[1]:ModelGeo
@@ -1277,17 +1247,27 @@ void MyApp::BuildRenderItems()
 
 		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
-	for (int i = 0; i < mAllMatItems.size() * 20; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 80.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
-		scale.x = 0.5f;
-		scale.y = 0.5f;
-		scale.z = 0.5f;
 
-		charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
+	
+	
+	for (const auto& arg : mGeometries[1]->DrawArgs)
+	{
+		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
+		charRitem->LayerFlag
+			= (1 << (int)RenderLayer::SkinnedOpaque);
+		for (int i = 0; i < mAllMatItems.size() * 20; ++i) {		
+			translation.x = (i % 10) * 8.0f;
+			translation.y = 80.0f;
+			translation.z = 5.0f + 5.0f * (i / 5);
+			scale.x = 0.5f;
+			scale.y = 0.5f;
+			scale.z = 0.5f;
+
+			charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
+		}
+		mAllRitems.push_back(std::move(charRitem));
 	}
+	
 
 	////=========================================================
 	//// GEO_MESH_NAMES[2]:LandGeo
@@ -1301,6 +1281,7 @@ void MyApp::BuildRenderItems()
 		scale.z = 1.0f;
 		texScale *= 8.0f;
 		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 6);
+		mAllRitems.push_back(std::move(landRitem));
 	}
 
 	////=========================================================
@@ -1319,6 +1300,8 @@ void MyApp::BuildRenderItems()
 		wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
 		wavesRitem->Datas.back().InstanceData.useDisplacementMap = 1;
 		texScale /= 8.0f;
+
+		mAllRitems.push_back(std::move(wavesRitem));
 	}
 
 	////=========================================================
@@ -1332,6 +1315,7 @@ void MyApp::BuildRenderItems()
 		scale.y = 1.0f;
 		scale.z = 1.0f;
 		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, mDiffuseTex.size());
+		mAllRitems.push_back(std::move(treeSpritesRitem));
 	}
 
 	////=========================================================
@@ -1345,6 +1329,7 @@ void MyApp::BuildRenderItems()
 		scale.y = 1.0f;
 		scale.z = 1.0f;
 		tessGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
+		mAllRitems.push_back(std::move(tessGridRitem));
 	}
 
 	mAllRitems.push_back(std::move(boxRitem));
@@ -1357,11 +1342,10 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(subSphereRitem));
 	mAllRitems.push_back(std::move(skullRitem));
 	mAllRitems.push_back(std::move(carRitem));
-	mAllRitems.push_back(std::move(charRitem));
-	mAllRitems.push_back(std::move(landRitem));
-	mAllRitems.push_back(std::move(wavesRitem));
-	mAllRitems.push_back(std::move(treeSpritesRitem));
-	mAllRitems.push_back(std::move(tessGridRitem));
+	
+	
+	
+	
 
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
