@@ -54,6 +54,31 @@ private:
 		Count
 	};
 #pragma endregion Constant
+
+	struct SkinnedModelInstance
+	{
+		SkinnedData SkinnedInfo;
+		std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
+		std::string ClipName;
+		float TimePos = 0.0f;
+
+		// Called every frame and increments the time position, interpolates the 
+		// animations for each bone based on the current animation clip, and 
+		// generates the final transforms which are ultimately set to the effect
+		// for processing in the vertex shader.
+		void UpdateSkinnedAnimation(float dt)
+		{
+			TimePos += dt;
+
+			// Loop animation
+			if (TimePos > SkinnedInfo.GetClipEndTime(ClipName))
+				TimePos = 0.0f;
+
+			// Compute the final transforms for this time position.
+			SkinnedInfo.GetFinalTransforms(ClipName, TimePos, FinalTransforms);
+		}
+	};
+
 	struct RenderItem
 	{
 		RenderItem() = default;
@@ -108,31 +133,8 @@ private:
 		UINT SkinnedCBIndex = -1;
 
 		int NumFramesDirty = APP_NUM_BACK_BUFFERS;
-	};
 
-
-	struct SkinnedModelInstance
-	{
-		SkinnedData* SkinnedInfo = nullptr;
-		std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
-		std::string ClipName;
-		float TimePos = 0.0f;
-
-		// Called every frame and increments the time position, interpolates the 
-		// animations for each bone based on the current animation clip, and 
-		// generates the final transforms which are ultimately set to the effect
-		// for processing in the vertex shader.
-		void UpdateSkinnedAnimation(float dt)
-		{
-			TimePos += dt;
-
-			// Loop animation
-			if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
-				TimePos = 0.0f;
-
-			// Compute the final transforms for this time position.
-			SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
-		}
+		SkinnedModelInstance* SkinnedModelInst = nullptr;
 	};
 
 	using Super = typename AppBase;
@@ -180,6 +182,7 @@ private:
 	void UpdateMaterialBuffer();
 	void UpdateMainPassCB();
 	void UpdateShadowPassCB();
+	void UpdateSkinnedCB();
 
 	void DrawRenderItems(const RenderLayer ritems);
 	void DrawSceneToShadowMap(int index = 0);
@@ -287,5 +290,4 @@ private:
 	// Temp
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
-	std::vector<std::wstring> mSkinnedTextureNames;
 };

@@ -736,12 +736,10 @@ void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 	std::vector<M3DLoader::Subset> skinnedSubsets;
 	SkinnedData skinnedInfo;
 
-	M3DLoader::LoadM3d(dir, mesh.SkinnedVertices, mesh.Indices32,
-		skinnedSubsets, mSkinnedMats, skinnedInfo);
 	mSkinnedModelInst = std::make_unique<SkinnedModelInstance>();
-
-	mSkinnedModelInst->SkinnedInfo = &skinnedInfo;
-	mSkinnedModelInst->FinalTransforms.resize(skinnedInfo.BoneCount());
+	M3DLoader::LoadM3d(dir, mesh.SkinnedVertices, mesh.Indices32,
+		skinnedSubsets, mSkinnedMats, mSkinnedModelInst->SkinnedInfo);
+	mSkinnedModelInst->FinalTransforms.resize(mSkinnedModelInst->SkinnedInfo.BoneCount());
 	mSkinnedModelInst->ClipName = "Take1";
 	mSkinnedModelInst->TimePos = 0.0f;
 
@@ -1259,12 +1257,15 @@ void MyApp::BuildRenderItems()
 			translation.x = (i % 10) * 8.0f;
 			translation.y = 80.0f;
 			translation.z = 5.0f + 5.0f * (i / 5);
-			scale.x = 0.5f;
-			scale.y = 0.5f;
-			scale.z = 0.5f;
+			scale.x = 0.2f;
+			scale.y = 0.2f;
+			scale.z = -0.2f;
 
 			charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 		}
+		charRitem->SkinnedCBIndex = 0;
+		charRitem->SkinnedModelInst = mSkinnedModelInst.get();
+
 		mAllRitems.push_back(std::move(charRitem));
 	}
 	
@@ -1276,9 +1277,9 @@ void MyApp::BuildRenderItems()
 		translation.x = 0.0f;
 		translation.y = 0.0f;
 		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
+		scale.x = 2.0f;
+		scale.y = 2.0f;
+		scale.z = 2.0f;
 		texScale *= 8.0f;
 		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 6);
 		mAllRitems.push_back(std::move(landRitem));
@@ -1769,6 +1770,7 @@ void MyApp::Update()
 	UpdateMaterialBuffer();
 	UpdateMainPassCB();
 	UpdateShadowPassCB();
+	UpdateSkinnedCB();
 }
 
 void MyApp::Render()
@@ -2107,6 +2109,22 @@ void MyApp::UpdateShadowPassCB()
 	}
 }
 
+void MyApp::UpdateSkinnedCB()
+{
+	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
+
+	// We only have one skinned model being animated.
+	mSkinnedModelInst->UpdateSkinnedAnimation(mTimer.DeltaTime());
+
+	SkinnedConstants skinnedConstants;
+	std::copy(
+		std::begin(mSkinnedModelInst->FinalTransforms),
+		std::end(mSkinnedModelInst->FinalTransforms),
+		&skinnedConstants.BoneTransforms[0]);
+
+	currSkinnedCB->CopyData(0, skinnedConstants);
+}
+
 #pragma endregion Update
 
 void MyApp::DrawRenderItems(const RenderLayer flag)
@@ -2116,8 +2134,10 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		? mAllRitems.size()
 		: 0;
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(InstanceConstants));
-	auto currInstanceCB = mCurrFrameResource->InstanceCB->Resource();
+	UINT skinnedCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
 
+	auto currInstanceCB = mCurrFrameResource->InstanceCB->Resource();
+	auto skinnedCB = mCurrFrameResource->SkinnedCB->Resource();
 	// For each render item...
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
@@ -2142,12 +2162,16 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
 		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-
-		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);
-		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	// DX12 버그로 위의 코드도 Start InstanceLocation이 반영되지 않는다.
+		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
+		if (ri->SkinnedModelInst != nullptr)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress() + ri->SkinnedCBIndex * skinnedCBByteSize;
+			mCommandList->SetGraphicsRootConstantBufferView(2, skinnedCBAddress);
+		}
+		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);// DX12 버그로 코드의 Start InstanceLocation이 반영되지 않는다.
+		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	
 	}
 }
 
