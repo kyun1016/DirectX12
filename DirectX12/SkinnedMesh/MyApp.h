@@ -10,6 +10,7 @@
 #include "GpuWaves.h"
 #include "CSAdd.h"
 #include "ShadowMap.h"
+#include "SsaoMap.h"
 #include <string>
 #include <array>
 
@@ -237,6 +238,7 @@ private:
 	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
 	std::array<std::unique_ptr<ShadowMap>, MAX_LIGHTS> mShadowMap;
+	std::unique_ptr<SsaoMap> mSsaoMap;
 
 	PassConstants mMainPassCB;
 

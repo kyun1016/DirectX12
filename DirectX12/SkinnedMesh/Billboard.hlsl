@@ -106,10 +106,10 @@ PixelOut PS(BillboardGeometryOut pin)
     diffuseAlbedo *= gTreeMapArray[diffuseTexIndex].Sample(gsamAnisotropicWrap, uvw);
     
 #ifdef ALPHA_TEST
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
-	// as possible in the shader so that we can potentially exit the
-	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
+    clip(diffuseAlbedo.a - 0.1f);
+#else
+    if (matData.useAlphaTest)
+        clip(diffuseAlbedo.a - 0.1f);
 #endif
 	
 	// 보간된 법선을 다시 정규화

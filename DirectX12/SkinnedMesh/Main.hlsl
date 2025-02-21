@@ -123,15 +123,23 @@ PixelOut PS(VertexOut pin)
 	
 #ifdef ALPHA_TEST
     clip(diffuseAlbedo.a - 0.1f);
+#else
+    if(matData.useAlphaTest)
+ 	    clip(diffuseAlbedo.a - 0.1f);    
 #endif
-//     if(matData.useAlphaTest)
-// 	    clip(diffuseAlbedo.a - 0.1f);
+
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
-
-    float4 normalMapSample = gNormalMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
-    float3 bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+    float shininessCoeff = 1.0f;
+    float3 bumpedNormalW = pin.NormalW;
+    if(matData.useNormalMap)
+    {
+        float4 normalMapSample = gNormalMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+        bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+        
+        shininessCoeff = normalMapSample.a;
+    }
     
     // Vector from point being lit to eye. 
     float3 toEyeW = gEyePosW - pin.PosW;
@@ -141,7 +149,7 @@ PixelOut PS(VertexOut pin)
     // Light terms.
     float4 ambient = gAmbientLight * diffuseAlbedo;
 
-    const float shininess = (1.0f - roughness) * normalMapSample.a;
+    const float shininess = (1.0f - roughness) * shininessCoeff;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
     float shadowFactor[NUM_DIR_LIGHTS];
     

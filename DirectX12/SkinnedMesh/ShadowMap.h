@@ -45,7 +45,19 @@ public:
 	void SetRotate(const float angle);
 	void SetTarget(const DirectX::SimpleMath::Vector3& targetPos);
 
+	// void ExecuteBegin(ID3D12GraphicsCommandList* cmdList,
+	// 	UINT rootParameterIndex,
+	// 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress);
+	// void SetDefaultPSO(ID3D12GraphicsCommandList* cmdList);
+	// void SetSkinnedPSO(ID3D12GraphicsCommandList* cmdList);
+	// 
+	// void ExecuteSkinnedVertexBegin(ID3D12GraphicsCommandList* cmdList,
+	// 	UINT rootParameterIndex,
+	// 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress);
+	// 
+	// void ExecuteFinish(ID3D12GraphicsCommandList* cmdList);
 private:
+	// void BuildPSO();
 	void Update();
 	void UpdateMatrix();
 	void UpdatePassCB();
@@ -55,6 +67,19 @@ private:
 
 private:
 	ID3D12Device* md3dDevice;
+
+	// bool m4xMsaaState = false;
+	// UINT m4xMsaaQuality = 0;
+	// Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
+	// Microsoft::WRL::ComPtr<ID3DBlob> mVSShadowShader;
+	// Microsoft::WRL::ComPtr<ID3DBlob> mVSSkinnedShadowShader;
+	// Microsoft::WRL::ComPtr<ID3DBlob> mPSShadowShader;
+	// Microsoft::WRL::ComPtr<ID3D12PipelineState> mShadowPSO;
+	// Microsoft::WRL::ComPtr<ID3D12PipelineState> mSkinnedShadowPSO;
+	// std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;		//input layout description
+	// std::vector<D3D12_INPUT_ELEMENT_DESC> mSkinnedInputLayout;		//input layout description
+
+
 
 	D3D12_VIEWPORT mViewport;
 	D3D12_RECT mScissorRect;

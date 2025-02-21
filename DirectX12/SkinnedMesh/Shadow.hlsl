@@ -87,9 +87,12 @@ void PS(VertexOut pin)
 	
 	// Dynamically look up the texture in the array.
     diffuseAlbedo *= gDiffuseMap[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
-
+    
 #ifdef ALPHA_TEST
     clip(diffuseAlbedo.a - 0.1f);
+#else
+    if (matData.useAlphaTest)
+        clip(diffuseAlbedo.a - 0.1f);
 #endif
 //     if(matData.useAlphaTest)
 // 	    clip(diffuseAlbedo.a - 0.1f);

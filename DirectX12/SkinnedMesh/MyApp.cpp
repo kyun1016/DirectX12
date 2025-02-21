@@ -19,6 +19,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[4] = RenderLayer::TreeSprites;
 	mLayerType[5] = RenderLayer::WaveCS;
 	mLayerType[6] = RenderLayer::CubeMap;
+	mLayerType[7] = RenderLayer::SkinnedOpaque;
 	// mLayerType[7] = RenderLayer::Normal;
 	// mLayerType[8] = RenderLayer::BoundingSphere;
 
@@ -29,6 +30,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerStencil[4] = 0;
 	mLayerStencil[5] = 0;
 	mLayerStencil[6] = 0;
+	mLayerStencil[7] = 0;
 
 	mLayerCBIdx[0] = 0;
 	mLayerCBIdx[1] = 0;
@@ -37,6 +39,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerCBIdx[4] = 0;
 	mLayerCBIdx[5] = 0;
 	mLayerCBIdx[6] = 0;
+	mLayerCBIdx[7] = 0;
 
 	{
 		// 거울 반사 구현 시
@@ -52,7 +55,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 		// mLayerCBIdx[3] = 1;
 	}
 
-	for (int i = 7; i < MAX_LAYER_DEPTH; ++i)
+	for (int i = 8; i < MAX_LAYER_DEPTH; ++i)
 	{
 		mLayerType[i] = RenderLayer::None;
 		mLayerStencil[i] = 0;
@@ -93,6 +96,7 @@ bool MyApp::Initialize()
 		mShadowMap[1]->SetTarget({ 0.0f, 5.0f, 0.0f });
 		mShadowMap[2]->SetTarget({ 0.0f, 5.0f, 0.0f });
 	}
+	// mSsaoMap = std::make_unique<SsaoMap>(mDevice.Get(), mCommandList.Get(), mClientWidth, mClientHeight);
 
 	BuildMeshes();
 	LoadTextures();
@@ -105,6 +109,7 @@ bool MyApp::Initialize()
 	BuildFrameResources();
 	BuildPSO();
 
+	// mSsaoMap->SetPSOs();
 
 	if (!InitImgui())
 		return false;
@@ -815,6 +820,7 @@ void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::Bounding
 	}
 	maxRadius += 1e-2f;
 	outBoundingSphere.Center = center;
+	outBoundingSphere.Radius = maxRadius;
 }
 
 void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
@@ -1268,6 +1274,26 @@ void MyApp::BuildRenderItems()
 
 		mAllRitems.push_back(std::move(charRitem));
 	}
+
+	for (const auto& arg : mGeometries[1]->DrawArgs)
+	{
+		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
+		charRitem->LayerFlag
+			= (1 << (int)RenderLayer::SkinnedOpaque);
+
+		translation.x = 0.0f;
+		translation.y = 5.0f;
+		translation.z = -5.0f;
+		scale.x = 0.05f;
+		scale.y = 0.05f;
+		scale.z = -0.05f;
+
+		charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
+		charRitem->SkinnedCBIndex = 0;
+		charRitem->SkinnedModelInst = mSkinnedModelInst.get();
+
+		mAllRitems.push_back(std::move(charRitem));
+	}
 	
 
 	////=========================================================
@@ -1281,7 +1307,7 @@ void MyApp::BuildRenderItems()
 		scale.y = 2.0f;
 		scale.z = 2.0f;
 		texScale *= 8.0f;
-		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 6);
+		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 7);
 		mAllRitems.push_back(std::move(landRitem));
 	}
 
@@ -1292,10 +1318,10 @@ void MyApp::BuildRenderItems()
 		translation.x = 0.0f;
 		translation.y = 0.0f;
 		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		wavesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 13);
+		scale.x = 2.0f;
+		scale.y = 2.0f;
+		scale.z = 2.0f;
+		wavesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 6);
 		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
 		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
 		wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
@@ -1319,19 +1345,19 @@ void MyApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(treeSpritesRitem));
 	}
 
-	////=========================================================
-	//// Tessellation
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 10.0f;
-		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		tessGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
-		mAllRitems.push_back(std::move(tessGridRitem));
-	}
+	//////=========================================================
+	////// Tessellation
+	//////=========================================================
+	//{
+	//	translation.x = 0.0f;
+	//	translation.y = 10.0f;
+	//	translation.z = 0.0f;
+	//	scale.x = 1.0f;
+	//	scale.y = 1.0f;
+	//	scale.z = 1.0f;
+	//	tessGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
+	//	mAllRitems.push_back(std::move(tessGridRitem));
+	//}
 
 	mAllRitems.push_back(std::move(boxRitem));
 	mAllRitems.push_back(std::move(gridRitem));
@@ -1378,8 +1404,9 @@ void MyApp::BuildRenderItems()
 		scale.y = 5000.0f;
 		scale.z = 5000.0f;
 		cubeSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size() + mTreeMapTex.size(), false);
+		cubeSphereRitem->Datas.back().IsPickable = false;
+		mAllRitems.push_back(std::move(cubeSphereRitem));
 	}
-	mAllRitems.push_back(std::move(cubeSphereRitem));
 
 	{
 		translation.x = 0.0f;
@@ -1857,6 +1884,23 @@ void MyApp::Render()
 	{
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
+		else if (mLayerType[i] == RenderLayer::AddCS
+			|| mLayerType[i] == RenderLayer::BlurCS
+			|| mLayerType[i] == RenderLayer::WaveCS)
+			continue;
+		else {
+			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
+			mCommandList->OMSetStencilRef(mLayerStencil[i]);
+			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
+			DrawRenderItems(mLayerType[i]);
+		}
+	}
+
+	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
+	{
+		if (mLayerType[i] == RenderLayer::None)
+			continue;
 		else if (mLayerType[i] == RenderLayer::AddCS)
 		{
 			mCSAdd->DoComputeWork(mCommandList.Get(), mCurrFrameResource->CmdListAlloc.Get());
@@ -1870,14 +1914,6 @@ void MyApp::Render()
 		else if (mLayerType[i] == RenderLayer::WaveCS)
 		{
 			mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
-		}
-		else {
-			
-			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
-			mCommandList->OMSetStencilRef(mLayerStencil[i]);
-			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
-			DrawRenderItems(mLayerType[i]);
 		}
 	}
 
@@ -2210,6 +2246,8 @@ void MyApp::DrawSceneToShadowMap(int index)
 	DrawRenderItems(RenderLayer::Opaque);
 	DrawRenderItems(RenderLayer::AlphaTested);
 	DrawRenderItems(RenderLayer::Subdivision);
+	mCommandList->SetPipelineState(mPSOs[RenderLayer::SkinnedShadowMap].Get());
+	DrawRenderItems(RenderLayer::SkinnedOpaque);
 
 	// Change back to GENERIC_READ so we can read the texture in a shader.
 	barrier.Transition.StateBefore = barrier.Transition.StateAfter;
@@ -2365,8 +2403,8 @@ void MyApp::ShowMainWindow()
 	if (ImGui::TreeNode("Window")) {
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
 		ImGui::Checkbox("Texture", &mShowTextureWindow);
-		ImGui::Checkbox("Material", &mShowMaterialWindow);
-		ImGui::Checkbox("Render Item", &mShowInstanceWindow);
+		// ImGui::Checkbox("Material", &mShowMaterialWindow);
+		ImGui::Checkbox("Intance", &mShowInstanceWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
 		ImGui::Checkbox("Cubemap", &mShowCubeMapWindow);
 		ImGui::TreePop();
@@ -2475,6 +2513,8 @@ void MyApp::ShowTextureWindow()
 	ImGui::Begin("texture", &mShowTextureWindow);
 
 	static int texIdx;
+	float widthSize = ImGui::GetColumnWidth();
+	float heightSize = widthSize / mAspectRatio;
 
 	int size
 		= (int) SRV_USER_SIZE
@@ -2499,7 +2539,7 @@ void MyApp::ShowTextureWindow()
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
-		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
+		ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), uv_min, uv_max, tint_col, border_col);
 	}
 	ImGui::End();
 }
@@ -2605,8 +2645,6 @@ void MyApp::ShowMaterialWindow()
 			mat->MaterialData.FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
 			mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
-
-		
 	}
 	ImGui::End();
 }
@@ -2620,8 +2658,21 @@ void MyApp::ShowInstanceWindow()
 	static float angle3f[3];
 	static float texScale3f[3];
 	static float displacementSize2f[2];
+	static float diff4f[4];
+	static float fres3f[3];
+
+	int texDiffSize
+		= (int)SRV_USER_SIZE
+		+ (int)mDiffuseTex.size();
+
+	int texNormSize
+		= (int)mNormalTex.size();
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+
+	ImTextureID my_tex_id;
+	ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+	ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if (ImGui::TreeNode("Select Instance")) {
@@ -2655,7 +2706,11 @@ void MyApp::ShowInstanceWindow()
 		texScale3f[0] = inst.TexScale.x;
 		texScale3f[1] = inst.TexScale.y;
 		texScale3f[2] = inst.TexScale.z;
+		float widthSize = ImGui::GetColumnWidth();
+		float heightSize = widthSize / mAspectRatio;
 		int flag = 0;
+
+		
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Scale")) {
 			flag += ImGui::DragFloat3("World x/y/z", world3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
@@ -2667,21 +2722,109 @@ void MyApp::ShowInstanceWindow()
 		}
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Displacement Map")) {
+			int dummy = 0;
 			flag += ImGui::CheckboxFlags("Use DisplacementMap Test", &inst.InstanceData.useDisplacementMap, 1);
+			flag += ImGui::SliderInt(std::string("DisplacementMap [0, 0]").c_str(), &dummy, 0, 0, "%d", flags);
 			flag += ImGui::DragFloat2("Displacement Size", displacementSize2f, 0.01f, 0.0f, 10.0f);
 			flag += ImGui::DragFloat("Displacement Scale", &inst.InstanceData.GridSpatialStep, 0.01f, 0.0f, 10.0f);
 
+			my_tex_id = (ImTextureID) mCSWaves->DisplacementMap().ptr;
+			ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
 			ImGui::TreePop();
 		}
-
 		if (flag)
 		{
 			inst.UpdateTranslation({ world3f[0], world3f[1], world3f[2] });
 			inst.UpdateScale({ scale3f[0], scale3f[1], scale3f[2] });
 			inst.UpdateTexScale({ texScale3f[0], texScale3f[1], texScale3f[2] });
-			ritm->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+			for (auto& d : mAllMatItems)
+				d->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
 
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Material")) {
+			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			if (ImGui::TreeNode("Select Material")) {
+				flag = 0;
+				flag += ImGui::SliderInt(
+					(std::string("Material [0, ") + std::to_string(mAllMatItems.size() - 1) + "]").c_str(),
+					&inst.InstanceData.MaterialIndex,
+					0,
+					mAllMatItems.size() - 1,
+					"%d",
+					flags);
+				ImGui::TreePop();
+			}
+			auto mat = mAllMatItems[inst.InstanceData.MaterialIndex].get();
+			{
+				// 초기 값 반영
+				diff4f[0] = mat->MaterialData.DiffuseAlbedo.x;
+				diff4f[1] = mat->MaterialData.DiffuseAlbedo.y;
+				diff4f[2] = mat->MaterialData.DiffuseAlbedo.z;
+				diff4f[3] = mat->MaterialData.DiffuseAlbedo.w;
+
+				fres3f[0] = mat->MaterialData.FresnelR0.x;
+				fres3f[1] = mat->MaterialData.FresnelR0.y;
+				fres3f[2] = mat->MaterialData.FresnelR0.z;
+			}
+
+			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			if (ImGui::TreeNode("Default Factor")) {
+				flag += ImGui::DragFloat4("DiffuseAlbedo R/G/B/A", diff4f, 0.01f, 0.0f, 1.0f);
+				flag += ImGui::DragFloat3("Fresne R/G/B", fres3f, 0.01f, 0.0f, 1.0f);
+				flag += ImGui::DragFloat("Roughness", &mat->MaterialData.Roughness, 0.01f, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+			;
+			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			if (ImGui::TreeNode("Diffuse Map")) {
+				flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
+				flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize - 1, "%d", flags);
+				my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
+				ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+				ImGui::TreePop();
+			}
+
+			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			if (ImGui::TreeNode("Normal Map")) {
+				flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
+				flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
+				my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+				ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+				ImGui::TreePop();
+			}
+
+			//ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			//if (ImGui::TreeNode("Normal Map")) {
+			//	flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
+			//	flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
+			//	my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+			//	ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
+
+			//	ImGui::TreePop();
+			//}
+
+
+			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+			if (ImGui::TreeNode("Alpha Test")) {
+				flag += ImGui::CheckboxFlags("Use Alpha Test", &mat->MaterialData.useAlphaTest, 1);
+
+				ImGui::TreePop();
+			}
+			ImGui::TreePop();
+			if (flag)
+			{
+				// for (auto& d : mAllMatItems)
+				// 	d->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+
+				mat->MaterialData.DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
+				mat->MaterialData.FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
+				mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+			}
+		}
 	}
 	else
 	{
@@ -2715,13 +2858,16 @@ void MyApp::ShowViewportWindow()
 {
 	ImGui::Begin("viewport1", &mShowViewportWindow);
 
+	float widthSize = ImGui::GetColumnWidth();
+	float heightSize = widthSize / mAspectRatio;
+
 	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize;
 	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
 		ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
 		ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
-		ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), uv_min, uv_max, tint_col, border_col);
+		ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), uv_min, uv_max, tint_col, border_col);
 	}
 	ImGui::End();
 }

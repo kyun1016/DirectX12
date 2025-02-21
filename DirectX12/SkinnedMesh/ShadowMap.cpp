@@ -129,6 +129,134 @@ void ShadowMap::SetTarget(const DirectX::SimpleMath::Vector3& targetPos)
 	Update();
 }
 
+// void ShadowMap::ExecuteBegin(ID3D12GraphicsCommandList* cmdList, UINT rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS passCBAddress)
+// {
+// 	cmdList->RSSetViewports(1, &mViewport);
+// 	cmdList->RSSetScissorRects(1, &mScissorRect);
+// 
+// 	D3D12_RESOURCE_BARRIER barrier
+// 		= CD3DX12_RESOURCE_BARRIER::Transition(mShadowMap.Get(),
+// 			D3D12_RESOURCE_STATE_GENERIC_READ,
+// 			D3D12_RESOURCE_STATE_DEPTH_WRITE);
+// 
+// 	// Change to DEPTH_WRITE.
+// 	cmdList->ResourceBarrier(1, &barrier);
+// 
+// 	cmdList->ClearDepthStencilView(mhCpuDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+// 
+// 	cmdList->OMSetRenderTargets(0, nullptr, false, &mhCpuDsv);
+// 
+// 	cmdList->SetGraphicsRootConstantBufferView(rootParameterIndex, passCBAddress);
+// }
+// 
+// void ShadowMap::SetDefaultPSO(ID3D12GraphicsCommandList* cmdList)
+// {
+// 	cmdList->SetPipelineState(mShadowPSO.Get());
+// }
+// 
+// void ShadowMap::SetSkinnedPSO(ID3D12GraphicsCommandList* cmdList)
+// {
+// 	cmdList->SetPipelineState(mSkinnedShadowPSO.Get());
+// }
+// 
+// void ShadowMap::ExecuteFinish(ID3D12GraphicsCommandList* cmdList)
+// {
+// 	D3D12_RESOURCE_BARRIER barrier
+// 		= CD3DX12_RESOURCE_BARRIER::Transition(mShadowMap.Get(),
+// 			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+// 			D3D12_RESOURCE_STATE_GENERIC_READ);
+// 	cmdList->ResourceBarrier(1, &barrier);
+// }
+// 
+// void ShadowMap::BuildPSO()
+// {
+// 	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowMapPsoDesc
+// 	{
+// 		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
+// 		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mVSShadowShader->GetBufferPointer()), mVSShadowShader->GetBufferSize()},
+// 		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mPSShadowShader->GetBufferPointer()), mPSShadowShader->GetBufferSize()},
+// 		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
+// 		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
+// 		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
+// 		/* D3D12_STREAM_OUTPUT_DESC StreamOutput{							*/.StreamOutput = {
+// 		/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
+// 		/*			UINT Stream;											*/
+// 		/*			LPCSTR SemanticName;									*/
+// 		/*			UINT SemanticIndex;										*/
+// 		/*			BYTE StartComponent;									*/
+// 		/*			BYTE ComponentCount;									*/
+// 		/*			BYTE OutputSlot;										*/
+// 		/*		}															*/
+// 		/*		UINT NumEntries;											*/	0,
+// 		/*		const UINT* pBufferStrides;									*/	0,
+// 		/*		UINT NumStrides;											*/	0,
+// 		/*		UINT RasterizedStream;										*/	0
+// 		/* }																*/},
+// 		/* D3D12_BLEND_DESC BlendState{										*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+// 		/*		BOOL AlphaToCoverageEnable									*/
+// 		/*		BOOL IndependentBlendEnable									*/
+// 		/*		D3D12_RENDER_TARGET_BLEND_DESC RenderTarget[8]				*/
+// 		/* }																*/
+// 		/* UINT SampleMask													*/.SampleMask = UINT_MAX,
+// 		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+// 		/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
+// 		/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
+// 		/*		BOOL FrontCounterClockwise									*/		false,
+// 		/*		INT DepthBias												*/		100000,
+// 		/*		FLOAT DepthBiasClamp										*/		0.0f,
+// 		/*		FLOAT SlopeScaledDepthBias									*/		1.0f,
+// 		/*		BOOL DepthClipEnable										*/		true,
+// 		/*		BOOL MultisampleEnable										*/		false,
+// 		/*		BOOL AntialiasedLineEnable									*/		false,
+// 		/*		UINT ForcedSampleCount										*/		0,
+// 		/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+// 		/* }																*/},
+// 		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+// 		/*		BOOL DepthEnable											*/		.DepthEnable = true,
+// 		/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+// 		/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+// 		/*		BOOL StencilEnable											*/		.StencilEnable = false,
+// 		/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+// 		/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+// 		/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
+// 		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+// 		/*		}															*/		},
+// 		/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
+// 		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+// 		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+// 		/*		}															*/		},
+// 		/* }																*/ },
+// 		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
+// 		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mInputLayout.data(),
+// 		/*		UINT NumElements											*/		.NumElements = (UINT)mInputLayout.size()
+// 		/*	}																*/ },
+// 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+// 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+// 		/* UINT NumRenderTargets											*/.NumRenderTargets = 0,
+// 		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+// 		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT,
+// 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
+// 		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
+// 		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+// 		/*	}																*/},
+// 		/* UINT NodeMask													*/.NodeMask = 0,
+// 		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
+// 		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
+// 	};
+// 	shadowMapPsoDesc.BlendState.IndependentBlendEnable = true;
+// 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mShadowPSO)));
+// 
+// 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedShadowMapPsoDesc = shadowMapPsoDesc;
+// 	skinnedShadowMapPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+// 	skinnedShadowMapPsoDesc.VS = { reinterpret_cast<BYTE*>(mVSSkinnedShadowShader->GetBufferPointer()), mVSSkinnedShadowShader->GetBufferSize() };
+// 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skinnedShadowMapPsoDesc, IID_PPV_ARGS(&mSkinnedShadowPSO)));
+// }
+
 void ShadowMap::Update()
 {
 	UpdateMatrix();

@@ -35,7 +35,7 @@
     <ClCompile Include="ShadowMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SSAO.cpp">
+    <ClCompile Include="SsaoMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Waves.cpp">
@@ -67,7 +67,7 @@
     <ClInclude Include="ShadowMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SSAO.h">
+    <ClInclude Include="SsaoMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Waves.h">

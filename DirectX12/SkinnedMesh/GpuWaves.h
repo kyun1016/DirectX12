@@ -37,7 +37,6 @@ public:
 	void BuildShadersAndInputLayout();
 	void BuildResources(ID3D12GraphicsCommandList* cmdList);
 	void BuildCSRootSignature();
-	void BuildPSO();
 
 	void BuildDescriptors(
 		CD3DX12_CPU_DESCRIPTOR_HANDLE hCpuDescriptor,
@@ -51,6 +50,7 @@ public:
 	void Disturb(ID3D12GraphicsCommandList* cmdList, UINT i, UINT j, float magnitude);
 
 private:
+	void BuildPSO();
 
 	UINT mNumRows;
 	UINT mNumCols;
