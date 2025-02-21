@@ -2703,6 +2703,9 @@ void MyApp::ShowInstanceWindow()
 		scale3f[0] = inst.Scale.x;
 		scale3f[1] = inst.Scale.y;
 		scale3f[2] = inst.Scale.z;
+		angle3f[0] = inst.Rotate.x;
+		angle3f[1] = inst.Rotate.y;
+		angle3f[2] = inst.Rotate.z;
 		texScale3f[0] = inst.TexScale.x;
 		texScale3f[1] = inst.TexScale.y;
 		texScale3f[2] = inst.TexScale.z;
@@ -2713,11 +2716,13 @@ void MyApp::ShowInstanceWindow()
 		
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Scale")) {
-			flag += ImGui::DragFloat3("World x/y/z", world3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
-			flag += ImGui::DragFloat3("Scale x/y/z", scale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("World x/y/z", world3f, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("Scale x/y/z", scale3f, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			flag += ImGui::DragFloat3("angle x/y/z", angle3f, 5.0f, -FLT_MAX / 2, FLT_MAX / 2);
 			flag += ImGui::DragFloat3("Texture Scale x/y/z", texScale3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
-			flag += ImGui::DragFloat3("angle x/y/z", angle3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2);
 			
+			flag += ImGui::Checkbox("Use Quaternion", &inst.useQuat);
+
 			ImGui::TreePop();
 		}
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
@@ -2737,8 +2742,9 @@ void MyApp::ShowInstanceWindow()
 		{
 			inst.UpdateTranslation({ world3f[0], world3f[1], world3f[2] });
 			inst.UpdateScale({ scale3f[0], scale3f[1], scale3f[2] });
+			inst.UpdateRotate({ angle3f[0], angle3f[1], angle3f[2] });
 			inst.UpdateTexScale({ texScale3f[0], texScale3f[1], texScale3f[2] });
-			for (auto& d : mAllMatItems)
+			for (auto& d : mAllRitems)
 				d->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		}
 
@@ -2817,8 +2823,8 @@ void MyApp::ShowInstanceWindow()
 			ImGui::TreePop();
 			if (flag)
 			{
-				// for (auto& d : mAllMatItems)
-				// 	d->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
+				for (auto& d : mAllRitems)
+				 	d->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 				mat->MaterialData.DiffuseAlbedo = { diff4f[0],diff4f[1],diff4f[2],diff4f[3] };
 				mat->MaterialData.FresnelR0 = { fres3f[0], fres3f[1], fres3f[2] };
