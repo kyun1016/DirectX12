@@ -240,6 +240,7 @@ private:
 	std::unique_ptr<BlurFilter> mCSBlurFilter;
 	std::unique_ptr<GpuWaves> mCSWaves;
 	std::array<std::unique_ptr<ShadowMap>, MAX_LIGHTS> mShadowMap;
+	std::array<bool, MAX_LIGHTS> mUseShadowMap;
 	std::unique_ptr<SsaoMap> mSsaoMap;
 
 	PassConstants mMainPassCB;

@@ -774,7 +774,7 @@ void AppBase::CalculateFrameStats()
 
 		std::wstring windowText = mWndCaption +
 			L"    fps: " + fpsStr +
-			L"   mspf: " + mspfStr;
+			L"   ms/fps: " + mspfStr;
 
 		SetWindowText(mHwndWindow, windowText.c_str());
 

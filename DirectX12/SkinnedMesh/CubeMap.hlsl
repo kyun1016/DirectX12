@@ -35,7 +35,16 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     return vout;
 }
 
-float4 PS(VertexOut pin) : SV_Target
+struct PixelOut
 {
-    return gCubeMap[gCubeMapIndex].Sample(gsamLinearWrap, pin.PosL);
+    float4 color0 : SV_Target0;
+    float4 color1 : SV_Target1;
+};
+
+PixelOut PS(VertexOut pin) : SV_Target
+{
+    PixelOut ret;
+    ret.color0 = gCubeMap[gCubeMapIndex].Sample(gsamLinearWrap, pin.PosL);
+    ret.color1 = ret.color0;
+    return ret;
 }

@@ -1344,7 +1344,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, mDiffuseTex.size());
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size());
 		mAllRitems.push_back(std::move(treeSpritesRitem));
 	}
 
@@ -1860,7 +1860,8 @@ void MyApp::Render()
 			|| mLayerType[i] == RenderLayer::SkinnedShadowMap)
 			for (int i = 0; i < MAX_LIGHTS; ++i)
 			{
-				DrawSceneToShadowMap(i);
+				if(mUseShadowMap[i])
+					DrawSceneToShadowMap(i);
 			}
 		else
 			continue;
@@ -1970,7 +1971,7 @@ void MyApp::Sync()
 void MyApp::AnimateMaterials()
 {
 	// Scroll the water material texture coordinates.
-	auto waterMat = mAllMatItems[13].get();
+	auto waterMat = mAllMatItems[6].get();
 
 	float& tu = waterMat->MaterialData.MatTransform(3, 0);
 	float& tv = waterMat->MaterialData.MatTransform(3, 1);
@@ -2443,36 +2444,37 @@ void MyApp::ShowMainWindow()
 	
 			const char* items[] = { 
 				"None",
-				"Opaque",
-				"SkinnedOpaque",
-				"Mirror",
-				"Reflected",
-				"AlphaTested",
-				"Transparent",
-				"Subdivision",
-				"Normal",
-				"TreeSprites",
-				"Tessellation",
-				"BoundingBox",
-				"BoundingSphere",
-				"CubeMap",
-				"DebugShadowMap",
-				"OpaqueWireframe",
-				"MirrorWireframe",
-				"ReflectedWireframe",
-				"AlphaTestedWireframe",
-				"TransparentWireframe",
-				"SubdivisionWireframe",
-				"NormalWireframe",
-				"TreeSpritesWireframe",
-				"TessellationWireframe",
-				"ShadowMap",
-				"SkinnedShadowMap",
-				"AddCS",
-				"BlurCS",
-				"WaveCS"
+				"1. Opaque",
+				"2. SkinnedOpaque",
+				"3. Mirror",
+				"4. Reflected",
+				"5. AlphaTested",
+				"6. Transparent",
+				"7. Subdivision",
+				"8. Normal",
+				"9. TreeSprites",
+				"10. Tessellation",
+				"11. BoundingBox",
+				"12. BoundingSphere",
+				"13. CubeMap",
+				"14. DebugShadowMap",
+				"15. OpaqueWireframe",
+				"16. MirrorWireframe",
+				"17. ReflectedWireframe",
+				"18. AlphaTestedWireframe",
+				"19. TransparentWireframe",
+				"20. SubdivisionWireframe",
+				"21. NormalWireframe",
+				"22. TreeSpritesWireframe",
+				"23. TessellationWireframe",
+				"24. ShadowMap",
+				"25. SkinnedShadowMap",
+				"26. AddCS",
+				"27. BlurCS",
+				"28. WaveCS"
 			};
-			if (ImGui::BeginListBox("Shader Type"))
+			ImVec2 size(0, 400);
+			if (ImGui::BeginListBox("Shader Type", size))
 			{
 				for (int n = 0; n < IM_ARRAYSIZE(items); n++)
 				{
@@ -2907,8 +2909,12 @@ void MyApp::ShowLightWindow()
 	if (ImGui::TreeNode("Light")) {
 		ImGui::SliderInt((std::string("Light [0, ") + std::to_string(mapSize - 1) + "]").c_str(), &mapIdx, 0, mapSize - 1, "%d", flags);
 
+		
+
 		if (mapIdx < MAX_LIGHTS && mShadowMap[mapIdx])
 		{
+			ImGui::Checkbox("Use Light", &mUseShadowMap[mapIdx]);
+
 			float orthoBoxLength = mShadowMap[mapIdx]->GetBoxLength();
 			DirectX::SimpleMath::Vector4 ambientLight = mShadowMap[mapIdx]->GetAmbientLight();
 			DirectX::SimpleMath::Vector3 strength = mShadowMap[mapIdx]->GetLightStrength();
@@ -2953,11 +2959,6 @@ void MyApp::ShowLightWindow()
 		ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), uv_min, uv_max, tint_col, border_col);
 		ImGui::TreePop();
 	}
-
-	
-
-
-	
 
 	ImGui::End();
 }
