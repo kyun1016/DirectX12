@@ -1850,11 +1850,6 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUArray);
 		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUCube);
 	}
-	
-	for (int i = 0; i < MAX_LIGHTS; ++i)
-	{
-		DrawSceneToShadowMap(i);
-	}
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -1868,7 +1863,6 @@ void MyApp::Render()
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	mCommandList->ResourceBarrier(SRV_USER_SIZE, &SRVUserBufBarrier[0]);
 
-	
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
@@ -1884,7 +1878,10 @@ void MyApp::Render()
 	{
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
-		else if (mLayerType[i] == RenderLayer::AddCS
+		else if (
+			mLayerType[i] == RenderLayer::ShadowMap
+			|| mLayerType[i] == RenderLayer::SkinnedShadowMap
+			|| mLayerType[i] == RenderLayer::AddCS
 			|| mLayerType[i] == RenderLayer::BlurCS
 			|| mLayerType[i] == RenderLayer::WaveCS)
 			continue;
@@ -1897,10 +1894,17 @@ void MyApp::Render()
 		}
 	}
 
+	// Post process
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
 		if (mLayerType[i] == RenderLayer::None)
 			continue;
+		if (mLayerType[i] == RenderLayer::ShadowMap
+			|| mLayerType[i] == RenderLayer::SkinnedShadowMap)
+			for (int i = 0; i < MAX_LIGHTS; ++i)
+			{
+				DrawSceneToShadowMap(i);
+			}
 		else if (mLayerType[i] == RenderLayer::AddCS)
 		{
 			mCSAdd->DoComputeWork(mCommandList.Get(), mCurrFrameResource->CmdListAlloc.Get());
@@ -2437,8 +2441,6 @@ void MyApp::ShowMainWindow()
 				"BoundingBox",
 				"BoundingSphere",
 				"CubeMap",
-				"ShadowMap",
-				"SkinnedShadowMap",
 				"DebugShadowMap",
 				"OpaqueWireframe",
 				"MirrorWireframe",
@@ -2449,6 +2451,8 @@ void MyApp::ShowMainWindow()
 				"NormalWireframe",
 				"TreeSpritesWireframe",
 				"TessellationWireframe",
+				"ShadowMap",
+				"SkinnedShadowMap",
 				"AddCS",
 				"BlurCS",
 				"WaveCS"
