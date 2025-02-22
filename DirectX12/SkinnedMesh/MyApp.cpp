@@ -20,6 +20,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[5] = RenderLayer::WaveCS;
 	mLayerType[6] = RenderLayer::CubeMap;
 	mLayerType[7] = RenderLayer::SkinnedOpaque;
+	mLayerType[8] = RenderLayer::ShadowMap;
 	// mLayerType[7] = RenderLayer::Normal;
 	// mLayerType[8] = RenderLayer::BoundingSphere;
 
@@ -31,6 +32,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerStencil[5] = 0;
 	mLayerStencil[6] = 0;
 	mLayerStencil[7] = 0;
+	mLayerStencil[8] = 0;
 
 	mLayerCBIdx[0] = 0;
 	mLayerCBIdx[1] = 0;
@@ -40,6 +42,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerCBIdx[5] = 0;
 	mLayerCBIdx[6] = 0;
 	mLayerCBIdx[7] = 0;
+	mLayerCBIdx[8] = 0;
 
 	{
 		// 거울 반사 구현 시
@@ -55,7 +58,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 		// mLayerCBIdx[3] = 1;
 	}
 
-	for (int i = 8; i < MAX_LAYER_DEPTH; ++i)
+	for (int i = 9; i < MAX_LAYER_DEPTH; ++i)
 	{
 		mLayerType[i] = RenderLayer::None;
 		mLayerStencil[i] = 0;
@@ -1851,6 +1854,18 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUCube);
 	}
 
+	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
+	{
+		if (mLayerType[i] == RenderLayer::ShadowMap
+			|| mLayerType[i] == RenderLayer::SkinnedShadowMap)
+			for (int i = 0; i < MAX_LIGHTS; ++i)
+			{
+				DrawSceneToShadowMap(i);
+			}
+		else
+			continue;
+	}
+
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
@@ -1897,15 +1912,7 @@ void MyApp::Render()
 	// Post process
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
-		if (mLayerType[i] == RenderLayer::None)
-			continue;
-		if (mLayerType[i] == RenderLayer::ShadowMap
-			|| mLayerType[i] == RenderLayer::SkinnedShadowMap)
-			for (int i = 0; i < MAX_LIGHTS; ++i)
-			{
-				DrawSceneToShadowMap(i);
-			}
-		else if (mLayerType[i] == RenderLayer::AddCS)
+		if (mLayerType[i] == RenderLayer::AddCS)
 		{
 			mCSAdd->DoComputeWork(mCommandList.Get(), mCurrFrameResource->CmdListAlloc.Get());
 			mLayerType[i] = RenderLayer::None;
@@ -1919,7 +1926,10 @@ void MyApp::Render()
 		{
 			mCSWaves->UpdateWaves(mTimer, mCommandList.Get());
 		}
+		else
+			continue;
 	}
+	
 
 	{	// Test Render Copy
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
@@ -2018,11 +2028,11 @@ void MyApp::UpdateTangents()
 
 void MyApp::UpdateShadowMap()
 {
-	static float rotationAngle = 0;
-	rotationAngle += 0.1f * mTimer.DeltaTime();
+	static float rotationAngle[MAX_LIGHTS];
 	for (int i = 0; i < MAX_LIGHTS; ++i)
 	{
-		mShadowMap[i]->SetRotate(rotationAngle);
+		rotationAngle[i] += 0.1f * mTimer.DeltaTime();
+		mShadowMap[i]->SetRotate(rotationAngle[i]);
 	}
 }
 
@@ -2257,6 +2267,8 @@ void MyApp::DrawSceneToShadowMap(int index)
 	barrier.Transition.StateBefore = barrier.Transition.StateAfter;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
 	mCommandList->ResourceBarrier(1, &barrier);
+
+	// mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 }
 
 void MyApp::Pick()
@@ -2393,6 +2405,8 @@ void MyApp::UpdateImGui()
 		ShowMaterialWindow();
 	if (mShowInstanceWindow)
 		ShowInstanceWindow();
+	if (mShowLightWindow)
+		ShowLightWindow();
 	if (mShowViewportWindow)
 		ShowViewportWindow();
 	if (mShowCubeMapWindow)
@@ -2409,6 +2423,7 @@ void MyApp::ShowMainWindow()
 		ImGui::Checkbox("Texture", &mShowTextureWindow);
 		// ImGui::Checkbox("Material", &mShowMaterialWindow);
 		ImGui::Checkbox("Intance", &mShowInstanceWindow);
+		ImGui::Checkbox("Light", &mShowLightWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
 		ImGui::Checkbox("Cubemap", &mShowCubeMapWindow);
 		ImGui::TreePop();
@@ -2418,14 +2433,14 @@ void MyApp::ShowMainWindow()
 	static int item_selected_idx = (int)mLayerType[0];
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if (ImGui::TreeNode("Select Layer")) {
-
+	
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
 		if (ImGui::SliderInt((std::string("Render Layer [0, ") + std::to_string(MAX_LAYER_DEPTH - 1) + "]").c_str(), &layerIdx, 0, MAX_LAYER_DEPTH - 1, "%d", flags))
 			item_selected_idx = (int)mLayerType[layerIdx];
 		{
 			ImGui::LabelText("label", "Value");
 			// ImGui::SliderInt("Shader Type [0, 1]", &mLayerType[layerIdx], 0, 1, "%d", flags);
-
+	
 			const char* items[] = { 
 				"None",
 				"Opaque",
@@ -2464,7 +2479,7 @@ void MyApp::ShowMainWindow()
 					const bool is_selected = (item_selected_idx == n);
 					if (ImGui::Selectable(items[n], is_selected))
 						item_selected_idx = n;
-
+	
 					// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
@@ -2472,7 +2487,7 @@ void MyApp::ShowMainWindow()
 				mLayerType[layerIdx] = (RenderLayer) item_selected_idx;
 				ImGui::EndListBox();
 			}
-
+	
 			ImGui::SliderInt("Stencli [0, 7]", &mLayerStencil[layerIdx], 0, 7, "%d", flags);
 			ImGui::SliderInt("Constant Buffer [0, 4]", &mLayerCBIdx[layerIdx], 0, 4, "%d", flags);
 		}
@@ -2860,6 +2875,89 @@ void MyApp::ShowInstanceWindow()
 	//	}
 	//	ImGui::EndListBox();
 	//}
+
+	ImGui::End();
+}
+
+void MyApp::ShowLightWindow()
+{
+	ImGui::Begin("light", &mShowLightWindow);
+
+	static int mapIdx = 0;
+	ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+	ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+	ImVec4 tint_col = true ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // No tint
+	ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+	ImTextureID my_tex_id;
+	float widthSize = ImGui::GetColumnWidth();
+	float heightSize = widthSize / mAspectRatio;
+	
+	int mapSize = MAX_LIGHTS;
+
+	ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+
+	static float ambientLight4f[4];
+	static float strength3f[3];
+	static float baseDir3f[3];
+	static float targetPos3f[3];
+	static float rotate;
+
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Light")) {
+		ImGui::SliderInt((std::string("Light [0, ") + std::to_string(mapSize - 1) + "]").c_str(), &mapIdx, 0, mapSize - 1, "%d", flags);
+
+		if (mapIdx < MAX_LIGHTS && mShadowMap[mapIdx])
+		{
+			float orthoBoxLength = mShadowMap[mapIdx]->GetBoxLength();
+			DirectX::SimpleMath::Vector4 ambientLight = mShadowMap[mapIdx]->GetAmbientLight();
+			DirectX::SimpleMath::Vector3 strength = mShadowMap[mapIdx]->GetLightStrength();
+			DirectX::SimpleMath::Vector3 baseDir = mShadowMap[mapIdx]->GetBaseDir();
+			DirectX::SimpleMath::Vector3 targetPos = mShadowMap[mapIdx]->GetTarget();
+
+			{
+				ambientLight4f[0] = ambientLight.x;
+				ambientLight4f[1] = ambientLight.y;
+				ambientLight4f[2] = ambientLight.z;
+				ambientLight4f[3] = ambientLight.w;
+				strength3f[0] = strength.x;
+				baseDir3f[0] = baseDir.x;
+				targetPos3f[0] = targetPos.x;
+				strength3f[1] = strength.y;
+				baseDir3f[1] = baseDir.y;
+				targetPos3f[1] = targetPos.y;
+				strength3f[2] = strength.z;
+				baseDir3f[2] = baseDir.z;
+				targetPos3f[2] = targetPos.z;
+			}
+
+			if (ImGui::DragFloat("Light Length", &orthoBoxLength, 0.1f, -FLT_MAX / 2, FLT_MAX / 2))
+				mShadowMap[mapIdx]->SetBoxLength(orthoBoxLength);
+			if (ImGui::DragFloat4("ambient light r/g/b", ambientLight4f, 0.01f, 0.0f, 1.0f))
+				mShadowMap[mapIdx]->SetAmbientLight({ ambientLight4f[0], ambientLight4f[1], ambientLight4f[2], ambientLight4f[3] });
+			if (ImGui::DragFloat3("strength r/g/b", strength3f, 0.01f, 0.0f, 1.0f))
+				mShadowMap[mapIdx]->SetLightStrength({ strength3f[0], strength3f[1], strength3f[2] });
+			if (ImGui::DragFloat3("base direction x/y/z", baseDir3f, 0.1f, -FLT_MAX / 2, FLT_MAX / 2))
+				mShadowMap[mapIdx]->SetBaseDir({ baseDir3f[0], baseDir3f[1], baseDir3f[2] });
+			if (ImGui::DragFloat("Rotate", &rotate, 0.1f, -FLT_MAX / 2, FLT_MAX / 2))
+				mShadowMap[mapIdx]->SetRotate(rotate);
+			if (ImGui::DragFloat3("target position x/y/z", targetPos3f, 0.01f, -FLT_MAX / 2, FLT_MAX / 2))
+				mShadowMap[mapIdx]->SetTarget({ targetPos3f[0], targetPos3f[1], targetPos3f[2] });
+		}
+		ImGui::TreePop();
+	}
+
+	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+	if (ImGui::TreeNode("Shadow Map")) {
+		my_tex_id = (ImTextureID)mhGPUShadow.ptr + mCbvSrvUavDescriptorSize * mapIdx;
+		ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), uv_min, uv_max, tint_col, border_col);
+		ImGui::TreePop();
+	}
+
+	
+
+
+	
 
 	ImGui::End();
 }

@@ -45,6 +45,13 @@ public:
 	void SetRotate(const float angle);
 	void SetTarget(const DirectX::SimpleMath::Vector3& targetPos);
 
+	float GetBoxLength()const;
+	DirectX::SimpleMath::Vector4 GetAmbientLight()const;
+	DirectX::SimpleMath::Vector3 GetLightStrength()const;
+	DirectX::SimpleMath::Vector3 GetBaseDir()const;
+	DirectX::SimpleMath::Vector3 GetRotate()const;
+	DirectX::SimpleMath::Vector3 GetTarget()const;
+
 	// void ExecuteBegin(ID3D12GraphicsCommandList* cmdList,
 	// 	UINT rootParameterIndex,
 	// 	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress);

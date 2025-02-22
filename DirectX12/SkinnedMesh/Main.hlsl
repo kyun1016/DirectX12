@@ -159,8 +159,7 @@ PixelOut PS(VertexOut pin)
         float4 ShadowPosH = mul(float4(pin.PosW, 1.0f), gLights[i].shadowTransform);
         shadowFactor[i] = CalcShadowFactor(ShadowPosH, i);
     }
-    // float4 ShadowPosH = mul(float4(pin.PosW, 1.0f), gLights[0].shadowTransform);
-    // shadowFactor[0] = CalcShadowFactor(ShadowPosH, 0);
+    
     
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
         bumpedNormalW, toEyeW, shadowFactor);

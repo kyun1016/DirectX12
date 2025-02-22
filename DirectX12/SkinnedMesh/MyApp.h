@@ -204,12 +204,14 @@ private:
 	void ShowTextureWindow();
 	void ShowMaterialWindow();
 	void ShowInstanceWindow();
+	void ShowLightWindow();
 	void ShowViewportWindow();
 	void ShowCubeMapWindow();
 	bool mShowDemoWindow = false;
 	bool mShowTextureWindow = false;
 	bool mShowMaterialWindow = false;
 	bool mShowInstanceWindow = false;
+	bool mShowLightWindow = false;
 	bool mShowViewportWindow = false;
 	bool mShowCubeMapWindow = false;
 

@@ -129,6 +129,42 @@ void ShadowMap::SetTarget(const DirectX::SimpleMath::Vector3& targetPos)
 	Update();
 }
 
+float ShadowMap::GetBoxLength() const
+{
+	return mOrthoBoxLength;
+}
+
+DirectX::SimpleMath::Vector4 ShadowMap::GetAmbientLight() const
+{
+	return mPassCB.AmbientLight;
+}
+
+DirectX::SimpleMath::Vector3 ShadowMap::GetLightStrength() const
+{
+	return mPassCB.Lights[0].Strength;
+}
+
+DirectX::SimpleMath::Vector3 ShadowMap::GetBaseDir() const
+{
+	DirectX::SimpleMath::Vector3 ret;
+	DirectX::XMStoreFloat3(&ret, mBaseLightDir);
+	return ret;
+}
+
+DirectX::SimpleMath::Vector3 ShadowMap::GetRotate() const
+{
+	DirectX::SimpleMath::Vector3 ret;
+	DirectX::XMStoreFloat3(&ret, mLightDir);
+	return ret;
+}
+
+DirectX::SimpleMath::Vector3 ShadowMap::GetTarget() const
+{
+	DirectX::SimpleMath::Vector3 ret;
+	DirectX::XMStoreFloat3(&ret, mTargetPos);
+	return ret;
+}
+
 // void ShadowMap::ExecuteBegin(ID3D12GraphicsCommandList* cmdList, UINT rootParameterIndex, D3D12_GPU_VIRTUAL_ADDRESS passCBAddress)
 // {
 // 	cmdList->RSSetViewports(1, &mViewport);
