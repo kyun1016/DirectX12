@@ -818,7 +818,7 @@ void MyApp::BuildMeshes()
 
 	mMeshes.push_back(GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
-	mMeshes.push_back(GeometryGenerator::CreateSphere(0.5f, 20, 20));
+	mMeshes.push_back(GeometryGenerator::CreateSphere(1.0f, 20, 20));
 	mMeshes.push_back(GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20));
 	mMeshes.push_back(GeometryGenerator::CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f));
 
@@ -1306,7 +1306,7 @@ void MyApp::BuildRenderItems()
 		scale.x = 1.0f;
 		scale.y = 1.0f;
 		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size());
+		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size(), false);
 		mAllRitems.push_back(std::move(treeSpritesRitem));
 	}
 
@@ -1341,8 +1341,8 @@ void MyApp::BuildRenderItems()
 		{
 			for (const auto& a : mAllRitems[i]->Datas)
 			{
-				boundingBoxRitem->Push(a);
-				boundingSphereRitem->Push(a);
+				boundingBoxRitem->Push(a.Translation + a.BaseBoundingBox->Center * a.Scale, a.Scale * a.BaseBoundingBox->Extents, {0,0,0, 1.0f}, {0,0,0}, a.BoundingCount, 0, true);
+				boundingSphereRitem->Push(a.Translation + a.BaseBoundingSphere->Center * a.Scale, a.Scale * a.BaseBoundingSphere->Radius, { 0,0,0, 1.0f }, { 0,0,0 }, a.BoundingCount, 0, true);
 
 				++mInstanceCount;
 				++mInstanceCount;
@@ -1765,7 +1765,7 @@ void MyApp::Render()
 {
 	// Reuse the memory associated with command recording.
 	// We can only reset when the associated command lists have finished execution on the GPU.
-	ThrowIfFailed(mCurrFrameResource->CmdListAlloc->Reset());
+s	ThrowIfFailed(mCurrFrameResource->CmdListAlloc->Reset());
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.

@@ -29,10 +29,10 @@ public:
 			, TangentU(0.0f, 0.0f, 0.0f)
 			, TexC(0.0f, 0.0f) {}
 		Vertex(
-			const DirectX::XMFLOAT3& p,
-			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT3& t,
-			const DirectX::XMFLOAT2& uv) :
+			const DirectX::SimpleMath::Vector3& p,
+			const DirectX::SimpleMath::Vector3& n,
+			const DirectX::SimpleMath::Vector3& t,
+			const DirectX::SimpleMath::Vector2& uv) :
 			Position(p),
 			Normal(n),
 			TangentU(t),
@@ -47,19 +47,19 @@ public:
 			TangentU(tx, ty, tz),
 			TexC(u, v) {}
 
-		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT3 Normal;
-		DirectX::XMFLOAT2 TexC;
-		DirectX::XMFLOAT3 TangentU;
+		DirectX::SimpleMath::Vector3 Position;
+		DirectX::SimpleMath::Vector3 Normal;
+		DirectX::SimpleMath::Vector2 TexC;
+		DirectX::SimpleMath::Vector3 TangentU;
 	};
 
 	struct SkinnedVertex
 	{
-		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT3 Normal;
-		DirectX::XMFLOAT2 TexC;
-		DirectX::XMFLOAT3 TangentU;
-		DirectX::XMFLOAT3 BoneWeights;
+		DirectX::SimpleMath::Vector3 Position;
+		DirectX::SimpleMath::Vector3 Normal;
+		DirectX::SimpleMath::Vector2 TexC;
+		DirectX::SimpleMath::Vector3 TangentU;
+		DirectX::SimpleMath::Vector3 BoneWeights;
 		BYTE BoneIndices[4];
 	};
 
@@ -145,48 +145,44 @@ public:
 			vMin = DirectX::XMVectorMin(vMin, P);
 			vMax = DirectX::XMVectorMax(vMax, P);
 		}
-		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-		outBoundingBox.Center = center;
+		DirectX::XMStoreFloat3(&outBoundingBox.Center, 0.5f * (vMin + vMax));
+		DirectX::XMStoreFloat3(&outBoundingSphere.Center, 0.5f * (vMin + vMax));
 		DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
 
-		float maxRadius = 0.0f;
+		outBoundingSphere.Radius = 0.0f;
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
-			maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+			outBoundingSphere.Radius = max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
 		}
-		maxRadius += 1e-2f;
-		outBoundingSphere.Center = center;
-		outBoundingSphere.Radius = maxRadius;
+		outBoundingSphere.Radius += 1e-2f;
 	}
 
 	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
 	{
 		using namespace DirectX;
-		DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-		DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+		DirectX::SimpleMath::Vector3 vMin(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+		DirectX::SimpleMath::Vector3 vMax(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
 
-		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
-			DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
-			vMin = DirectX::XMVectorMin(vMin, P);
-			vMax = DirectX::XMVectorMax(vMax, P);
+			auto& p = vertex[i].Position;
+			vMin.x = vMin.x < p.x ? vMin.x : p.x;
+			vMin.y = vMin.y < p.y ? vMin.y : p.y;
+			vMin.z = vMin.z < p.z ? vMin.z : p.z;
+			vMax.x = vMax.x > p.x ? vMax.x : p.x;
+			vMax.y = vMax.y > p.y ? vMax.y : p.y;
+			vMax.z = vMax.z > p.z ? vMax.z : p.z;
 		}
-		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+		outBoundingBox.Center = (vMin + vMax) * 0.5f;
+		outBoundingBox.Extents = (vMax - vMin) * 0.5f;
+		outBoundingSphere.Center = outBoundingBox.Center;
 
-		outBoundingBox.Center = center;
-		DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
-
-		float maxRadius = 0.0f;
+		outBoundingSphere.Radius = 0.0f;
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
-			maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+			outBoundingSphere.Radius = max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
 		}
-		maxRadius += 1e-2f;
-		outBoundingSphere.Center = center;
-		outBoundingSphere.Radius = maxRadius;
+		outBoundingSphere.Radius += 1e-2f;
 	}
 };
 

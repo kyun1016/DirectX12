@@ -192,9 +192,9 @@ private:
 	{
 		if (BaseBoundingBox)
 		{
-			BoundingBox.Center.x = BaseBoundingBox->Center.x + Translation.x;
-			BoundingBox.Center.y = BaseBoundingBox->Center.y + Translation.y;
-			BoundingBox.Center.z = BaseBoundingBox->Center.z + Translation.z;
+			BoundingBox.Center.x = BaseBoundingBox->Center.x * Scale.x + Translation.x;
+			BoundingBox.Center.y = BaseBoundingBox->Center.y * Scale.y + Translation.y;
+			BoundingBox.Center.z = BaseBoundingBox->Center.z * Scale.z + Translation.z;
 
 			BoundingBox.Extents.x = BaseBoundingBox->Extents.x * Scale.x;
 			BoundingBox.Extents.y = BaseBoundingBox->Extents.y * Scale.y;
@@ -202,9 +202,9 @@ private:
 		}
 		if (BaseBoundingSphere)
 		{
-			BoundingSphere.Center.x = BaseBoundingSphere->Center.x + Translation.x;
-			BoundingSphere.Center.y = BaseBoundingSphere->Center.y + Translation.y;
-			BoundingSphere.Center.z = BaseBoundingSphere->Center.z + Translation.z;
+			BoundingSphere.Center.x = BaseBoundingSphere->Center.x * Scale.x + Translation.x;
+			BoundingSphere.Center.y = BaseBoundingSphere->Center.y * Scale.y + Translation.y;
+			BoundingSphere.Center.z = BaseBoundingSphere->Center.z * Scale.z + Translation.z;
 			BoundingSphere.Radius = BaseBoundingSphere->Radius * Scale.Length();
 		}
 
