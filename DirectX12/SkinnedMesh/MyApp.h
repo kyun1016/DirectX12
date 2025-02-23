@@ -157,15 +157,13 @@ public:
 	void BuildShadersAndInputLayout();
 	GeometryGenerator::MeshData LoadModelMesh(std::string dir);
 	void LoadSkinnedModelMesh(const std::string& dir);
-	void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex);
-	void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex);
 	void BuildMeshes();
 	void BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool useIndex16 = true, bool useSkinnedMesh = false);
 	void BuildTreeSpritesGeometry();
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
-	void BuildPSO();
+	void BuildPSOs();
 #pragma endregion Initialize
 
 private:

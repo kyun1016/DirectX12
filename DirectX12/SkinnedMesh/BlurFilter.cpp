@@ -17,7 +17,7 @@ BlurFilter::BlurFilter(ID3D12Device* device,
 	BuildShader();
 	BuildResources();
 	BuildRootSignature();
-	BuildPSO();
+	BuildPSOs();
 }
 
 UINT BlurFilter::DescriptorCount() const
@@ -85,7 +85,7 @@ void BlurFilter::BuildRootSignature()
 	ThrowIfFailed(md3dDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void BlurFilter::BuildPSO()
+void BlurFilter::BuildPSOs()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC BlurHorPSO = {
 		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mRootSignature.Get(),

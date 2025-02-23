@@ -33,7 +33,7 @@ public:
 		CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor,
 		UINT descriptorSize);
 	void BuildRootSignature();
-	void BuildPSO();
+	void BuildPSOs();
 
 	void OnResize(UINT newWidth, UINT newHeight);
 

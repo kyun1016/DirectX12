@@ -81,7 +81,7 @@ bool MyApp::Initialize()
 	mCamera.SetPosition(0.0f, 2.0f, -15.0f);
 	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
-	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f, m4xMsaaState, m4xMsaaQuality);
+	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 	{
 		for (int i = 0; i < MAX_LIGHTS; ++i)
 		{
@@ -102,20 +102,20 @@ bool MyApp::Initialize()
 	// mSsaoMap = std::make_unique<SsaoMap>(mDevice.Get(), mCommandList.Get(), mClientWidth, mClientHeight);
 
 	BuildMeshes();
+	BuildTreeSpritesGeometry();
 	LoadTextures();
 	BuildMaterials();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildTreeSpritesGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
-	BuildPSO();
-
+	BuildPSOs();
 	// mSsaoMap->SetPSOs();
 
 	if (!InitImgui())
 		return false;
+	
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -786,7 +786,7 @@ void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 		SubmeshGeometry submesh;
 		std::string name = "sm_" + std::to_string(i);
 
-		FindBounding(submesh.BoundingBox, submesh.BoundingSphere, mesh.SkinnedVertices);
+		D3DUtil::FindBounding(submesh.BoundingBox, submesh.BoundingSphere, mesh.SkinnedVertices);
 		submesh.IndexCount = (UINT)skinnedSubsets[i].FaceCount * 3;
 		submesh.StartIndexLocation = skinnedSubsets[i].FaceStart * 3;
 		submesh.BaseVertexLocation = 0;
@@ -795,63 +795,6 @@ void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 	}
 		
 	mGeometries.push_back(std::move(geo));
-}
-
-void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex)
-{
-	using namespace DirectX;
-	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-
-	DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-	for (size_t i = 0; i < vertex.size(); ++i)
-	{
-		DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
-		vMin = DirectX::XMVectorMin(vMin, P);
-		vMax = DirectX::XMVectorMax(vMax, P);
-	}
-	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-	outBoundingBox.Center = center;
-	DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
-
-	float maxRadius = 0.0f;
-	for (size_t i = 0; i < vertex.size(); ++i)
-	{
-		maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
-	}
-	maxRadius += 1e-2f;
-	outBoundingSphere.Center = center;
-	outBoundingSphere.Radius = maxRadius;
-}
-
-void MyApp::FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
-{
-	using namespace DirectX;
-	DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-	DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-
-	DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-	for (size_t i = 0; i < vertex.size(); ++i)
-	{
-		DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
-		vMin = DirectX::XMVectorMin(vMin, P);
-		vMax = DirectX::XMVectorMax(vMax, P);
-	}
-	DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
-
-	outBoundingBox.Center = center;
-	DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
-
-	float maxRadius = 0.0f;
-	for (size_t i = 0; i < vertex.size(); ++i)
-	{
-		maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
-	}
-	maxRadius += 1e-2f;
-	outBoundingSphere.Center = center;
 }
 
 void MyApp::BuildMeshes()
@@ -904,33 +847,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	}
 
 	//=========================================================
-	// Part 2. SubmeshGeometry 생성
-	//=========================================================
-	std::vector<SubmeshGeometry> submeshes(meshes.size());
-	for (size_t i = 0; i < meshes.size(); ++i)
-	{
-		if (useSkinnedMesh)
-			FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
-		else
-			FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
-		if (i == 0)
-		{
-			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
-			submeshes[0].StartIndexLocation = 0;
-			submeshes[0].BaseVertexLocation = 0;
-		}
-		else
-		{
-			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
-			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
-			submeshes[i].BaseVertexLocation = useSkinnedMesh 
-				? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
-				: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
-		}
-	}
-
-	//=========================================================
-	// Part 3. GPU 할당 (16bit)
+	// Part 2. GPU 할당 (16bit)
 	//=========================================================
 	const UINT vbByteSize = useSkinnedMesh 
 		? (UINT)skinnedVertices.size() * sizeof(GeometryGenerator::SkinnedVertex)
@@ -970,6 +887,31 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	geo->IndexFormat = useIndex16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
+	//=========================================================
+	// Part 3. SubmeshGeometry 생성
+	//=========================================================
+	std::vector<SubmeshGeometry> submeshes(meshes.size());
+	for (size_t i = 0; i < meshes.size(); ++i)
+	{
+		if (useSkinnedMesh)
+			D3DUtil::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
+		else
+			D3DUtil::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
+		if (i == 0)
+		{
+			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
+			submeshes[0].StartIndexLocation = 0;
+			submeshes[0].BaseVertexLocation = 0;
+		}
+		else
+		{
+			submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
+			submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
+			submeshes[i].BaseVertexLocation = useSkinnedMesh
+				? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
+				: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+		}
+	}
 	for (size_t i = 0; i < submeshes.size(); ++i)
 	{
 		geo->DrawArgs[std::to_string(i)] = submeshes[i];
@@ -1430,7 +1372,7 @@ void MyApp::BuildFrameResources()
 		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mAllMatItems.size(), 1));
 }
 
-void MyApp::BuildPSO()
+void MyApp::BuildPSOs()
 {
 	// Mesh Shader(2018) <- Compute Shader (고착화)
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc

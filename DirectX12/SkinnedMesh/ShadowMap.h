@@ -64,7 +64,7 @@ public:
 	// 
 	// void ExecuteFinish(ID3D12GraphicsCommandList* cmdList);
 private:
-	// void BuildPSO();
+	// void BuildPSOs();
 	void Update();
 	void UpdateMatrix();
 	void UpdatePassCB();

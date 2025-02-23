@@ -68,6 +68,8 @@ bool AppBase::Initialize()
 	// Do the initial resize code.
 	OnResize();
 
+	
+
 	return true;
 }
 
@@ -289,7 +291,6 @@ void AppBase::OnResize()
 	mLastClientWidth = mClientWidth;
 	assert(mDevice);
 	assert(mSwapChain);
-	mOnResizeDirty = false;
 	UpdateForSizeChange(mClientWidth, mClientHeight);
 
 	// Flush before changing any resources.
@@ -574,8 +575,6 @@ bool AppBase::InitDirect3D()
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
 
-	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	// Check 4X MSAA quality support for our back buffer format.
@@ -592,6 +591,7 @@ bool AppBase::InitDirect3D()
 	ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 
 	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
+	// m4xMsaaState = true;
 	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
 
 #ifdef _DEBUG
@@ -603,7 +603,7 @@ bool AppBase::InitDirect3D()
 		return false;
 
 	CreateCommandObjects();
-	CreateRtvAndDsvDescriptorHeaps();
+	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + 1, 1);
 	CreateSwapChain();
 
 	return true;
@@ -791,9 +791,6 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
-
-	if (mOnResizeDirty)
-		OnResize();
 
 	switch (msg)
 	{

@@ -42,7 +42,7 @@ public:
 
     void RebuildDescriptors(ID3D12Resource* depthStencilBuffer);
 
-    void BuildPSOs();
+    void BuildPSOss();
 
     void SetPSOs(ID3D12PipelineState* ssaoPso, ID3D12PipelineState* ssaoBlurPso);
 

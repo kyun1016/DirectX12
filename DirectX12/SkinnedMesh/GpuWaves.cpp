@@ -7,14 +7,12 @@
 #include <cassert>
 
 GpuWaves::GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
-	int m, int n, float dx, float dt, float speed, float damping, bool x4MsaaState, UINT x4MsaaQuality)
+	int m, int n, float dx, float dt, float speed, float damping)
 	: md3dDevice(device)
 	, mNumRows(m)
 	, mNumCols(n)
 	, mTimeStep(dt)
 	, mSpatialStep(dx)
-	, m4xMsaaState(x4MsaaState)
-	, m4xMsaaQuality(x4MsaaQuality)
 {
 	assert((m * n) % 256 == 0);
 
@@ -30,7 +28,7 @@ GpuWaves::GpuWaves(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
 	BuildShadersAndInputLayout();
 	BuildResources(cmdList);
 	BuildCSRootSignature();
-	BuildPSO();
+	BuildPSOs();
 }
 
 UINT GpuWaves::RowCount()const
@@ -242,7 +240,7 @@ void GpuWaves::BuildCSRootSignature()
 		IID_PPV_ARGS(mCSRootSignature.GetAddressOf())));
 }
 
-void GpuWaves::BuildPSO()
+void GpuWaves::BuildPSOs()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesDisturbPSO = {
 		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mCSRootSignature.Get(),

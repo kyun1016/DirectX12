@@ -19,7 +19,7 @@ public:
 	void BuildShader();
 	void BuildResources(ID3D12GraphicsCommandList* cmdList);
 	void BuildRootSignature();
-	void BuildPSO();
+	void BuildPSOs();
 	void DoComputeWork(ID3D12GraphicsCommandList* cmdList, ID3D12CommandAllocator* cmdAlloc);
 	void PrintOutput();
 private:

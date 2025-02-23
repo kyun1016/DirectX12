@@ -9,7 +9,7 @@ CSAdd::CSAdd(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 	BuildShader();
 	BuildResources(cmdList);
 	BuildRootSignature();
-	BuildPSO();
+	BuildPSOs();
 }
 
 void CSAdd::BuildShader()
@@ -113,7 +113,7 @@ void CSAdd::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void CSAdd::BuildPSO()
+void CSAdd::BuildPSOs()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {
 		/* ID3D12RootSignature * pRootSignature		*/.pRootSignature = mRootSignature.Get(),

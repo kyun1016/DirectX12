@@ -155,7 +155,7 @@ void SsaoMap::RebuildDescriptors(ID3D12Resource* depthStencilBuffer)
     md3dDevice->CreateRenderTargetView(mAmbientMap1.Get(), &rtvDesc, mhAmbientMap1CpuRtv);
 }
 
-void SsaoMap::BuildPSOs()
+void SsaoMap::BuildPSOss()
 {
 }
 

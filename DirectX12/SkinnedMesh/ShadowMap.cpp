@@ -204,7 +204,7 @@ DirectX::SimpleMath::Vector3 ShadowMap::GetTarget() const
 // 	cmdList->ResourceBarrier(1, &barrier);
 // }
 // 
-// void ShadowMap::BuildPSO()
+// void ShadowMap::BuildPSOs()
 // {
 // 	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowMapPsoDesc
 // 	{
