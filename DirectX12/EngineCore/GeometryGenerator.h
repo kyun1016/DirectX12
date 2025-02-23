@@ -130,5 +130,63 @@ public:
 	///</summary>
 	static MeshData CreateQuad(float x, float y, float w, float h, float depth);
 	
+
+	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex)
+	{
+		using namespace DirectX;
+		DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+		DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+		for (size_t i = 0; i < vertex.size(); ++i)
+		{
+			DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
+			vMin = DirectX::XMVectorMin(vMin, P);
+			vMax = DirectX::XMVectorMax(vMax, P);
+		}
+		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+
+		outBoundingBox.Center = center;
+		DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
+
+		float maxRadius = 0.0f;
+		for (size_t i = 0; i < vertex.size(); ++i)
+		{
+			maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+		}
+		maxRadius += 1e-2f;
+		outBoundingSphere.Center = center;
+		outBoundingSphere.Radius = maxRadius;
+	}
+
+	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
+	{
+		using namespace DirectX;
+		DirectX::XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
+		DirectX::XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
+
+		DirectX::XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+		DirectX::XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+		for (size_t i = 0; i < vertex.size(); ++i)
+		{
+			DirectX::XMVECTOR P = XMLoadFloat3(&vertex[i].Position);
+			vMin = DirectX::XMVectorMin(vMin, P);
+			vMax = DirectX::XMVectorMax(vMax, P);
+		}
+		DirectX::SimpleMath::Vector3 center = (vMin + vMax) * 0.5f;
+
+		outBoundingBox.Center = center;
+		DirectX::XMStoreFloat3(&outBoundingBox.Extents, 0.5f * (vMax - vMin));
+
+		float maxRadius = 0.0f;
+		for (size_t i = 0; i < vertex.size(); ++i)
+		{
+			maxRadius = max(maxRadius, (center - vertex[i].Position).Length());
+		}
+		maxRadius += 1e-2f;
+		outBoundingSphere.Center = center;
+		outBoundingSphere.Radius = maxRadius;
+	}
 };
 

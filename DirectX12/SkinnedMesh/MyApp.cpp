@@ -202,19 +202,18 @@ void MyApp::LoadTextures(const std::vector<std::wstring>& filename, std::unorder
 void MyApp::BuildRootSignature()
 {
 	// Create root CBVs.
-	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t0 (Space1)
+	D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space1)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = 1,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT) mDiffuseTex.size() + SRV_USER_SIZE,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 1,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
-
-	D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space2)
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable // register t0 (Space2)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mDiffuseTex.size() + SRV_USER_SIZE,
+		/* UINT NumDescriptors						*/.NumDescriptors = 1,
 		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
@@ -314,8 +313,8 @@ void MyApp::BuildRootSignature()
 	slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
 	slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
 	slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
-	slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-	slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[6].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
 	slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -404,30 +403,40 @@ void MyApp::BuildDescriptorHeaps()
 	CD3DX12_GPU_DESCRIPTOR_HANDLE hGPUDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
 
 	{
+		//=========================================
+		// User Define - SRV_USER_SIZE (Texture2D) -> 1. Render Target, 2. Copy
+		//=========================================
 		mhGPUUser = hGPUDescriptor;
-		mhGPUDiff = hGPUDescriptor;
 
-		//=========================================
-		// gDiffuseMap - SRV_USER_SIZE (Texture2D)
-		//=========================================
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.MipLevels = 1;
 		srvDesc.Texture2D.PlaneSlice = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
 		for (int i = 0; i < SRV_USER_SIZE; ++i)
 		{
 			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hCPUDescriptor);
 			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
 		}
-
-		BuildTexture2DSrv(mDiffuseTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-		mhGPUNorm = hGPUDescriptor;
-		BuildTexture2DSrv(mNormalTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-		
 	}
+
+	mhGPUDiff = hGPUDescriptor;
+	BuildTexture2DSrv(mDiffuseTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUDisplacement = hGPUDescriptor;
+	BuildTexture2DSrv(mDisplacementTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUNorm = hGPUDescriptor;
+	BuildTexture2DSrv(mNormalTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUAO = hGPUDescriptor;
+	BuildTexture2DSrv(mAOTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUMetallic = hGPUDescriptor;
+	BuildTexture2DSrv(mMetallicTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPURoughness = hGPUDescriptor;
+	BuildTexture2DSrv(mRoughnessTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUEmissive = hGPUDescriptor;
+	BuildTexture2DSrv(mEmissiveTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -446,13 +455,16 @@ void MyApp::BuildDescriptorHeaps()
 			hCPUDSVDescriptor.Offset(1, mDsvDescriptorSize);
 		}
 	}
+	//=========================================
+	// TODO make gSSAOMap - (Texture2D)
+	//=========================================
+	mhGPUSsao = hGPUDescriptor;
+	// SSAO
 
-	{
-		mhGPUArray = hGPUDescriptor;
-		BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-		mhGPUCube = hGPUDescriptor;
-		BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-	}
+	mhGPUArray = hGPUDescriptor;
+	BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	mhGPUCube = hGPUDescriptor;
+	BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -786,7 +798,7 @@ void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 		SubmeshGeometry submesh;
 		std::string name = "sm_" + std::to_string(i);
 
-		D3DUtil::FindBounding(submesh.BoundingBox, submesh.BoundingSphere, mesh.SkinnedVertices);
+		GeometryGenerator::FindBounding(submesh.BoundingBox, submesh.BoundingSphere, mesh.SkinnedVertices);
 		submesh.IndexCount = (UINT)skinnedSubsets[i].FaceCount * 3;
 		submesh.StartIndexLocation = skinnedSubsets[i].FaceStart * 3;
 		submesh.BaseVertexLocation = 0;
@@ -894,9 +906,9 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	for (size_t i = 0; i < meshes.size(); ++i)
 	{
 		if (useSkinnedMesh)
-			D3DUtil::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
+			GeometryGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
 		else
-			D3DUtil::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
+			GeometryGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
 		if (i == 0)
 		{
 			submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
@@ -975,14 +987,21 @@ void MyApp::BuildTreeSpritesGeometry()
 void MyApp::BuildMaterials()
 {
 	UINT idx = 0;
-	for (size_t i = 0; i < SRV_USER_SIZE + mDiffuseTex.size(); ++i)
+	for (size_t i = 0; i < SRV_USER_SIZE; ++i)
 	{
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = i;
 		mat->MaterialData.useAlbedoMap = 1;
 		mAllMatItems.push_back(std::move(mat));
 	}
-	// mAllMatItems[13]
+	for (size_t i = 0; i < mDiffuseTex.size(); ++i)
+	{
+		auto mat = std::make_unique<EXMaterialData>();
+		mat->MaterialData.DiffMapIndex = SRV_USER_SIZE + i;
+		mat->MaterialData.useAlbedoMap = 1;
+		mAllMatItems.push_back(std::move(mat));
+	}
+
 	for (size_t i = 0; i < mTreeMapTex.size(); ++i)
 	{
 		auto mat = std::make_unique<EXMaterialData>();
@@ -1069,12 +1088,13 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
+	int repeatCount = 10;
 
-	for (int i = 0; i < mAllMatItems.size() * 10; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 10.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 10);
 		scale.x = 2.0f;
 		scale.y = 2.0f;
 		scale.z = 2.0f;
@@ -1082,11 +1102,11 @@ void MyApp::BuildRenderItems()
 		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
 	}
 	
-	for (int i = 0; i < mAllMatItems.size() * 10; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 20.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1094,11 +1114,11 @@ void MyApp::BuildRenderItems()
 		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
 
-	for (int i = 0; i < mAllMatItems.size() * 10; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 30.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1106,11 +1126,11 @@ void MyApp::BuildRenderItems()
 		subBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
 	
-	for (int i = 0; i < mAllMatItems.size() * 10; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 40.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1118,11 +1138,11 @@ void MyApp::BuildRenderItems()
 		subSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
 
-	for (int i = 0; i < mAllMatItems.size() * 10; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 50.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
+		translation.z = 5.0f + 5.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1173,26 +1193,26 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	//// GEO_MESH_NAMES[1]:ModelGeo
 	////=========================================================
-	for (int i = 0; i < mAllMatItems.size() * 20; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 60.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
+		translation.z = 5.0f + 5.0f * (i / 10);
+		scale.x = 0.4f;
+		scale.y = 0.4f;
+		scale.z = 0.4f;
 
 		skullRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
 
-	for (int i = 0; i < mAllMatItems.size() * 20; ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 70.0f;
-		translation.z = 5.0f + 5.0f * (i / 5);
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
+		translation.z = 5.0f + 5.0f * (i / 10);
+		scale.x = 0.4f;
+		scale.y = 0.4f;
+		scale.z = 0.4f;
 
 		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
@@ -1204,13 +1224,13 @@ void MyApp::BuildRenderItems()
 		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
 		charRitem->LayerFlag
 			= (1 << (int)RenderLayer::SkinnedOpaque);
-		for (int i = 0; i < mAllMatItems.size() * 20; ++i) {		
+		for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i) {
 			translation.x = (i % 10) * 8.0f;
 			translation.y = 80.0f;
-			translation.z = 5.0f + 5.0f * (i / 5);
-			scale.x = 0.2f;
-			scale.y = 0.2f;
-			scale.z = -0.2f;
+			translation.z = 5.0f + 5.0f * (i / 10);
+			scale.x = 0.15f;
+			scale.y = 0.15f;
+			scale.z = -0.15f;
 
 			charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 		}
@@ -1314,10 +1334,6 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(subSphereRitem));
 	mAllRitems.push_back(std::move(skullRitem));
 	mAllRitems.push_back(std::move(carRitem));
-	
-	
-	
-	
 
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
@@ -1772,8 +1788,8 @@ void MyApp::Render()
 		//slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
 		//slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
 		//slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
-		//slotRootParameter[5].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-		//slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		//slotRootParameter[6].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
 		//slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		//slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		//slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -1787,8 +1803,8 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(3, instanceBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(4, matBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(5, mCSWaves->DisplacementMap());
-		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUDiff);
+		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUUser);
+		mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
 		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUNorm);
 		mCommandList->SetGraphicsRootDescriptorTable(12, mhGPUShadow);
 		// mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUSsao);

@@ -68,8 +68,6 @@ bool AppBase::Initialize()
 	// Do the initial resize code.
 	OnResize();
 
-	
-
 	return true;
 }
 
@@ -81,7 +79,6 @@ void AppBase::CleanUp()
 	ImGui::DestroyContext();
 	DestroyWindow(mHwndWindow);
 	::UnregisterClassW(mWindowClass.lpszClassName, mWindowClass.hInstance);
-
 }
 
 int AppBase::Run()

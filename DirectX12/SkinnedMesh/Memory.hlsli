@@ -118,8 +118,8 @@ struct MaterialData
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space0);
 
-Texture2D gDisplacementMap[TEX_DISPLACEMENT_SIZE] : register(t0, space1);
-Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space2);
+Texture2D gDiffuseMap[TEX_DIFF_SIZE] : register(t0, space1);
+Texture2D gDisplacementMap[TEX_DISPLACEMENT_SIZE] : register(t0, space2);
 Texture2D gNormalMap[TEX_NORM_SIZE] : register(t0, space3);
 Texture2D gAOMap[TEX_AO_SIZE] : register(t0, space4);
 Texture2D gMetallicMap[TEX_METALLIC_SIZE] : register(t0, space5);
