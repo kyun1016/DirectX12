@@ -21,8 +21,9 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[6] = RenderLayer::CubeMap;
 	mLayerType[7] = RenderLayer::SkinnedOpaque;
 	mLayerType[8] = RenderLayer::ShadowMap;
+	// mLayerType[9] = RenderLayer::BoundingSphere;
 	// mLayerType[7] = RenderLayer::Normal;
-	// mLayerType[8] = RenderLayer::BoundingSphere;
+	
 
 	mLayerStencil[0] = 0;
 	mLayerStencil[1] = 0;
@@ -33,6 +34,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerStencil[6] = 0;
 	mLayerStencil[7] = 0;
 	mLayerStencil[8] = 0;
+	mLayerStencil[9] = 0;
 
 	mLayerCBIdx[0] = 0;
 	mLayerCBIdx[1] = 0;
@@ -43,13 +45,14 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerCBIdx[6] = 0;
 	mLayerCBIdx[7] = 0;
 	mLayerCBIdx[8] = 0;
+	mLayerCBIdx[9] = 0;
 
 	{
 		// 거울 반사 구현 시
 		// 1. 바라보는 시점관련 Constant buffer 구현
 		// 2. 스텐실 버퍼 설정
 		// 3. 물체의 월드좌표 시점에 맞춰 반전 후 InstanceData 저장 (현재는 Offset을 두어 접근하는 인덱스를 키우는 방식으로 활용 가능)
-		// 4. 시점 버퍼 설정 + 스텐실 버퍼 설정 + 물체의 월드자표 오프셋 설정 후 렌더링 시 거울 반사 구현 완료
+		// 4. 시점 버퍼 설정 + 스텐실 버퍼 설정 + 물체의 월드 좌표 오프셋 설정 후 렌더링 시 거울 반사 구현 완료
 		// mLayerType[2] = RenderLayer::Mirror;
 		// mLayerType[3] = RenderLayer::Reflected;
 		// mLayerStencil[2] = 1;
@@ -1091,13 +1094,13 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
-	int repeatCount = 10;
+	int repeatCount = 30;
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 10.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
+		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 2.0f;
 		scale.y = 2.0f;
 		scale.z = 2.0f;
@@ -1109,7 +1112,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 20.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
+		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1121,7 +1124,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 30.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
+		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1133,7 +1136,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 40.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
+		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1145,7 +1148,7 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 50.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
+		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1200,10 +1203,10 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 60.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
-		scale.x = 0.4f;
-		scale.y = 0.4f;
-		scale.z = 0.4f;
+		translation.z = 5.0f + 8.0f * (i / 10);
+		scale.x = 0.6f;
+		scale.y = 0.6f;
+		scale.z = 0.6f;
 
 		skullRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
@@ -1212,10 +1215,10 @@ void MyApp::BuildRenderItems()
 	{
 		translation.x = (i % 10) * 8.0f;
 		translation.y = 70.0f;
-		translation.z = 5.0f + 5.0f * (i / 10);
-		scale.x = 0.4f;
-		scale.y = 0.4f;
-		scale.z = 0.4f;
+		translation.z = 5.0f + 8.0f * (i / 10);
+		scale.x = 0.6f;
+		scale.y = 0.6f;
+		scale.z = 0.6f;
 
 		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 	}
@@ -1230,7 +1233,7 @@ void MyApp::BuildRenderItems()
 		for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i) {
 			translation.x = (i % 10) * 8.0f;
 			translation.y = 80.0f;
-			translation.z = 5.0f + 5.0f * (i / 10);
+			translation.z = 5.0f + 8.0f * (i / 10);
 			scale.x = 0.15f;
 			scale.y = 0.15f;
 			scale.z = -0.15f;
@@ -1858,7 +1861,6 @@ void MyApp::Render()
 			|| mLayerType[i] == RenderLayer::WaveCS)
 			continue;
 		else {
-			mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
 			mCommandList->OMSetStencilRef(mLayerStencil[i]);
 			mCommandList->SetPipelineState(mPSOs[mLayerType[i]].Get());
@@ -1888,7 +1890,7 @@ void MyApp::Render()
 	}
 	
 
-	{	// Test Render Copy
+	{	// Test Back Buffer Copy
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
@@ -2129,10 +2131,6 @@ void MyApp::UpdateSkinnedCB()
 
 void MyApp::DrawRenderItems(const RenderLayer flag)
 {
-	UINT offset
-		= (flag == RenderLayer::Reflected || flag == RenderLayer::ReflectedWireframe)
-		? mAllRitems.size()
-		: 0;
 	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(InstanceConstants));
 	UINT skinnedCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
 
@@ -2162,16 +2160,17 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		mCommandList->IASetIndexBuffer(&ibv);
 		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
 
+		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
 		mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
+		
 		if (ri->SkinnedModelInst != nullptr)
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress() + ri->SkinnedCBIndex * skinnedCBByteSize;
 			mCommandList->SetGraphicsRootConstantBufferView(2, skinnedCBAddress);
 		}
-		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);// DX12 버그로 코드의 Start InstanceLocation이 반영되지 않는다.
-		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	
+		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);// DX12 버그로 코드의 Start InstanceLocation이 반영되지 않는다.
+		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	
 	}
 }
 
@@ -2187,7 +2186,6 @@ void MyApp::DrawSceneToShadowMap(int index)
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-	// Change to DEPTH_WRITE.
 	mCommandList->ResourceBarrier(1, &barrier);
 
 	// Clear the back buffer and depth buffer.
@@ -2213,12 +2211,11 @@ void MyApp::DrawSceneToShadowMap(int index)
 	mCommandList->SetPipelineState(mPSOs[RenderLayer::SkinnedShadowMap].Get());
 	DrawRenderItems(RenderLayer::SkinnedOpaque);
 
-	// Change back to GENERIC_READ so we can read the texture in a shader.
 	barrier.Transition.StateBefore = barrier.Transition.StateAfter;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
 	mCommandList->ResourceBarrier(1, &barrier);
 
-	// mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	// mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress()); // passCB 복구 로직은 구현하지 않음
 }
 
 void MyApp::Pick()
@@ -2761,7 +2758,7 @@ void MyApp::ShowInstanceWindow()
 			if (ImGui::TreeNode("Diffuse Map")) {
 				flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
 				flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize - 1, "%d", flags);
-				my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
+				my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
 				ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 				ImGui::TreePop();
@@ -2776,17 +2773,6 @@ void MyApp::ShowInstanceWindow()
 
 				ImGui::TreePop();
 			}
-
-			//ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-			//if (ImGui::TreeNode("Normal Map")) {
-			//	flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
-			//	flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
-			//	my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
-			//	ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
-
-			//	ImGui::TreePop();
-			//}
-
 
 			ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 			if (ImGui::TreeNode("Alpha Test")) {
