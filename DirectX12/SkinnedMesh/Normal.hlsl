@@ -8,6 +8,11 @@ struct VertexIn
     float3 NormalL : NORMAL;
     float2 TexC : TEXCOORD;
     float3 TangentU : TANGENT;
+    
+#ifdef SKINNED
+    float3 BoneWeights : WEIGHTS;
+    uint4 BoneIndices  : BONEINDICES;
+#endif
 };
 
 struct NormalGeometryShaderInput
@@ -24,6 +29,31 @@ NormalGeometryShaderInput VS(VertexIn input, uint instanceID : SV_InstanceID)
 {
     NormalGeometryShaderInput output;
 
+    #ifdef SKINNED
+    float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    weights[0] = input.BoneWeights.x;
+    weights[1] = input.BoneWeights.y;
+    weights[2] = input.BoneWeights.z;
+    weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
+
+    float3 posL = float3(0.0f, 0.0f, 0.0f);
+    float3 normalL = float3(0.0f, 0.0f, 0.0f);
+    float3 tangentL = float3(0.0f, 0.0f, 0.0f);
+    for(int i = 0; i < 4; ++i)
+    {
+        // Assume no nonuniform scaling when transforming normals, so 
+        // that we do not have to use the inverse-transpose.
+
+        posL += weights[i] * mul(float4(input.PosL, 1.0f), gBoneTransforms[input.BoneIndices[i]]).xyz;
+        normalL += weights[i] * mul(input.NormalL, (float3x3)gBoneTransforms[input.BoneIndices[i]]);
+        tangentL += weights[i] * mul(input.TangentU.xyz, (float3x3) gBoneTransforms[input.BoneIndices[i]]);
+    }
+
+    input.PosL = posL;
+    input.NormalL = normalL;
+    input.TangentU.xyz = tangentL;
+#endif
+    
     output.PosL = float4(input.PosL, 1.0);
     output.NormalL = input.NormalL;
     output.InsIndex = instanceID + gBaseInstanceIndex;

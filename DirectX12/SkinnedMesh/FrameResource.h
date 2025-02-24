@@ -105,7 +105,7 @@ struct EXMaterialData
 	MaterialData MaterialData;
 
 	// std::string Name;
-	int NumFramesDirty = 3;
+	int NumFramesDirty = -1;
 };
 
 struct EXInstanceData

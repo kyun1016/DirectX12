@@ -115,7 +115,6 @@ bool MyApp::Initialize()
 
 	if (!InitImgui())
 		return false;
-	
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -635,6 +634,7 @@ void MyApp::BuildShadersAndInputLayout()
 	
 
 	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "VS", "vs_5_1");
+	mShaders["SkinnedNormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["NormalGS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "GS", "gs_5_1");
 	mShaders["NormalPS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "PS", "ps_5_1");
 
@@ -816,7 +816,7 @@ void MyApp::BuildMeshes()
 	//	L"skull.txt", L""
 	//};
 
-	mMeshes.push_back(GeometryGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
+	mMeshes.push_back(GeometryGenerator::CreateBox(2.0f, 2.0f, 2.0f, 3));
 	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
 	mMeshes.push_back(GeometryGenerator::CreateSphere(1.0f, 20, 20));
 	mMeshes.push_back(GeometryGenerator::CreateCylinder(0.3f, 0.5f, 3.0f, 20, 20));
@@ -992,6 +992,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = i;
 		mat->MaterialData.useAlbedoMap = 1;
+		mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		mAllMatItems.push_back(std::move(mat));
 	}
 	for (size_t i = 0; i < mDiffuseTex.size(); ++i)
@@ -999,6 +1000,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = SRV_USER_SIZE + i;
 		mat->MaterialData.useAlbedoMap = 1;
+		mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		mAllMatItems.push_back(std::move(mat));
 	}
 
@@ -1007,6 +1009,7 @@ void MyApp::BuildMaterials()
 		auto mat = std::make_unique<EXMaterialData>();
 		mat->MaterialData.DiffMapIndex = i;
 		mat->MaterialData.useAlbedoMap = 1;
+		mat->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		mAllMatItems.push_back(std::move(mat));
 	}
 }
@@ -1218,12 +1221,12 @@ void MyApp::BuildRenderItems()
 	}
 
 	
-	
 	for (const auto& arg : mGeometries[1]->DrawArgs)
 	{
 		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
 		charRitem->LayerFlag
-			= (1 << (int)RenderLayer::SkinnedOpaque);
+			= (1 << (int)RenderLayer::SkinnedOpaque)
+			| (1 << (int)RenderLayer::SkinnedNormal);
 		for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i) {
 			translation.x = (i % 10) * 8.0f;
 			translation.y = 80.0f;
@@ -1234,18 +1237,6 @@ void MyApp::BuildRenderItems()
 
 			charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
 		}
-		charRitem->SkinnedCBIndex = 0;
-		charRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mAllRitems.push_back(std::move(charRitem));
-	}
-
-	for (const auto& arg : mGeometries[1]->DrawArgs)
-	{
-		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
-		charRitem->LayerFlag
-			= (1 << (int)RenderLayer::SkinnedOpaque);
-
 		translation.x = 0.0f;
 		translation.y = 5.0f;
 		translation.z = -5.0f;
@@ -1259,6 +1250,7 @@ void MyApp::BuildRenderItems()
 
 		mAllRitems.push_back(std::move(charRitem));
 	}
+	
 	
 
 	////=========================================================
@@ -1472,13 +1464,6 @@ void MyApp::BuildPSOs()
 	opaquePsoDesc.BlendState.IndependentBlendEnable = true;
 
 	//=====================================================
-	// PSO for marking skinned mesh.
-	//=====================================================
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaquePsoDesc = opaquePsoDesc;
-	skinnedOpaquePsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	skinnedOpaquePsoDesc.VS ={reinterpret_cast<BYTE*>(mShaders["SkinnedVS"]->GetBufferPointer()), mShaders["SkinnedVS"]->GetBufferSize()};
-
-	//=====================================================
 	// PSO for marking stencil mirrors.
 	//=====================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC markMirrorsPsoDesc = opaquePsoDesc;
@@ -1645,6 +1630,19 @@ void MyApp::BuildPSOs()
 	debugShadowMapPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShadowDebugPS"]->GetBufferPointer()), mShaders["ShadowDebugPS"]->GetBufferSize() };
 
 	//=====================================================
+	// PSO for marking skinned mesh.
+	//=====================================================
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaquePsoDesc = opaquePsoDesc;
+	skinnedOpaquePsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	skinnedOpaquePsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["SkinnedVS"]->GetBufferPointer()), mShaders["SkinnedVS"]->GetBufferSize() };
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedNormalPsoDesc = normalDesc;
+	skinnedNormalPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	skinnedNormalPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["SkinnedNormalVS"]->GetBufferPointer()), mShaders["SkinnedNormalVS"]->GetBufferSize() };
+
+	
+
+	//=====================================================
 	// Create PSO
 	//=====================================================
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
@@ -1655,6 +1653,7 @@ void MyApp::BuildPSOs()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::AlphaTested])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&subdivisionDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Subdivision])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Normal])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&skinnedNormalPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SkinnedNormal])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSprites])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Tessellation])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&boundingBoxPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::BoundingBox])));
@@ -1742,8 +1741,6 @@ void MyApp::OnResize()
 }
 void MyApp::Update()
 {
-	OnKeyboardInput();
-
 	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % APP_NUM_FRAME_RESOURCES;
 	mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
 
@@ -1752,12 +1749,13 @@ void MyApp::Update()
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, mFenceEvent));
 		WaitForSingleObject(mFenceEvent, INFINITE);
 	}
+
+	OnKeyboardInput();	
+	UpdateMaterials();
 	UpdateShadowMap();
-	AnimateMaterials();
 	UpdateInstanceBuffer();
 	UpdateMaterialBuffer();
-	UpdateMainPassCB();
-	UpdateShadowPassCB();
+	UpdatePassCB();
 	UpdateSkinnedCB();
 }
 
@@ -1765,7 +1763,7 @@ void MyApp::Render()
 {
 	// Reuse the memory associated with command recording.
 	// We can only reset when the associated command lists have finished execution on the GPU.
-s	ThrowIfFailed(mCurrFrameResource->CmdListAlloc->Reset());
+	ThrowIfFailed(mCurrFrameResource->CmdListAlloc->Reset());
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
@@ -1926,7 +1924,7 @@ void MyApp::Sync()
 	mCSAdd->PrintOutput();
 }
 
-void MyApp::AnimateMaterials()
+void MyApp::UpdateMaterials()
 {
 	// Scroll the water material texture coordinates.
 	auto waterMat = mAllMatItems[6].get();
@@ -1997,9 +1995,6 @@ void MyApp::UpdateShadowMap()
 
 void MyApp::UpdateInstanceBuffer()
 {
-	mCamFrustum.Origin = mCamera.GetPosition3f();
-	mCamFrustum.Orientation = mCamera.GetQuaternion();
-
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
 	int visibleInstanceCount = 0;
@@ -2018,6 +2013,7 @@ void MyApp::UpdateInstanceBuffer()
 			for (const auto& d : e->Datas)
 			{
 				if ((mCamFrustum.Contains(d.BoundingBox) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
+				// if ((mCamFrustum.Contains(d.BoundingSphere) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
 				{
 					currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
 				}
@@ -2058,7 +2054,7 @@ void MyApp::UpdateMaterialBuffer()
 	auto currMaterialCB = mCurrFrameResource->MaterialBuffer.get();
 	for (size_t i=0; i < mAllMatItems.size(); ++i)
 	{
-		auto e = mAllMatItems[i].get();
+		auto& e = mAllMatItems[i];
 		// Only update the cbuffer data if the constants have changed.  If the cbuffer
 		// data changes, it needs to be updated for each FrameResource.
 		if (e->NumFramesDirty > 0)
@@ -2071,7 +2067,7 @@ void MyApp::UpdateMaterialBuffer()
 	}
 }
 
-void MyApp::UpdateMainPassCB()
+void MyApp::UpdatePassCB()
 {
 	DirectX::XMMATRIX view = mCamera.GetView();
 	DirectX::XMMATRIX proj = mCamera.GetProj();
@@ -2107,11 +2103,6 @@ void MyApp::UpdateMainPassCB()
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
-}
-
-void MyApp::UpdateShadowPassCB()
-{
-	auto currPassCB = mCurrFrameResource->PassCB.get();
 	for (int i = 0; i < MAX_LIGHTS; ++i)
 	{
 		currPassCB->CopyData(1 + i, mShadowMap[i]->GetPassCB());
@@ -2345,6 +2336,9 @@ void MyApp::OnKeyboardInput()
 		mCamera.Strafe(speed * dt);
 
 	mCamera.UpdateViewMatrix();
+
+	mCamFrustum.Origin = mCamera.GetPosition3f();
+	mCamFrustum.Orientation = mCamera.GetQuaternion();
 }
 
 void MyApp::UpdateImGui()
@@ -2410,26 +2404,27 @@ void MyApp::ShowMainWindow()
 				"6. Transparent",
 				"7. Subdivision",
 				"8. Normal",
-				"9. TreeSprites",
-				"10. Tessellation",
-				"11. BoundingBox",
-				"12. BoundingSphere",
-				"13. CubeMap",
-				"14. DebugShadowMap",
-				"15. OpaqueWireframe",
-				"16. MirrorWireframe",
-				"17. ReflectedWireframe",
-				"18. AlphaTestedWireframe",
-				"19. TransparentWireframe",
-				"20. SubdivisionWireframe",
-				"21. NormalWireframe",
-				"22. TreeSpritesWireframe",
-				"23. TessellationWireframe",
-				"24. ShadowMap",
-				"25. SkinnedShadowMap",
-				"26. AddCS",
-				"27. BlurCS",
-				"28. WaveCS"
+				"9. SkinnedNormal",
+				"10. TreeSprites",
+				"11. Tessellation",
+				"12. BoundingBox",
+				"13. BoundingSphere",
+				"14. CubeMap",
+				"15. DebugShadowMap",
+				"16. OpaqueWireframe",
+				"17. MirrorWireframe",
+				"18. ReflectedWireframe",
+				"19. AlphaTestedWireframe",
+				"20. TransparentWireframe",
+				"21. SubdivisionWireframe",
+				"22. NormalWireframe",
+				"23. TreeSpritesWireframe",
+				"24. TessellationWireframe",
+				"25. ShadowMap",
+				"26. SkinnedShadowMap",
+				"27. AddCS",
+				"28. BlurCS",
+				"29. WaveCS"
 			};
 			ImVec2 size(0, 400);
 			if (ImGui::BeginListBox("Shader Type", size))
@@ -2461,7 +2456,7 @@ void MyApp::ShowMainWindow()
 		{
 			for (auto& e : mAllRitems)
 			{
-				e->NumFramesDirty = APP_NUM_BACK_BUFFERS;
+				e->NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 			}
 		}
 		ImGui::TreePop();

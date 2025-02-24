@@ -66,7 +66,7 @@ struct ExampleDescriptorHeapAllocator
 class AppBase
 {
 public:
-	static constexpr int APP_NUM_FRAME_RESOURCES = 3;	// must bigger than 1
+	static constexpr int APP_NUM_FRAME_RESOURCES = 5;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
 	static constexpr int SRV_USER_SIZE = 2;

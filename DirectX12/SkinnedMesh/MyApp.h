@@ -32,6 +32,7 @@ private:
 		Transparent,
 		Subdivision,
 		Normal,
+		SkinnedNormal,
 		TreeSprites,
 		Tessellation,
 		BoundingBox,
@@ -133,7 +134,7 @@ private:
 		UINT ObjCBIndex = -1;
 		UINT SkinnedCBIndex = -1;
 
-		int NumFramesDirty = APP_NUM_BACK_BUFFERS;
+		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 
 		SkinnedModelInstance* SkinnedModelInst = nullptr;
 	};
@@ -174,13 +175,12 @@ private:
 	virtual void Render()override;
 	virtual void Sync()override;
 
-	void AnimateMaterials();
+	void UpdateMaterials();
 	void UpdateTangents();
 	void UpdateShadowMap();
 	void UpdateInstanceBuffer();
 	void UpdateMaterialBuffer();
-	void UpdateMainPassCB();
-	void UpdateShadowPassCB();
+	void UpdatePassCB();
 	void UpdateSkinnedCB();
 
 	void DrawRenderItems(const RenderLayer ritems);
