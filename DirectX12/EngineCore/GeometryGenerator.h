@@ -157,7 +157,10 @@ public:
 		outBoundingSphere.Radius += 1e-2f;
 	}
 
-	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
+	static void FindBounding(
+		DirectX::BoundingBox& outBoundingBox, 
+		DirectX::BoundingSphere& outBoundingSphere, 
+		const std::vector<GeometryGenerator::SkinnedVertex>& vertex)
 	{
 		using namespace DirectX;
 		DirectX::SimpleMath::Vector3 vMin(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);

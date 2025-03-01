@@ -22,7 +22,12 @@ Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filenam
 
 	return blob;
 }
-Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer)
+Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(
+	ID3D12Device* device,
+	ID3D12GraphicsCommandList* cmdList,
+	const void* initData,
+	UINT64 byteSize,
+	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer)
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> defaultBuffer;
 
@@ -33,17 +38,16 @@ Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device
 		&defaultHeapProperty,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(defaultBuffer.GetAddressOf())));
 
 	// CPU 메모리의 자료를 기본 버퍼에 복사하기 위해 임시 업로드 힙 생성
 	D3D12_HEAP_PROPERTIES uploadHeapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	// D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
 	ThrowIfFailed(device->CreateCommittedResource(
 		&uploadHeapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&resourceDesc,						// ************************** 해당 동작에 오류가 없는지 테스트 반드시 필요 ****************************
+		&resourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(uploadBuffer.GetAddressOf())));
@@ -59,16 +63,17 @@ Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device
 
 	// 기본 버퍼 자원으로 자료 복사 요청
 	// CPU 메모리를 임시 업로드 힙에 복사하고, ID3D12CommandList::CopySubresourceResion을 이용해서 임시 업로드 힙의 자료를 mBuffer에 복사
-	D3D12_RESOURCE_BARRIER beforeBarrier = CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-	D3D12_RESOURCE_BARRIER afterBarrier = CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-	cmdList->ResourceBarrier(1, &beforeBarrier);
 	UpdateSubresources<1>(cmdList, defaultBuffer.Get(), uploadBuffer.Get(), 0, 0, 1, &subResourceData);
-	cmdList->ResourceBarrier(1, &afterBarrier);
+
+	D3D12_RESOURCE_BARRIER barrier
+		= CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+	cmdList->ResourceBarrier(1, &barrier);
 
 	// 주의: 위의 함수 호출 이후에도 uploadBuffer를 계속 유지해야 함
 	// 복사가 완료된 이후 uploadBuffer 소멸
 	return defaultBuffer;
 }
+
 Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::CompileShader(const std::wstring& filename, const D3D_SHADER_MACRO* defines, const std::string& entrypoint, const std::string& target)
 {
 	UINT compileFlags = 0;

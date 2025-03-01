@@ -814,11 +814,6 @@ void MyApp::LoadSkinnedModelMesh(const std::string& dir)
 
 void MyApp::BuildMeshes()
 {
-	//static const std::wstring MESH_MODEL_DIR = L"../Data/Models/";
-	//static const std::vector<std::wstring> MESH_MODEL_FILE_NAMES = {
-	//	L"skull.txt", L""
-	//};
-
 	mMeshes.push_back(GeometryGenerator::CreateBox(2.0f, 2.0f, 2.0f, 3));
 	mMeshes.push_back(GeometryGenerator::CreateGrid(20.0f, 30.0f, 60, 40));
 	mMeshes.push_back(GeometryGenerator::CreateSphere(1.0f, 20, 20));
@@ -846,7 +841,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 {
 	using namespace DirectX;
 	//=========================================================
-	// Part 1. vertices & indices 생성
+	// Part 1. vertices & indices 병합
 	//=========================================================
 	std::vector<GeometryGenerator::SkinnedVertex> skinnedVertices;
 	std::vector<GeometryGenerator::Vertex> vertices;
@@ -862,7 +857,7 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 	}
 
 	//=========================================================
-	// Part 2. GPU 할당 (16bit)
+	// Part 2. GPU 할당 (16/32 bit)
 	//=========================================================
 	const UINT vbByteSize = useSkinnedMesh 
 		? (UINT)skinnedVertices.size() * sizeof(GeometryGenerator::SkinnedVertex)
@@ -873,34 +868,38 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = mGeometries.size();
+	geo->VertexByteStride = useSkinnedMesh ? sizeof(GeometryGenerator::SkinnedVertex) : sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = useIndex16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	if (useSkinnedMesh)
 	{
 		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), skinnedVertices.data(), vbByteSize);
-		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), skinnedVertices.data(), vbByteSize, geo->VertexBufferUploader);
+		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(),
+			skinnedVertices.data(), vbByteSize, geo->VertexBufferUploader);
 	}
 	else
 	{
 		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+		geo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(),
+			vertices.data(), vbByteSize, geo->VertexBufferUploader);
 	}
 		
 	if (useIndex16)
 	{
 		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices16.data(), ibByteSize);
-		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices16.data(), ibByteSize, geo->IndexBufferUploader);
+		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(),
+			indices16.data(), ibByteSize, geo->IndexBufferUploader);
 	}
 	else
 	{
 		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices32.data(), ibByteSize);
-		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(), indices32.data(), ibByteSize, geo->IndexBufferUploader);
+		geo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(mDevice.Get(), mCommandList.Get(),
+			indices32.data(), ibByteSize, geo->IndexBufferUploader);
 	}	
-
-	geo->VertexByteStride = useSkinnedMesh ? sizeof(GeometryGenerator::SkinnedVertex) : sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = useIndex16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
 
 	//=========================================================
 	// Part 3. SubmeshGeometry 생성
@@ -926,11 +925,9 @@ void MyApp::BuildGeometry(std::vector<GeometryGenerator::MeshData>& meshes, bool
 				? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
 				: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 		}
-	}
-	for (size_t i = 0; i < submeshes.size(); ++i)
-	{
 		geo->DrawArgs[std::to_string(i)] = submeshes[i];
 	}
+
 	mGeometries.push_back(std::move(geo));
 }
 
@@ -1976,12 +1973,6 @@ void MyApp::UpdateTangents()
 		for (size_t i = 0; i < m.Vertices.size(); i++) {
 			m.Vertices[i].TangentU = tangents[i];
 		}
-
-		//if (m.skinnedVertices.size() > 0) {
-		//	for (size_t i = 0; i < m.skinnedVertices.size(); i++) {
-		//		m.skinnedVertices[i].tangentModel = tangents[i];
-		//	}
-		//}
 	}
 }
 
@@ -2000,7 +1991,6 @@ void MyApp::UpdateInstanceBuffer()
 	auto currInstanceBuffer = mCurrFrameResource->InstanceBuffer.get();
 	auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
 	int visibleInstanceCount = 0;
-	// mAllRitems[0]->Datas[0].Translation.y += 0.01f;
 	for (size_t i = 0; i < mAllRitems.size(); ++i)
 	{
 		auto& e = mAllRitems[i];
@@ -2014,16 +2004,20 @@ void MyApp::UpdateInstanceBuffer()
 			// 컬링을 활용하며, 매 Frame 간 데이터를 복사하는 로직으로 구현
 			for (const auto& d : e->Datas)
 			{
-				if ((mCamFrustum.Contains(d.BoundingBox) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
-				// if ((mCamFrustum.Contains(d.BoundingSphere) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
+				// Cam Frustum에 포함되는 Instance만 복사
+				// if ((mCamFrustum.Contains(d.BoundingBox) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
+				if ((mCamFrustum.Contains(d.BoundingSphere) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
 				{
 					currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
 				}
 			}
+
+			// Instance 개수 업데이트
 			e->InstanceCount = visibleInstanceCount - e->StartInstanceLocation;
 		}
 		else
 		{
+			// Dirty Flag가 존재하는 경우 업데이트 (이동 등 instance 변경 발생 시 NumFramesDirty = APP_NUM_FRAME_RESOURCES)
 			if (e->NumFramesDirty > 0)
 			{
 				InstanceConstants insCB;
@@ -2031,7 +2025,7 @@ void MyApp::UpdateInstanceBuffer()
 				e->StartInstanceLocation = visibleInstanceCount;
 				currInstanceCB->CopyData(i, insCB);
 
-				// 컬링을 활용하며, 매 Frame 간 데이터를 복사하는 로직으로 구현
+				// Instance 전체 복사
 				for (const auto& d : e->Datas)
 				{
 					currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);

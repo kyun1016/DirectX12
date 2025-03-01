@@ -114,7 +114,6 @@ int AppBase::Run()
 
 				Update();
 				Render();
-
 				RenderImGui();
 
 				// Done recording commands.
