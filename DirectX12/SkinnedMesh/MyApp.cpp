@@ -293,10 +293,6 @@ void MyApp::BuildRootSignature()
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
 	
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[16];
-
 	/*D3D12_SHADER_VISIBILITY
 	{
 		D3D12_SHADER_VISIBILITY_ALL = 0,
@@ -309,6 +305,8 @@ void MyApp::BuildRootSignature()
 		D3D12_SHADER_VISIBILITY_MESH = 7
 	} 	D3D12_SHADER_VISIBILITY;*/
 
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[16];
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
 	slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
@@ -330,17 +328,26 @@ void MyApp::BuildRootSignature()
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(16, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(16, slotRootParameter, (UINT)staticSamplers.size(),
+		staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+	HRESULT hr = D3D12SerializeRootSignature(
+		&rootSigDesc, 
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(),
+		errorBlob.GetAddressOf());
+
 	if (errorBlob != nullptr)
 		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 	ThrowIfFailed(hr);
 
-	ThrowIfFailed(mDevice->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+	ThrowIfFailed(mDevice->CreateRootSignature(0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
 void MyApp::BuildDescriptorHeaps()
@@ -1774,38 +1781,20 @@ void MyApp::Render()
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	auto matBuffer = mCurrFrameResource->MaterialBuffer->Resource();
 	auto instanceBuffer = mCurrFrameResource->InstanceBuffer->Resource();
+
+	// GPU Memory setting
 	{
-		//====================================================
-		// GPU Memory setting
-		//====================================================
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-		//slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
-		//slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
-		//slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
-		//slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
-		//slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
-		//slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[6].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-		//slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[10].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[11].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[12].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[13].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[14].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-		//slotRootParameter[15].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(3, instanceBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(4, matBuffer->GetGPUVirtualAddress());
 		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUUser);
 		mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
-		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUNorm);
+		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUNorm); 
 		mCommandList->SetGraphicsRootDescriptorTable(12, mhGPUShadow);
-		// mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUSsao);
 		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUArray);
 		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUCube);
 	}
@@ -1827,7 +1816,8 @@ void MyApp::Render()
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	D3D12_RESOURCE_BARRIER RenderBarrier = 
+		CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
 	for(int i=0; i<SRV_USER_SIZE; ++i)
 		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -1854,8 +1844,7 @@ void MyApp::Render()
 			mLayerType[i] == RenderLayer::ShadowMap
 			|| mLayerType[i] == RenderLayer::SkinnedShadowMap
 			|| mLayerType[i] == RenderLayer::AddCS
-			|| mLayerType[i] == RenderLayer::BlurCS
-			|| mLayerType[i] == RenderLayer::WaveCS)
+			|| mLayerType[i] == RenderLayer::BlurCS			|| mLayerType[i] == RenderLayer::WaveCS)
 			continue;
 		else {
 			mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress() + passCBByteSize * mLayerCBIdx[i]);
@@ -1885,9 +1874,8 @@ void MyApp::Render()
 		else
 			continue;
 	}
-	
-
-	{	// Test Back Buffer Copy
+	// Copy Back Buffer
+	{	
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
@@ -2435,7 +2423,7 @@ void MyApp::ShowMainWindow()
 			}
 	
 			ImGui::SliderInt("Stencli [0, 7]", &mLayerStencil[layerIdx], 0, 7, "%d", flags);
-			ImGui::SliderInt("Constant Buffer [0, 4]", &mLayerCBIdx[layerIdx], 0, 4, "%d", flags);
+			ImGui::SliderInt("Constant Buffer [0, 3]", &mLayerCBIdx[layerIdx], 0, 1 + MAX_LIGHTS - 1, "%d", flags);
 		}
 		ImGui::TreePop();
 	}

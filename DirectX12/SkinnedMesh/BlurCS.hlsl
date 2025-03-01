@@ -2,6 +2,8 @@
 // Performs a separable Guassian blur with a blur radius up to 5 pixels.
 //=============================================================================
 
+static const int gMaxBlurRadius = 5;
+
 cbuffer cbSettings : register(b0)
 {
 	// We cannot have an array entry in a constant buffer that gets mapped onto
@@ -22,9 +24,6 @@ cbuffer cbSettings : register(b0)
     float w9;
     float w10;
 };
-
-static const int gMaxBlurRadius = 5;
-
 
 Texture2D gInput : register(t0);
 RWTexture2D<float4> gOutput : register(u0);

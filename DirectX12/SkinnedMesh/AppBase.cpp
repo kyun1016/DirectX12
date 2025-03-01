@@ -123,6 +123,13 @@ int AppBase::Run()
 				ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 				mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
+				// Update and Render additional Platform Windows
+				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+				{
+					ImGui::UpdatePlatformWindows();
+					ImGui::RenderPlatformWindowsDefault();
+				}
+
 				// Swap the back and front buffers
 				ThrowIfFailed(mSwapChain->Present(1, 0));
 				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
@@ -1011,13 +1018,6 @@ void AppBase::RenderImGui()
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 	mCommandList->ResourceBarrier(1, &barrier);
-
-	// Update and Render additional Platform Windows
-	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-	}
 }
 
 void AppBase::ShowImguiViewport(bool* p_open)
