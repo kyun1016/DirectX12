@@ -87,7 +87,6 @@ struct EXMaterialData
 struct EXInstanceData
 {
 	EXInstanceData() = delete;
-
 	EXInstanceData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		: Translation(translation)
 		, Scale(scale)
@@ -108,7 +107,6 @@ struct EXInstanceData
 		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 		InstanceData.MaterialIndex = matIdx;
 	}
-
 	EXInstanceData(DirectX::BoundingBox boundingBox, DirectX::BoundingSphere boundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		: BoundingBox(boundingBox)
 		, BoundingSphere(boundingSphere)

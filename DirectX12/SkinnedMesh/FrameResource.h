@@ -111,7 +111,6 @@ struct EXMaterialData
 struct EXInstanceData
 {
 	EXInstanceData() = delete;
-
 	EXInstanceData(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		: Translation(translation)
 		, Scale(scale)
@@ -125,7 +124,6 @@ struct EXInstanceData
 	{
 		Update();
 	}
-
 	EXInstanceData(DirectX::BoundingBox* baseBoundingBox, DirectX::BoundingSphere* baseBoundingSphere, DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		: BaseBoundingBox(baseBoundingBox)
 		, BaseBoundingSphere(baseBoundingSphere)
@@ -142,25 +140,21 @@ struct EXInstanceData
 		InstanceData.MaterialIndex = matIdx;
 		Update();
 	}
-
 	void UpdateTranslation(DirectX::SimpleMath::Vector3 translation)
 	{
 		Translation = translation;
 		Update();
 	}
-
 	void UpdateScale(DirectX::SimpleMath::Vector3 scale)
 	{
 		Scale = scale;
 		Update();
 	}
-
 	void UpdateRotate(DirectX::SimpleMath::Vector3 rotate)
 	{
 		Rotate = rotate;
 		Update();
 	}
-
 	void UpdateTexScale(DirectX::SimpleMath::Vector3 scale)
 	{
 		TexScale = scale;
@@ -171,7 +165,6 @@ struct EXInstanceData
 
 	DirectX::BoundingBox* BaseBoundingBox;
 	DirectX::BoundingSphere* BaseBoundingSphere;
-
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 

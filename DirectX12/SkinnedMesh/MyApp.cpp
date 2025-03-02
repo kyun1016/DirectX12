@@ -12,40 +12,25 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	, mImguiWidth(width)
 	, mImguiHeight(height)
 {
+	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
+	{
+		mLayerType[i] = RenderLayer::None;
+		mLayerStencil[i] = 0;
+		mLayerCBIdx[i] = 0;
+	}
+
 	mLayerType[0] = RenderLayer::Opaque;
-	mLayerType[1] = RenderLayer::AlphaTested;
-	mLayerType[2] = RenderLayer::Subdivision;
+	mLayerType[1] = RenderLayer::SkinnedOpaque;
+	mLayerType[2] = RenderLayer::AlphaTested;
 	mLayerType[3] = RenderLayer::Transparent;
-	mLayerType[4] = RenderLayer::TreeSprites;
-	mLayerType[5] = RenderLayer::WaveCS;
+	mLayerType[4] = RenderLayer::Subdivision;
+	mLayerType[5] = RenderLayer::TreeSprites;
 	mLayerType[6] = RenderLayer::CubeMap;
-	mLayerType[7] = RenderLayer::SkinnedOpaque;
-	mLayerType[8] = RenderLayer::ShadowMap;
-	// mLayerType[9] = RenderLayer::BoundingSphere;
-	// mLayerType[7] = RenderLayer::Normal;
-	
-
-	mLayerStencil[0] = 0;
-	mLayerStencil[1] = 0;
-	mLayerStencil[2] = 0;
-	mLayerStencil[3] = 0;
-	mLayerStencil[4] = 0;
-	mLayerStencil[5] = 0;
-	mLayerStencil[6] = 0;
-	mLayerStencil[7] = 0;
-	mLayerStencil[8] = 0;
-	mLayerStencil[9] = 0;
-
-	mLayerCBIdx[0] = 0;
-	mLayerCBIdx[1] = 0;
-	mLayerCBIdx[2] = 0;
-	mLayerCBIdx[3] = 0;
-	mLayerCBIdx[4] = 0;
-	mLayerCBIdx[5] = 0;
-	mLayerCBIdx[6] = 0;
-	mLayerCBIdx[7] = 0;
-	mLayerCBIdx[8] = 0;
-	mLayerCBIdx[9] = 0;
+	mLayerType[7] = RenderLayer::Normal;
+	mLayerType[8] = RenderLayer::SkinnedNormal;
+	mLayerType[17] = RenderLayer::ShadowMap;
+	mLayerType[18] = RenderLayer::WaveCS;
+	mLayerType[19] = RenderLayer::BlurCS;
 
 	{
 		// 거울 반사 구현 시
@@ -59,13 +44,6 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 		// mLayerStencil[3] = 1;
 		// mLayerCBIdx[2] = 1;
 		// mLayerCBIdx[3] = 1;
-	}
-
-	for (int i = 9; i < MAX_LAYER_DEPTH; ++i)
-	{
-		mLayerType[i] = RenderLayer::None;
-		mLayerStencil[i] = 0;
-		mLayerCBIdx[i] = 0;
 	}
 }
 MyApp::~MyApp()
@@ -1035,8 +1013,8 @@ void MyApp::BuildRenderItems()
 	auto cubeSphereRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto cylinderRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["3"]);
 	auto quadRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["4"]);
-	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"], false);
-	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"], false);
+	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"]);
+	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"]);
 	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
 	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["8"]);
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
@@ -1102,13 +1080,8 @@ void MyApp::BuildRenderItems()
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 10.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 2.0f;
-		scale.y = 2.0f;
-		scale.z = 2.0f;
-
+		translation = { (i % 10) * 8.0f, 10.0f, 5.0f + 8.0f * (i / 10) };
+		scale = { 2.0f, 2.0f, 2.0f };
 		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
 	}
 	
@@ -2125,22 +2098,23 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		if (!(ri->LayerFlag & (1 << (int)flag)))
 			continue;
 
+		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType;
 		if (flag == RenderLayer::Normal
 			|| flag == RenderLayer::NormalWireframe
 			|| flag == RenderLayer::TreeSprites
 			|| flag == RenderLayer::TreeSpritesWireframe)
-			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+			PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
 		else if (flag == RenderLayer::Tessellation
 			|| flag == RenderLayer::TessellationWireframe)
-			ri->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+			PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
 		else
-			ri->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 		D3D12_VERTEX_BUFFER_VIEW vbv = ri->Geo->VertexBufferView();
 		D3D12_INDEX_BUFFER_VIEW ibv = ri->Geo->IndexBufferView();
 		mCommandList->IASetVertexBuffers(0, 1, &vbv);
 		mCommandList->IASetIndexBuffer(&ibv);
-		mCommandList->IASetPrimitiveTopology(ri->PrimitiveType);
+		mCommandList->IASetPrimitiveTopology(PrimitiveType);
 
 		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
@@ -2151,7 +2125,9 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 			D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress() + ri->SkinnedCBIndex * skinnedCBByteSize;
 			mCommandList->SetGraphicsRootConstantBufferView(2, skinnedCBAddress);
 		}
-		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);// DX12 버그로 코드의 Start InstanceLocation이 반영되지 않는다.
+		// DX12 버그로 코드의 Start InstanceLocation이 반영되지 않는다.
+		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, ri->StartInstanceLocation);
+		mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 99999);
 		// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	
 	}
 }

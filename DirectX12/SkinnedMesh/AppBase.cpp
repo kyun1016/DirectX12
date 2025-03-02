@@ -750,7 +750,7 @@ void AppBase::FlushCommandQueue()
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
 
 		// Wait until the GPU hits current fence event is fired.
-		WaitForSingleObject(eventHandle, INFINITE);					// TODO: Make More Fast Logic
+		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
 }

@@ -96,7 +96,8 @@ private:
 		{
 		}
 
-		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale, DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+		void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale,
+			DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 		{
 			Datas.push_back(EXInstanceData(&BoundingBox, &BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 		}
@@ -106,19 +107,10 @@ private:
 			Datas.push_back(data);
 		}
 
+		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
 		MeshGeometry* Geo = nullptr;
 
-		// Primitive topology.
-		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-		DirectX::BoundingBox BoundingBox;
-		DirectX::BoundingSphere BoundingSphere;
-		UINT StartInstanceLocation = 0;
-		UINT InstanceCount = 0;
-		bool mFrustumCullingEnabled = false;
-		std::vector<EXInstanceData> Datas;			// CPU 및 알고리즘 연산을 위한 데이터
-
-		int LayerFlag
+		int LayerFlag 
 			= (1 << (int)RenderLayer::Opaque)
 			| (1 << (int)RenderLayer::Reflected)
 			| (1 << (int)RenderLayer::Normal)
@@ -126,16 +118,22 @@ private:
 			| (1 << (int)RenderLayer::ReflectedWireframe)
 			| (1 << (int)RenderLayer::NormalWireframe);
 
-		// DrawIndexedInstanced parameters.
 		UINT IndexCount = 0;
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
 
-		UINT ObjCBIndex = -1;
+		// Primitive topology.
+		bool mFrustumCullingEnabled = false;
+		DirectX::BoundingBox BoundingBox;
+		DirectX::BoundingSphere BoundingSphere;
+		
+		// DrawIndexedInstanced parameters.
+		UINT StartInstanceLocation = 0;
+		UINT InstanceCount = 0;
+		std::vector<EXInstanceData> Datas;			// CPU 및 알고리즘 연산을 위한 데이터
+		
+		// Skinned Mesh
 		UINT SkinnedCBIndex = -1;
-
-		int NumFramesDirty = APP_NUM_FRAME_RESOURCES;
-
 		SkinnedModelInstance* SkinnedModelInst = nullptr;
 	};
 
