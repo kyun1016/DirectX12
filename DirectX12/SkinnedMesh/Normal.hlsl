@@ -29,7 +29,7 @@ NormalGeometryShaderInput VS(VertexIn input, uint instanceID : SV_InstanceID)
 {
     NormalGeometryShaderInput output;
 
-    #ifdef SKINNED
+#ifdef SKINNED
     float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     weights[0] = input.BoneWeights.x;
     weights[1] = input.BoneWeights.y;
@@ -71,13 +71,8 @@ void GS(point NormalGeometryShaderInput input[1], inout LineStream<NormalPixelSh
 {
     NormalPixelShaderInput output;
     
-    InstanceData instData = gInstanceData[input[0].InsIndex];
-    float4x4 world = instData.World;
-    float4x4 worldInvTranspose = instData.WorldInvTranspose;
-    
-    float4 posW = mul(input[0].PosL, world);
-    float4 normalL = float4(input[0].NormalL, 0.0);
-    float4 normalW = mul(normalL, worldInvTranspose);
+    float4 posW = mul(input[0].PosL, gInstanceData[input[0].InsIndex].World);
+    float4 normalW = mul(float4(input[0].NormalL, 0.0), gInstanceData[input[0].InsIndex].WorldInvTranspose);
     normalW = float4(normalize(normalW.xyz), 0.0);
     
     output.pos = mul(posW, gViewProj);
@@ -105,6 +100,6 @@ PixelOut PS(PixelShaderInput input)
 {
     PixelOut ret;
     ret.color0 = float4(input.color, 1.0f);
-    ret.color1 = float4(input.color, 1.0f);
+    ret.color1 = ret.color0;
     return ret;
 }

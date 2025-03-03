@@ -294,6 +294,10 @@ private:
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUCube;
 
 
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
+	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
 	// Temp
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;

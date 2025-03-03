@@ -2110,11 +2110,25 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 		else
 			PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		D3D12_VERTEX_BUFFER_VIEW vbv = ri->Geo->VertexBufferView();
-		D3D12_INDEX_BUFFER_VIEW ibv = ri->Geo->IndexBufferView();
-		mCommandList->IASetVertexBuffers(0, 1, &vbv);
-		mCommandList->IASetIndexBuffer(&ibv);
-		mCommandList->IASetPrimitiveTopology(PrimitiveType);
+		if (mLastVertexBufferView.BufferLocation != ri->Geo->VertexBufferView().BufferLocation)
+		{
+			mLastVertexBufferView = ri->Geo->VertexBufferView();
+			mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
+		}
+
+		if (mLastIndexBufferView.BufferLocation != ri->Geo->IndexBufferView().BufferLocation)
+		{
+			mLastIndexBufferView = ri->Geo->IndexBufferView();
+			mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
+		}
+		//if (mLastPrimitiveType != PrimitiveType)
+		//{
+		//	mLastPrimitiveType = PrimitiveType;
+		//	mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
+		//}
+		mLastPrimitiveType = PrimitiveType;
+		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
+
 
 		// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = currInstanceCB->GetGPUVirtualAddress() + i * objCBByteSize;
