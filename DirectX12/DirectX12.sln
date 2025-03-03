@@ -91,6 +91,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "23. Character Animation", "
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SkinnedMesh", "SkinnedMesh\SkinnedMesh.vcxproj", "{0669E3B2-F221-4240-AB6F-C1B5E69EF197}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstanceTest", "InstanceTest\InstanceTest.vcxproj", "{1FEE42CB-622A-4B7D-8052-9C03189C36DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -307,6 +309,14 @@ Global
 		{0669E3B2-F221-4240-AB6F-C1B5E69EF197}.Release|x64.Build.0 = Release|x64
 		{0669E3B2-F221-4240-AB6F-C1B5E69EF197}.Release|x86.ActiveCfg = Release|Win32
 		{0669E3B2-F221-4240-AB6F-C1B5E69EF197}.Release|x86.Build.0 = Release|Win32
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Debug|x64.ActiveCfg = Debug|x64
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Debug|x64.Build.0 = Debug|x64
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Debug|x86.ActiveCfg = Debug|Win32
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Debug|x86.Build.0 = Debug|Win32
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Release|x64.ActiveCfg = Release|x64
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Release|x64.Build.0 = Release|x64
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Release|x86.ActiveCfg = Release|Win32
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -338,6 +348,7 @@ Global
 		{26530E3D-457C-46E5-AE26-0ED465A913C7} = {82456251-FEB2-441B-963B-057997818196}
 		{773FD928-3001-44E8-98F7-4759F6353FF5} = {781DE1B8-ADF8-4980-A09C-CA8BEF9FE88F}
 		{0669E3B2-F221-4240-AB6F-C1B5E69EF197} = {86264AA4-AD76-47DE-BB71-A9344F066760}
+		{1FEE42CB-622A-4B7D-8052-9C03189C36DF} = {718D64CD-8069-42BB-9281-5695669C6622}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}

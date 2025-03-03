@@ -20,17 +20,17 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	}
 
 	mLayerType[0] = RenderLayer::Opaque;
-	mLayerType[1] = RenderLayer::SkinnedOpaque;
-	mLayerType[2] = RenderLayer::AlphaTested;
-	mLayerType[3] = RenderLayer::Transparent;
-	mLayerType[4] = RenderLayer::Subdivision;
-	mLayerType[5] = RenderLayer::TreeSprites;
-	mLayerType[6] = RenderLayer::CubeMap;
-	mLayerType[7] = RenderLayer::Normal;
-	mLayerType[8] = RenderLayer::SkinnedNormal;
-	mLayerType[17] = RenderLayer::ShadowMap;
-	mLayerType[18] = RenderLayer::WaveCS;
-	mLayerType[19] = RenderLayer::BlurCS;
+	// mLayerType[1] = RenderLayer::SkinnedOpaque;
+	// mLayerType[2] = RenderLayer::AlphaTested;
+	// mLayerType[3] = RenderLayer::Transparent;
+	// mLayerType[4] = RenderLayer::Subdivision;
+	// mLayerType[5] = RenderLayer::TreeSprites;
+	mLayerType[1] = RenderLayer::CubeMap;
+	//mLayerType[7] = RenderLayer::Normal;
+	//mLayerType[8] = RenderLayer::SkinnedNormal;
+	// mLayerType[17] = RenderLayer::ShadowMap;
+	// mLayerType[18] = RenderLayer::WaveCS;
+	// mLayerType[19] = RenderLayer::BlurCS;
 
 	{
 		// 거울 반사 구현 시
@@ -1002,81 +1002,12 @@ void MyApp::BuildMaterials()
 
 void MyApp::BuildRenderItems()
 {
-	auto boxRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
-	auto alphaBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
-	auto subBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
-	auto gridRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
-	auto mirrorGridRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
-	auto tessGridRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["1"]);
-	auto sphereRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
-	auto subSphereRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
-	auto cubeSphereRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
-	auto cylinderRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["3"]);
-	auto quadRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["4"]);
-	auto landRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["5"]);
-	auto wavesRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["6"]);
-	auto skullRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["7"]);
-	auto carRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["8"]);
-	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
-	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
-	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[2].get(), mGeometries[2]->DrawArgs["0"], false);
-
-	subBoxRitem->LayerFlag
-		= (1 << (int)RenderLayer::Subdivision)
-		| (1 << (int)RenderLayer::Normal)
-		| (1 << (int)RenderLayer::SubdivisionWireframe)
-		| (1 << (int)RenderLayer::NormalWireframe);
-
-	subSphereRitem->LayerFlag
-		= (1 << (int)RenderLayer::Subdivision)
-		| (1 << (int)RenderLayer::Normal)
-		| (1 << (int)RenderLayer::SubdivisionWireframe)
-		| (1 << (int)RenderLayer::NormalWireframe);
-
-	alphaBoxRitem->LayerFlag
-		= (1 << (int)RenderLayer::AlphaTested)
-		| (1 << (int)RenderLayer::AlphaTestedWireframe)
-		| (1 << (int)RenderLayer::Normal)
-		| (1 << (int)RenderLayer::NormalWireframe);
-
-	mirrorGridRitem->LayerFlag
-		= (1 << (int)RenderLayer::Mirror)
-		| (1 << (int)RenderLayer::Transparent);
-
-	quadRitem->LayerFlag
-		= (1 << (int)RenderLayer::DebugShadowMap);
-
-	wavesRitem->LayerFlag
-		= (1 << (int)RenderLayer::Transparent)
-		| (1 << (int)RenderLayer::WaveCS);
-
-	treeSpritesRitem->LayerFlag
-		= (1 << (int)RenderLayer::TreeSprites)
-		| (1 << (int)RenderLayer::TreeSpritesWireframe)
-		| (1 << (int)RenderLayer::Normal);
-
-	tessGridRitem->LayerFlag
-		= (1 << (int)RenderLayer::Tessellation)
-		| (1 << (int)RenderLayer::TessellationWireframe)
-		| (1 << (int)RenderLayer::Normal);
-
-	boundingBoxRitem->LayerFlag
-		= (1 << (int)RenderLayer::BoundingBox);
-
-	boundingSphereRitem->LayerFlag
-		= (1 << (int)RenderLayer::BoundingSphere);
-
-	cubeSphereRitem->LayerFlag
-		= (1 << (int)RenderLayer::CubeMap);
-
-	//=========================================================
-	// GEO_MESH_NAMES[0]: ShapeGeo
-	//=========================================================
+	auto boxRitem = std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	DirectX::SimpleMath::Vector3 translation;
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
-	int repeatCount = 30;
+	int repeatCount = 10;
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
@@ -1084,251 +1015,22 @@ void MyApp::BuildRenderItems()
 		scale = { 2.0f, 2.0f, 2.0f };
 		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
 	}
-	
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 20.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 30.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		subBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-	
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 40.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		subSphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 50.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-
-		alphaBoxRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-
-	{
-		translation.x = 0.0f;
-		translation.y = 5.0f;
-		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		gridRitem->Push(translation, scale, rot, { 8.0f, 8.0f, 8.0f }, mInstanceCount++, 4);
-	}
-
-	for (int i = 0; i < 5; ++i)
-	{
-		translation.x = 5.0f;
-		translation.y = 6.5f;
-		translation.z = -10.0f + i * 5.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-
-		cylinderRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
-		translation.y = 8.5f;
-		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
-
-		translation.x = -5.0f;
-		translation.y = 6.5f;
-		cylinderRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
-		translation.y = 8.5f;
-		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i);
-	}
-
-	{
-		translation.x = 0.0f;
-		translation.y = 8.0f;
-		translation.z = 0.0f;
-		scale.x = 3.0f;
-		scale.y = 3.0f;
-		scale.z = 3.0f;
-		sphereRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
-	}
-	
-	////=========================================================
-	//// GEO_MESH_NAMES[1]:ModelGeo
-	////=========================================================
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 60.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 0.6f;
-		scale.y = 0.6f;
-		scale.z = 0.6f;
-
-		skullRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 70.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
-		scale.x = 0.6f;
-		scale.y = 0.6f;
-		scale.z = 0.6f;
-
-		carRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-	}
-
-	
-	for (const auto& arg : mGeometries[1]->DrawArgs)
-	{
-		auto charRitem = std::make_unique<RenderItem>(mGeometries[1].get(), arg.second);
-		charRitem->LayerFlag
-			= (1 << (int)RenderLayer::SkinnedOpaque)
-			| (1 << (int)RenderLayer::SkinnedNormal);
-		for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i) {
-			translation.x = (i % 10) * 8.0f;
-			translation.y = 80.0f;
-			translation.z = 5.0f + 8.0f * (i / 10);
-			scale.x = 0.15f;
-			scale.y = 0.15f;
-			scale.z = -0.15f;
-
-			charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, i % mAllMatItems.size());
-		}
-		translation.x = 0.0f;
-		translation.y = 5.0f;
-		translation.z = -5.0f;
-		scale.x = 0.05f;
-		scale.y = 0.05f;
-		scale.z = -0.05f;
-
-		charRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
-		charRitem->SkinnedCBIndex = 0;
-		charRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mAllRitems.push_back(std::move(charRitem));
-	}
-	
-	
-
-	////=========================================================
-	//// GEO_MESH_NAMES[2]:LandGeo
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 2.0f;
-		scale.y = 2.0f;
-		scale.z = 2.0f;
-		texScale *= 8.0f;
-		landRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 7);
-	}
-
-	////=========================================================
-	//// GEO_MESH_NAMES[3]:WaterGeo
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 2.0f;
-		scale.y = 2.0f;
-		scale.z = 2.0f;
-		wavesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 6);
-		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.x = 1.0f / mCSWaves->ColumnCount();
-		wavesRitem->Datas.back().InstanceData.DisplacementMapTexelSize.y = 1.0f / mCSWaves->RowCount();
-		wavesRitem->Datas.back().InstanceData.GridSpatialStep = mCSWaves->SpatialStep();
-		wavesRitem->Datas.back().InstanceData.useDisplacementMap = 1;
-		texScale /= 8.0f;
-	}
-
-	////=========================================================
-	//// GEO_MESH_NAMES[5]: TreeSpritesGeo
-	////=========================================================
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		treeSpritesRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE + mDiffuseTex.size(), false);
-	}
-
-	//////=========================================================
-	////// Tessellation
-	//////=========================================================
-	//{
-	//	translation.x = 0.0f;
-	//	translation.y = 10.0f;
-	//	translation.z = 0.0f;
-	//	scale.x = 1.0f;
-	//	scale.y = 1.0f;
-	//	scale.z = 1.0f;
-	//	tessGridRitem->Push(translation, scale, rot, texScale, mInstanceCount++, SRV_USER_SIZE);
-	//	mAllRitems.push_back(std::move(tessGridRitem));
-	//}
-
 	mAllRitems.push_back(std::move(boxRitem));
-	mAllRitems.push_back(std::move(gridRitem));
-	mAllRitems.push_back(std::move(sphereRitem));
-	mAllRitems.push_back(std::move(cylinderRitem));
-	mAllRitems.push_back(std::move(alphaBoxRitem));
-	mAllRitems.push_back(std::move(mirrorGridRitem));
-	mAllRitems.push_back(std::move(subBoxRitem));
-	mAllRitems.push_back(std::move(subSphereRitem));
-	mAllRitems.push_back(std::move(skullRitem));
-	mAllRitems.push_back(std::move(carRitem));
-	mAllRitems.push_back(std::move(landRitem));
-	mAllRitems.push_back(std::move(wavesRitem));
-	mAllRitems.push_back(std::move(treeSpritesRitem));
 
-	for (size_t i = 0; i < mAllRitems.size(); ++i)
+	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		if (mAllRitems[i]->mFrustumCullingEnabled)
-		{
-			for (const auto& a : mAllRitems[i]->Datas)
-			{
-				boundingBoxRitem->Push(a.Translation + a.BaseBoundingBox->Center * a.Scale, a.Scale * a.BaseBoundingBox->Extents, {0,0,0, 1.0f}, {0,0,0}, a.BoundingCount, 0, true);
-				boundingSphereRitem->Push(a.Translation + a.BaseBoundingSphere->Center * a.Scale, a.Scale * a.BaseBoundingSphere->Radius, { 0,0,0, 1.0f }, { 0,0,0 }, a.BoundingCount, 0, true);
-
-				++mInstanceCount;
-				++mInstanceCount;
-			}
-		}
+		boxRitem = std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+		translation = { (i % 10) * 8.0f, 20.0f, 5.0f + 8.0f * (i / 10) };
+		scale = { 2.0f, 2.0f, 2.0f };
+		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
+		mAllRitems.push_back(std::move(boxRitem));
 	}
-	for (auto& a : boundingBoxRitem->Datas)
-		a.IsPickable = false;
-	for (auto& a : boundingSphereRitem->Datas)
-		a.IsPickable = false;
-
-	mAllRitems.push_back(std::move(boundingBoxRitem));
-	mAllRitems.push_back(std::move(boundingSphereRitem));
 
 	{
+		auto cubeSphereRitem = std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
+		cubeSphereRitem->LayerFlag
+			= (1 << (int)RenderLayer::CubeMap);
+
 		translation.x = 0.0f;
 		translation.y = 0.0f;
 		translation.z = 0.0f;
@@ -1339,18 +1041,6 @@ void MyApp::BuildRenderItems()
 		cubeSphereRitem->Datas.back().IsPickable = false;
 		mAllRitems.push_back(std::move(cubeSphereRitem));
 	}
-
-	{
-		translation.x = 0.0f;
-		translation.y = 0.0f;
-		translation.z = 0.0f;
-		scale.x = 1.0f;
-		scale.y = 1.0f;
-		scale.z = 1.0f;
-		quadRitem->Push(translation, scale, rot, texScale, mInstanceCount++, 2);
-	}
-	mAllRitems.push_back(std::move(quadRitem));
-	mUpdateBoundingMesh = true;
 }
 
 void MyApp::BuildFrameResources()
@@ -1778,6 +1468,9 @@ void MyApp::Render()
 		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
 	}
 
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
+	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
 		if (mLayerType[i] == RenderLayer::ShadowMap
