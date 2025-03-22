@@ -198,6 +198,16 @@ void MyApp::BuildRootSignature()
 		/* UINT RegisterSpace						*/.RegisterSpace = 2,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable2;
+	DisplacementMapTable2.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	DisplacementMapTable2.NumDescriptors = 1;
+	DisplacementMapTable2.BaseShaderRegister = 0;
+	DisplacementMapTable2.RegisterSpace = 2;
+	DisplacementMapTable2.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_DESCRIPTOR_RANGE DisplacementMapTable3;
+	DisplacementMapTable3 = DisplacementMapTable2;
+
 	D3D12_DESCRIPTOR_RANGE TexNormTable // register t0[16] (Space3)
 	{
 		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,

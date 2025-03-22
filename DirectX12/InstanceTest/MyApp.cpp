@@ -1009,19 +1009,21 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
 	int repeatCount = 10;
 
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
-	{
-		translation = { (i % 10) * 8.0f, 10.0f, 5.0f + 8.0f * (i / 10) };
-		scale = { 2.0f, 2.0f, 2.0f };
-		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
-	}
-	mAllRitems.push_back(std::move(boxRitem));
-
-	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
+	for (int j = 1; j <= 1000; ++j)
 	{
 		boxRitem = std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
-		translation = { (i % 10) * 8.0f, 20.0f, 5.0f + 8.0f * (i / 10) };
-		scale = { 2.0f, 2.0f, 2.0f };
+		for (int i = 0; i < j; ++i)
+		{
+			translation = { (i % 10) * 3.0f, 3.0f * j, 5.0f + 3.0f * (i / 10) };
+			boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
+		}
+		mAllRitems.push_back(std::move(boxRitem));
+	}
+
+	for (int i = 0; i < mAllMatItems.size(); ++i)
+	{
+		boxRitem = std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
+		translation = { (i % 10) * 3.0f, -3.0f, 5.0f + 3.0f * (i / 10) };
 		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
 		mAllRitems.push_back(std::move(boxRitem));
 	}

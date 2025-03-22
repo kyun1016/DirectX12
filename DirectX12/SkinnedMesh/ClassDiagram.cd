@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="AppBase" Collapsed="true">
+    <Position X="0.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>FDQSAELeEvFMEUCqRrQRmgAAgFPRYBJsJpOkqWQHTCo=</HashCode>
+      <FileName>AppBase.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlurFilter" Collapsed="true">
+    <Position X="2.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAFAAYBCARVAQIQAAIFAAAAAAAAAAAEgAggIECAiI=</HashCode>
+      <FileName>BlurFilter.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CSAdd" Collapsed="true">
+    <Position X="2.75" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABQAAAAAAQAQDAAAQEAIBAAAIBAAAAAAAAAgsAACAhA=</HashCode>
+      <FileName>CSAdd.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="ExampleDescriptorHeapAllocator" Collapsed="true">
+    <Position X="0.75" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAAAAIAAAEAAAAAAwAAABAAFEAAAAAAAAAAAI=</HashCode>
+      <FileName>AppBase.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

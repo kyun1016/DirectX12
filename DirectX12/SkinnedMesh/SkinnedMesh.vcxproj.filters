@@ -24,6 +24,7 @@
     <None Include="Memory.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyApp.cpp">
