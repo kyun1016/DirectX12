@@ -28,7 +28,7 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[6] = RenderLayer::CubeMap;
 	// mLayerType[7] = RenderLayer::Normal;
 	// mLayerType[8] = RenderLayer::SkinnedNormal;
-	mLayerType[9] = RenderLayer::ShaderToy;
+	// mLayerType[9] = RenderLayer::ShaderToy;
 	mLayerType[17] = RenderLayer::ShadowMap;
 	mLayerType[18] = RenderLayer::WaveCS;
 	// mLayerType[19] = RenderLayer::BlurCS;
@@ -1044,8 +1044,7 @@ void MyApp::BuildRenderItems()
 	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[2].get(), mGeometries[2]->DrawArgs["0"], false);
 
 
-	squareRitem->LayerFlag
-		= (1 << (int)RenderLayer::ShaderToy);
+	squareRitem->LayerFlag = (1 << (int)RenderLayer::ShaderToy);
 
 	subBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1850,7 +1849,6 @@ void MyApp::Render()
 		else
 			continue;
 	}
-	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -1872,13 +1870,18 @@ void MyApp::Render()
 		for (int i = 1; i < RTV_USER_SIZE; ++i)
 		{
 			mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i], (float*)&mMainPassCB.FogColor, 0, nullptr);
+			mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
 			D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
 			rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i];   // 새로 만든 RTV
 			mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
+			
+			mCommandList->SetPipelineState(mPSOs[RenderLayer::ShaderToy].Get());
 			DrawShaderToy(i);
 		}
 	}
 
+	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
@@ -1888,7 +1891,7 @@ void MyApp::Render()
 
 	for (int i = 0; i < MAX_LAYER_DEPTH; ++i)
 	{
-		if (mLayerType[i] == RenderLayer::None)
+		if (mLayerType[i] == RenderLayer::None || mLayerType[i] == RenderLayer::ShaderToy)
 			continue;
 		else if (
 			mLayerType[i] == RenderLayer::ShadowMap
@@ -2286,7 +2289,6 @@ void MyApp::DrawShaderToy(int index)
 	mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
 	mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
 
-	mCommandList->SetPipelineState(mPSOs[RenderLayer::ShaderToy].Get());
 	mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 }
 
