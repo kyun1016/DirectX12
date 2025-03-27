@@ -60,6 +60,9 @@
     <FxCompile Include="OpticalFlow_HornSchunck.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="ST_Silexars.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

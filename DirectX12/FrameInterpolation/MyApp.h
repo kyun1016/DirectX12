@@ -53,6 +53,7 @@ private:
 		AddCS,
 		BlurCS,
 		WaveCS,
+		ShaderToy,
 		Count
 	};
 #pragma endregion Constant
@@ -184,6 +185,7 @@ private:
 	void UpdateMaterialBuffer();
 	void UpdatePassCB();
 	void UpdateSkinnedCB();
+	void UpdateShaderToyCB();
 
 	void DrawRenderItems(const RenderLayer ritems);
 	void DrawSceneToShadowMap(int index = 0);
@@ -305,4 +307,7 @@ private:
 	// Temp
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
 	std::vector<M3DLoader::M3dMaterial> mSkinnedMats;
+
+	// Const Buffer
+	ShaderToyConstants mCBShaderToy;
 };

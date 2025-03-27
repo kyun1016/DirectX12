@@ -30,6 +30,17 @@ struct SkinnedConstants
 	DirectX::XMFLOAT4X4 BoneTransforms[96];
 };
 
+struct ShaderToyConstants
+{
+	float dx;
+	float dy;
+	float threshold;
+	float strength;
+	float iTime;
+	DirectX::SimpleMath::Vector2 iResolution;
+	float dummy;
+};
+
 struct SsaoConstants
 {
 	DirectX::XMFLOAT4X4 Proj;
@@ -306,7 +317,7 @@ struct SkinnedVertex
 struct FrameResource
 {
 public:
-	FrameResource(ID3D12Device* device, UINT passCount, UINT baseInstanceCount, UINT maxInstanceCount, UINT materialCount, UINT skinnedObjectCount)
+	FrameResource(ID3D12Device* device, UINT passCount, UINT baseInstanceCount, UINT maxInstanceCount, UINT materialCount, UINT skinnedObjectCount, UINT shaderToyCount)
 	{
 		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
@@ -315,6 +326,7 @@ public:
 		PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
 		InstanceCB = std::make_unique<UploadBuffer<InstanceConstants>>(device, baseInstanceCount, true);
 		SkinnedCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, skinnedObjectCount, true);
+		ShaderToyCB = std::make_unique<UploadBuffer<ShaderToyConstants>>(device, shaderToyCount, true);
 		SsaoCB = std::make_unique<UploadBuffer<SsaoConstants>>(device, 1, true);
 	}
 	FrameResource(const FrameResource& rhs) = delete;
@@ -330,6 +342,7 @@ public:
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<InstanceConstants>> InstanceCB = nullptr;
 	std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
+	std::unique_ptr<UploadBuffer<ShaderToyConstants>> ShaderToyCB = nullptr;
 	std::unique_ptr<UploadBuffer<SsaoConstants>> SsaoCB = nullptr;
 
 	UINT64 Fence = 0;

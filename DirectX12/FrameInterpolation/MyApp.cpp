@@ -112,7 +112,7 @@ bool MyApp::Initialize()
 
 void MyApp::LoadDLLs()
 {
-	DirectX::NvOFAPICreateInstanceD3D12();
+	// DirectX::NvOFAPICreateInstanceD3D12();
 }
 
 void MyApp::LoadTextures()
@@ -301,29 +301,30 @@ void MyApp::BuildRootSignature()
 	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[16];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[17];
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
 	slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
 	slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
-	slotRootParameter[3].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
-	slotRootParameter[4].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
-	slotRootParameter[5].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[6].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
-	slotRootParameter[7].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[8].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[9].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[10].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[11].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[12].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[13].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[14].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[15].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[3].InitAsConstantBufferView(3);		// cbShaderToy b3
+	slotRootParameter[4].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
+	slotRootParameter[5].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
+	slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[7].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+	slotRootParameter[8].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[9].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[10].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[11].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[12].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[13].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[14].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[15].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[16].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(16, slotRootParameter, (UINT)staticSamplers.size(),
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(17, slotRootParameter, (UINT)staticSamplers.size(),
 		staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
@@ -636,7 +637,6 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["SkinnedVS"] = D3DUtil::CompileShader(L"Main.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["MainPS"] = D3DUtil::CompileShader(L"Main.hlsl", defines, "PS", "ps_5_1");
 	mShaders["AlphaTestedPS"] = D3DUtil::CompileShader(L"Main.hlsl", alphaTestDefines, "PS", "ps_5_1");
-	
 
 	mShaders["NormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", defines, "VS", "vs_5_1");
 	mShaders["SkinnedNormalVS"] = D3DUtil::CompileShader(L"Normal.hlsl", skinnedDefines, "VS", "vs_5_1");
@@ -667,13 +667,15 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["ShadowDebugVS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "VS", "vs_5_1");
 	mShaders["ShadowDebugPS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "PS", "ps_5_1");
 
+	mShaders["ShaderToyVS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "VS", "vs_5_1");
+	mShaders["ShaderToy_Silexars_PS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "PS", "ps_5_1");
+
 	mMainInputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		
 	};
 
 	mTreeSpriteInputLayout =
@@ -1373,7 +1375,7 @@ void MyApp::BuildRenderItems()
 void MyApp::BuildFrameResources()
 {
 	for (int i = 0; i < APP_NUM_FRAME_RESOURCES; ++i)
-		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mAllMatItems.size(), 1));
+		mFrameResources.push_back(std::make_unique<FrameResource>(mDevice.Get(), 1 + MAX_LIGHTS, (UINT)mAllRitems.size(), mInstanceCount * 2, (UINT)mAllMatItems.size(), 1, 1));
 }
 
 void MyApp::BuildPSOs()
@@ -1636,7 +1638,10 @@ void MyApp::BuildPSOs()
 	skinnedNormalPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
 	skinnedNormalPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["SkinnedNormalVS"]->GetBufferPointer()), mShaders["SkinnedNormalVS"]->GetBufferSize() };
 
-	
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderToySilexarsPsoDesc = opaquePsoDesc;
+	shaderToySilexarsPsoDesc.NumRenderTargets = 1;
+	shaderToySilexarsPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShaderToyVS"]->GetBufferPointer()), mShaders["ShaderToyVS"]->GetBufferSize() };
+	shaderToySilexarsPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShaderToy_Silexars_PS"]->GetBufferPointer()), mShaders["ShaderToy_Silexars_PS"]->GetBufferSize() };
 
 	//=====================================================
 	// Create PSO
@@ -1734,6 +1739,12 @@ void MyApp::OnResize()
 
 	if (mCSBlurFilter)
 		mCSBlurFilter->OnResize(mClientWidth, mClientHeight);
+
+	mCBShaderToy.dx = 1.0f / mClientWidth;
+	mCBShaderToy.dy = 1.0f / mClientHeight;
+
+	mCBShaderToy.iResolution.x = (float) mClientWidth;
+	mCBShaderToy.iResolution.y = (float) mClientHeight;
 }
 void MyApp::Update()
 {
@@ -1753,6 +1764,7 @@ void MyApp::Update()
 	UpdateMaterialBuffer();
 	UpdatePassCB();
 	UpdateSkinnedCB();
+	UpdateShaderToyCB();
 }
 
 void MyApp::Render()
@@ -1776,16 +1788,35 @@ void MyApp::Render()
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
+		// slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
+		// slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
+		// slotRootParameter[2].InitAsConstantBufferView(2);		// cbSkinned b2
+		// slotRootParameter[3].InitAsConstantBufferView(3);		// cbShaderToy b3
+		// slotRootParameter[4].InitAsShaderResourceView(0, 0);	// InstanceData t0 (Space0)
+		// slotRootParameter[5].InitAsShaderResourceView(1, 0);	// MaterialData t1 (Space0)
+		// slotRootParameter[6].InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[7].InitAsDescriptorTable(1, &DisplacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
+		// slotRootParameter[8].InitAsDescriptorTable(1, &TexNormTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[9].InitAsDescriptorTable(1, &TexAOTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[10].InitAsDescriptorTable(1, &TexMetallicTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[11].InitAsDescriptorTable(1, &TexRoughnessTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[12].InitAsDescriptorTable(1, &TexEmissiveTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[13].InitAsDescriptorTable(1, &ShadowMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[14].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[15].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
+		// slotRootParameter[16].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
+
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootShaderResourceView(3, instanceBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootShaderResourceView(4, matBuffer->GetGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(5, mhGPUUser);
-		mCommandList->SetGraphicsRootDescriptorTable(6, mCSWaves->DisplacementMap());
-		mCommandList->SetGraphicsRootDescriptorTable(7, mhGPUNorm); 
-		mCommandList->SetGraphicsRootDescriptorTable(12, mhGPUShadow);
-		mCommandList->SetGraphicsRootDescriptorTable(14, mhGPUArray);
-		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUCube);
+		mCommandList->SetGraphicsRootConstantBufferView(3, mCurrFrameResource->ShaderToyCB->Resource()->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(4, instanceBuffer->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(5, matBuffer->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootDescriptorTable(6, mhGPUUser);
+		mCommandList->SetGraphicsRootDescriptorTable(7, mCSWaves->DisplacementMap());
+		mCommandList->SetGraphicsRootDescriptorTable(8, mhGPUNorm); 
+		mCommandList->SetGraphicsRootDescriptorTable(13, mhGPUShadow);
+		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUArray);
+		mCommandList->SetGraphicsRootDescriptorTable(16, mhGPUCube);
 
 		mLastVertexBufferView = mAllRitems[0]->Geo->VertexBufferView();
 		mLastIndexBufferView = mAllRitems[0]->Geo->IndexBufferView();
@@ -2103,6 +2134,16 @@ void MyApp::UpdateSkinnedCB()
 		&skinnedConstants.BoneTransforms[0]);
 
 	currSkinnedCB->CopyData(0, skinnedConstants);
+}
+
+void MyApp::UpdateShaderToyCB()
+{
+	auto currCB = mCurrFrameResource->ShaderToyCB.get();
+
+	// We only have one skinned model being animated.
+	mCBShaderToy.iTime = mTimer.TotalTime();
+
+	currCB->CopyData(0, mCBShaderToy);
 }
 
 #pragma endregion Update

@@ -183,6 +183,17 @@ cbuffer cbSkinned : register(b2)
     float4x4 gBoneTransforms[96];
 };
 
+cbuffer cbShaderToy : register(b3)
+{
+    float dx;
+    float dy;
+    float threshold;
+    float strength;
+    float iTime;
+    float2 iResolution;
+    float dummy;
+};
+
 
 //***************************************************************************************
 // Algorithm
