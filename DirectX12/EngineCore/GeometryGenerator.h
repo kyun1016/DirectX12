@@ -129,6 +129,8 @@ public:
 	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
 	///</summary>
 	static MeshData CreateQuad(float x, float y, float w, float h, float depth);
+
+	static MeshData CreateSquare(float scale);
 	
 
 	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<GeometryGenerator::Vertex>& vertex)

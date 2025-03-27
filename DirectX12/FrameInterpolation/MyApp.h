@@ -189,6 +189,7 @@ private:
 
 	void DrawRenderItems(const RenderLayer ritems);
 	void DrawSceneToShadowMap(int index = 0);
+	void DrawShaderToy(int index = 0);
 
 	void Pick();
 	std::pair<int, int> PickClosest(const DirectX::SimpleMath::Ray& pickingRay, float& minDist);

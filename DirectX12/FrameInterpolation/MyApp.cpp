@@ -26,11 +26,12 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[4] = RenderLayer::Subdivision;
 	mLayerType[5] = RenderLayer::TreeSprites;
 	mLayerType[6] = RenderLayer::CubeMap;
-	mLayerType[7] = RenderLayer::Normal;
-	mLayerType[8] = RenderLayer::SkinnedNormal;
+	// mLayerType[7] = RenderLayer::Normal;
+	// mLayerType[8] = RenderLayer::SkinnedNormal;
+	mLayerType[9] = RenderLayer::ShaderToy;
 	mLayerType[17] = RenderLayer::ShadowMap;
 	mLayerType[18] = RenderLayer::WaveCS;
-	mLayerType[19] = RenderLayer::BlurCS;
+	// mLayerType[19] = RenderLayer::BlurCS;
 
 	{
 		// 거울 반사 구현 시
@@ -166,6 +167,7 @@ void MyApp::LoadTextures()
 	}
 
 	LoadTextures(diffuseFilename, mDiffuseTex);
+	// ShaderToy 크기만큼의 DiffuseTex 할당
 	LoadTextures(normalFilename, mNormalTex);
 	LoadTextures(arrayFilename, mTreeMapTex);
 	LoadTextures(cubeFilename, mCubeMapTex);
@@ -361,9 +363,9 @@ void MyApp::BuildDescriptorHeaps()
 		/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		/* UINT NumDescriptors				*/.NumDescriptors 
 												= SRV_IMGUI_SIZE 
-												+ SRV_USER_SIZE 
-												+ (UINT)mDisplacementTex.size()
+												+ SRV_USER_SIZE
 												+ (UINT)mDiffuseTex.size()
+												+ (UINT)mDisplacementTex.size()
 												+ (UINT)mNormalTex.size()
 												+ (UINT)mAOTex.size()
 												+ (UINT)mMetallicTex.size()
@@ -834,7 +836,7 @@ void MyApp::BuildMeshes()
 	mMeshes.push_back(GeometryGenerator::CreateGrid(160.0f, 160.0f, mCSWaves->RowCount(), mCSWaves->ColumnCount()));	// Wave
 	mMeshes.push_back(LoadModelMesh("../Data/Models/skull.txt"));
 	mMeshes.push_back(LoadModelMesh("../Data/Models/car.txt"));
-
+	mMeshes.push_back(GeometryGenerator::CreateSquare(1.0f));
 	UpdateTangents();
 
 	BuildGeometry(mMeshes);
@@ -1021,6 +1023,7 @@ void MyApp::BuildMaterials()
 
 void MyApp::BuildRenderItems()
 {
+	auto squareRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["9"]);
 	auto boxRitem				= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto alphaBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto subBoxRitem			= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
@@ -1039,6 +1042,10 @@ void MyApp::BuildRenderItems()
 	auto boundingBoxRitem		= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["0"]);
 	auto boundingSphereRitem	= std::make_unique<RenderItem>(mGeometries[0].get(), mGeometries[0]->DrawArgs["2"]);
 	auto treeSpritesRitem		= std::make_unique<RenderItem>(mGeometries[2].get(), mGeometries[2]->DrawArgs["0"], false);
+
+
+	squareRitem->LayerFlag
+		= (1 << (int)RenderLayer::ShaderToy);
 
 	subBoxRitem->LayerFlag
 		= (1 << (int)RenderLayer::Subdivision)
@@ -1096,6 +1103,9 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
 	int repeatCount = 30;
+
+	squareRitem->Push(translation, scale, rot, { 1.0f, 1.0f, 1.0f }, mInstanceCount++, 3);
+	mAllRitems.push_back(std::move(squareRitem));
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
@@ -1249,8 +1259,6 @@ void MyApp::BuildRenderItems()
 
 		mAllRitems.push_back(std::move(charRitem));
 	}
-	
-	
 
 	////=========================================================
 	//// GEO_MESH_NAMES[2]:LandGeo
@@ -1325,7 +1333,7 @@ void MyApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(treeSpritesRitem));
 
-	for (size_t i = 0; i < mAllRitems.size(); ++i)
+	for (size_t i = 1; i < mAllRitems.size(); ++i)
 	{
 		if (mAllRitems[i]->mFrustumCullingEnabled)
 		{
@@ -1637,11 +1645,14 @@ void MyApp::BuildPSOs()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedNormalPsoDesc = normalDesc;
 	skinnedNormalPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
 	skinnedNormalPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["SkinnedNormalVS"]->GetBufferPointer()), mShaders["SkinnedNormalVS"]->GetBufferSize() };
+	// skinnedNormalPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderToySilexarsPsoDesc = opaquePsoDesc;
 	shaderToySilexarsPsoDesc.NumRenderTargets = 1;
 	shaderToySilexarsPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShaderToyVS"]->GetBufferPointer()), mShaders["ShaderToyVS"]->GetBufferSize() };
 	shaderToySilexarsPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShaderToy_Silexars_PS"]->GetBufferPointer()), mShaders["ShaderToy_Silexars_PS"]->GetBufferSize() };
+	shaderToySilexarsPsoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
+	shaderToySilexarsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	//=====================================================
 	// Create PSO
@@ -1663,6 +1674,7 @@ void MyApp::BuildPSOs()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&skinnedShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SkinnedShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&debugShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::DebugShadowMap])));
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shaderToySilexarsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShaderToy])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -1691,7 +1703,7 @@ void MyApp::BuildPSOs()
 
 void MyApp::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)
 {
-	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + 1, 1 + MAX_LIGHTS);
+	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1 + MAX_LIGHTS);
 }
 
 #pragma region Update
@@ -1838,6 +1850,7 @@ void MyApp::Render()
 		else
 			continue;
 	}
+	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -1846,18 +1859,28 @@ void MyApp::Render()
 	D3D12_RESOURCE_BARRIER RenderBarrier = 
 		CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	D3D12_RESOURCE_BARRIER SRVUserBufBarrier[SRV_USER_SIZE];
-	for(int i=0; i<SRV_USER_SIZE; ++i)
+	for(int i=0; i< SRV_USER_SIZE; ++i)
 		SRVUserBufBarrier[i] = CD3DX12_RESOURCE_BARRIER::Transition(mSRVUserBuffer[i].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	mCommandList->ResourceBarrier(SRV_USER_SIZE, &SRVUserBufBarrier[0]);
 
-	// Clear the back buffer and depth buffer.
+	// Specify the buffers we are going to render to.
+	{
+		
+		// Shader Toy
+		for (int i = 1; i < RTV_USER_SIZE; ++i)
+		{
+			mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i], (float*)&mMainPassCB.FogColor, 0, nullptr);
+			D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
+			rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i];   // 새로 만든 RTV
+			mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
+			DrawShaderToy(i);
+		}
+	}
+
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[mCurrBackBuffer], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS], (float*)&mMainPassCB.FogColor, 0, nullptr);
-	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[2];
 	rtvs[0] = mhCPUSwapChainBuffer[mCurrBackBuffer];		// 기존
 	rtvs[1] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS];   // 새로 만든 RTV
@@ -1905,19 +1928,19 @@ void MyApp::Render()
 	{	
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
-		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
+		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[RTV_USER_SIZE]);
 
-		mCommandList->CopyResource(mSRVUserBuffer[1].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
+		mCommandList->CopyResource(mSRVUserBuffer[RTV_USER_SIZE].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
 
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
-		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateBefore = SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter;
+		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[RTV_USER_SIZE]);
 	}
 
 	// Indicate a state transition on the resource usage. 
@@ -2164,6 +2187,7 @@ void MyApp::DrawRenderItems(const RenderLayer flag)
 
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType;
 		if (flag == RenderLayer::Normal
+			|| flag == RenderLayer::SkinnedNormal
 			|| flag == RenderLayer::NormalWireframe
 			|| flag == RenderLayer::TreeSprites
 			|| flag == RenderLayer::TreeSpritesWireframe)
@@ -2249,6 +2273,21 @@ void MyApp::DrawSceneToShadowMap(int index)
 	mCommandList->ResourceBarrier(1, &barrier);
 
 	// mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress()); // passCB 복구 로직은 구현하지 않음
+}
+
+void MyApp::DrawShaderToy(int index)
+{
+	auto& ri = mAllRitems[0];
+
+	mLastVertexBufferView = ri->Geo->VertexBufferView();
+	mLastIndexBufferView = ri->Geo->IndexBufferView();
+	mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
+	mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
+	mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
+
+	mCommandList->SetPipelineState(mPSOs[RenderLayer::ShaderToy].Get());
+	mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 }
 
 void MyApp::Pick()
