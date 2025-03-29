@@ -31,6 +31,10 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	// mLayerType[9] = RenderLayer::ShaderToy;
 	mLayerType[17] = RenderLayer::ShadowMap;
 	mLayerType[18] = RenderLayer::WaveCS;
+
+	mUseShadowMap[0] = true;
+	// mUseShadowMap[1] = true;
+	// mUseShadowMap[0] = true;
 	// mLayerType[19] = RenderLayer::BlurCS;
 
 	{
@@ -671,6 +675,7 @@ void MyApp::BuildShadersAndInputLayout()
 
 	mShaders["ShaderToyVS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "VS", "vs_5_1");
 	mShaders["ShaderToy_Silexars_PS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "PS", "ps_5_1");
+	mShaders["ShaderToy_Singularity_PS"] = D3DUtil::CompileShader(L"ST_Singularity.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -1101,7 +1106,7 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
-	int repeatCount = 30;
+	int repeatCount = 1;
 
 	squareRitem->Push(translation, scale, rot, { 1.0f, 1.0f, 1.0f }, mInstanceCount++, 3);
 	mAllRitems.push_back(std::move(squareRitem));
@@ -1649,7 +1654,7 @@ void MyApp::BuildPSOs()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderToySilexarsPsoDesc = opaquePsoDesc;
 	shaderToySilexarsPsoDesc.NumRenderTargets = 1;
 	shaderToySilexarsPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShaderToyVS"]->GetBufferPointer()), mShaders["ShaderToyVS"]->GetBufferSize() };
-	shaderToySilexarsPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShaderToy_Silexars_PS"]->GetBufferPointer()), mShaders["ShaderToy_Silexars_PS"]->GetBufferSize() };
+	shaderToySilexarsPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShaderToy_Singularity_PS"]->GetBufferPointer()), mShaders["ShaderToy_Singularity_PS"]->GetBufferSize() };
 	shaderToySilexarsPsoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
 	shaderToySilexarsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 

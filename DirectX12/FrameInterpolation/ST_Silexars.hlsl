@@ -27,6 +27,18 @@ PixelShaderInput VS(SamplingVertexShaderInput input)
     return output;
 }
 
+float mod(float x, float y)
+{
+    return x - y * floor(x / y);
+}
+
+float2 mod(float2 x, float y)
+{
+    float2 ret = x;
+    return x - y * floor(x / y);
+
+}
+
 
 float4 PS(PixelShaderInput input) : SV_TARGET
 {
@@ -35,13 +47,15 @@ float4 PS(PixelShaderInput input) : SV_TARGET
     for (int i = 0; i < 3; i++)
     {
         float2 uv = input.texcoord;
-        float2 p = input.texcoord;
+        uv.y = 1.0 - uv.y;
+        // uv = uv * 2.0 - 1.0;
+        float2 p = uv;
         p -= .5;
-        p.x = iResolution.x / iResolution.y;
+        // p.x *= (iResolution.x / iResolution.y);
         z += .07;
-        l = length(p);
-        uv += p / l * (sin(z) + 1.) * abs(sin(l * 9. - z - z));
-        c[i] = .01 / length(fmod(uv, 1.) - .5);
+        l = length(p) * 0.8;
+        uv += (p / l) * (sin(z) + 1.) * abs(sin(l * 9. - z - z));
+        c[i] = .01 / length(mod(uv, 1.) - 0.5);
     }
-    return float4(c / l, iTime);
+    return float4(c/l, iTime);
 }
