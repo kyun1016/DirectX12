@@ -66,6 +66,9 @@
     <FxCompile Include="ST_Singularity.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="ST_Octagrams.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -141,6 +144,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="results.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="ST_FractalPyramid.hlsl">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>

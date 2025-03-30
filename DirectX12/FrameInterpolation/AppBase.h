@@ -70,8 +70,9 @@ public:
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
-	static constexpr int RTV_USER_SIZE = 2;	// 0: Render Target, 1: Shader Toy
-	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1;	// 0: Render Target, 1: CS Copy, 2: Shader Toy
+	static constexpr int RTV_TOY_SIZE = 4;	// 0: Render Target, 1: Shader Toy
+	static constexpr int RTV_USER_SIZE = 1 + RTV_TOY_SIZE;	// 0: Render Target, 1~: Shader Toy
+	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1;	// 0: Render Target, 1~N: Shader Toy, N: CS Copy
 	static constexpr uint32_t WND_PADDING = 5;
 public:
 	AppBase();

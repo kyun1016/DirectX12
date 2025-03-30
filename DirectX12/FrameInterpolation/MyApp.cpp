@@ -33,8 +33,8 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 	mLayerType[18] = RenderLayer::WaveCS;
 
 	mUseShadowMap[0] = true;
-	// mUseShadowMap[1] = true;
-	// mUseShadowMap[0] = true;
+	mUseShadowMap[1] = true;
+	mUseShadowMap[2] = true;
 	// mLayerType[19] = RenderLayer::BlurCS;
 
 	{
@@ -674,8 +674,12 @@ void MyApp::BuildShadersAndInputLayout()
 	mShaders["ShadowDebugPS"] = D3DUtil::CompileShader(L"ShadowDebug.hlsl", defines, "PS", "ps_5_1");
 
 	mShaders["ShaderToyVS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "VS", "vs_5_1");
-	mShaders["ShaderToy_Silexars_PS"] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "PS", "ps_5_1");
-	mShaders["ShaderToy_Singularity_PS"] = D3DUtil::CompileShader(L"ST_Singularity.hlsl", defines, "PS", "ps_5_1");
+
+	mST_Shaders.resize(RTV_TOY_SIZE);
+	mST_Shaders[0] = D3DUtil::CompileShader(L"ST_Silexars.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[1] = D3DUtil::CompileShader(L"ST_Singularity.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[2] = D3DUtil::CompileShader(L"ST_FractalPyramid.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[3] = D3DUtil::CompileShader(L"ST_Octagrams.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -1651,13 +1655,6 @@ void MyApp::BuildPSOs()
 	skinnedNormalPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["SkinnedNormalVS"]->GetBufferPointer()), mShaders["SkinnedNormalVS"]->GetBufferSize() };
 	// skinnedNormalPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderToySilexarsPsoDesc = opaquePsoDesc;
-	shaderToySilexarsPsoDesc.NumRenderTargets = 1;
-	shaderToySilexarsPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShaderToyVS"]->GetBufferPointer()), mShaders["ShaderToyVS"]->GetBufferSize() };
-	shaderToySilexarsPsoDesc.PS = { reinterpret_cast<BYTE*>(mShaders["ShaderToy_Singularity_PS"]->GetBufferPointer()), mShaders["ShaderToy_Singularity_PS"]->GetBufferSize() };
-	shaderToySilexarsPsoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
-	shaderToySilexarsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-
 	//=====================================================
 	// Create PSO
 	//=====================================================
@@ -1678,7 +1675,6 @@ void MyApp::BuildPSOs()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&skinnedShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::SkinnedShadowMap])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&debugShadowMapPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::DebugShadowMap])));
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shaderToySilexarsPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::ShaderToy])));
 
 	//=====================================================
 	// PSO for wireframe objects.
@@ -1702,6 +1698,24 @@ void MyApp::BuildPSOs()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&normalDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::NormalWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TreeSpritesWireframe])));
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&tessPsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::TessellationWireframe])));
+
+
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shaderToyPsoDesc = opaquePsoDesc;
+	shaderToyPsoDesc.NumRenderTargets = 1;
+	shaderToyPsoDesc.VS = { reinterpret_cast<BYTE*>(mShaders["ShaderToyVS"]->GetBufferPointer()), mShaders["ShaderToyVS"]->GetBufferSize() };
+	shaderToyPsoDesc.RTVFormats[1] = DXGI_FORMAT_UNKNOWN;
+	shaderToyPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	shaderToyPsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+
+	mST_PSOs.resize(mST_Shaders.size());
+	
+	for(int i=0;i<mST_Shaders.size();++i) 
+	{
+		shaderToyPsoDesc.PS = { reinterpret_cast<BYTE*>(mST_Shaders[i]->GetBufferPointer()), mST_Shaders[i]->GetBufferSize() };
+		ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&shaderToyPsoDesc, IID_PPV_ARGS(&mST_PSOs[i])));
+	}
+
 }
 #pragma endregion Initialize
 
@@ -1870,18 +1884,9 @@ void MyApp::Render()
 
 	// Specify the buffers we are going to render to.
 	{
-		
 		// Shader Toy
-		for (int i = 1; i < RTV_USER_SIZE; ++i)
+		for (int i = 0; i < RTV_TOY_SIZE; ++i)
 		{
-			mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i], (float*)&mMainPassCB.FogColor, 0, nullptr);
-			mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-			D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
-			rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i];   // 새로 만든 RTV
-			mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
-			
-			mCommandList->SetPipelineState(mPSOs[RenderLayer::ShaderToy].Get());
 			DrawShaderToy(i);
 		}
 	}
@@ -2283,8 +2288,17 @@ void MyApp::DrawSceneToShadowMap(int index)
 	// mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress()); // passCB 복구 로직은 구현하지 않음
 }
 
-void MyApp::DrawShaderToy(int index)
+void MyApp::DrawShaderToy(int idx)
 {
+	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + 1 + idx], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
+	rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + 1 + idx];   // 새로 만든 RTV
+	mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
+
+	mCommandList->SetPipelineState(mST_PSOs[idx].Get());
+
 	auto& ri = mAllRitems[0];
 
 	mLastVertexBufferView = ri->Geo->VertexBufferView();

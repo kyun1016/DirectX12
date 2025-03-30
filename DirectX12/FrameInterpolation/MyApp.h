@@ -270,6 +270,9 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
+	std::vector<Microsoft::WRL::ComPtr<ID3DBlob>> mST_Shaders;
+	std::vector<Microsoft::WRL::ComPtr<ID3D12PipelineState>> mST_PSOs;
+
 	bool mCullingEnable = false;
 
 	bool mUpdateBoundingMesh = false;

@@ -948,16 +948,16 @@ void AppBase::UpdateImGui()
 
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
-		// ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x, main_viewport->WorkPos.y), ImGuiCond_FirstUseEver);
-		// ImGui::SetNextWindowSize(ImVec2((float)mClientWidth, (float)mClientHeight), ImGuiCond_FirstUseEver);
+		// ImGui::SetNextWindowPos(Imfloat2(main_viewport->WorkPos.x, main_viewport->WorkPos.y), ImGuiCond_FirstUseEver);
+		// ImGui::SetNextWindowSize(Imfloat2((float)mClientWidth, (float)mClientHeight), ImGuiCond_FirstUseEver);
 		static float f = 0.0f;
 		static int counter = 0;
 		const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
 		// ImGui::PushStyleVar();
 		ImGui::Begin("Root");
 		// ImGui::Begin("Root", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		// ImGui::SetWindowPos("Root", ImVec2(main_viewport->WorkPos.x + 100.0f, main_viewport->WorkPos.y + 100.0f));
-		// ImGui::SetWindowSize("Root", ImVec2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::SetWindowPos("Root", Imfloat2(main_viewport->WorkPos.x + 100.0f, main_viewport->WorkPos.y + 100.0f));
+		// ImGui::SetWindowSize("Root", Imfloat2((float)mClientWidth, (float)mClientHeight));
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
@@ -997,7 +997,7 @@ void AppBase::UpdateImGui()
 
 		// mSrvDescHeapAlloc.Alloc(&CurrentBackBufferView(), my_texture_srv_gpu_handle);
 		ImGui::Text("Hello from another window!");
-		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, ImVec2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, Imfloat2((float)mClientWidth, (float)mClientHeight));
 		ImGui::End();
 	}
 }
@@ -1038,12 +1038,12 @@ void AppBase::ShowImguiViewport(bool* p_open)
 	//float my_tex_h = (float)io.Fonts->TexHeight;
 
 	//{
-	//	ImVec2 pos = ImGui::GetCursorScreenPos();
+	//	Imfloat2 pos = ImGui::GetCursorScreenPos();
 	//	ImGui::Text("%.0fx%.0f", my_tex_w, my_tex_h);
-	//	ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
-	//	ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+	//	Imfloat2 uv_min = Imfloat2(0.0f, 0.0f);                 // Top-left
+	//	Imfloat2 uv_max = Imfloat2(1.0f, 1.0f);                 // Lower-right
 
-	//	ImGui::Image(my_tex_id, ImVec2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
+	//	ImGui::Image(my_tex_id, Imfloat2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
 	//}
 	
 

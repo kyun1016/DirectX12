@@ -36,7 +36,6 @@ float2 mod(float2 x, float y)
 {
     float2 ret = x;
     return x - y * floor(x / y);
-
 }
 
 
