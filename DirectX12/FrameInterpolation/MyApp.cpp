@@ -680,6 +680,8 @@ void MyApp::BuildShadersAndInputLayout()
 	mST_Shaders[1] = D3DUtil::CompileShader(L"ST_Singularity.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[2] = D3DUtil::CompileShader(L"ST_FractalPyramid.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[3] = D3DUtil::CompileShader(L"ST_Octagrams.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[4] = D3DUtil::CompileShader(L"ST_ShaderArtCodingIntroduction.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[5] = D3DUtil::CompileShader(L"ST_Experiments.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{

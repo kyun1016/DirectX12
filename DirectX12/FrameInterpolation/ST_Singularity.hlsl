@@ -34,9 +34,7 @@ float mod(float x, float y)
 
 float2 mod(float2 x, float y)
 {
-    float2 ret = x;
     return x - y * floor(x / y);
-
 }
 
 
@@ -90,7 +88,7 @@ float4 PS(PixelShaderInput input) : SV_TARGET
     //Resolution for scaling and centering
     float2 r = iResolution.xy / iResolution.y;
     //Centered ratio-corrected coordinates
-    float2 p = (F + F - r * 0.7) * 1.5;
+    float2 p = (input.texcoord * 2 - 1.0) * 1.428;
     
     //Diagonal vector for skewing
     float2 d = float2(-1, 1);

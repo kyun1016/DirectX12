@@ -62,7 +62,7 @@ float4 PS(PixelShaderInput input) : SV_TARGET
 {
 	// vec2 uv = (fragCoord-(iResolution.xy/2.))/iResolution.x;
 	float4 fragColor;
-    float2 uv = 0.5 - input.texcoord;
+    float2 uv = input.texcoord * 2 - 1.0;
 	float3 ro = float3(0., 0., -50.);
 	ro.xz = rotate(ro.xz, iTime);
 	float3 cf = normalize(-ro);

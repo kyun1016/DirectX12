@@ -87,7 +87,7 @@ struct PixelShaderInput
 float4 PS(PixelShaderInput input) : SV_TARGET
 {
     // vec2 p = (fragCoord.xy * 2. - iResolution.xy) / min(iResolution.x, iResolution.y);
-    float2 p = 0.5 - input.texcoord*2;
+    float2 p = input.texcoord * 2 - 1.0;
     float3 ro = float3(0., -0.2, iTime * 4.);
     float3 ray = normalize(float3(p, 1.5));
     ray.xy = mul(ray.xy, rot(sin(iTime * .03) * 5.));
