@@ -682,6 +682,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mST_Shaders[3] = D3DUtil::CompileShader(L"ST_Octagrams.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[4] = D3DUtil::CompileShader(L"ST_ShaderArtCodingIntroduction.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[5] = D3DUtil::CompileShader(L"ST_Experiments.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[6] = D3DUtil::CompileShader(L"ST_VoxelrayBirdsEyeViewMountain.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{

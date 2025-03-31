@@ -185,10 +185,13 @@ cbuffer cbSkinned : register(b2)
 
 cbuffer cbShaderToy : register(b3)
 {
+    float4 iMouse;
+    
     float dx;
     float dy;
     float threshold;
     float strength;
+
     float iTime;
     float2 iResolution;
     float dummy;

@@ -75,6 +75,12 @@
     <FxCompile Include="ST_Experiments.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="ST_RubiksCube_TBD.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_VoxelrayBirdsEyeViewMountain.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

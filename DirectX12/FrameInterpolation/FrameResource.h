@@ -32,10 +32,13 @@ struct SkinnedConstants
 
 struct ShaderToyConstants
 {
+	DirectX::SimpleMath::Vector4 iMouse;
+
 	float dx;
 	float dy;
 	float threshold;
 	float strength;
+
 	float iTime;
 	DirectX::SimpleMath::Vector2 iResolution;
 	float dummy;
