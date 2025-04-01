@@ -81,6 +81,13 @@
     <FxCompile Include="ST_VoxelrayBirdsEyeViewMountain.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="ST_Seascape.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_FireBall.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_Clouds.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

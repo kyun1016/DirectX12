@@ -683,6 +683,8 @@ void MyApp::BuildShadersAndInputLayout()
 	mST_Shaders[4] = D3DUtil::CompileShader(L"ST_ShaderArtCodingIntroduction.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[5] = D3DUtil::CompileShader(L"ST_Experiments.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[6] = D3DUtil::CompileShader(L"ST_VoxelrayBirdsEyeViewMountain.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[7] = D3DUtil::CompileShader(L"ST_Seascape.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[8] = D3DUtil::CompileShader(L"ST_FireBall.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
