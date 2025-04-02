@@ -112,15 +112,18 @@ bool map(uint s, int3 tile)
 
 bool diagonal_shadow(uint s, int3 p, int z)
 {
-    do
+    bool ret = false;
+    if (map(s, p))
+        ret = true;
+        
+    while (p.z < z)
     {
         p++;
         if (map(s, p))
-            return true;
+            ret = true;
     }
-    while (p.z < z);
 
-    return false; // sky
+    return ret; // sky
 }
 
 float3 normal(uint s, int3 p)

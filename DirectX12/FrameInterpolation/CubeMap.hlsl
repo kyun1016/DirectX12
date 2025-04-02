@@ -41,7 +41,7 @@ struct PixelOut
     float4 color1 : SV_Target1;
 };
 
-PixelOut PS(VertexOut pin) : SV_Target
+PixelOut PS(VertexOut pin)
 {
     PixelOut ret;
     ret.color0 = gCubeMap[gCubeMapIndex].Sample(gsamLinearWrap, pin.PosL);

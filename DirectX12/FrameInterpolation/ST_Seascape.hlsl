@@ -161,25 +161,28 @@ float heightMapTracing(float3 ori, float3 dir, out float3 p)
         p = ori + dir * tx;
         return tx;
     }
-    float hm = map(ori + dir * tm);
-    float tmid = 0.0;
-    for (int i = 0; i < NUM_STEPS; i++)
+    else
     {
-        tmid = lerp(tm, tx, hm / (hm - hx));
-        p = ori + dir * tmid;
-        float hmid = map(p);
-        if (hmid < 0.0)
+        float hm = map(ori + dir * tm);
+        float tmid = 0.0;
+        for (int i = 0; i < NUM_STEPS; i++)
         {
-            tx = tmid;
-            hx = hmid;
+            tmid = lerp(tm, tx, hm / (hm - hx));
+            p = ori + dir * tmid;
+            float hmid = map(p);
+            if (hmid < 0.0)
+            {
+                tx = tmid;
+                hx = hmid;
+            }
+            else
+            {
+                tm = tmid;
+                hm = hmid;
+            }
         }
-        else
-        {
-            tm = tmid;
-            hm = hmid;
-        }
+        return tmid;
     }
-    return tmid;
 }
 
 float3 getPixel(float2 uv, float time)

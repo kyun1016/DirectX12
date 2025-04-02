@@ -43,6 +43,7 @@ float4 PS(PixelShaderInput input) : SV_TARGET
 {
     float3 c;
     float l, z = iTime;
+    [unroll]
     for (int i = 0; i < 3; i++)
     {
         float2 uv = input.texcoord;

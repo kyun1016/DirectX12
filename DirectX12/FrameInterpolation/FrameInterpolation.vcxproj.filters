@@ -87,7 +87,15 @@
     <FxCompile Include="ST_FireBall.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
-    <FxCompile Include="ST_Clouds.hlsl" />
+    <FxCompile Include="ST_Clouds_TBD.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_CubeWave3.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_SquareWave.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
