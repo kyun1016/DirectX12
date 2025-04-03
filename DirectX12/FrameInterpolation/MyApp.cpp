@@ -687,6 +687,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mST_Shaders[8] = D3DUtil::CompileShader(L"ST_FireBall.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[9] = D3DUtil::CompileShader(L"ST_CubeWave3.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[10] = D3DUtil::CompileShader(L"ST_SquareWave.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[11] = D3DUtil::CompileShader(L"ST_EyeOfPhi.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -1117,23 +1118,24 @@ void MyApp::BuildRenderItems()
 	DirectX::SimpleMath::Vector3 scale(1.0f, 1.0f, 1.0f);
 	DirectX::SimpleMath::Quaternion rot;
 	DirectX::SimpleMath::Vector3 texScale(1.0f, 1.0f, 1.0f);
-	int repeatCount = 1;
+	const int repeatCount = 1;
+	const float space = 12.0f;
 
 	squareRitem->Push(translation, scale, rot, { 1.0f, 1.0f, 1.0f }, mInstanceCount++, 3);
 	mAllRitems.push_back(std::move(squareRitem));
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation = { (i % 10) * 8.0f, 10.0f, 5.0f + 8.0f * (i / 10) };
+		translation = { (i % 10) * space, space, 5.0f + space * (i / 10) };
 		scale = { 2.0f, 2.0f, 2.0f };
 		boxRitem->Push(translation, scale, rot, { 2.0f, 1.0f, 2.0f }, mInstanceCount++, i % mAllMatItems.size());
 	}
 	
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 20.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
+		translation.x = (i % 10) * space;
+		translation.y = space * 2;
+		translation.z = 5.0f + space * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1143,9 +1145,9 @@ void MyApp::BuildRenderItems()
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 30.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
+		translation.x = (i % 10) * space;
+		translation.y = space * 3;
+		translation.z = 5.0f + space * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1155,9 +1157,9 @@ void MyApp::BuildRenderItems()
 	
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 40.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
+		translation.x = (i % 10) * space;
+		translation.y = space * 4;
+		translation.z = 5.0f + space * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
 		scale.z = 3.0f;
@@ -1168,7 +1170,7 @@ void MyApp::BuildRenderItems()
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
 		translation.x = (i % 10) * 8.0f;
-		translation.y = 50.0f;
+		translation.y = space * 5;
 		translation.z = 5.0f + 8.0f * (i / 10);
 		scale.x = 3.0f;
 		scale.y = 3.0f;
@@ -1222,9 +1224,9 @@ void MyApp::BuildRenderItems()
 	////=========================================================
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 60.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
+		translation.x = (i % 10) * space;
+		translation.y = space * 6;
+		translation.z = 5.0f + space * (i / 10);
 		scale.x = 0.6f;
 		scale.y = 0.6f;
 		scale.z = 0.6f;
@@ -1234,9 +1236,9 @@ void MyApp::BuildRenderItems()
 
 	for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i)
 	{
-		translation.x = (i % 10) * 8.0f;
-		translation.y = 70.0f;
-		translation.z = 5.0f + 8.0f * (i / 10);
+		translation.x = (i % 10) * space;
+		translation.y = space * 7;
+		translation.z = 5.0f + space * (i / 10);
 		scale.x = 0.6f;
 		scale.y = 0.6f;
 		scale.z = 0.6f;
@@ -1252,9 +1254,9 @@ void MyApp::BuildRenderItems()
 			= (1 << (int)RenderLayer::SkinnedOpaque)
 			| (1 << (int)RenderLayer::SkinnedNormal);
 		for (int i = 0; i < mAllMatItems.size() * repeatCount; ++i) {
-			translation.x = (i % 10) * 8.0f;
-			translation.y = 80.0f;
-			translation.z = 5.0f + 8.0f * (i / 10);
+			translation.x = (i % 10) * space;
+			translation.y = space * 8;
+			translation.z = 5.0f + space * (i / 10);
 			scale.x = 0.15f;
 			scale.y = 0.15f;
 			scale.z = -0.15f;

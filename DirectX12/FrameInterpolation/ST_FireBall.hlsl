@@ -1,21 +1,6 @@
 // https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/
 // https://www.shadertoy.com/view/lsf3RH
-#include "memory.hlsli"
-
-float mod(float x, float y)
-{
-    return x - y * floor(x / y);
-}
-
-float2 mod(float2 x, float y)
-{
-    return x - y * floor(x / y);
-}
-
-float3 mod(float3 x, float y)
-{
-    return x - y * floor(x / y);
-}
+#include "ST_Core.hlsli"
 
 float snoise(float3 uv, float res)
 {
@@ -40,12 +25,6 @@ float snoise(float3 uv, float res)
 	
     return lerp(r0, r1, f.z) * 2. - 1.;
 }
-
-struct PixelShaderInput
-{
-    float4 position : SV_POSITION;
-    float2 texcoord : TEXCOORD;
-};
 
 float4 PS(PixelShaderInput input) : SV_TARGET
 {

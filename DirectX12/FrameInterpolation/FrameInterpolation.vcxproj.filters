@@ -96,6 +96,10 @@
     <FxCompile Include="ST_SquareWave.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="ST_EyeOfPhi.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ST_Starfield.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -166,6 +170,9 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Memory.hlsli">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ST_Core.hlsli">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
