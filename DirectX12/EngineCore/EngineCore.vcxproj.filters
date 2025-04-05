@@ -19,6 +19,9 @@
     <Filter Include="SimpleMath">
       <UniqueIdentifier>{e1c25a5a-e800-4936-9ed9-96b4ec509e8c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Streamline">
+      <UniqueIdentifier>{885ed993-556f-4638-adae-e5ad8f1db366}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -74,6 +77,81 @@
     </ClInclude>
     <ClInclude Include="SkinnedData.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StreamlinePch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_helpers_vk.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_hooks.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_matrix_helpers.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_nis.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_nvperf.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_pcl.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_reflex.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_result.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_security.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_struct.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_template.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_version.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_appidentity.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_consts.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_core_api.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_core_types.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_deepdvc.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_device_wrappers.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_directsr.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_dlss.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_dlss_d.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_dlss_g.h">
+      <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="sl_helpers.h">
+      <Filter>Streamline</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <algorithm>
 
+// #include <libloaderapi.h>
 #include <Windows.h>
 #include <WinUser.h>
 #include <wrl/client.h> // ComPtr
@@ -18,12 +19,12 @@
 #include "SimpleMath.h"
 #include "DirectXMesh.h"
 #include <d3d12.h>
+#include <dxgi1_6.h>
 #include <DirectXCollision.h>
 #include <DirectXColors.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
-#include <dxgi1_6.h>
 #include <dxgidebug.h>
 #include "d3dx12.h"
 
@@ -34,8 +35,17 @@
 #include "D3DUtil.h"
 #include "Camera.h"
 #include "LoadM3d.h"
+#include "StreamlinePch.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
+
+#define _DLSS
+
+#ifdef _DLSS
+#pragma comment(lib, "..\\Libraries\\\Include\\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#else
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
+#endif
+
 #pragma comment(lib, "dxguid.lib")

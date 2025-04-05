@@ -11,8 +11,13 @@
 #include "FrameResource.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
+
+#ifdef _DLSS
+#pragma comment(lib, "..\\Libraries\\\Include\\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#else
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
+#endif
 
 extern class AppBase* g_appBase;
 
@@ -84,6 +89,7 @@ public:
 	void Set4xMsaaState(bool value);
 
 	virtual bool Initialize();
+	void LoadDLLs();
 	virtual void CleanUp();
 	int Run();
 

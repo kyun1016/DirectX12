@@ -147,7 +147,6 @@ public:
 
 #pragma region Initialize
 	virtual bool Initialize() override;
-	void LoadDLLs();
 
 	void LoadTextures();
 	void LoadTextures(const std::vector<std::wstring>& filename, std::unordered_map<std::wstring, std::unique_ptr<Texture>>& texMap);

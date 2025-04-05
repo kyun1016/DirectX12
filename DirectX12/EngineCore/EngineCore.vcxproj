@@ -72,19 +72,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)Libraries\Libs\EngineCore\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Libraries\Include\DirectX\Streamline\_sdk\include\;$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)Libraries\Libs\EngineCore\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Libraries\Include\DirectX\Streamline\_sdk\include\;$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Libraries\Libs\EngineCore\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Libraries\Include\DirectX\Streamline\_sdk\include\;$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Libraries\Libs\EngineCore\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Libraries\Include\DirectX\Streamline\_sdk\include\;$(SolutionDir)Libraries\Include\imgui\backends\;$(SolutionDir)Libraries\Include\imgui\;$(SolutionDir)Libraries\Include\DirectX\;$(SolutionDir)Libraries\Include\;$(SolutionDir)EngineCore\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
@@ -178,7 +178,32 @@
     <ClInclude Include="scoped.h" />
     <ClInclude Include="SimpleMath.h" />
     <ClInclude Include="SkinnedData.h" />
+    <ClInclude Include="sl.h" />
+    <ClInclude Include="sl_appidentity.h" />
+    <ClInclude Include="sl_consts.h" />
+    <ClInclude Include="sl_core_api.h" />
+    <ClInclude Include="sl_core_types.h" />
+    <ClInclude Include="sl_deepdvc.h" />
+    <ClInclude Include="sl_device_wrappers.h" />
+    <ClInclude Include="sl_directsr.h" />
+    <ClInclude Include="sl_dlss.h" />
+    <ClInclude Include="sl_dlss_d.h" />
+    <ClInclude Include="sl_dlss_g.h" />
+    <ClInclude Include="sl_helpers.h" />
+    <ClInclude Include="sl_helpers_vk.h" />
+    <ClInclude Include="sl_hooks.h" />
+    <ClInclude Include="sl_matrix_helpers.h" />
+    <ClInclude Include="sl_nis.h" />
+    <ClInclude Include="sl_nvperf.h" />
+    <ClInclude Include="sl_pcl.h" />
+    <ClInclude Include="sl_reflex.h" />
+    <ClInclude Include="sl_result.h" />
+    <ClInclude Include="sl_security.h" />
+    <ClInclude Include="sl_struct.h" />
+    <ClInclude Include="sl_template.h" />
+    <ClInclude Include="sl_version.h" />
     <ClInclude Include="StepTimer.h" />
+    <ClInclude Include="StreamlinePch.h" />
     <ClInclude Include="UploadBuffer.h" />
   </ItemGroup>
   <ItemGroup>

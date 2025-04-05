@@ -115,11 +115,6 @@ bool MyApp::Initialize()
 	return true;
 }
 
-void MyApp::LoadDLLs()
-{
-	// DirectX::NvOFAPICreateInstanceD3D12();
-}
-
 void MyApp::LoadTextures()
 {
 	std::vector<std::wstring> diffuseFilename = {
