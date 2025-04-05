@@ -70,9 +70,9 @@ public:
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
-	static constexpr int RTV_TOY_SIZE = 12;	// 0: Render Target, 1: Shader Toy
-	static constexpr int RTV_USER_SIZE = 1 + RTV_TOY_SIZE;	// 0: Render Target, 1~: Shader Toy
-	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1;	// 0: Render Target, 1~N: Shader Toy, N: CS Copy
+	static constexpr int RTV_TOY_SIZE = 13;
+	static constexpr int RTV_USER_SIZE = 1;	// 0: Render Target, 1: Copy Target
+	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1 + RTV_TOY_SIZE;	// 0: Render Target, 1: CS Copy, 2~N: Shader Toy
 	static constexpr uint32_t WND_PADDING = 5;
 public:
 	AppBase();
@@ -98,7 +98,7 @@ public:
 
 	void FlushCommandQueue();
 protected:
-	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, UINT numDSV = 1);
+	virtual void CreateRtvAndDsvDescriptorHeaps(UINT numRTV = APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + RTV_TOY_SIZE, UINT numDSV = 1);
 	virtual void OnResize();
 	virtual void Update() = 0;
 	virtual void Render() = 0;

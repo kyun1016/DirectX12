@@ -688,6 +688,7 @@ void MyApp::BuildShadersAndInputLayout()
 	mST_Shaders[9] = D3DUtil::CompileShader(L"ST_CubeWave3.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[10] = D3DUtil::CompileShader(L"ST_SquareWave.hlsl", defines, "PS", "ps_5_1");
 	mST_Shaders[11] = D3DUtil::CompileShader(L"ST_EyeOfPhi.hlsl", defines, "PS", "ps_5_1");
+	mST_Shaders[12] = D3DUtil::CompileShader(L"ST_Starfield.hlsl", defines, "PS", "ps_5_1");
 
 	mMainInputLayout =
 	{
@@ -1730,7 +1731,7 @@ void MyApp::BuildPSOs()
 
 void MyApp::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV)
 {
-	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1 + MAX_LIGHTS);
+	AppBase::CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + RTV_TOY_SIZE, 1 + MAX_LIGHTS);
 }
 
 #pragma region Update
@@ -1950,19 +1951,19 @@ void MyApp::Render()
 	{	
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
-		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
+		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[RTV_USER_SIZE]);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
 
-		mCommandList->CopyResource(mSRVUserBuffer[RTV_USER_SIZE].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
+		mCommandList->CopyResource(mSRVUserBuffer[1].Get(), mSwapChainBuffer[mCurrBackBuffer].Get());
 
 		RenderBarrier.Transition.StateBefore = RenderBarrier.Transition.StateAfter;
 		RenderBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateBefore = SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter;
-		SRVUserBufBarrier[RTV_USER_SIZE].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		SRVUserBufBarrier[1].Transition.StateBefore = SRVUserBufBarrier[1].Transition.StateAfter;
+		SRVUserBufBarrier[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[RTV_USER_SIZE]);
+		mCommandList->ResourceBarrier(1, &SRVUserBufBarrier[1]);
 	}
 
 	// Indicate a state transition on the resource usage. 
@@ -2299,11 +2300,11 @@ void MyApp::DrawSceneToShadowMap(int index)
 
 void MyApp::DrawShaderToy(int idx)
 {
-	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + 1 + idx], (float*)&mMainPassCB.FogColor, 0, nullptr);
+	mCommandList->ClearRenderTargetView(mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + idx], (float*)&mMainPassCB.FogColor, 0, nullptr);
 	mCommandList->ClearDepthStencilView(mhCPUDSVBuffer[0], D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
-	rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + 1 + idx];   // 새로 만든 RTV
+	rtvs[0] = mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + idx];   // 새로 만든 RTV
 	mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
 
 	mCommandList->SetPipelineState(mST_PSOs[idx].Get());

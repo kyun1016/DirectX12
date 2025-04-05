@@ -376,6 +376,10 @@ void AppBase::OnResize()
 	{
 		mDevice->CreateRenderTargetView(mSRVUserBuffer[i].Get(), &rtvDesc, mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + i]);
 	}
+	for (int i = 0; i < RTV_TOY_SIZE; ++i)
+	{
+		mDevice->CreateRenderTargetView(mSRVUserBuffer[i+RTV_USER_SIZE + 1].Get(), &rtvDesc, mhCPUSwapChainBuffer[APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + i]);
+	}
 
 	// RTV Render in a Texture
 	//=====================================
@@ -611,7 +615,7 @@ bool AppBase::InitDirect3D()
 		return false;
 
 	CreateCommandObjects();
-	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1);
+	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE + RTV_TOY_SIZE, 1);
 	CreateSwapChain();
 
 	return true;

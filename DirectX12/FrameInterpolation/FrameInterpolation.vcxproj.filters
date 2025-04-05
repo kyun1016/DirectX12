@@ -99,7 +99,9 @@
     <FxCompile Include="ST_EyeOfPhi.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
-    <FxCompile Include="ST_Starfield.hlsl" />
+    <FxCompile Include="ST_Starfield.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

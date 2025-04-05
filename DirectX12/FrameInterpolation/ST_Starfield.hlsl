@@ -1,121 +1,103 @@
 // https://registry.khronos.org/OpenGL-Refpages/gl4/html/mix.xhtml
 // https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/
-// https://www.shadertoy.com/view/7stfzB
+// https://www.shadertoy.com/view/lcjGWV
+// https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-per-component-math
+
 #include "ST_Core.hlsli"
 
 // https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-asint
-#define FBI asint
-#define FFBI(a) FBI(cos(a))^FBI(a)
+#define FFBI(a) asint(cos(a))^asint(a)
+
+static const float3 RAY_ORIGIN = float3(0.2, 0.2, -5.0); // ray origin
+static const float3 RAY_TARGET = float3(0.0, 0.0, 0.0); // ray target
+
+// Ray marching parameters
+static const float MAX_STEPS = 100.0; // Maximum number of steps
+static const float MAX_DIST = 100.0; // How far we march before we give up
+static const float EPSILON = 0.001; // How close we need to be to consider it a hit
+
+// 
+static const float SIZE = 1.0;
+    
+static const float3 z = normalize(RAY_TARGET - RAY_ORIGIN);
+static const float3 x = normalize(cross(z, float3(0.0, -1.0, 0.0)));
+static const float3 y = cross(z, x);
 
 
 struct Grid
 {
     float3 id;
     float d;
-} gr;
+};
 
-// int floatBitsToInt(float a)
-// {
-//     //Nan
-//     if (a != a)
-//         return 0x7fc00000;
-// 
-//     //-0
-//     if (a == 0.0)
-//         return (1.0 / a == -1.0 / 0.0) ? 0x80000000 : 0;
-// 
-//     bool neg = false;
-//     if (a < 0.0)
-//     {
-//         neg = true;
-//         a = -a;
-//     }
-// 
-//     if (isinf(a))
-//     {
-//         return neg ? 0xff800000 : 0x7f800000;
-//     }
-// 
-//     int exp = ((a >> 52) & 0x7ff) - 1023;
-//     int mantissa = (a & 0xffffffff) >> 29;
-//     if (exp <= -127)
-//     {
-//         mantissa = (0x800000 | mantissa) >> (-127 - exp + 1);
-//         exp = -127;
-//     }
-//     int bits = negative ? 2147483648 : 0;
-//     bits |= (exp + 127) << 23;
-//     bits |= mantissa;
-// 
-//     return bits;
-// }
+float hash(float3 uv)
+{
+    int x = int (uv.x);
+    int y = int (uv.y);
+    int z = int (uv.z);
+    return float((x * x + y) * (y * y - x) * (z * z + x)) / 2.14e9;
+}
+
+void dogrid(inout Grid gr, float3 ro, float3 rd, float size)
+{
+    gr.id = (floor(ro + rd * 1E-3) / size + float3(.5, .5, .5)) * size;
+    float3 src = -(ro - gr.id) / rd;
+    float3 dst = abs(.5 * size) / rd;
+    float3 bz = src + dst;
+    gr.d = min(bz.x, min(bz.y, bz.z));
+}
+
+float3 erot(float3 p)
+{
+    float temp = iTime * .33;
+    float3 ax = normalize(sin(float3(temp, temp, temp) + float3(-.6, .4, .2)));
+    float t = iTime * .2;
+    
+    return lerp(dot(ax, p) * ax, p, cos(t)) + cross(ax, p) * sin(t);
+}
 
 float4 PS(PixelShaderInput input) : SV_TARGET
 {
-    floatBitsToInt(0.0);
-    float4 m = iMouse;
-    m = float4(0.0, 0.0, 0.0, 0.0);
-    float2 uv0 = 1. - 2. * input.texcoord;
-    float t = iTime / PI * 2.0;
+    // vec2 uv = (fragCoord.xy -.5* iResolution.xy)/iResolution.y;
+    float2 uv = -1.0 + 2.0*input.texcoord;
+    float3 col = float3(0.0, 0.0, 0.0);
     
-    float z = 1.0; // zoom (+)
-    float e = 1.0; // screen exponent
-    float se = 1.0; // spiral exponent
-    float aa = 3.0; // anti-aliasing
-
-    float3 bg = float3(0.0, 0.0, 0.0); // black background
+    Grid gr;
+    gr.id = float3(0.0, 0.0, 0.0);
+    gr.d = 0.0;
+        
+    float3x3 m = float3x3(x, y, z);
+    float3 rd = mul(m, normalize(float3(uv, 2. + tanh(hash(uv.xyy + float3(iTime, iTime, iTime)) * .5 + 10. * sin(iTime)))));
     
-    if (m.z > 0.0)
+    float g = .0;
+    float epsilon = EPSILON;
+    float gridlen = .0;
+    
+    for (float i = 0.; i < MAX_STEPS; ++i)
     {
-        t += m.y * 1.0; // move time with mouse y
-        z = pow(1.0 - abs(m.y), sign(m.y));
-        e = pow(1.0 - abs(m.x), sign(m.x));
-        se = e * -sign(m.y);
-        uv0 = exp(log(abs(uv0)) * e) * sign(uv0);
-    }
-
-    for (float i = 0.0; i < aa; i++)    
-        for (float j = 0.0; j < aa; j++)
+        float3 curPos = RAY_ORIGIN + rd * g;
+        // curPos = erot(curPos);
+        curPos.z += iTime;
+        
+        float3 op = curPos; // original position
+        if (gridlen <= epsilon)
         {
-            float3 c = float3(0.0, 0.0, 0.0);
-            float2 o = float2(i, j) / aa;
-        // vec2 uv = (XY - 0.5 * R + o) / R.y * SCALE * z; // apply cartesian, scale and zoom
-            float2 uv = (uv0 + o / iResolution.y) * SCALE * z; // scale uv
-            if (m.z > 0.0)
-            {
-                uv = exp(log(abs(uv)) * e) * sign(uv0);
-            }
-        
-            float px = length(fwidth(uv)); // pixel width
-            float l = length(uv); // hypot of xy: sqrt(x*x + y*y)
-            
-            float mc = (uv.x * uv.x + uv.y * uv.y - 1.0) / uv.y; // metallic circle at xy
-            float g = min(abs(mc), 1.0 / abs(mc)); // metallic gradient
-            float3 goldCol = gold * g * l; // gold color
-            float3 blueCol = blue * (1.0 - g); // blue color
-            float3 rgb = max(goldCol, blueCol); // max of gold and blue
-            
-            c = max(c, gm(rgb, mc, -t, w, d, false)); // metalic clolr
-            c = max(c, gm(rgb, abs(uv.y / uv.x) * sign(uv.y), -t, w, d, false)); // tangent
-            c = max(c, gm(rgb, (uv.x * uv.x) / (uv.y * uv.y) * sign(uv.y), -t, w, d, false)); // sqrt cotangent
-            c = max(c, gm(rgb, (uv.x * uv.x) + (uv.y * uv.y), t, w, d, true)); // sqrt circles
-            c += rgb * ds(uv, se, t / TAU, px * 2.0, 2.0, 0.0); // spiral 1a
-            c += rgb * ds(uv, se, t / TAU, px * 2.0, 2.0, PI); // spiral 1b
-            c += rgb * ds(uv, -se, t / TAU, px * 2.0, 2.0, 0.0); // spiral 2a
-            c += rgb * ds(uv, -se, t / TAU, px * 2.0, 2.0, PI); // spiral 2b
-            c = max(c, 0.0); // clear negative color
-            c += pow(max(1.0 - l, 0.0), 3.0 / z); // center glow
-        
-            if (m.z > 0.0)  // display grid on click
-            {
-                float2 xyg = abs(frac(uv0 + 0.5) - 0.5) / px; // xy grid
-                c.gb += 0.2 * (1.0 - min(min(xyg.x, xyg.y), 1.0)); // grid color)
-            }
-            bg += c; // add color to background
+            dogrid(gr, curPos, rd, SIZE);
+            gridlen += gr.d;
         }
         
-    bg /= aa * aa;
-    bg *= sqrt(bg) * 1.5;
+        curPos -= gr.id;
+        float gy = dot(sin(gr.id * 2.), cos(gr.id.zxy * 5.));
+        float rn = hash(gr.id + float3(floor(iTime), floor(iTime), floor(iTime)));
+        curPos.x += sin(rn) * 0.25;
+        
+        float h = rn > .0 ? .5 : length(curPos) - .01 - gy * .05 + rn * .02;
+        epsilon = max(.001 + op.z * .000002, abs(h));
+        g += epsilon;
+        col += float3(.25, .25, 1. + abs(rn)) * (.025 + (.02 * exp(5. * frac(gy + iTime)))) / exp(epsilon * epsilon * i);
+    }
     
-    return float4(bg, 1.0);
+    col *= exp(-.08 * g);
+    
+    return float4(sqrt(col), 1.0);
 }
