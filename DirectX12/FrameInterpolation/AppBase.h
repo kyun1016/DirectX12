@@ -10,10 +10,6 @@
 #include "../ImGuiCore/imgui.h"
 #include "FrameResource.h"
 
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "d3d12")
-#pragma comment(lib, "dxgi")
-
 extern class AppBase* g_appBase;
 
 #pragma region ImGui

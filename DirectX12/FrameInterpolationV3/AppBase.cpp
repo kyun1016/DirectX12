@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "AppBase.h"
-// #include "sl_"
+#include "../EngineCore/sl.h"
+#include "../EngineCore/sl_consts.h"
+#include "../EngineCore/sl_security.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -61,6 +63,8 @@ std::wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
 
 bool AppBase::Initialize()
 {
+	LoadDLLs();
+
 	if (!InitMainWindow())
 		return false;
 	if (!InitDirect3D())
@@ -83,53 +87,55 @@ void AppBase::LoadDLLs()
 {
 	// IMPORTANT: Always securely load SL library, see source/core/sl.security/secureLoadLibrary for more details
 	// Always secure load SL modules
-	// if (!sl::security::verifyEmbeddedSignature(L"../Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll"))
+	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll
+	// if (!sl::security::verifyEmbeddedSignature(L"F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll"))
 	// {
 	// 	// SL module not signed, disable SL
+	// 	std::cout << "Signature Error!" << std::endl;
 	// }
 	// else
-	// {
-	// 	auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll");
-	// 
-	// 	// These are the exports from SL library
-	// 	typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
-	// 	typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
-	// 	typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
-	// 	typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
-	// 	typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
-	// 
-	// 	// Map functions from SL and use them instead of standard DXGI/D3D12 API
-	// 	auto slCreateDXGIFactory = reinterpret_cast<PFunCreateDXGIFactory>(GetProcAddress(mod, "CreateDXGIFactory"));
-	// 	auto slCreateDXGIFactory1 = reinterpret_cast<PFunCreateDXGIFactory1>(GetProcAddress(mod, "CreateDXGIFactory1"));
-	// 	auto slCreateDXGIFactory2 = reinterpret_cast<PFunCreateDXGIFactory2>(GetProcAddress(mod, "CreateDXGIFactory2"));
-	// 	auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
-	// 	auto slD3D12CreateDevice = reinterpret_cast<PFunD3D12CreateDevice>(GetProcAddress(mod, "D3D12CreateDevice"));
-	// }
+	{
+		auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll");
+		 
+		// These are the exports from SL library
+		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
+		typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
+		typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
+		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
+		typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
+		 
+		// Map functions from SL and use them instead of standard DXGI/D3D12 API
+		auto slCreateDXGIFactory = reinterpret_cast<PFunCreateDXGIFactory>(GetProcAddress(mod, "CreateDXGIFactory"));
+		auto slCreateDXGIFactory1 = reinterpret_cast<PFunCreateDXGIFactory1>(GetProcAddress(mod, "CreateDXGIFactory1"));
+		auto slCreateDXGIFactory2 = reinterpret_cast<PFunCreateDXGIFactory2>(GetProcAddress(mod, "CreateDXGIFactory2"));
+		auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
+		auto slD3D12CreateDevice = reinterpret_cast<PFunD3D12CreateDevice>(GetProcAddress(mod, "D3D12CreateDevice"));
+	}
 
-	// For example to create DXGI factory and D3D12 device we could do something like this:
+	//For example to create DXGI factory and D3D12 device we could do something like this:
 
 	// IDXGIFactory1* DXGIFactory{};
 	// if (s_useStreamline)
 	// {
-	// 	// Interposed factory
-	// 	slCreateDXGIFactory1(IID_PPV_ARGS(&DXGIFactory));
+	// // Interposed factory
+	// slCreateDXGIFactory1(IID_PPV_ARGS(&DXGIFactory));
 	// }
 	// else
 	// {
-	// 	// Regular factory
-	// 	CreateDXGIFactory1(IID_PPV_ARGS(&DXGIFactory));
+	// // Regular factory
+	// CreateDXGIFactory1(IID_PPV_ARGS(&DXGIFactory));
 	// }
-	// 
+	//  
 	// ID3D12Device* device{};
 	// if (s_useStreamline)
 	// {
-	// 	// Interposed device
-	// 	slD3D12CreateDevice(targetAdapter, deviceParams.featureLevel, IID_PPV_ARGS(&device));
+	// // Interposed device
+	// slD3D12CreateDevice(targetAdapter, deviceParams.featureLevel, IID_PPV_ARGS(&device));
 	// }
 	// else
 	// {
-	// 	// Regular device
-	// 	D3D12CreateDevice(targetAdapter, deviceParams.featureLevel, IID_PPV_ARGS(&device));
+	// // Regular device
+	// D3D12CreateDevice(targetAdapter, deviceParams.featureLevel, IID_PPV_ARGS(&device));
 	// }
 }
 

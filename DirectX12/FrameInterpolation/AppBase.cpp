@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "AppBase.h"
 
+
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -13,7 +14,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 //===================================
 // Constructor
 //===================================
-AppBase::AppBase() : AppBase(1080, 720, L"AppBase") {}
+AppBase::AppBase() : AppBase(640, 480, L"AppBase") {}
 
 AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 	mClientWidth(width),
