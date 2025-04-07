@@ -89,7 +89,7 @@ public:
 	void Set4xMsaaState(bool value);
 
 	virtual bool Initialize();
-	void LoadDLLs();
+	bool LoadDLLs();
 	virtual void CleanUp();
 	int Run();
 

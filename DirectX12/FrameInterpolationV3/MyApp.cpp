@@ -62,8 +62,6 @@ bool MyApp::Initialize()
 	if (!AppBase::Initialize())
 		return false;
 
-	LoadDLLs();
-
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	mCamera.SetPosition(0.0f, 2.0f, -15.0f);

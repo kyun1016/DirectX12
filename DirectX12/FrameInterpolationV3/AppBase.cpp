@@ -3,6 +3,8 @@
 #include "../EngineCore/sl.h"
 #include "../EngineCore/sl_consts.h"
 #include "../EngineCore/sl_security.h"
+#include "../EngineCore/sl_device_wrappers.h"
+#include "../EngineCore/sl_core_types.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -63,12 +65,14 @@ std::wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
 
 bool AppBase::Initialize()
 {
-	LoadDLLs();
-
 	if (!InitMainWindow())
 		return false;
-	if (!InitDirect3D())
+
+	if (!LoadDLLs())
 		return false;
+
+	// if (!InitDirect3D())
+	// 	return false;
 
 	{
 		mCBShaderToy.dx = 1.0f / 640;
@@ -83,17 +87,18 @@ bool AppBase::Initialize()
 	return true;
 }
 
-void AppBase::LoadDLLs()
+bool AppBase::LoadDLLs()
 {
 	// IMPORTANT: Always securely load SL library, see source/core/sl.security/secureLoadLibrary for more details
 	// Always secure load SL modules
 	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll
-	// if (!sl::security::verifyEmbeddedSignature(L"F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll"))
-	// {
-	// 	// SL module not signed, disable SL
-	// 	std::cout << "Signature Error!" << std::endl;
-	// }
-	// else
+	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll
+	if (!sl::security::verifyEmbeddedSignature(L"F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll"))
+	{
+		// SL module not signed, disable SL
+		std::cout << "Signature Error!" << std::endl;
+	}
+	else
 	{
 		auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll");
 		 
@@ -101,6 +106,7 @@ void AppBase::LoadDLLs()
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
+		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
 		typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
 		 
@@ -108,8 +114,112 @@ void AppBase::LoadDLLs()
 		auto slCreateDXGIFactory = reinterpret_cast<PFunCreateDXGIFactory>(GetProcAddress(mod, "CreateDXGIFactory"));
 		auto slCreateDXGIFactory1 = reinterpret_cast<PFunCreateDXGIFactory1>(GetProcAddress(mod, "CreateDXGIFactory1"));
 		auto slCreateDXGIFactory2 = reinterpret_cast<PFunCreateDXGIFactory2>(GetProcAddress(mod, "CreateDXGIFactory2"));
-		auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
 		auto slD3D12CreateDevice = reinterpret_cast<PFunD3D12CreateDevice>(GetProcAddress(mod, "D3D12CreateDevice"));
+		{
+			// Debug Layer
+#if defined(DEBUG) || defined(_DEBUG) 
+			// auto slDXGIGetDebugInterface = reinterpret_cast<PFunDXGIGetDebugInterface>(GetProcAddress(mod, "DXGIGetDebugInterface"));
+			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
+			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+			mD12Debug->EnableDebugLayer();
+#ifdef _DLSS
+			ThrowIfFailed(slDXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+#else
+			ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+#endif
+			OutputDebugStringW(L"*Info, EnableLeakTrackingForThread\n");
+			mDxgiDebug->EnableLeakTrackingForThread();
+#endif
+		}
+
+		{
+			// Create DXGI factory
+#ifdef _DLSS
+			ThrowIfFailed(slCreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
+			// Try to create hardware device.
+			HRESULT hardwareResult = slD3D12CreateDevice(
+				nullptr,             // default adapter
+				D3D_FEATURE_LEVEL_11_0,
+				IID_PPV_ARGS(&mDevice));
+			// Fallback to WARP device.
+			if (FAILED(hardwareResult))
+			{
+				Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
+				ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
+
+				ThrowIfFailed(slD3D12CreateDevice(
+					pWarpAdapter.Get(),
+					D3D_FEATURE_LEVEL_11_0,
+					IID_PPV_ARGS(&mDevice)));
+			}
+#else
+			ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
+			// Try to create hardware device.
+			HRESULT hardwareResult = D3D12CreateDevice(
+				nullptr,             // default adapter
+				D3D_FEATURE_LEVEL_11_0,
+				IID_PPV_ARGS(&mDevice));
+			// Fallback to WARP device.
+			if (FAILED(hardwareResult))
+			{
+				Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
+				ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
+
+				ThrowIfFailed(D3D12CreateDevice(
+					pWarpAdapter.Get(),
+					D3D_FEATURE_LEVEL_11_0,
+					IID_PPV_ARGS(&mDevice)));
+			}
+#endif
+		}
+
+		// 추가 기능 관리
+		{
+			sl::Preferences pref;
+			sl::Feature myFeatures[] = { sl::kFeatureDLSS };
+
+			pref.featuresToLoad = myFeatures;
+			pref.numFeaturesToLoad = _countof(myFeatures);
+		}
+		
+		ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
+			IID_PPV_ARGS(&mFence)));
+
+		mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
+		{
+			/*_In_  DXGI_FORMAT Format							*/mBackBufferFormat,
+			/*_In_  UINT SampleCount							*/4,
+			/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
+			/*_Out_  UINT NumQualityLevels						*/0
+		};
+		ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+
+		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
+		// m4xMsaaState = true;
+		assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
+
+#ifdef _DEBUG
+		LogAdapters();
+#endif
+
+		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (mFenceEvent == nullptr)
+			return false;
+
+		CreateCommandObjects();
+		CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1, RTV_TOY_SIZE);
+		CreateSwapChain();
+
+
+		// [21-26-19][streamline][error][tid:7004][6s:457ms:376us]reflexEntry.cpp:639[slOnPluginStartup] Failed to get PCL implementation
+		// [21-26-21][streamline][error][tid:7004][9s:024ms:093us]dlss_gEntry.cpp:2210[slOnPluginStartup] Unable to find DRS context - make sure sl.common was initialized properly
+		// [21-26-27][streamline][error][tid:7004][14s:596ms:569us]dlss_gEntry.cpp:2313[slOnPluginStartup] NGX indicates DLSS-G is not available - DLSS-G cannot run
+		// [21-26-28][streamline][error][tid:7004][15s:702ms:085us]exception.cpp:75[writeMiniDump] Exception detected - thread 7004 - creating mini-dump 'C:\ProgramData/NVIDIA/Streamline/StreamlineSample/1744028788455922/sl-sha-c5741e7b.dmp'
+		// [21-26-34][streamline][error][tid:7004][22s:143ms:357us]exception.cpp:75[writeMiniDump] Exception detected - thread 7004 - creating mini-dump 'C:\ProgramData/NVIDIA/Streamline/StreamlineSample/1744028794897387/sl-sha-c5741e7b.dmp'
+		// [21-26-39][streamline][error][tid:7004][26s:820ms:276us]exception.cpp:75[writeMiniDump] Exception detected - thread 7004 - creating mini-dump 'C:\ProgramData/NVIDIA/Streamline/StreamlineSample/1744028799574289/sl-sha-c5741e7b.dmp'
+		return true;
 	}
 
 	//For example to create DXGI factory and D3D12 device we could do something like this:
@@ -647,7 +757,6 @@ bool AppBase::InitDirect3D()
 #if defined(DEBUG) || defined(_DEBUG) 
 	InitDebugLayer();
 #endif
-
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
 
 	// Try to create hardware device.
