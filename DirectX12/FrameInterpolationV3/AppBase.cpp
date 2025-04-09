@@ -93,14 +93,14 @@ bool AppBase::LoadDLLs()
 	// Always secure load SL modules
 	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll
 	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll
-	if (!sl::security::verifyEmbeddedSignature(L"F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll"))
+	if (!sl::security::verifyEmbeddedSignature(L"G:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll"))
 	{
 		// SL module not signed, disable SL
 		std::cout << "Signature Error!" << std::endl;
 	}
 	else
 	{
-		auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll");
+		auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll");
 		 
 		// These are the exports from SL library
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);

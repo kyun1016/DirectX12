@@ -42,7 +42,7 @@
 #define _DLSS
 
 #ifdef _DLSS
-#pragma comment(lib, "..\\Libraries\\\Include\\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#pragma comment(lib, "..\\Libraries\\Include\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
 #else
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
