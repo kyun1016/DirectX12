@@ -87,20 +87,34 @@ bool AppBase::Initialize()
 	return true;
 }
 
+std::wstring AppBase::GetSlInterposerDllLocation() {
+
+	wchar_t path[MAX_PATH] = { 0 };
+#ifdef _WIN32
+	if (GetModuleFileNameW(nullptr, path, dim(path)) == 0)
+		return std::wstring();
+#else // _WIN32
+#error Unsupported platform for GetSlInterposerDllLocation!
+#endif // _WIN32
+
+	auto basePath = std::filesystem::path(path).parent_path().parent_path().parent_path();
+	auto dllPath = basePath.wstring().append(L"\\Libraries\\Include\\DirectX\\Streamline\\bin\\x64\\sl.interposer.dll");
+	return dllPath;
+}
+
+
 bool AppBase::LoadDLLs()
 {
-	// IMPORTANT: Always securely load SL library, see source/core/sl.security/secureLoadLibrary for more details
-	// Always secure load SL modules
-	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/_sdk/bin/x64/sl.interposer.dll
-	// F:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll
-	if (!sl::security::verifyEmbeddedSignature(L"G:/OneDrive/Kyun/01_PROJECT/26_DirectX12/DirectX12/Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll"))
+	auto pathDll = GetSlInterposerDllLocation();
+
+	if (!sl::security::verifyEmbeddedSignature(pathDll.c_str()))
 	{
 		// SL module not signed, disable SL
 		std::cout << "Signature Error!" << std::endl;
 	}
 	else
 	{
-		auto mod = LoadLibrary(L"../Libraries/Include/DirectX/Streamline/bin/x64/sl.interposer.dll");
+		auto mod = LoadLibrary(pathDll.c_str());
 		 
 		// These are the exports from SL library
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "streamline_debug": "cpp",
+        "tensor": "cpp"
+    }
+}

@@ -179,6 +179,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ShadowMap.cpp" />
+    <ClCompile Include="SLWrapper.cpp" />
     <ClCompile Include="SsaoMap.cpp" />
     <ClCompile Include="Waves.cpp" />
   </ItemGroup>
@@ -373,6 +374,7 @@
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ShadowMap.h" />
+    <ClInclude Include="SLWrapper.h" />
     <ClInclude Include="SsaoMap.h" />
     <ClInclude Include="Waves.h" />
   </ItemGroup>

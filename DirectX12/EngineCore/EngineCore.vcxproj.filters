@@ -22,6 +22,15 @@
     <Filter Include="Streamline">
       <UniqueIdentifier>{885ed993-556f-4638-adae-e5ad8f1db366}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dount">
+      <UniqueIdentifier>{ae504cda-69a1-45fe-ac07-3fef06b45d0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dount\core">
+      <UniqueIdentifier>{e0db8ce0-8eae-4968-8c7f-e2952f010510}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dount\core\math">
+      <UniqueIdentifier>{dedf88a6-a404-4952-b3a6-4911548db928}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -152,6 +161,36 @@
     </ClInclude>
     <ClInclude Include="sl_helpers.h">
       <Filter>Streamline</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\quat.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\sphere.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\vector.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\affine.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\basics.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\box.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\color.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\frustum.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\math.h">
+      <Filter>dount\core\math</Filter>
+    </ClInclude>
+    <ClInclude Include="donut\core\math\matrix.h">
+      <Filter>dount\core\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

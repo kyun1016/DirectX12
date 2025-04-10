@@ -1,0 +1,784 @@
+// SLWrapper::Get()
+{
+    bool m_sl_initialised = false;
+    nvrhi::GraphicsAPI m_api = nvrhi::GraphicsAPI::D3D12;
+        // enum class GraphicsAPI : uint8_t
+        //{
+        //    D3D11,
+        //    D3D12,
+        //    VULKAN
+        //};
+    nvrhi::IDevice* m_Device = nullptr;
+
+#if DONUT_WITH_DX11
+    LUID m_d3d11Luid;
+        // typedef struct _LUID {
+        //     DWORD LowPart;
+        //     LONG HighPart;
+        // } LUID, *PLUID;
+#endif
+
+    bool m_dlss_available = false;
+    sl::DLSSOptions m_dlss_consts{};
+        // / {6AC826E4-4C61-4101-A92D-638D421057B8}
+        // SL_STRUCT_BEGIN(DLSSOptions, StructType({ 0x6ac826e4, 0x4c61, 0x4101, { 0xa9, 0x2d, 0x63, 0x8d, 0x42, 0x10, 0x57, 0xb8 } }), kStructVersion3)
+        //     //! Specifies which mode should be used
+        //     DLSSMode mode = DLSSMode::eOff;
+                    // enum class DLSSMode : uint32_t
+                    // {
+                    //     eOff,
+                    //     eMaxPerformance,
+                    //     eBalanced,
+                    //     eMaxQuality,
+                    //     eUltraPerformance,
+                    //     eUltraQuality,
+                    //     eDLAA,
+                    //     eCount,
+                    // };
+        //     //! Specifies output (final) target width
+        //     uint32_t outputWidth = INVALID_UINT;
+        //     //! Specifies output (final) target height
+        //     uint32_t outputHeight = INVALID_UINT;
+        //     //! Specifies sharpening level in range [0,1]
+        //     float sharpness = 0.0f;
+        //     //! Specifies pre-exposure value
+        //     float preExposure = 1.0f;
+        //     //! Specifies exposure scale value
+        //     float exposureScale = 1.0f;
+        //     //! Specifies if tagged color buffers are full HDR or not (DLSS in HDR pipeline or not)
+        //     Boolean colorBuffersHDR = Boolean::eTrue;
+        //     //! Specifies if indicator on screen should invert axis
+        //     Boolean indicatorInvertAxisX = Boolean::eFalse;
+        //     //! Specifies if indicator on screen should invert axis
+        //     Boolean indicatorInvertAxisY = Boolean::eFalse;
+        //     //! Presets
+        //     DLSSPreset dlaaPreset = DLSSPreset::eDefault;
+                    // enum class DLSSPreset : uint32_t
+                    // {
+                    //     //! Default behavior, may or may not change after an OTA
+                    //     eDefault,
+                    //     //! Fixed DL models
+                    //     ePresetA,
+                    //     ePresetB,
+                    //     ePresetC,
+                    //     ePresetD,
+                    //     ePresetE,
+                    //     ePresetF,
+                    //     ePresetG,   // reverts to default, not recommended to use
+                    //     ePresetH,   // reverts to default, not recommended to use
+                    //     ePresetI,   // reverts to default, not recommended to use
+                    //     ePresetJ,
+                    // };
+        //     DLSSPreset qualityPreset = DLSSPreset::eDefault;
+        //     DLSSPreset balancedPreset = DLSSPreset::eDefault;
+        //     DLSSPreset performancePreset = DLSSPreset::eDefault;
+        //     DLSSPreset ultraPerformancePreset = DLSSPreset::eDefault;
+        //     DLSSPreset ultraQualityPreset = DLSSPreset::eDefault;
+        // 
+        //     //! Specifies if the setting for AutoExposure is used
+        //     Boolean useAutoExposure = Boolean::eFalse;
+        // 
+        //     //! Whether or not the alpha channel should be upscaled (if false, only RGB is upscaled)
+        //     //! Enabling alpha upscaling may impact performance
+        //     Boolean alphaUpscalingEnabled = Boolean::eFalse;
+        // 
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+
+    bool m_nis_available = false;
+    sl::NISOptions m_nis_consts{};
+        // // {676610E5-9674-4D3A-9C8A-F495D01B36F3}
+        // SL_STRUCT_BEGIN(NISOptions, StructType({ 0x676610e5, 0x9674, 0x4d3a, { 0x9c, 0x8a, 0xf4, 0x95, 0xd0, 0x1b, 0x36, 0xf3 } }), kStructVersion1)
+        //     //! Specifies which mode should be used
+        //     NISMode mode = NISMode::eScaler;
+        //         // enum class NISMode : uint32_t
+        //         // {
+        //         //     eOff,
+        //         //     eScaler,
+        //         //     eSharpen,
+        //         //     eCount
+        //         // };
+        //     //! Specifies which hdr mode should be used
+        //     NISHDR hdrMode = NISHDR::eNone;
+        //         // enum class NISHDR : uint32_t
+        //         // {
+        //         //     eNone,
+        //         //     eLinear,
+        //         //     ePQ,
+        //         //     eCount
+        //         // };
+        //     //! Specifies sharpening level in range [0,1]
+        //     float sharpness = 0.0f;
+        // 
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+
+    bool m_deepdvc_available = false;
+    sl::DeepDVCOptions m_deepdvc_consts{};
+        // // {23288AAD-7E7E-BE2A-916F-27DA30A3046B}
+        // SL_STRUCT_BEGIN(DeepDVCOptions, StructType({ 0x23288aad, 0x7e7e, 0xbe2a, { 0x91, 0x67, 0x27, 0xda, 0x30, 0xa3, 0x04, 0x6b } }), kStructVersion1)
+        //     //! Specifies which mode should be used
+        //     DeepDVCMode mode = DeepDVCMode::eOff;
+        //         // enum class DeepDVCMode : uint32_t
+        //         // {
+        //         //     eOff,
+        //         //     eOn,
+        //         //     eCount
+        //         // };
+        //     //! Specifies intensity level in range [0,1]. Default 0.5
+        //     float intensity = 0.5f;
+        //     //! Specifies saturation boost in range [0,1]. Default 0.25
+        //     float saturationBoost = 0.25f;
+        // SL_STRUCT_END()
+
+    bool m_dlssg_available = false;
+    bool m_dlssg_triggerswapchainRecreation = false;
+    bool m_dlssg_shoudLoad = false;
+    sl::DLSSGOptions m_dlssg_consts{};
+        // // {FAC5F1CB-2DFD-4F36-A1E6-3A9E865256C5}
+        // SL_STRUCT_BEGIN(DLSSGOptions, StructType({ 0xfac5f1cb, 0x2dfd, 0x4f36, { 0xa1, 0xe6, 0x3a, 0x9e, 0x86, 0x52, 0x56, 0xc5 } }), kStructVersion3)
+        //     //! Specifies which mode should be used.
+        //     DLSSGMode mode = DLSSGMode::eOff;
+                    // enum class DLSSGMode : uint32_t
+                    // {
+                    //     eOff,
+                    //     eOn,
+                    //     eAuto,
+                    //     eCount
+                    // };
+        //     //! Number of frames to generate inbetween fully rendered frames. Cannot exceed DLSSGState::numFramesToGenerateMax.
+        //     //!     For 2x frame multiplier, numFramesToGenerate is 1.
+        //     //!     For 3x frame multiplier, numFramesToGenerate is 2.
+        //     //!     For 4x frame multiplier, numFramesToGenerate is 3.
+        //     uint32_t numFramesToGenerate = 1;
+        //     //! Optional - Flags used to enable or disable certain functionality
+        //     DLSSGFlags flags{};
+                    // enum class DLSSGFlags : uint32_t
+                    // {
+                    //     eShowOnlyInterpolatedFrame = 1 << 0,
+                    //     eDynamicResolutionEnabled = 1 << 1,
+                    //     eRequestVRAMEstimate = 1 << 2,
+                    //     eRetainResourcesWhenOff = 1 << 3,
+                    //     eEnableFullscreenMenuDetection = 1 << 4,
+                    // };
+        //     //! Optional - Dynamic resolution optimal width (used only if eDynamicResolutionEnabled is set)
+        //     uint32_t dynamicResWidth{};
+        //     //! Optional - Dynamic resolution optimal height (used only if eDynamicResolutionEnabled is set)
+        //     uint32_t dynamicResHeight{};
+        //     //! Optional - Expected number of buffers in the swap-chain
+        //     uint32_t numBackBuffers{};
+        //     //! Optional - Expected width of the input render targets (depth, motion-vector buffers etc)
+        //     uint32_t mvecDepthWidth{};
+        //     //! Optional - Expected height of the input render targets (depth, motion-vector buffers etc)
+        //     uint32_t mvecDepthHeight{};
+        //     //! Optional - Expected width of the back buffers in the swap-chain
+        //     uint32_t colorWidth{};
+        //     //! Optional - Expected height of the back buffers in the swap-chain
+        //     uint32_t colorHeight{};
+        //     //! Optional - Indicates native format used for the swap-chain back buffers
+        //     uint32_t colorBufferFormat{};
+        //     //! Optional - Indicates native format used for eMotionVectors
+        //     uint32_t mvecBufferFormat{};
+        //     //! Optional - Indicates native format used for eDepth
+        //     uint32_t depthBufferFormat{};
+        //     //! Optional - Indicates native format used for eHUDLessColor
+        //     uint32_t hudLessBufferFormat{};
+        //     //! Optional - Indicates native format used for eUIColorAndAlpha
+        //     uint32_t uiBufferFormat{};
+        //     //! Optional - if specified DLSSG will return any errors which occur when calling underlying API (DXGI or Vulkan)
+        //     PFunOnAPIErrorCallback* onErrorCallback{};
+                    // //! Returns an error returned by DXGI or Vulkan API calls 'vkQueuePresentKHR' and 'vkAcquireNextImageKHR'
+                    // using PFunOnAPIErrorCallback = void(const APIError& lastError);
+        //     // kStructVersion2
+        //     Boolean bReserved15 = eInvalid;
+        //     // kStructVersion3
+        //     //! Optional - determines the level of client and DLSSG queue parallelism to use for performance gain - must be same for all viewports.
+        //     DLSSGQueueParallelismMode queueParallelismMode{};
+                    // enum class DLSSGQueueParallelismMode : uint32_t
+                    // {
+                    //     //! Default mode in which client's presenting queue is blocked until DLSSG workload execution completes.
+                    //     eBlockPresentingClientQueue,
+                    //     //! This mode is only supported on Vulkan presently. Even if set by any D3D client, it would default to
+                    //     //! eBlockPresentingClientQueue as before. eBlockNoClientQueues mode helps achieve maximum performance benefit
+                    //     //! from queue-level paralleism in Vulkan during DLSS-G processing. In this mode, client must must wait on
+                    //     //! DLSSGState::inputsProcessingCompletionFence and associated value, before it can modify or destroy the tagged
+                    //     //! resources input to DLSS-G enabled for the corresponding previously presented frame on any client queue.
+                    //     eBlockNoClientQueues,
+                    //     eCount
+                    // };
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+    sl::DLSSGState m_dlssg_settings{};
+        // // {CC8AC8E1-A179-44F5-97FA-E74112F9BC61}
+        // SL_STRUCT_BEGIN(DLSSGState, StructType({ 0xcc8ac8e1, 0xa179, 0x44f5, { 0x97, 0xfa, 0xe7, 0x41, 0x12, 0xf9, 0xbc, 0x61 } }), kStructVersion3)
+        //     //! Specifies the amount of memory expected to be used
+        //     uint64_t estimatedVRAMUsageInBytes{};
+        //     //! Specifies current status of DLSS-G
+        //     DLSSGStatus status{};
+                // /enum class DLSSGStatus : uint32_t
+                // /{
+                // /    //! Everything is working as expected
+                // /    eOk = 0,
+                // /    //! Output resolution (size of the back buffers in the swap-chain) is too low
+                // /    eFailResolutionTooLow = 1 << 0,
+                // /    //! Reflex is not active while DLSS-G is running, Reflex must be turned on when DLSS-G is on
+                // /    eFailReflexNotDetectedAtRuntime = 1 << 1,
+                // /    //! HDR format not supported, see DLSS-G programming guide for more details
+                // /    eFailHDRFormatNotSupported = 1 << 2,
+                // /    //! Some constants are invalid, see programming guide for more details
+                // /    eFailCommonConstantsInvalid = 1 << 3,
+                // /    //! D3D integrations must use SwapChain::GetCurrentBackBufferIndex API
+                // /    eFailGetCurrentBackBufferIndexNotCalled = 1 << 4,
+                // /    eReserved5 = 1 << 5
+                // /};
+        //     //! Specifies minimum supported dimension
+        //     uint32_t minWidthOrHeight{};
+        //     //! Number of frames presented since the last 'slDLSSGGetState' call
+        //     uint32_t numFramesActuallyPresented{};
+        //     // kStructVersion2
+        //     //! Maximum number of frames possible to generate on this gpu architecture.
+        //     //!     For 2x only supporting devices, numFramesToGenerateMax is 1.
+        //     //!     For 3x and 4x supporting devices, numFramesToGenerateMax is 3.
+        //     uint32_t numFramesToGenerateMax{};
+        //     sl::Boolean bReserved4{};
+        //     //! Hint to the application to display VSync support in the user interface
+        //     sl::Boolean bIsVsyncSupportAvailable{};
+        // 
+        //     //! SL client must wait on SL DLSS-G plugin-internal fence and associated value, before it can modify or destroy the tagged resources input
+        //     //! to DLSS-G enabled for the corresponding previously presented frame on a non-presenting queue.
+        //     //! If modified on client's presenting queue, then it's recommended but not required.
+        //     //! However, if DLSSGQueueParallelismMode::eBlockNoClientQueues is set, then it's always required.
+        //     //! It must call slDLSSGGetState on the present thread to retrieve the fence value for the inputs consumed by FG, on which client would
+        //     //! wait in the frame it would modify those inputs.
+        //     void* inputsProcessingCompletionFence{};
+        //     uint64_t lastPresentInputsProcessingCompletionFenceValue{};
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+
+    bool m_latewarp_available = false;
+    bool m_latewarp_triggerSwapchainRecreation = false;
+    bool m_latewarp_shouldLoad = false;
+
+    bool m_reflex_available = false;
+    sl::ReflexOptions m_reflex_consts{};
+        // // {F03AF81A-6D0B-4902-A651-C4965E215434}
+        // SL_STRUCT_BEGIN(ReflexOptions, StructType({ 0xf03af81a, 0x6d0b, 0x4902, { 0xa6, 0x51, 0xc4, 0x96, 0x5e, 0x21, 0x54, 0x34 } }), kStructVersion1)
+        //     //! Specifies which mode should be used
+        //     ReflexMode mode = ReflexMode::eOff;
+                    // enum ReflexMode
+                    // {
+                    //     eOff,
+                    //     eLowLatency,
+                    //     eLowLatencyWithBoost,
+                    // 
+                    //     // ReflexMode is a C-enum (rather than enum class) so we can't add an eCount value 
+                    //     // without polluting the global namespace (and conflicts with SMSCGMode::eCount in sl.dlss_g/defines.h)
+                    //     ReflexMode_eCount
+                    // };
+        //     //! Specifies if frame limiting (FPS cap) is enabled (0 to disable, microseconds otherwise).
+        //     //! One benefit of using Reflex's FPS cap over other implementations is the driver would be aware and can provide better optimizations.
+        //     //! This setting is independent of ReflexOptions::mode; it can even be used with mode == ReflexMode::eOff.
+        //     //! The value is used each time you call slReflexSetOptions/slSetData, make sure to initialize when changing one of the other Reflex options during frame limiting.
+        //     //! It is overridden (ignored) by frameLimitUs if set in sl.reflex.json in non-production builds.
+        //     uint32_t frameLimitUs = 0;
+        //     //! This should only be enabled in specific scenarios with subtle caveats.
+        //     //! Most integrations should leave it unset unless advised otherwise by the Reflex team
+        //     bool useMarkersToOptimize = false;
+        //     //! Specifies the hot-key which should be used instead of custom message for PC latency marker
+        //     //! Possible values: VK_F13, VK_F14, VK_F15
+        //     uint16_t virtualKey = 0;
+        //     //! ThreadID for PCL Stats messages
+        //     uint32_t idThread = 0;
+        // 
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+    bool m_reflex_driverFlashIndicatorEnable = false;
+    bool m_pcl_available = false;
+
+    static sl::Resource allocateResourceCallback(const sl::ResourceAllocationDesc* resDesc, void* device);
+    static void releaseResourceCallback(sl::Resource* resource, void* device);
+
+    sl::FrameToken* m_currentFrame;
+        // //! Frame tracking handle
+        // //! 
+        // //! IMPORTANT: Use slGetNewFrameToken to obtain unique instance
+        // //! 
+        // //! {830A0F35-DB84-4171-A804-59B206499B18}
+        // SL_STRUCT_PROTECTED_BEGIN(FrameToken, StructType({ 0x830a0f35, 0xdb84, 0x4171, { 0xa8, 0x4, 0x59, 0xb2, 0x6, 0x49, 0x9b, 0x18 } }), kStructVersion1)
+        // //! Helper operator to obtain current frame index
+        // virtual operator uint32_t() const = 0;
+        // SL_STRUCT_END()
+    sl::ViewportHandle m_viewport = {0};
+        // //! Handle for the unique viewport
+        // //! 
+        // //! {171B6435-9B3C-4FC8-9994-FBE52569AAA4}
+        // SL_STRUCT_BEGIN(ViewportHandle, StructType({ 0x171b6435, 0x9b3c, 0x4fc8, { 0x99, 0x94, 0xfb, 0xe5, 0x25, 0x69, 0xaa, 0xa4 } }), kStructVersion1)
+        //     ViewportHandle(uint32_t v) : BaseStructure(ViewportHandle::s_structType, kStructVersion1), value(v) {}
+        //     ViewportHandle(int32_t v) : BaseStructure(ViewportHandle::s_structType, kStructVersion1), value(v) {}
+        //     operator uint32_t() const { return value; }
+        // private:
+        //     uint32_t value = UINT_MAX;
+        // SL_STRUCT_END()
+}
+
+// bool SLWrapper::Initialize_preDevice(api, checkSig, SLlog);
+{
+    if (m_sl_initialised) {
+        log::info("SLWrapper is already initialised.");
+        return true;
+    }
+
+    sl::Preferences pref;
+        // //! Application preferences
+        // //!
+        // //! {1CA10965-BF8E-432B-8DA1-6716D879FB14}
+        // SL_STRUCT_BEGIN(Preferences, StructType({ 0x1ca10965, 0xbf8e, 0x432b, { 0x8d, 0xa1, 0x67, 0x16, 0xd8, 0x79, 0xfb, 0x14 } }), kStructVersion1)
+        //     //! Optional - In non-production builds it is useful to enable debugging console window
+        //     bool showConsole = false;
+        //     //! Optional - Various logging levels
+        //     LogLevel logLevel = LogLevel::eDefault;
+        //     //! Optional - Absolute paths to locations where to look for plugins, first path in the list has the highest priority
+        //     const wchar_t** pathsToPlugins{};
+        //     //! Optional - Number of paths to search
+        //     uint32_t numPathsToPlugins = 0;
+        //     //! Optional - Absolute path to location where logs and other data should be stored
+        //     //! 
+        //     //! NOTE: Set this to nullptr in order to disable logging to a file
+        //     const wchar_t* pathToLogsAndData{};
+        //     //! Optional - Allows resource allocation tracking on the host side
+        //     PFun_ResourceAllocateCallback* allocateCallback{};
+        //     //! Optional - Allows resource deallocation tracking on the host side
+        //     PFun_ResourceReleaseCallback* releaseCallback{};
+                    // using PFun_ResourceAllocateCallback = Resource(const ResourceAllocationDesc* desc, void* device);
+                    // using PFun_ResourceReleaseCallback = void(Resource* resource, void* device);
+        //     //! Optional - Allows log message tracking including critical errors if they occur
+        //     PFun_LogMessageCallback* logMessageCallback{};
+        //     //! Optional - Flags used to enable or disable advanced options
+        //     PreferenceFlags flags = PreferenceFlags::eDisableCLStateTracking | PreferenceFlags::eAllowOTA | PreferenceFlags::eLoadDownloadedPlugins;
+                    //! Optional flags
+                    // enum class PreferenceFlags : uint64_t
+                    // {
+                    //     //! Set by default - Disables command list state tracking - Host application is responsible for restoring CL state correctly after each 'slEvaluateFeature' call
+                    //     eDisableCLStateTracking = 1 << 0,
+                    //     //! Optional - Disables debug text on screen in development builds
+                    //     eDisableDebugText = 1 << 1,
+                    //     //! Optional - IMPORTANT: Only to be used in the advanced integration mode, see the 'manual hooking' programming guide for more details
+                    //     eUseManualHooking = 1 << 2,
+                    //     //! Optional - Enables downloading of Over The Air (OTA) updates for SL and NGX
+                    //     //! This will invoke the OTA updater to look for new updates. A separate
+                    //     //! flag below is used to control whether or not OTA-downloaded SL Plugins are
+                    //     //! loaded.
+                    //     eAllowOTA = 1 << 3,
+                    //     //! Do not check OS version when deciding if feature is supported or not
+                    //     //! 
+                    //     //! IMPORTANT: ONLY SET THIS FLAG IF YOU KNOW WHAT YOU ARE DOING. 
+                    //     //! 
+                    //     //! VARIOUS WIN APIs INCLUDING BUT NOT LIMITED TO `IsWindowsXXX`, `GetVersionX`, `rtlGetVersion` ARE KNOWN FOR RETURNING INCORRECT RESULTS.
+                    //     eBypassOSVersionCheck = 1 << 4,
+                    //     //! Optional - If specified SL will create DXGI factory proxy rather than modifying the v-table for the base interface.
+                    //     //! 
+                    //     //! This can help with 3rd party overlays which are NOT integrated with the host application but rather operate via injection.
+                    //     eUseDXGIFactoryProxy = 1 << 5,
+                    //     //! Optional - Enables loading of plugins downloaded Over The Air (OTA), to
+                    //     //! be used in conjunction with the eAllowOTA flag.
+                    //     eLoadDownloadedPlugins = 1 << 6,
+                    // };
+
+                    // #define SL_ENUM_OPERATORS_64(T)                                                         \
+                    // inline bool operator&(T a, T b)                                                         \
+                    // {                                                                                       \
+                    //     return ((uint64_t)a & (uint64_t)b) != 0;                                            \
+                    // }                                                                                       \
+                    //                                                                                         \
+                    // inline T& operator&=(T& a, T b)                                                         \
+                    // {                                                                                       \
+                    //     a = (T)((uint64_t)a & (uint64_t)b);                                                 \
+                    //     return a;                                                                           \
+                    // }                                                                                       \
+                    //                                                                                         \
+                    // inline T operator|(T a, T b)                                                            \
+                    // {                                                                                       \
+                    //     return (T)((uint64_t)a | (uint64_t)b);                                              \
+                    // }                                                                                       \
+                    //                                                                                         \
+                    // inline T& operator |= (T& lhs, T rhs)                                                   \
+                    // {                                                                                       \
+                    //     lhs = (T)((uint64_t)lhs | (uint64_t)rhs);                                           \
+                    //     return lhs;                                                                         \
+                    // }                                                                                       \
+                    //                                                                                         \
+                    // inline T operator~(T a)                                                                 \
+                    // {                                                                                       \
+                    //     return (T)~((uint64_t)a);                                                           \
+                    // }
+        //     //! Required - Features to load (assuming appropriate plugins are found), if not specified NO features will be loaded by default
+        //     const Feature* featuresToLoad{};
+        //     //! Required - Number of features to load, only used when list is not a null pointer
+        //     uint32_t numFeaturesToLoad{};
+        //     //! Optional - Id provided by NVIDIA, if not specified then engine type and version are required
+        //     uint32_t applicationId{};
+        //     //! Optional - Type of the rendering engine used, if not specified then applicationId is required
+        //     EngineType engine = EngineType::eCustom;
+        //     //! Optional - Version of the rendering engine used
+        //     const char* engineVersion{};
+        //     //! Optional - GUID (like for example 'a0f57b54-1daf-4934-90ae-c4035c19df04')
+        //     const char* projectId{};
+        //     //! Optional - Which rendering API host is planning to use
+        //     //! 
+        //     //! NOTE: To ensure correct `slGetFeatureRequirements` behavior please specify if planning to use Vulkan.
+        //     RenderAPI renderAPI = RenderAPI::eD3D12;
+                    // //! Rendering API
+                    // //! 
+                    // enum class RenderAPI : uint32_t
+                    // {
+                    //     eD3D11,
+                    //     eD3D12,
+                    //     eVulkan,
+                    //     eCount
+                    // };
+
+        // 
+        //     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
+        // SL_STRUCT_END()
+
+
+    m_api = api;
+
+    if (m_api != nvrhi::GraphicsAPI::VULKAN) {
+        pref.allocateCallback = &allocateResourceCallback;
+                // sl::Resource SLWrapper::allocateResourceCallback(const sl::ResourceAllocationDesc* resDesc, void* device) {
+                //                 
+                //     sl::Resource res = {};
+                // 
+                //     if (device == nullptr) {
+                //         log::warning("No device available for allocation.");
+                //         return res;
+                //     }
+                // 
+                //     bool isBuffer = (resDesc->type == sl::ResourceType::eBuffer);
+                // 
+                //     if (isBuffer) {
+                //     
+                // #if DONUT_WITH_DX11
+                // 
+                //         if (Get().m_api == nvrhi::GraphicsAPI::D3D11)
+                //         {
+                //             D3D11_BUFFER_DESC* desc = (D3D11_BUFFER_DESC*)resDesc->desc;
+                //             ID3D11Device* pd3d11Device = (ID3D11Device*)device;
+                //             ID3D11Buffer* pbuffer;
+                //             bool success = SUCCEEDED(pd3d11Device->CreateBuffer(desc, nullptr, &pbuffer));
+                //             if (!success) log::error("Failed to create buffer in SL allocation callback");
+                //             res.type = resDesc->type;
+                //             res.native = pbuffer;
+                // 
+                //         }
+                // #endif
+                // 
+                // #if DONUT_WITH_DX12
+                //         if (Get().m_api == nvrhi::GraphicsAPI::D3D12)
+                //         {
+                //             D3D12_RESOURCE_DESC* desc = (D3D12_RESOURCE_DESC*)resDesc->desc;
+                //             D3D12_HEAP_PROPERTIES* heap = (D3D12_HEAP_PROPERTIES*)resDesc->heap;
+                //             D3D12_RESOURCE_STATES state = (D3D12_RESOURCE_STATES)resDesc->state;
+                //             ID3D12Device* pd3d12Device = (ID3D12Device*)device;
+                //             ID3D12Resource* pbuffer;
+                //             bool success = SUCCEEDED(pd3d12Device->CreateCommittedResource(heap, D3D12_HEAP_FLAG_NONE, desc, state, nullptr, IID_PPV_ARGS(&pbuffer)));
+                //             if (!success) log::error("Failed to create buffer in SL allocation callback");
+                //             res.type = resDesc->type;
+                //             res.native = pbuffer;
+                //         }
+                // #endif
+                // 
+                //     }
+                // 
+                //     else {
+                //     
+                // #if DONUT_WITH_DX11
+                // 
+                //         if (Get().m_api == nvrhi::GraphicsAPI::D3D11)
+                //         {
+                //             D3D11_TEXTURE2D_DESC* desc = (D3D11_TEXTURE2D_DESC*)resDesc->desc;
+                //             ID3D11Device* pd3d11Device = (ID3D11Device*)device;
+                //             ID3D11Texture2D* ptexture;
+                //             bool success = SUCCEEDED(pd3d11Device->CreateTexture2D(desc, nullptr, &ptexture));
+                //             if (!success) log::error("Failed to create texture in SL allocation callback");
+                //             res.type = resDesc->type;
+                //             res.native = ptexture;
+                // 
+                //         }
+                // #endif
+                // 
+                // #if DONUT_WITH_DX12
+                //         if (Get().m_api == nvrhi::GraphicsAPI::D3D12)
+                //         {
+                //             D3D12_RESOURCE_DESC* desc = (D3D12_RESOURCE_DESC*)resDesc->desc;
+                //             D3D12_RESOURCE_STATES state = (D3D12_RESOURCE_STATES)resDesc->state;
+                //             D3D12_HEAP_PROPERTIES* heap = (D3D12_HEAP_PROPERTIES*)resDesc->heap;
+                //             ID3D12Device* pd3d12Device = (ID3D12Device*)device;
+                //             ID3D12Resource* ptexture;
+                //             D3D12_CLEAR_VALUE* pClearValue = nullptr;
+                //             D3D12_CLEAR_VALUE clearValue;
+                //             // specify the clear value to avoid D3D warnings on ClearRenderTarget()
+                //             if (desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+                //             {
+                //                 clearValue.Format = desc->Format;
+                //                 memset(clearValue.Color, 0, sizeof(clearValue.Color));
+                //                 pClearValue = &clearValue;
+                //             }
+                //             bool success = SUCCEEDED(pd3d12Device->CreateCommittedResource(heap, D3D12_HEAP_FLAG_NONE, desc, state, pClearValue, IID_PPV_ARGS(&ptexture)));
+                //             if (!success) log::error("Failed to create texture in SL allocation callback");
+                //             res.type = resDesc->type;
+                //             res.native = ptexture;
+                //         }
+                // #endif
+                // 
+                //     }
+                //     return res;
+                // 
+                // }
+        pref.releaseCallback = &releaseResourceCallback;
+                // void SLWrapper::releaseResourceCallback(sl::Resource* resource, void* device)
+                // {
+                //     if (resource)
+                //     {
+                //         auto i = (IUnknown*)resource->native;
+                //         i->Release();
+                //     }
+                // };
+    }
+    pref.applicationId = APP_ID;
+
+#if _DEBUG
+    pref.showConsole = true;
+    pref.logMessageCallback = &logFunctionCallback;
+        // void logFunctionCallback(sl::LogType type, const char* msg) {
+        //     if (type == sl::LogType::eError) {
+        //         // Add a breakpoint here to break on errors
+        //         donut::log::error(msg);
+        //     }
+        //     if (type == sl::LogType::eWarn) {
+        //         // Add a breakpoint here to break on warnings
+        //         donut::log::warning(msg);
+        //     }
+        //     else {
+        //         donut::log::info(msg);
+        //     }
+        // }
+    pref.logLevel = sl::LogLevel::eDefault;
+#else
+    if (SLlog) {
+        pref.showConsole = true;
+        pref.logMessageCallback = &logFunctionCallback;
+        pref.logLevel = sl::LogLevel::eDefault;
+            // //! Different levels for logging
+            // enum class LogLevel : uint32_t
+            // {
+            //     //! No logging
+            //     eOff,
+            //     //! Default logging
+            //     eDefault,
+            //     //! Verbose logging
+            //     eVerbose,
+            //     //! Total count
+            //     eCount
+            // };
+    }
+    else {
+        pref.logLevel = sl::LogLevel::eOff;
+    }
+#endif
+
+    sl::Feature featuresToLoad[] = {
+#ifdef STREAMLINE_FEATURE_DLSS_SR
+        sl::kFeatureDLSS,
+            // //! Deep Learning Super Sampling
+            // constexpr Feature kFeatureDLSS = 0;
+#endif
+#ifdef STREAMLINE_FEATURE_NIS
+        sl::kFeatureNIS,
+            // //! NVIDIA Image Scaling
+            // constexpr Feature kFeatureNIS = 2;
+#endif
+#ifdef STREAMLINE_FEATURE_DLSS_FG
+        sl::kFeatureDLSS_G,
+            // //! DLSS Frame Generation
+            // constexpr Feature kFeatureDLSS_G = 1000;
+#endif
+#ifdef STREAMLINE_FEATURE_REFLEX
+        sl::kFeatureReflex,
+            // //! Reflex
+            // constexpr Feature kFeatureReflex = 3;
+#endif
+#ifdef STREAMLINE_FEATURE_DEEPDVC
+        sl::kFeatureDeepDVC,
+            // //! DeepDVC
+            // constexpr Feature kFeatureDeepDVC = 5;
+#endif
+#ifdef STREAMLINE_FEATURE_LATEWARP
+        sl::kFeatureLatewarp,
+            // constexpr Feature kFeatureLatewarp = 6;
+#endif
+        // PCL is always implicitly loaded, but request it to ensure we never have 0-sized array
+        sl::kFeaturePCL
+            // //! PC Latency
+            // constexpr Feature kFeaturePCL = 4;
+    };
+    pref.featuresToLoad = featuresToLoad;
+    pref.numFeaturesToLoad = static_cast<uint32_t>(std::size(featuresToLoad));
+
+    switch (api) {
+    case (nvrhi::GraphicsAPI::D3D11):
+        pref.renderAPI = sl::RenderAPI::eD3D11;
+        break;
+    case (nvrhi::GraphicsAPI::D3D12):
+        pref.renderAPI = sl::RenderAPI::eD3D12;
+        break;
+    case (nvrhi::GraphicsAPI::VULKAN):
+        pref.renderAPI = sl::RenderAPI::eVulkan;
+        break;
+    }
+
+    pref.flags |= sl::PreferenceFlags::eUseManualHooking;
+
+    auto pathDll = GetSlInterposerDllLocation();
+        // std::wstring GetSlInterposerDllLocation() {
+        //     wchar_t path[PATH_MAX] = { 0 };
+        // #ifdef _WIN32
+        //     if (GetModuleFileNameW(nullptr, path, dim(path)) == 0)
+        //         return std::wstring();
+        // #else // _WIN32
+        // #error Unsupported platform for GetSlInterposerDllLocation!
+        // #endif // _WIN32
+        // 
+        //     auto basePath = std::filesystem::path(path).parent_path();
+        //     auto dllPath = basePath.wstring().append(L"\\sl.interposer.dll");
+        //     return dllPath;
+        // }
+
+    HMODULE interposer = {};
+    if (checkSig && sl::security::verifyEmbeddedSignature(pathDll.c_str())) {
+        interposer = LoadLibraryW(pathDll.c_str());
+    }
+    else {
+        interposer = LoadLibraryW(pathDll.c_str());
+    }
+
+    if (!interposer)
+    {
+        donut::log::error("Unable to load Streamline Interposer");
+        return false;
+    }
+
+    m_sl_initialised = successCheck(slInit(pref, SDK_VERSION), "slInit");
+    if (!m_sl_initialised) {
+        log::error("Failed to initialse SL.");
+        return false;
+    }
+
+    // turn off dlssg
+    if (api == nvrhi::GraphicsAPI::D3D12) {
+        slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
+    }
+
+    return true;
+}
+
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    nvrhi::GraphicsAPI api = donut::app::GetGraphicsAPIFromCommandLine(__argc, __argv);
+#else //  _WIN32
+int main(int __argc, const char* const* __argv)
+{
+    nvrhi::GraphicsAPI api = nvrhi::GraphicsAPI::VULKAN;
+#endif //  _WIN32
+
+    donut::app::DeviceCreationParameters deviceParams;
+
+    deviceParams.backBufferWidth = 1920;
+    deviceParams.backBufferHeight = 1080;
+    deviceParams.swapChainSampleCount = 1;
+    deviceParams.swapChainBufferCount = 3;
+    deviceParams.startFullscreen = false;
+    deviceParams.vsyncEnabled = false;
+    deviceParams.swapChainFormat = nvrhi::Format::BGRA8_UNORM;
+#ifndef NDEBUG
+    if (api != nvrhi::GraphicsAPI::VULKAN)
+    {
+        deviceParams.enableDebugRuntime = true;
+    }
+#endif
+
+    std::string sceneName;
+    bool checkSig = true;
+    bool SLlog = false;
+    if (!ProcessCommandLine(__argc, __argv, deviceParams, sceneName, checkSig, SLlog))
+    {
+        donut::log::error("Failed to process the command line.");
+        return 1;
+    }
+
+    auto scripting = ScriptingConfig(__argc, __argv);
+
+#ifdef _DEBUG
+    checkSig = false;
+#endif
+
+    // Initialise Streamline before creating the device and swapchain.
+    auto success = SLWrapper::Get().Initialize_preDevice(api, checkSig, SLlog);
+
+    if (!success)
+        return 0;
+
+    DeviceManager* deviceManager = CreateDeviceManager(api);
+
+    const char* apiString = nvrhi::utils::GraphicsAPIToString(deviceManager->GetGraphicsAPI());
+
+    std::string windowTitle = "Streamline Sample (" + std::string(apiString) + ")";
+
+    if (!deviceManager->CreateWindowDeviceAndSwapChain(deviceParams, windowTitle.c_str()))
+    {
+        donut::log::error("Cannot initialize a %s graphics device with the requested parameters", apiString);
+        return 1;
+    }
+
+    SLWrapper::Get().SetDevice_nvrhi(deviceManager->GetDevice());
+
+    SLWrapper::Get().Initialize_postDevice();
+
+    SLWrapper::Get().UpdateFeatureAvailable(deviceManager);
+
+    {
+        UIData uiData;
+
+        uiData.EnableVsync = deviceParams.vsyncEnabled;
+        uiData.Resolution = donut::math::int2{ (int)deviceParams.backBufferWidth, (int)deviceParams.backBufferHeight };
+
+        std::shared_ptr<MultiViewportApp> pApp = std::make_shared<MultiViewportApp>(deviceManager, uiData, sceneName, scripting);
+        std::shared_ptr<UIRenderer> gui = std::make_shared<UIRenderer>(deviceManager, pApp->getASample(), uiData);
+
+        gui->Init(pApp->GetShaderFactory());
+
+        deviceManager->AddRenderPassToBack(pApp.get());
+        deviceManager->AddRenderPassToBack(gui.get());
+
+        deviceManager->RunMessageLoop();
+    }
+
+    // Most "real" apps have significantly more work to do between stopping the rendering loop and shutting down
+    // SL.  Here, simulate that time as a WAR.
+    Sleep(100);
+
+    // Shut down Streamline before destroying swapchain and device.
+    SLWrapper::Get().Shutdown();
+
+    deviceManager->Shutdown();
+#ifdef _DEBUG
+    deviceManager->ReportLiveObjects();
+#endif
+
+    delete deviceManager;
+
+    return 0;
+}

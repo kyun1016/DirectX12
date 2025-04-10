@@ -89,6 +89,7 @@ public:
 	void Set4xMsaaState(bool value);
 
 	virtual bool Initialize();
+	std::wstring GetSlInterposerDllLocation();
 	bool LoadDLLs();
 	virtual void CleanUp();
 	int Run();

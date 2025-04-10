@@ -169,6 +169,16 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DirectXMesh.h" />
     <ClInclude Include="DirectXMeshP.h" />
+    <ClInclude Include="donut\core\math\affine.h" />
+    <ClInclude Include="donut\core\math\basics.h" />
+    <ClInclude Include="donut\core\math\box.h" />
+    <ClInclude Include="donut\core\math\color.h" />
+    <ClInclude Include="donut\core\math\frustum.h" />
+    <ClInclude Include="donut\core\math\math.h" />
+    <ClInclude Include="donut\core\math\matrix.h" />
+    <ClInclude Include="donut\core\math\quat.h" />
+    <ClInclude Include="donut\core\math\sphere.h" />
+    <ClInclude Include="donut\core\math\vector.h" />
     <ClInclude Include="EngineCorePch.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GeometryGenerator.h" />

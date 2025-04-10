@@ -1,5 +1,7 @@
 #pragma once
 
+#include "donut/core/math/math.h"
+
 #include <array>
 #include <memory>
 #include <iostream>
@@ -10,6 +12,7 @@
 #include <limits>
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 
 // #include <libloaderapi.h>
 #include <Windows.h>
