@@ -103,6 +103,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameInterpolationV2", "Fra
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameInterpolationV3", "FrameInterpolationV3\FrameInterpolationV3.vcxproj", "{6699FF1B-E02D-4E33-AEE0-6E94D223E49C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LogConsoleTest", "LogConsoleTest\LogConsoleTest.vcxproj", "{4655E774-D092-4DB3-BE29-3262EB982327}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -359,6 +361,14 @@ Global
 		{6699FF1B-E02D-4E33-AEE0-6E94D223E49C}.Release|x64.Build.0 = Release|x64
 		{6699FF1B-E02D-4E33-AEE0-6E94D223E49C}.Release|x86.ActiveCfg = Release|Win32
 		{6699FF1B-E02D-4E33-AEE0-6E94D223E49C}.Release|x86.Build.0 = Release|Win32
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Debug|x64.ActiveCfg = Debug|x64
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Debug|x64.Build.0 = Debug|x64
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Debug|x86.ActiveCfg = Debug|Win32
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Debug|x86.Build.0 = Debug|Win32
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Release|x64.ActiveCfg = Release|x64
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Release|x64.Build.0 = Release|x64
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Release|x86.ActiveCfg = Release|Win32
+		{4655E774-D092-4DB3-BE29-3262EB982327}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -395,6 +405,7 @@ Global
 		{741FBC87-1033-4C9F-ADB2-FCD7D21446EF} = {C3DDC28F-F21D-4B6A-A6C0-842299EFB49B}
 		{E1668A83-0C15-44BF-8483-8F4546183C91} = {C3DDC28F-F21D-4B6A-A6C0-842299EFB49B}
 		{6699FF1B-E02D-4E33-AEE0-6E94D223E49C} = {C3DDC28F-F21D-4B6A-A6C0-842299EFB49B}
+		{4655E774-D092-4DB3-BE29-3262EB982327} = {718D64CD-8069-42BB-9281-5695669C6622}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}
