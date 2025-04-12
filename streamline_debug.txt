@@ -669,6 +669,8 @@
         return false;
     }
 
+    // Set this to a game's specific sdk version
+    // static constexpr uint64_t SDK_VERSION = sl::kSDKVersion;
     m_sl_initialised = successCheck(slInit(pref, SDK_VERSION), "slInit");
     if (!m_sl_initialised) {
         log::error("Failed to initialse SL.");
