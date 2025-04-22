@@ -10,10 +10,9 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Singleton object so that worker threads can share members.
-static AppBase* g_appBase = nullptr;
 
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	return g_appBase->MsgProc(hWnd, msg, wParam, lParam);
+	return AppBase::g_appBase->MsgProc(hWnd, msg, wParam, lParam);
 }
 //===================================
 // Constructor
@@ -24,9 +23,23 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 	mClientWidth(width),
 	mClientHeight(height),
 	mWindowRect({ 0,0,0,0 }),
-	mTitle(name),
 	mAspectRatio(0.0f)
 {
+	mWindowClass = {
+		/*UINT        cbSize		*/	sizeof(mWindowClass),
+		/*UINT        style			*/	CS_CLASSDC,
+		/*WNDPROC     lpfnWndProc	*/	WndProc,
+		/*int         cbClsExtra	*/	0L,
+		/*int         cbWndExtra	*/	0L,
+		/*HINSTANCE   hInstance		*/	GetModuleHandle(nullptr),
+		/*HICON       hIcon			*/	nullptr,
+		/*HCURSOR     hCursor		*/	nullptr,
+		/*HBRUSH      hbrBackground	*/	nullptr,
+		/*LPCWSTR     lpszMenuName	*/	nullptr,
+		/*LPCWSTR     lpszClassName	*/	name.c_str(), // lpszClassName, L-string
+		/*HICON       hIconSm		*/	nullptr
+	};
+
 	g_appBase = this;
 
 	UpdateForSizeChange(width, height);
@@ -65,6 +78,9 @@ std::wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
 
 bool AppBase::Initialize()
 {
+	if (!RegisterWindowClass())
+		return false;
+
 	if (!InitMainWindow())
 		return false;
 
@@ -684,21 +700,6 @@ void AppBase::OnResize()
 #pragma region Window
 bool AppBase::RegisterWindowClass()
 {
-	mWindowClass = {
-		/*UINT        cbSize		*/	sizeof(mWindowClass),
-		/*UINT        style			*/	CS_CLASSDC,
-		/*WNDPROC     lpfnWndProc	*/	WndProc,
-		/*int         cbClsExtra	*/	0L,
-		/*int         cbWndExtra	*/	0L,
-		/*HINSTANCE   hInstance		*/	GetModuleHandle(nullptr),
-		/*HICON       hIcon			*/	nullptr,
-		/*HCURSOR     hCursor		*/	nullptr,
-		/*HBRUSH      hbrBackground	*/	nullptr,
-		/*LPCWSTR     lpszMenuName	*/	nullptr,
-		/*LPCWSTR     lpszClassName	*/	mTitle.c_str(), // lpszClassName, L-string
-		/*HICON       hIconSm		*/	nullptr
-	};
-
 	if (!RegisterClassEx(&mWindowClass)) {
 		std::cout << "RegisterClassEx() failed." << std::endl;
 		MessageBox(0, L"Register WindowClass Failed.", 0, 0);
@@ -710,23 +711,6 @@ bool AppBase::RegisterWindowClass()
 
 bool AppBase::MakeWindowHandle()
 {
-
-	//mHwndWindow = CreateWindowEx(
-	//	/*_In_ DWORD dwExStyle			*/WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
-	//	/*_In_opt_ LPCWSTR lpClassName	*/mWindowClass.lpszClassName,
-	//	/*_In_opt_ LPCWSTR lpWindowName	*/NULL,
-	//	/*_In_ DWORD dwStyle			*/WS_POPUP,
-	//	/*_In_ int X					*/100,
-	//	/*_In_ int Y					*/100,
-	//	/*_In_ int nWidth				*/mClientWidth,
-	//	/*_In_ int nHeight				*/mClientHeight,
-	//	/*_In_opt_ HWND hWndParent		*/NULL,
-	//	/*_In_opt_ HMENU hMenu			*/NULL,
-	//	/*_In_opt_ HINSTANCE hInstance	*/mWindowClass.hInstance,
-	//	/*_In_opt_ LPVOID lpParam)		*/NULL
-	//);
-	//SetLayeredWindowAttributes(mHwndWindow, RGB(0, 0, 0), 0, ULW_COLORKEY);
-
 	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
 	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
 	mHwndWindow = CreateWindow(
@@ -754,8 +738,6 @@ bool AppBase::MakeWindowHandle()
 // Render Doc + PIX tool
 bool AppBase::InitMainWindow()
 {
-	if (!RegisterWindowClass())
-		return false;
 	if (!MakeWindowHandle())
 		return false;
 

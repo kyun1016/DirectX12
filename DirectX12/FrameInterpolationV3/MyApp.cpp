@@ -1721,6 +1721,15 @@ void MyApp::BuildPSOs()
 	}
 
 }
+AppBase* MyApp::Get()
+{
+	if (!g_appBase)
+	{
+		g_appBase = new MyApp();
+	}
+
+	return g_appBase;
+}
 #pragma endregion Initialize
 
 #pragma region Update

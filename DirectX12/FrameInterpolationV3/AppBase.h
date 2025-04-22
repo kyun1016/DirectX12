@@ -19,8 +19,6 @@
 // #pragma comment(lib, "dxgi")
 // #endif
 
-extern class AppBase* g_appBase;
-
 #pragma region ImGui
 // Simple free list based allocator
 struct ExampleDescriptorHeapAllocator
@@ -133,7 +131,6 @@ public:
 	HWND mHwndWindow;
 
 	// Window title.
-	std::wstring mTitle;
 	std::wstring mWndCaption = L"d3d App";
 #pragma endregion Window
 
@@ -164,6 +161,7 @@ public:
 #pragma endregion ImGui
 
 public:
+	inline static AppBase* g_appBase;
 	// Root assets path.
 	std::wstring mAssetsPath;
 

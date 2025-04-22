@@ -1,5 +1,7 @@
 #pragma once
 
+#define _ST
+
 #ifdef _DEBUG
 #pragma comment(lib, "..\\Libraries\\Libs\\EngineCore\\Debug\\EngineCore.lib")
 #pragma comment(lib, "..\\Libraries\\Libs\\ImGuiCore\\Debug\\ImGuiCore.lib")

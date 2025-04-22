@@ -166,6 +166,7 @@ public:
 	void BuildFrameResources();
 	void BuildPSOs();
 
+	static AppBase* Get();
 	
 #pragma endregion Initialize
 

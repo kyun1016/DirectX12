@@ -369,6 +369,7 @@
     <ClInclude Include="AppBase.h" />
     <ClInclude Include="BlurFilter.h" />
     <ClInclude Include="CSAdd.h" />
+    <ClInclude Include="DeviceManager.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GpuWaves.h" />
     <ClInclude Include="MyApp.h" />

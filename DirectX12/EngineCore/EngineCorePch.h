@@ -1,5 +1,9 @@
 #pragma once
 
+// #define NOMINMAX
+// #define SL_WINDOWS 1
+
+
 #include "donut/core/math/math.h"
 
 #include <array>
@@ -40,15 +44,17 @@
 #include "LoadM3d.h"
 #include "StreamlinePch.h"
 
+// // donut
+// #include "thread.h"
+// #include "log.h"
+
 #pragma comment(lib, "d3dcompiler.lib")
 
-#define _DLSS
-
-#ifdef _DLSS
+#ifdef _ST
 #pragma comment(lib, "..\\Libraries\\Include\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
 #else
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 #endif
 
-#pragma comment(lib, "dxguid.lib")
+// #pragma comment(lib, "dxguid.lib")
