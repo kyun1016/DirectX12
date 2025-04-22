@@ -65,7 +65,7 @@ bool MyApp::Initialize()
 	ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 
 	mCamera.SetPosition(0.0f, 2.0f, -15.0f);
-	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mClientWidth, mClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
+	mCSBlurFilter = std::make_unique<BlurFilter>(mDevice.Get(), mParam.backBufferWidth, mParam.backBufferHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
 	mCSAdd = std::make_unique<CSAdd>(mDevice.Get(), mCommandList.Get());
 	mCSWaves = std::make_unique<GpuWaves>(mDevice.Get(), mCommandList.Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 	{
@@ -85,7 +85,7 @@ bool MyApp::Initialize()
 		mShadowMap[1]->SetTarget({ 0.0f, 5.0f, 0.0f });
 		mShadowMap[2]->SetTarget({ 0.0f, 5.0f, 0.0f });
 	}
-	// mSsaoMap = std::make_unique<SsaoMap>(mDevice.Get(), mCommandList.Get(), mClientWidth, mClientHeight);
+	// mSsaoMap = std::make_unique<SsaoMap>(mDevice.Get(), mCommandList.Get(), mParam.backBufferWidth, mParam.backBufferHeight);
 
 	BuildMeshes();
 	BuildTreeSpritesGeometry();
@@ -403,8 +403,8 @@ void MyApp::BuildDescriptorHeaps()
 		/* }																			*/
 	};
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hCPUDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE hGPUDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hCPUDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mParam.cbvSrvUavDescriptorSize);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hGPUDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mParam.cbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -422,25 +422,25 @@ void MyApp::BuildDescriptorHeaps()
 		for (int i = 0; i < SRV_USER_SIZE; ++i)
 		{
 			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hCPUDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+			hCPUDescriptor.Offset(1, mParam.cbvSrvUavDescriptorSize);
+			hGPUDescriptor.Offset(1, mParam.cbvSrvUavDescriptorSize);
 		}
 	}
 
 	mhGPUDiff = hGPUDescriptor;
-	BuildTexture2DSrv(mDiffuseTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mDiffuseTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUDisplacement = hGPUDescriptor;
-	BuildTexture2DSrv(mDisplacementTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mDisplacementTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUNorm = hGPUDescriptor;
-	BuildTexture2DSrv(mNormalTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mNormalTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUAO = hGPUDescriptor;
-	BuildTexture2DSrv(mAOTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mAOTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUMetallic = hGPUDescriptor;
-	BuildTexture2DSrv(mMetallicTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mMetallicTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPURoughness = hGPUDescriptor;
-	BuildTexture2DSrv(mRoughnessTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mRoughnessTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUEmissive = hGPUDescriptor;
-	BuildTexture2DSrv(mEmissiveTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DSrv(mEmissiveTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -454,9 +454,9 @@ void MyApp::BuildDescriptorHeaps()
 				hCPUDescriptor,
 				hGPUDescriptor,
 				hCPUDSVDescriptor);
-			hCPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hGPUDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
-			hCPUDSVDescriptor.Offset(1, mDsvDescriptorSize);
+			hCPUDescriptor.Offset(1, mParam.cbvSrvUavDescriptorSize);
+			hGPUDescriptor.Offset(1, mParam.cbvSrvUavDescriptorSize);
+			hCPUDSVDescriptor.Offset(1, mParam.dsvDescriptorSize);
 		}
 	}
 	//=========================================
@@ -466,9 +466,9 @@ void MyApp::BuildDescriptorHeaps()
 	// SSAO
 
 	mhGPUArray = hGPUDescriptor;
-	BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUCube = hGPUDescriptor;
-	BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
+	BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -479,9 +479,9 @@ void MyApp::BuildDescriptorHeaps()
 		// Texture2D gInput : register(t0);				// SRV
 		// RWTexture2D<float4> gOutput : register(u0);	// UAV
 		//=========================================
-		mCSBlurFilter->BuildDescriptors(hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-		hCPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
-		hGPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mCbvSrvUavDescriptorSize);
+		mCSBlurFilter->BuildDescriptors(hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
+		hCPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mParam.cbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(mCSBlurFilter->DescriptorCount(), mParam.cbvSrvUavDescriptorSize);
 	}
 	
 	{
@@ -495,9 +495,9 @@ void MyApp::BuildDescriptorHeaps()
 		// gCurrSolInput (RWTexture2D<float>, u1) 
 		// gOutput		 (RWTexture2D<float>, u2) 
 		//=========================================
-		mCSWaves->BuildDescriptors(hCPUDescriptor, hGPUDescriptor, mCbvSrvUavDescriptorSize);
-		hCPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
-		hGPUDescriptor.Offset(mCSWaves->DescriptorCount(), mCbvSrvUavDescriptorSize);
+		mCSWaves->BuildDescriptors(hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
+		hCPUDescriptor.Offset(mCSWaves->DescriptorCount(), mParam.cbvSrvUavDescriptorSize);
+		hGPUDescriptor.Offset(mCSWaves->DescriptorCount(), mParam.cbvSrvUavDescriptorSize);
 	}
 }
 
@@ -1468,8 +1468,8 @@ void MyApp::BuildPSOs()
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
 		/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
-		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mBackBufferFormat, mBackBufferFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
-		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mDepthStencilFormat,
+		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mParam.swapChainFormat, mParam.swapChainFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mParam.depthStencilFormat,
 		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
 		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
 		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
@@ -1771,16 +1771,16 @@ void MyApp::OnResize()
 			/* }																			*/
 		};
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mCbvSrvUavDescriptorSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), SRV_IMGUI_SIZE, mParam.cbvSrvUavDescriptorSize);
 		for (int i = 0; i < SRV_USER_SIZE; ++i)
 		{
 			mDevice->CreateShaderResourceView(mSRVUserBuffer[i].Get(), &srvDesc, hDescriptor);
-			hDescriptor.Offset(1, mCbvSrvUavDescriptorSize);
+			hDescriptor.Offset(1, mParam.cbvSrvUavDescriptorSize);
 		}
 	}
 
 	if (mCSBlurFilter)
-		mCSBlurFilter->OnResize(mClientWidth, mClientHeight);
+		mCSBlurFilter->OnResize(mParam.backBufferWidth, mParam.backBufferHeight);
 }
 void MyApp::Update()
 {
@@ -2138,8 +2138,8 @@ void MyApp::UpdatePassCB()
 	DirectX::XMStoreFloat4x4(&mMainPassCB.ViewProj, DirectX::XMMatrixTranspose(viewProj));
 	DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, DirectX::XMMatrixTranspose(invViewProj));
 	mMainPassCB.EyePosW = mCamera.GetPosition3f();
-	mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)mClientWidth, (float)mClientHeight);
-	mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
+	mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)mParam.backBufferWidth, (float)mParam.backBufferHeight);
+	mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mParam.backBufferWidth, 1.0f / mParam.backBufferHeight);
 	mMainPassCB.NearZ = 1.0f;
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = mTimer.TotalTime();
@@ -2358,8 +2358,8 @@ void MyApp::OnMouseDown(WPARAM btnState, int x, int y)
 	// 마우스 커서의 위치를 NDC로 변환
 	// 마우스 커서는 좌측 상단 (0, 0), 우측 하단(width-1, height-1)
 	// NDC는 좌측 하단이 (-1, -1), 우측 상단(1, 1)
-	mMouseNdcX = x * 2.0f / mClientWidth - 1.0f;
-	mMouseNdcY = -y * 2.0f / mClientHeight + 1.0f;
+	mMouseNdcX = x * 2.0f / mParam.backBufferWidth - 1.0f;
+	mMouseNdcY = -y * 2.0f / mParam.backBufferHeight + 1.0f;
 
 	// 커서가 화면 밖으로 나갔을 경우 범위 조절
 	// 게임에서는 클램프를 안할 수도 있습니다.
@@ -2573,7 +2573,7 @@ void MyApp::ShowTextureWindow()
 
 	static int texIdx;
 	float widthSize = ImGui::GetColumnWidth();
-	float heightSize = widthSize / mAspectRatio;
+	float heightSize = widthSize / mParam.aspectRatio;
 
 	int size
 		= (int) SRV_USER_SIZE
@@ -2591,7 +2591,7 @@ void MyApp::ShowTextureWindow()
 		&texIdx,
 		0,
 		size - 1, "%d", flags);
-	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize * texIdx;
+	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mParam.cbvSrvUavDescriptorSize * texIdx;
 	ImGui::Text("GPU handle = %p", my_tex_id);
 	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
@@ -2664,7 +2664,7 @@ void MyApp::ShowMaterialWindow()
 		if (ImGui::TreeNode("Diffuse Map")) {
 			flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
 			flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize - 1, "%d", flags);
-			my_tex_id = (ImTextureID)mhGPUDiff.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
+			my_tex_id = (ImTextureID)mhGPUDiff.ptr + mParam.cbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
 			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 			ImGui::TreePop();
@@ -2674,7 +2674,7 @@ void MyApp::ShowMaterialWindow()
 		if (ImGui::TreeNode("Normal Map")) {
 			flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
 			flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
-			my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+			my_tex_id = (ImTextureID)mhGPUNorm.ptr + mParam.cbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
 			ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 			ImGui::TreePop();
@@ -2684,7 +2684,7 @@ void MyApp::ShowMaterialWindow()
 		//if (ImGui::TreeNode("Normal Map")) {
 		//	flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
 		//	flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
-		//	my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+		//	my_tex_id = (ImTextureID)mhGPUNorm.ptr + mParam.cbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
 		//	ImGui::Image(my_tex_id, ImVec2(mImguiWidth, mImguiHeight), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 		//	ImGui::TreePop();
@@ -2769,7 +2769,7 @@ void MyApp::ShowInstanceWindow()
 		texScale3f[1] = inst.TexScale.y;
 		texScale3f[2] = inst.TexScale.z;
 		float widthSize = ImGui::GetColumnWidth();
-		float heightSize = widthSize / mAspectRatio;
+		float heightSize = widthSize / mParam.aspectRatio;
 		int flag = 0;
 
 		
@@ -2846,7 +2846,7 @@ void MyApp::ShowInstanceWindow()
 			if (ImGui::TreeNode("Diffuse Map")) {
 				flag += ImGui::CheckboxFlags("Use Diffuse(Albedo) Texture", &mat->MaterialData.useAlbedoMap, 1);
 				flag += ImGui::SliderInt((std::string("Tex Diffuse Index [0, ") + std::to_string(texDiffSize - 1) + "]").c_str(), &mat->MaterialData.DiffMapIndex, 0, texDiffSize - 1, "%d", flags);
-				my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
+				my_tex_id = (ImTextureID)mhGPUUser.ptr + mParam.cbvSrvUavDescriptorSize * mat->MaterialData.DiffMapIndex;
 				ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 				ImGui::TreePop();
@@ -2856,7 +2856,7 @@ void MyApp::ShowInstanceWindow()
 			if (ImGui::TreeNode("Normal Map")) {
 				flag += ImGui::CheckboxFlags("Use Normal Texture", &mat->MaterialData.useNormalMap, 1);
 				flag += ImGui::SliderInt((std::string("Tex Normal Index [0, ") + std::to_string(texNormSize - 1) + "]").c_str(), &mat->MaterialData.NormMapIndex, 0, texNormSize - 1, "%d", flags);
-				my_tex_id = (ImTextureID)mhGPUNorm.ptr + mCbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
+				my_tex_id = (ImTextureID)mhGPUNorm.ptr + mParam.cbvSrvUavDescriptorSize * mat->MaterialData.NormMapIndex;
 				ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), tint_col, border_col);
 
 				ImGui::TreePop();
@@ -2919,7 +2919,7 @@ void MyApp::ShowLightWindow()
 	ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
 	ImTextureID my_tex_id;
 	float widthSize = ImGui::GetColumnWidth();
-	float heightSize = widthSize / mAspectRatio;
+	float heightSize = widthSize / mParam.aspectRatio;
 	
 	int mapSize = MAX_LIGHTS;
 
@@ -2982,7 +2982,7 @@ void MyApp::ShowLightWindow()
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 	if (ImGui::TreeNode("Shadow Map")) {
-		my_tex_id = (ImTextureID)mhGPUShadow.ptr + mCbvSrvUavDescriptorSize * mapIdx;
+		my_tex_id = (ImTextureID)mhGPUShadow.ptr + mParam.cbvSrvUavDescriptorSize * mapIdx;
 		ImGui::Image(my_tex_id, ImVec2(widthSize, heightSize), uv_min, uv_max, tint_col, border_col);
 		ImGui::TreePop();
 	}
@@ -2995,9 +2995,9 @@ void MyApp::ShowViewportWindow()
 	ImGui::Begin("viewport1", &mShowViewportWindow);
 
 	float widthSize = ImGui::GetColumnWidth();
-	float heightSize = widthSize / mAspectRatio;
+	float heightSize = widthSize / mParam.aspectRatio;
 
-	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mCbvSrvUavDescriptorSize;
+	ImTextureID my_tex_id = (ImTextureID)mhGPUUser.ptr + mParam.cbvSrvUavDescriptorSize;
 	{
 		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
 		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right

@@ -9,6 +9,7 @@
 #include "../EngineCore/D3DUtil.h"
 #include "../ImGuiCore/imgui.h"
 #include "FrameResource.h"
+#include "DeviceManager.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -69,6 +70,8 @@ struct ExampleDescriptorHeapAllocator
 class AppBase
 {
 public:
+	inline static AppBase* g_appBase;
+public:
 	static constexpr int APP_NUM_FRAME_RESOURCES = 5;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	
@@ -77,10 +80,16 @@ public:
 	static constexpr int RTV_USER_SIZE = 1;	// 0: Render Target, 1: Copy Target
 	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1 + RTV_TOY_SIZE;	// 0: Render Target, 1: CS Copy, 2~N: Shader Toy
 	static constexpr uint32_t WND_PADDING = 5;
-public:
+protected:
 	AppBase();
 	AppBase(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~AppBase();
+
+public:
+	AppBase(const AppBase&) = delete;
+	AppBase(AppBase&&) = delete;
+	AppBase& operator=(const AppBase&) = delete;
+	AppBase& operator=(AppBase&&) = delete;
 
 	float AspectRatio() const;
 
@@ -95,7 +104,7 @@ public:
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM waram, LPARAM lParam);
 
 	void UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight);
-	void SetWindowBounds(int left, int top, int right, int bottom);
+	void SetWindowBounds(RECT& rect, int left, int top, int right, int bottom);
 
 	void LogAdapters();
 	void LogAdapterOutputs(IDXGIAdapter* adapter);
@@ -120,18 +129,13 @@ protected:
 	bool MakeWindowHandle();
 	bool InitMainWindow();
 public:
-	// Viewport dimensions.
-	uint32_t mClientWidth;
-	uint32_t mClientHeight;
+	WNDCLASSEXW mWindowClass;
+	HWND mHwndWindow;
+	std::wstring mWndCaption = L"d3d App"; // Window title.
+
+	DeviceParameter mParam;
 	uint32_t mLastClientWidth = 0;
 	uint32_t mLastClientHeight = 0;
-	float mAspectRatio;
-	WNDCLASSEXW mWindowClass;
-	RECT mWindowRect;
-	HWND mHwndWindow;
-
-	// Window title.
-	std::wstring mWndCaption = L"d3d App";
 #pragma endregion Window
 
 protected:
@@ -159,9 +163,6 @@ public:
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 
 #pragma endregion ImGui
-
-public:
-	inline static AppBase* g_appBase;
 	// Root assets path.
 	std::wstring mAssetsPath;
 
@@ -182,25 +183,20 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	UINT64 mCurrentFence = 0;
 	HANDLE mFenceEvent = nullptr;
+	int mCurrBackBuffer = 0;
 
-	UINT mRtvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[APP_NUM_BACK_BUFFERS];
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mSwapChainBuffer;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUSwapChainBuffer;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUDescHandleST;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
-	int mCurrBackBuffer;
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mSRVUserBuffer;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> mSRVUserBuffer[SRV_USER_SIZE];
-
-	UINT mDsvDescriptorSize = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUDSVBuffer;
-
-	UINT mCbvSrvUavDescriptorSize = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
@@ -210,13 +206,10 @@ public:
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
 
-
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 
 	D3D_DRIVER_TYPE mD3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
-	DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	bool InitDebugLayer();
 	bool ShutdownDebugLayer();

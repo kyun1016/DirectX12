@@ -140,12 +140,13 @@ private:
 
 	using Super = typename AppBase;
 
-public:
+private:
 	MyApp();
 	MyApp(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~MyApp();
 
 #pragma region Initialize
+public:
 	virtual bool Initialize() override;
 
 	void LoadTextures();

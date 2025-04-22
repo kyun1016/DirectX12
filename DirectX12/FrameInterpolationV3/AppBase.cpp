@@ -19,11 +19,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 //===================================
 AppBase::AppBase() : AppBase(1080, 720, L"AppBase") {}
 
-AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
-	mClientWidth(width),
-	mClientHeight(height),
-	mWindowRect({ 0,0,0,0 }),
-	mAspectRatio(0.0f)
+AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name)
 {
 	mWindowClass = {
 		/*UINT        cbSize		*/	sizeof(mWindowClass),
@@ -39,7 +35,6 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name) :
 		/*LPCWSTR     lpszClassName	*/	name.c_str(), // lpszClassName, L-string
 		/*HICON       hIconSm		*/	nullptr
 	};
-
 	g_appBase = this;
 
 	UpdateForSizeChange(width, height);
@@ -56,7 +51,7 @@ AppBase::~AppBase()
 
 float AppBase::AspectRatio() const
 {
-	return static_cast<float>(mClientWidth) / mClientHeight;
+	return static_cast<float>(mParam.backBufferWidth) / mParam.backBufferHeight;
 }
 
 void AppBase::Set4xMsaaState(bool value)
@@ -78,8 +73,8 @@ std::wstring AppBase::GetAssetFullPath(LPCWSTR assetName)
 
 bool AppBase::Initialize()
 {
-	if (!RegisterWindowClass())
-		return false;
+	mSwapChainBuffer.resize(APP_NUM_BACK_BUFFERS, Microsoft::WRL::ComPtr<ID3D12Resource>());
+	mSRVUserBuffer.resize(SRV_USER_SIZE, Microsoft::WRL::ComPtr<ID3D12Resource>());
 
 	if (!InitMainWindow())
 		return false;
@@ -215,11 +210,11 @@ bool AppBase::LoadDLLs()
 		ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 			IID_PPV_ARGS(&mFence)));
 
-		mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		mParam.cbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
 		{
-			/*_In_  DXGI_FORMAT Format							*/mBackBufferFormat,
+			/*_In_  DXGI_FORMAT Format							*/mParam.swapChainFormat,
 			/*_In_  UINT SampleCount							*/4,
 			/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
 			/*_Out_  UINT NumQualityLevels						*/0
@@ -364,17 +359,17 @@ int AppBase::Run()
 
 void AppBase::UpdateForSizeChange(uint32_t clientWidth, uint32_t clientHeight)
 {
-	mClientWidth = clientWidth;
-	mClientHeight = clientHeight;
-	mAspectRatio = static_cast<float>(mClientWidth) / static_cast<float>(mClientHeight);
+	mParam.backBufferWidth = clientWidth;
+	mParam.backBufferHeight = clientHeight;
+	mParam.aspectRatio = static_cast<float>(mParam.backBufferWidth) / static_cast<float>(mParam.backBufferHeight);
 }
 
-void AppBase::SetWindowBounds(int left, int top, int right, int bottom)
+void AppBase::SetWindowBounds(RECT& rect, int left, int top, int right, int bottom)
 {
-	mWindowRect.left = static_cast<LONG>(left);
-	mWindowRect.top = static_cast<LONG>(top);
-	mWindowRect.right = static_cast<LONG>(right);
-	mWindowRect.bottom = static_cast<LONG>(bottom);
+	rect.left = static_cast<LONG>(left);
+	rect.top = static_cast<LONG>(top);
+	rect.right = static_cast<LONG>(right);
+	rect.bottom = static_cast<LONG>(bottom);
 }
 
 void AppBase::LogAdapters()
@@ -419,7 +414,7 @@ void AppBase::LogAdapterOutputs(IDXGIAdapter* adapter)
 		text += L"\n";
 		OutputDebugString(text.c_str());
 
-		LogOutputDisplayModes(output, mBackBufferFormat);
+		LogOutputDisplayModes(output, mParam.swapChainFormat);
 
 		ReleaseCom(output);
 
@@ -463,20 +458,20 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numR
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
-	mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	mParam.rtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	{
 		mhCPUSwapChainBuffer.resize(numRTV);
 		mhCPUSwapChainBuffer[0] = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
 		for (UINT i = 1; i < numRTV; i++)
 		{
-			mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mRtvDescriptorSize;
+			mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mParam.rtvDescriptorSize;
 		}
 
 		mhCPUDescHandleST.resize(numRTVST);
-		mhCPUDescHandleST[0].ptr = mhCPUSwapChainBuffer.back().ptr + mRtvDescriptorSize;
+		mhCPUDescHandleST[0].ptr = mhCPUSwapChainBuffer.back().ptr + mParam.rtvDescriptorSize;
 		for (UINT i = 1; i < numRTVST; i++)
 		{
-			mhCPUDescHandleST[i].ptr = mhCPUDescHandleST[i - 1].ptr + mRtvDescriptorSize;
+			mhCPUDescHandleST[i].ptr = mhCPUDescHandleST[i - 1].ptr + mParam.rtvDescriptorSize;
 		}
 	}
 
@@ -489,13 +484,13 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numR
 	};
 	ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
 
-	mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	mParam.dsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	{
 		mhCPUDSVBuffer.resize(dsvHeapDesc.NumDescriptors);
 		mhCPUDSVBuffer[0] = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 		for (UINT i = 1; i < dsvHeapDesc.NumDescriptors; i++)
 		{
-			mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mDsvDescriptorSize;
+			mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mParam.dsvDescriptorSize;
 		}
 	}
 	
@@ -503,13 +498,13 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numR
 // DX12 Debug Layer <- GPU에서 에러나는 걸 로그로 출력
 void AppBase::OnResize()
 {
-	if ((mClientWidth == mLastClientWidth) && (mClientHeight == mLastClientHeight))
+	if ((mParam.backBufferWidth == mLastClientWidth) && (mParam.backBufferHeight == mLastClientHeight))
 		return;
-	mLastClientHeight = mClientHeight;
-	mLastClientWidth = mClientWidth;
+	mLastClientHeight = mParam.backBufferHeight;
+	mLastClientWidth = mParam.backBufferWidth;
 	assert(mDevice);
 	assert(mSwapChain);
-	UpdateForSizeChange(mClientWidth, mClientHeight);
+	UpdateForSizeChange(mParam.backBufferWidth, mParam.backBufferHeight);
 
 	// Flush before changing any resources.
 	FlushCommandQueue();
@@ -524,7 +519,7 @@ void AppBase::OnResize()
 	mDepthStencilBuffer.Reset();
 
 	// Resize the swap chain.
-	ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mClientWidth, mClientHeight, mBackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+	ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mParam.backBufferWidth, mParam.backBufferHeight, mParam.swapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
 	mCurrBackBuffer = 0;
 	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
@@ -539,8 +534,8 @@ void AppBase::OnResize()
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
 		/* UINT64 Alignment						*/	0,
-		/* UINT64 Width							*/	mClientWidth,
-		/* UINT Height							*/	mClientHeight,
+		/* UINT64 Width							*/	mParam.backBufferWidth,
+		/* UINT Height							*/	mParam.backBufferHeight,
 		/* UINT16 DepthOrArraySize				*/	1,
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -613,8 +608,8 @@ void AppBase::OnResize()
 	{
 		/* D3D12_RESOURCE_DIMENSION Dimension	*/	D3D12_RESOURCE_DIMENSION_TEXTURE2D,
 		/* UINT64 Alignment						*/	0,
-		/* UINT64 Width							*/	mClientWidth,
-		/* UINT Height							*/	mClientHeight,
+		/* UINT64 Width							*/	mParam.backBufferWidth,
+		/* UINT Height							*/	mParam.backBufferHeight,
 		/* UINT16 DepthOrArraySize				*/	1,
 		/* UINT16 MipLevels						*/	1,
 		/* DXGI_FORMAT Format					*/	DXGI_FORMAT_R24G8_TYPELESS,
@@ -629,7 +624,7 @@ void AppBase::OnResize()
 	
 	D3D12_CLEAR_VALUE optClear
 	{
-		/* DXGI_FORMAT Format;							*/mDepthStencilFormat,
+		/* DXGI_FORMAT Format;							*/mParam.depthStencilFormat,
 		/* union {										*/{
 		/*		FLOAT Color[4];							*/
 		/*		D3D12_DEPTH_STENCIL_VALUE DepthStencil{	*/	{
@@ -643,7 +638,7 @@ void AppBase::OnResize()
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc
 	{
-		/* DXGI_FORMAT Format;								*/.Format = mDepthStencilFormat,
+		/* DXGI_FORMAT Format;								*/.Format = mParam.depthStencilFormat,
 		/* D3D12_DSV_DIMENSION ViewDimension;				*/.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
 		/* D3D12_DSV_FLAGS Flags;							*/.Flags = D3D12_DSV_FLAG_NONE,
 		/* union {											*/
@@ -689,12 +684,12 @@ void AppBase::OnResize()
 	// Update the viewport transform to cover the client area.
 	mScreenViewport.TopLeftX = 0;
 	mScreenViewport.TopLeftY = 0;
-	mScreenViewport.Width = static_cast<float>(mClientWidth);
-	mScreenViewport.Height = static_cast<float>(mClientHeight);
+	mScreenViewport.Width = static_cast<float>(mParam.backBufferWidth);
+	mScreenViewport.Height = static_cast<float>(mParam.backBufferHeight);
 	mScreenViewport.MinDepth = 0.0f;
 	mScreenViewport.MaxDepth = 1.0f;
 
-	mScissorRect = { 0, 0, static_cast<LONG>(mClientWidth), static_cast<LONG>(mClientHeight) };
+	mScissorRect = { 0, 0, static_cast<LONG>(mParam.backBufferWidth), static_cast<LONG>(mParam.backBufferHeight) };
 }
 
 #pragma region Window
@@ -711,16 +706,17 @@ bool AppBase::RegisterWindowClass()
 
 bool AppBase::MakeWindowHandle()
 {
-	SetWindowBounds(0, 0, mClientWidth, mClientHeight);
-	AdjustWindowRect(&mWindowRect, WS_OVERLAPPEDWINDOW, false);
+	RECT rect;
+	SetWindowBounds(rect, 0, 0, mParam.backBufferWidth, mParam.backBufferHeight);
+	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
 	mHwndWindow = CreateWindow(
 		/* _In_opt_ LPCWSTR lpClassName	*/ mWindowClass.lpszClassName,
 		/* _In_opt_ LPCWSTR lpWindowName*/ mWndCaption.c_str(),
 		/* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
 		/* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
 		/* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
-		/* _In_ int nWidth				*/ mClientWidth, // 윈도우 가로 방향 해상도
-		/* _In_ int nHeight				*/ mClientHeight, // 윈도우 세로 방향 해상도
+		/* _In_ int nWidth				*/ mParam.backBufferWidth, // 윈도우 가로 방향 해상도
+		/* _In_ int nHeight				*/ mParam.backBufferHeight, // 윈도우 세로 방향 해상도
 		/* _In_opt_ HWND hWndParent		*/ NULL,
 		/* _In_opt_ HMENU hMenu			*/ (HMENU)0,
 		/* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
@@ -738,6 +734,9 @@ bool AppBase::MakeWindowHandle()
 // Render Doc + PIX tool
 bool AppBase::InitMainWindow()
 {
+	if (!RegisterWindowClass())
+		return false;
+
 	if (!MakeWindowHandle())
 		return false;
 
@@ -776,7 +775,7 @@ bool AppBase::InitDirect3D()
 	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 		IID_PPV_ARGS(&mFence)));
 
-	mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	mParam.cbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	// Check 4X MSAA quality support for our back buffer format.
 	// All Direct3D 11 capable devices support 4X MSAA for all render 
@@ -784,7 +783,7 @@ bool AppBase::InitDirect3D()
 
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
 	{
-		/*_In_  DXGI_FORMAT Format							*/mBackBufferFormat,
+		/*_In_  DXGI_FORMAT Format							*/mParam.swapChainFormat,
 		/*_In_  UINT SampleCount							*/4,
 		/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
 		/*_Out_  UINT NumQualityLevels						*/0
@@ -900,12 +899,12 @@ void AppBase::CreateSwapChain()
 	DXGI_SWAP_CHAIN_DESC sd
 	{
 		/* DXGI_MODE_DESC BufferDesc					*/
-		/* 	UINT Width									*/mClientWidth,
-		/* 	UINT Height									*/mClientHeight,
+		/* 	UINT Width									*/mParam.backBufferWidth,
+		/* 	UINT Height									*/mParam.backBufferHeight,
 		/* 	DXGI_RATIONAL RefreshRate					*/
 		/*		UINT Numerator							*/60,
 		/*		UINT Denominator						*/1,
-		/* 	DXGI_FORMAT Format							*/mBackBufferFormat,
+		/* 	DXGI_FORMAT Format							*/mParam.swapChainFormat,
 		/* 	DXGI_MODE_SCANLINE_ORDER ScanlineOrdering	*/DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
 		/* 	DXGI_MODE_SCALING Scaling					*/DXGI_MODE_SCALING_UNSPECIFIED,
 		/* DXGI_SAMPLE_DESC SampleDesc					*/
@@ -1016,8 +1015,8 @@ LRESULT AppBase::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		// WM_SIZE is sent when the user resizes the window.  
 	case WM_SIZE:
 		// Save the new client area dimensions.
-		mClientWidth = (UINT)LOWORD(lParam);
-		mClientHeight = (UINT)HIWORD(lParam);
+		mParam.backBufferWidth = (UINT)LOWORD(lParam);
+		mParam.backBufferHeight = (UINT)HIWORD(lParam);
 
 		if (mDevice)
 		{
@@ -1142,7 +1141,7 @@ void AppBase::UpdateImGui()
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
 		// ImGui::SetNextWindowPos(Imfloat2(main_viewport->WorkPos.x, main_viewport->WorkPos.y), ImGuiCond_FirstUseEver);
-		// ImGui::SetNextWindowSize(Imfloat2((float)mClientWidth, (float)mClientHeight), ImGuiCond_FirstUseEver);
+		// ImGui::SetNextWindowSize(Imfloat2((float)mParam.backBufferWidth, (float)mParam.backBufferHeight), ImGuiCond_FirstUseEver);
 		static float f = 0.0f;
 		static int counter = 0;
 		const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
@@ -1150,7 +1149,7 @@ void AppBase::UpdateImGui()
 		ImGui::Begin("Root");
 		// ImGui::Begin("Root", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 		// ImGui::SetWindowPos("Root", Imfloat2(main_viewport->WorkPos.x + 100.0f, main_viewport->WorkPos.y + 100.0f));
-		// ImGui::SetWindowSize("Root", Imfloat2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::SetWindowSize("Root", Imfloat2((float)mParam.backBufferWidth, (float)mParam.backBufferHeight));
 
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 		ImGui::Checkbox("Demo Window", &mShowDemoWindow);      // Edit bools storing our window open/close state
@@ -1190,7 +1189,7 @@ void AppBase::UpdateImGui()
 
 		// mSrvDescHeapAlloc.Alloc(&CurrentBackBufferView(), my_texture_srv_gpu_handle);
 		ImGui::Text("Hello from another window!");
-		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, Imfloat2((float)mClientWidth, (float)mClientHeight));
+		// ImGui::Image((ImTextureID)my_texture_srv_gpu_handle->ptr, Imfloat2((float)mParam.backBufferWidth, (float)mParam.backBufferHeight));
 		ImGui::End();
 	}
 }
