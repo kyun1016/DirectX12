@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AppBase.h"
+#include <sl_security.h>
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -41,6 +42,9 @@ AppBase::~AppBase()
 #if defined(DEBUG) || defined(_DEBUG) 
 	ShutdownDebugLayer();
 #endif
+	OutputDebugStringW(L"*Info, Release Singleton\n");
+	SL_LOG_INFO("Release Singleton!");
+	sl::log::destroyInterface();
 	g_appBase = nullptr;
 }
 
@@ -71,10 +75,13 @@ bool AppBase::Initialize()
 	mSwapChainBuffer.resize(APP_NUM_BACK_BUFFERS, Microsoft::WRL::ComPtr<ID3D12Resource>());
 	mSRVUserBuffer.resize(SRV_USER_SIZE, Microsoft::WRL::ComPtr<ID3D12Resource>());
 
+	if (!InitSLLog())
+		return false;
+
 	if (!InitMainWindow())
 		return false;
 
-	if (!LoadDLLs())
+	if (!LoadStreamline())
 		return false;
 
 	// if (!InitDirect3D())
@@ -108,15 +115,42 @@ std::wstring AppBase::GetSlInterposerDllLocation() {
 	return dllPath;
 }
 
-
-bool AppBase::LoadDLLs()
+bool AppBase::InitSLLog()
 {
+	auto log = sl::log::getInterface();
+	if (log == nullptr)
+	{
+		return false;
+	}
+	mPref.showConsole = true;
+	log->enableConsole(mPref.showConsole);
+	log->setLogLevel(mPref.logLevel);
+	log->setLogPath(mPref.pathToLogsAndData);
+	log->setLogCallback((void*)mPref.logMessageCallback);
+	log->setLogName(L"sl.log");
+	
+	SL_LOG_INFO("Hello from WinMain!");
+	SL_LOG_INFO("Hello from WinMain!");
+	SL_LOG_INFO("Hello from WinMain!");
+	SL_LOG_INFO("Hello from WinMain!");
+	SL_LOG_INFO("Hello from WinMain!");
+
+	return true;
+}
+
+
+bool AppBase::LoadStreamline()
+{
+	if (mSLInitialised) {
+		SL_LOG_INFO("SLWrapper is already initialised.");
+		return true;
+	}
 	auto pathDll = GetSlInterposerDllLocation();
 
 	if (!sl::security::verifyEmbeddedSignature(pathDll.c_str()))
 	{
 		// SL module not signed, disable SL
-		std::cout << "Signature Error!" << std::endl;
+		SL_LOG_ERROR("Signature Error!");
 	}
 	else
 	{
@@ -382,7 +416,7 @@ void AppBase::LogAdapters()
 		text += desc.Description;
 		text += L"\n";
 
-		OutputDebugString(text.c_str());
+		SL_LOG_INFO("%ls", text.c_str());
 
 		adapterList.push_back(adapter);
 
@@ -408,8 +442,9 @@ void AppBase::LogAdapterOutputs(IDXGIAdapter* adapter)
 		std::wstring text = L"***Output: ";
 		text += desc.DeviceName;
 		text += L"\n";
-		OutputDebugString(text.c_str());
-
+		::OutputDebugString(text.c_str());
+		SL_LOG_INFO("%ls", text.c_str());
+		
 		LogOutputDisplayModes(output, mParam.swapChainFormat);
 
 		ReleaseCom(output);
@@ -440,6 +475,8 @@ void AppBase::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 			L"\n";
 
 		::OutputDebugString(text.c_str());
+
+		SL_LOG_INFO("%ls", text.c_str());
 	}
 }
 

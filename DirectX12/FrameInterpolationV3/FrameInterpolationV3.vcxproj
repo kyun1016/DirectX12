@@ -118,7 +118,8 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalOptions>/utf-8  /external:I "../EngineCore/streamline/include" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /external:I "../StreamlineCore/streamline/include" %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,7 +137,8 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalOptions>/utf-8  /external:I "../EngineCore/streamline/include" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /external:I "../StreamlineCore/streamline/include" %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -170,6 +172,7 @@
     <ClCompile Include="BlurFilter.cpp" />
     <ClCompile Include="CSAdd.cpp" />
     <ClCompile Include="GpuWaves.cpp" />
+    <ClCompile Include="log.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="pch.cpp">
@@ -370,13 +373,16 @@
     <ClInclude Include="BlurFilter.h" />
     <ClInclude Include="CSAdd.h" />
     <ClInclude Include="DeviceManager.h" />
+    <ClInclude Include="extra.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GpuWaves.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="SLWrapper.h" />
     <ClInclude Include="SsaoMap.h" />
+    <ClInclude Include="thread.h" />
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>

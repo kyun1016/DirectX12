@@ -59,6 +59,9 @@
     <ClCompile Include="SLWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="AddCS.hlsl">
@@ -187,6 +190,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DeviceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="extra.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

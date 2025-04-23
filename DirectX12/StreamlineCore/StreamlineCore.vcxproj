@@ -148,7 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="StreamlinePch.h" />
+    <ClInclude Include="StreamlineCorePch.h" />
     <ClInclude Include="streamline\include\sl.h" />
     <ClInclude Include="streamline\include\sl_appidentity.h" />
     <ClInclude Include="streamline\include\sl_consts.h" />

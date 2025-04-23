@@ -10,7 +10,30 @@
 #include "../ImGuiCore/imgui.h"
 #include "FrameResource.h"
 #include "DeviceManager.h"
-// #include "../StreamlineCore/streamline/include/sl_core_types.h"
+
+#pragma comment(lib, "..\\Libraries\\Include\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#define SL_PROVIDE_IMPLEMENTATION
+#define SL_WINDOWS 1
+
+// Streamline Core
+#include <sl.h>
+#include <sl_consts.h>
+#include <sl_hooks.h>
+#include <sl_version.h>
+
+// Streamline Features
+#include <sl_dlss.h>
+#include <sl_reflex.h>
+#include <sl_nis.h>
+#include <sl_dlss_g.h>
+#include <sl_deepdvc.h>
+
+// #include <sl_core_api.h>
+// #include <sl_core_types.h>
+
+// donut/core
+#include "log.h"
+
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -91,7 +114,8 @@ public:
 
 	virtual bool Initialize();
 	std::wstring GetSlInterposerDllLocation();
-	bool LoadDLLs();
+	bool InitSLLog();
+	bool LoadStreamline();
 	virtual void CleanUp();
 	int Run();
 
@@ -157,6 +181,12 @@ public:
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 
 #pragma endregion ImGui
+#pragma region Streamline
+	bool mSLInitialised = false;
+	// sl::log::ILog* mLog;
+	sl::Preferences mPref;
+#pragma endregion Streamline
+
 	// Root assets path.
 	std::wstring mAssetsPath;
 
