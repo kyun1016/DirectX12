@@ -1,7 +1,10 @@
 #pragma once
 
-// #define NOMINMAX
-// #define SL_WINDOWS 1
+#ifdef _ST
+#define NOMINMAX
+#define SL_WINDOWS 1
+#else
+#endif
 
 
 #include "donut/core/math/math.h"
@@ -42,11 +45,6 @@
 #include "D3DUtil.h"
 #include "Camera.h"
 #include "LoadM3d.h"
-#include "StreamlinePch.h"
-
-// // donut
-// #include "thread.h"
-// #include "log.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 

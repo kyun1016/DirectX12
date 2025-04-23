@@ -141,29 +141,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="donut\core\chunk\chunk.h" />
-    <ClInclude Include="donut\core\chunk\chunkFile.h" />
-    <ClInclude Include="donut\core\circular_buffer.h" />
-    <ClInclude Include="donut\core\json.h" />
-    <ClInclude Include="donut\core\log.h" />
-    <ClInclude Include="donut\core\math\affine.h" />
-    <ClInclude Include="donut\core\math\basics.h" />
-    <ClInclude Include="donut\core\math\box.h" />
-    <ClInclude Include="donut\core\math\color.h" />
-    <ClInclude Include="donut\core\math\frustum.h" />
-    <ClInclude Include="donut\core\math\math.h" />
-    <ClInclude Include="donut\core\math\matrix.h" />
-    <ClInclude Include="donut\core\math\quat.h" />
-    <ClInclude Include="donut\core\math\sphere.h" />
-    <ClInclude Include="donut\core\math\vector.h" />
-    <ClInclude Include="donut\core\string_utils.h" />
-    <ClInclude Include="donut\core\vfs\Compression.h" />
-    <ClInclude Include="donut\core\vfs\TarFile.h" />
-    <ClInclude Include="donut\core\vfs\VFS.h" />
-    <ClInclude Include="donut\core\vfs\WinResFS.h" />
-    <ClInclude Include="donut\core\vfs\ZipFile.h" />
-    <ClInclude Include="extra.h" />
-    <ClInclude Include="log.h" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="StreamlinePch.h" />
     <ClInclude Include="streamline\include\sl.h" />
@@ -190,11 +173,6 @@
     <ClInclude Include="streamline\include\sl_struct.h" />
     <ClInclude Include="streamline\include\sl_template.h" />
     <ClInclude Include="streamline\include\sl_version.h" />
-    <ClInclude Include="thread.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="log.cpp" />
-    <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

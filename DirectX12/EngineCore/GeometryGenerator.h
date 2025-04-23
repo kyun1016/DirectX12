@@ -155,7 +155,11 @@ public:
 		outBoundingSphere.Radius = 0.0f;
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
+#ifdef NOMINMAX
+			outBoundingSphere.Radius = std::max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
+#else
 			outBoundingSphere.Radius = max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
+#endif
 		}
 		outBoundingSphere.Radius += 1e-2f;
 	}
@@ -186,7 +190,11 @@ public:
 		outBoundingSphere.Radius = 0.0f;
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
+#ifdef NOMINMAX
+			outBoundingSphere.Radius = std::max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
+#else
 			outBoundingSphere.Radius = max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
+#endif
 		}
 		outBoundingSphere.Radius += 1e-2f;
 	}

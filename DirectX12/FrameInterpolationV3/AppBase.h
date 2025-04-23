@@ -10,15 +10,9 @@
 #include "../ImGuiCore/imgui.h"
 #include "FrameResource.h"
 #include "DeviceManager.h"
+// #include "../StreamlineCore/streamline/include/sl_core_types.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
-
-// #ifdef _DLSS
-// #pragma comment(lib, "..\\Libraries\\\Include\\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
-// #else
-// #pragma comment(lib, "d3d12")
-// #pragma comment(lib, "dxgi")
-// #endif
 
 #pragma region ImGui
 // Simple free list based allocator

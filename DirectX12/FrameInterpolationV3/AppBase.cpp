@@ -1,10 +1,5 @@
 #include "pch.h"
 #include "AppBase.h"
-#include "../EngineCore/sl.h"
-#include "../EngineCore/sl_consts.h"
-#include "../EngineCore/sl_security.h"
-#include "../EngineCore/sl_device_wrappers.h"
-#include "../EngineCore/sl_core_types.h"
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -147,7 +142,7 @@ bool AppBase::LoadDLLs()
 			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
 			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
 			mD12Debug->EnableDebugLayer();
-#ifdef _DLSS
+#ifdef _ST
 			ThrowIfFailed(slDXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
 #else
 			ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
@@ -155,11 +150,12 @@ bool AppBase::LoadDLLs()
 			OutputDebugStringW(L"*Info, EnableLeakTrackingForThread\n");
 			mDxgiDebug->EnableLeakTrackingForThread();
 #endif
+			sl::Preferences pref;
 		}
 
 		{
 			// Create DXGI factory
-#ifdef _DLSS
+#ifdef _ST
 			ThrowIfFailed(slCreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
 			// Try to create hardware device.
 			HRESULT hardwareResult = slD3D12CreateDevice(
