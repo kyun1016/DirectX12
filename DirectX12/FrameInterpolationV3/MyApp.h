@@ -145,6 +145,11 @@ private:
 	MyApp(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~MyApp();
 
+	MyApp(const MyApp&) = delete;
+	MyApp(MyApp&&) = delete;
+	MyApp& operator=(const MyApp&) = delete;
+	MyApp& operator=(MyApp&&) = delete;
+
 #pragma region Initialize
 public:
 	virtual bool Initialize() override;
@@ -165,9 +170,9 @@ public:
 	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
-	void BuildPSOs();
+	void BuildPSOs();	
 
-	static AppBase* Get();
+	static AppBase* GetInstance();
 	
 #pragma endregion Initialize
 

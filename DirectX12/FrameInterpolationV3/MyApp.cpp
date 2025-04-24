@@ -1721,7 +1721,7 @@ void MyApp::BuildPSOs()
 	}
 
 }
-AppBase* MyApp::Get()
+AppBase* MyApp::GetInstance()
 {
 	if (!g_appBase)
 	{
@@ -1730,6 +1730,7 @@ AppBase* MyApp::Get()
 
 	return g_appBase;
 }
+
 #pragma endregion Initialize
 
 #pragma region Update

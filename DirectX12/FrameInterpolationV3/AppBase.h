@@ -89,6 +89,9 @@ class AppBase
 public:
 	inline static AppBase* g_appBase;
 public:
+	static constexpr int APP_ID = 231313132;
+	static constexpr uint64_t SDK_VERSION = sl::kSDKVersion;
+
 	static constexpr int APP_NUM_FRAME_RESOURCES = 5;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	
@@ -97,10 +100,14 @@ public:
 	static constexpr int RTV_USER_SIZE = 1;	// 0: Render Target, 1: Copy Target
 	static constexpr int SRV_USER_SIZE = RTV_USER_SIZE + 1 + RTV_TOY_SIZE;	// 0: Render Target, 1: CS Copy, 2~N: Shader Toy
 	static constexpr uint32_t WND_PADDING = 5;
-protected:
+public:
 	AppBase();
 	AppBase(uint32_t width, uint32_t height, std::wstring name);
 	virtual ~AppBase();
+
+
+	// virtual AppBase* GetInstance() = 0;
+	void Release();
 
 public:
 	AppBase(const AppBase&) = delete;
@@ -113,9 +120,6 @@ public:
 	void Set4xMsaaState(bool value);
 
 	virtual bool Initialize();
-	std::wstring GetSlInterposerDllLocation();
-	bool InitSLLog();
-	bool LoadStreamline();
 	virtual void CleanUp();
 	int Run();
 
@@ -185,6 +189,13 @@ public:
 	bool mSLInitialised = false;
 	// sl::log::ILog* mLog;
 	sl::Preferences mPref;
+
+	// void logFunctionCallback(sl::LogType type, const char* msg);
+	// sl::Resource allocateResourceCallback(const sl::ResourceAllocationDesc* resDesc, void* device);
+	std::wstring GetSlInterposerDllLocation();
+	bool InitSLLog();
+	bool LoadStreamline();
+	bool SuccessCheck(sl::Result result, const char* location);
 #pragma endregion Streamline
 
 	// Root assets path.

@@ -8,5 +8,8 @@ using namespace std;
 int main(int argc, char* argv[]) {
 	SetConsoleOutputCP(CP_UTF8);
 
-	return MyApp::Get()->Run();
+	MyApp::GetInstance()->Run();
+
+	MyApp::GetInstance()->Release();
+	return 0;
 }

@@ -20,6 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include <filesystem>
+#include <map>
 
 // #include <libloaderapi.h>
 #include <Windows.h>
