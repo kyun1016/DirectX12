@@ -11,7 +11,7 @@
 #include "FrameResource.h"
 #include "DeviceManager.h"
 
-#pragma comment(lib, "..\\Libraries\\Include\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#pragma comment(lib, "..\\StreamlineCore\\streamline\\lib\\x64\\sl.interposer.lib")
 #define SL_PROVIDE_IMPLEMENTATION
 #define SL_WINDOWS 1
 

@@ -2,6 +2,9 @@
 
 #define _ST
 
+// 해당 파일은 streamline compile 결과
+#pragma comment(lib, "..\\StreamlineCore\\streamline\\lib\\x64\\sl.interposer.lib")
+
 #ifdef _DEBUG
 #pragma comment(lib, "..\\Libraries\\Libs\\EngineCore\\Debug\\EngineCore.lib")
 // #pragma comment(lib, "..\\Libraries\\Libs\\StreamlineCore\\Debug\\StreamlineCore.lib")

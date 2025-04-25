@@ -1092,7 +1092,10 @@ std::wstring AppBase::GetSlInterposerDllLocation() {
 #endif // _WIN32
 
 	auto basePath = std::filesystem::path(path).parent_path().parent_path().parent_path();
-	auto dllPath = basePath.wstring().append(L"\\Libraries\\Include\\DirectX\\Streamline\\bin\\x64\\sl.interposer.dll");
+	// auto dllPath = basePath.wstring().append(L"\\StreamlineCore\\_bin\\sl.interposer.dll");
+	// auto dllPath = basePath.wstring().append(L"\\Libraries\\Include\\DirectX\\Streamline\\bin\\x64\\sl.interposer.dll");
+	// auto dllPath = basePath.wstring().append(L"\\Libraries\\Include\\DirectX\\Streamline2\\bin\\x64\\sl.interposer.dll");
+	auto dllPath = basePath.wstring().append(L"\\StreamlineCore\\streamline\\bin\\x64\\sl.interposer.dll");
 	return dllPath;
 }
 
@@ -1125,12 +1128,13 @@ bool AppBase::LoadStreamline()
 	}
 	auto pathDll = GetSlInterposerDllLocation();
 
+	// use editted sl.interposer.lib (for debug)
 	if (!sl::security::verifyEmbeddedSignature(pathDll.c_str()))
 	{
 		// SL module not signed, disable SL
-		SL_LOG_ERROR("Signature Error!");
+		SL_LOG_WARN("Signature Error!");
 	}
-	else
+	// else
 	{
 		auto mod = LoadLibrary(pathDll.c_str());
 
@@ -1138,6 +1142,7 @@ bool AppBase::LoadStreamline()
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
+		typedef HRESULT(WINAPI* PFunD3D12GetDebugInterface)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface)(REFIID, void**);
 		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
 		typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
@@ -1150,16 +1155,26 @@ bool AppBase::LoadStreamline()
 		{
 			// Debug Layer
 #if defined(DEBUG) || defined(_DEBUG) 
-			// auto slDXGIGetDebugInterface = reinterpret_cast<PFunDXGIGetDebugInterface>(GetProcAddress(mod, "DXGIGetDebugInterface"));
-			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
-			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
-			mD12Debug->EnableDebugLayer();
+			
+			//extern "C" HRESULT WINAPI D3D12GetDebugInterface
+			//extern "C" HRESULT WINAPI D3D12CreateRootSignatureDeserializer
+			//extern "C" HRESULT WINAPI D3D12CreateVersionedRootSignatureDeserializer
+			//extern "C" HRESULT WINAPI D3D12EnableExperimentalFeatures
+			//extern "C" HRESULT WINAPI D3D12SerializeRootSignature
+			//extern "C" HRESULT WINAPI D3D12SerializeVersionedRootSignature
+			//extern "C" HRESULT D3D12GetInterface
+
 #ifdef _ST
+			auto slD3D12GetDebugInterface = reinterpret_cast<PFunD3D12GetDebugInterface>(GetProcAddress(mod, "D3D12GetDebugInterface"));
+			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
+			ThrowIfFailed(slD3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+			mD12Debug->EnableDebugLayer();
 			ThrowIfFailed(slDXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
 #else
+			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
 			ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
 #endif
-			OutputDebugStringW(L"*Info, EnableLeakTrackingForThread\n");
+			SL_LOG_INFO("EnableLeakTrackingForThread");
 			mDxgiDebug->EnableLeakTrackingForThread();
 #endif
 			sl::Preferences pref;
@@ -1197,13 +1212,14 @@ bool AppBase::LoadStreamline()
 				sl::kFeatureNIS,
 				sl::kFeatureDLSS_G,
 				sl::kFeatureReflex,
-				sl::kFeatureDeepDVC,
+				// sl::kFeatureDeepDVC,
 				sl::kFeatureLatewarp,
 				sl::kFeaturePCL
 			};
 			mPref.featuresToLoad = myFeatures;
 			mPref.numFeaturesToLoad = static_cast<uint32_t>(std::size(myFeatures));
 			mPref.renderAPI = sl::RenderAPI::eD3D12;
+			mPref.pathToLogsAndData = L"..\\StreamlineCore\\streamline\\bin\\x64\\";
 
 			mSLInitialised = SuccessCheck(slInit(mPref, SDK_VERSION), "slInit");
 			if (mSLInitialised) {

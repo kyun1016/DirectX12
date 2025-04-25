@@ -50,7 +50,7 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #ifdef _ST
-#pragma comment(lib, "..\\Libraries\\Include\\DirectX\\Streamline\\_sdk\\lib\\x64\\sl.interposer.lib")
+#pragma comment(lib, "..\\StreamlineCore\\streamline\\lib\\x64\\sl.interposer.lib")
 #else
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
