@@ -220,8 +220,6 @@ void AppBase::LogAdapters()
 
 		std::wstring text = L"***Adapter: ";
 		text += desc.Description;
-		text += L"\n";
-
 		SL_LOG_INFO("%ls", text.c_str());
 
 		adapterList.push_back(adapter);
@@ -247,7 +245,6 @@ void AppBase::LogAdapterOutputs(IDXGIAdapter* adapter)
 
 		std::wstring text = L"***Output: ";
 		text += desc.DeviceName;
-		text += L"\n";
 		::OutputDebugString(text.c_str());
 		SL_LOG_INFO("%ls", text.c_str());
 		
@@ -277,8 +274,7 @@ void AppBase::LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
 		std::wstring text =
 			L"Width = " + std::to_wstring(x.Width) + L" " +
 			L"Height = " + std::to_wstring(x.Height) + L" " +
-			L"Refresh = " + std::to_wstring(n) + L"/" + std::to_wstring(d) +
-			L"\n";
+			L"Refresh = " + std::to_wstring(n) + L"/" + std::to_wstring(d);
 
 		::OutputDebugString(text.c_str());
 
@@ -1122,6 +1118,7 @@ bool AppBase::InitSLLog()
 
 bool AppBase::LoadStreamline()
 {
+#ifdef _ST
 	if (mSLInitialised) {
 		SL_LOG_INFO("SLWrapper is already initialised.");
 		return true;
@@ -1136,84 +1133,21 @@ bool AppBase::LoadStreamline()
 	}
 	// else
 	{
-		auto mod = LoadLibrary(pathDll.c_str());
-
-		// These are the exports from SL library
-		typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
-		typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
-		typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
-		typedef HRESULT(WINAPI* PFunD3D12GetDebugInterface)(REFIID, void**);
-		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface)(REFIID, void**);
-		typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
-		typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
-
-		// Map functions from SL and use them instead of standard DXGI/D3D12 API
-		auto slCreateDXGIFactory = reinterpret_cast<PFunCreateDXGIFactory>(GetProcAddress(mod, "CreateDXGIFactory"));
-		auto slCreateDXGIFactory1 = reinterpret_cast<PFunCreateDXGIFactory1>(GetProcAddress(mod, "CreateDXGIFactory1"));
-		auto slCreateDXGIFactory2 = reinterpret_cast<PFunCreateDXGIFactory2>(GetProcAddress(mod, "CreateDXGIFactory2"));
-		auto slD3D12CreateDevice = reinterpret_cast<PFunD3D12CreateDevice>(GetProcAddress(mod, "D3D12CreateDevice"));
+		// 1. Initiailize (plugin load)
 		{
-			// Debug Layer
-#if defined(DEBUG) || defined(_DEBUG) 
-			
-			//extern "C" HRESULT WINAPI D3D12GetDebugInterface
-			//extern "C" HRESULT WINAPI D3D12CreateRootSignatureDeserializer
-			//extern "C" HRESULT WINAPI D3D12CreateVersionedRootSignatureDeserializer
-			//extern "C" HRESULT WINAPI D3D12EnableExperimentalFeatures
-			//extern "C" HRESULT WINAPI D3D12SerializeRootSignature
-			//extern "C" HRESULT WINAPI D3D12SerializeVersionedRootSignature
-			//extern "C" HRESULT D3D12GetInterface
-
-#ifdef _ST
-			auto slD3D12GetDebugInterface = reinterpret_cast<PFunD3D12GetDebugInterface>(GetProcAddress(mod, "D3D12GetDebugInterface"));
-			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
-			ThrowIfFailed(slD3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
-			mD12Debug->EnableDebugLayer();
-			ThrowIfFailed(slDXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
-#else
-			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
-			ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
-#endif
-			SL_LOG_INFO("EnableLeakTrackingForThread");
-			mDxgiDebug->EnableLeakTrackingForThread();
-#endif
-			sl::Preferences pref;
-		}
-
-		{
-			// Create DXGI factory
-#ifdef _ST
-			ThrowIfFailed(slCreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
-			// Try to create hardware device.
-			HRESULT hardwareResult = slD3D12CreateDevice(
-				nullptr,             // default adapter
-				D3D_FEATURE_LEVEL_11_0,
-				IID_PPV_ARGS(&mDevice));
-			// Fallback to WARP device.
-			if (FAILED(hardwareResult))
-			{
-				Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
-				ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
-
-				ThrowIfFailed(slD3D12CreateDevice(
-					pWarpAdapter.Get(),
-					D3D_FEATURE_LEVEL_11_0,
-					IID_PPV_ARGS(&mDevice)));
-			}
-
 			mPref.allocateCallback = nullptr;
 			mPref.releaseCallback = nullptr;
 			mPref.logMessageCallback = nullptr;
 			mPref.showConsole = true;
 			mPref.applicationId = APP_ID;
 			mPref.logLevel = sl::LogLevel::eVerbose;
-			sl::Feature myFeatures[] = { 
+			sl::Feature myFeatures[] = {
 				sl::kFeatureDLSS,
 				sl::kFeatureNIS,
 				sl::kFeatureDLSS_G,
 				sl::kFeatureReflex,
-				// sl::kFeatureDeepDVC,
-				sl::kFeatureLatewarp,
+				sl::kFeatureDeepDVC,
+				// sl::kFeatureLatewarp,
 				sl::kFeaturePCL
 			};
 			mPref.featuresToLoad = myFeatures;
@@ -1222,68 +1156,128 @@ bool AppBase::LoadStreamline()
 			mPref.pathToLogsAndData = L"..\\StreamlineCore\\streamline\\bin\\x64\\";
 
 			mSLInitialised = SuccessCheck(slInit(mPref, SDK_VERSION), "slInit");
-			if (mSLInitialised) {
+			if (!mSLInitialised) {
 				SL_LOG_WARN("Failed to initailze SL");
 				return false;
 			}
 
-			slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
-			
-#else
-			ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
-			// Try to create hardware device.
-			HRESULT hardwareResult = D3D12CreateDevice(
-				nullptr,             // default adapter
-				D3D_FEATURE_LEVEL_11_0,
-				IID_PPV_ARGS(&mDevice));
-			// Fallback to WARP device.
-			if (FAILED(hardwareResult))
-			{
-				Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
-				ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
-
-				ThrowIfFailed(D3D12CreateDevice(
-					pWarpAdapter.Get(),
-					D3D_FEATURE_LEVEL_11_0,
-					IID_PPV_ARGS(&mDevice)));
-			}
-#endif
+			if (mPref.renderAPI == sl::RenderAPI::eD3D12)
+				slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
 		}
 
+//		// 2. manual hooking (허나, slInit을 적용하여 manual hooking 없이 정상 동작이 이뤄진다.)
+//		{
+//			auto mod = LoadLibrary(pathDll.c_str());
+//
+//			// These are the exports from SL library
+//			typedef HRESULT(WINAPI* PFunCreateDXGIFactory)(REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunCreateDXGIFactory1)(REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunCreateDXGIFactory2)(UINT, REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunD3D12GetDebugInterface)(REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface)(REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunDXGIGetDebugInterface1)(UINT, REFIID, void**);
+//			typedef HRESULT(WINAPI* PFunD3D12CreateDevice)(IUnknown*, D3D_FEATURE_LEVEL, REFIID, void**);
+//
+//			// Map functions from SL and use them instead of standard DXGI/D3D12 API
+//			auto slCreateDXGIFactory = reinterpret_cast<PFunCreateDXGIFactory>(GetProcAddress(mod, "CreateDXGIFactory"));
+//			auto slCreateDXGIFactory1 = reinterpret_cast<PFunCreateDXGIFactory1>(GetProcAddress(mod, "CreateDXGIFactory1"));
+//			auto slCreateDXGIFactory2 = reinterpret_cast<PFunCreateDXGIFactory2>(GetProcAddress(mod, "CreateDXGIFactory2"));
+//			auto slD3D12CreateDevice = reinterpret_cast<PFunD3D12CreateDevice>(GetProcAddress(mod, "D3D12CreateDevice"));
+//			// Debug Layer
+//#if defined(DEBUG) || defined(_DEBUG) 
+//			auto slD3D12GetDebugInterface = reinterpret_cast<PFunD3D12GetDebugInterface>(GetProcAddress(mod, "D3D12GetDebugInterface"));
+//			auto slDXGIGetDebugInterface1 = reinterpret_cast<PFunDXGIGetDebugInterface1>(GetProcAddress(mod, "DXGIGetDebugInterface1"));
+//			ThrowIfFailed(slD3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+//			mD12Debug->EnableDebugLayer();
+//			ThrowIfFailed(slDXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+//
+//			SL_LOG_INFO("EnableLeakTrackingForThread");
+//			mDxgiDebug->EnableLeakTrackingForThread();
+//#endif
+//
+//			// Create DXGI factory
+//			ThrowIfFailed(slCreateDXGIFactory2(_DEBUG, IID_PPV_ARGS(&mDxgiFactory)));
+//			// Try to create hardware device.
+//			HRESULT hardwareResult = slD3D12CreateDevice(
+//				nullptr,             // default adapter
+//				D3D_FEATURE_LEVEL_11_0,
+//				IID_PPV_ARGS(&mDevice));
+//			// Fallback to WARP device.
+//			if (FAILED(hardwareResult))
+//			{
+//				Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
+//				ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
+//
+//				ThrowIfFailed(slD3D12CreateDevice(
+//					pWarpAdapter.Get(),
+//					D3D_FEATURE_LEVEL_11_0,
+//					IID_PPV_ARGS(&mDevice)));
+//			}
+//		}
+	}
+#endif
+#if defined(DEBUG) || defined(_DEBUG) 
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+	ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+#endif
+	ThrowIfFailed(CreateDXGIFactory2(_DEBUG, IID_PPV_ARGS(&mDxgiFactory)));
+	// Try to create hardware device.
+	HRESULT hardwareResult = D3D12CreateDevice(
+		nullptr,             // default adapter
+		D3D_FEATURE_LEVEL_11_0,
+		IID_PPV_ARGS(&mDevice));
+	// Fallback to WARP device.
+	if (FAILED(hardwareResult))
+	{
+		Microsoft::WRL::ComPtr<IDXGIAdapter> pWarpAdapter;
+		ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
 
+		ThrowIfFailed(D3D12CreateDevice(
+			pWarpAdapter.Get(),
+			D3D_FEATURE_LEVEL_11_0,
+			IID_PPV_ARGS(&mDevice)));
+	}
 
-		ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
-			IID_PPV_ARGS(&mFence)));
-
-		mParam.cbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
-		{
-			/*_In_  DXGI_FORMAT Format							*/mParam.swapChainFormat,
-			/*_In_  UINT SampleCount							*/4,
-			/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
-			/*_Out_  UINT NumQualityLevels						*/0
-		};
-		ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
-
-		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
-		// m4xMsaaState = true;
-		assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
-
-#ifdef _DEBUG
-		LogAdapters();
+#ifdef _ST
+	// if (mPref.renderAPI == sl::RenderAPI::eD3D11)
+	// 	SuccessCheck(slSetD3DDevice((ID3D11Device*)mDevice.Get()), "slSetD3DDevice");
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12)
+		SuccessCheck(slSetD3DDevice((ID3D12Device*)mDevice.Get()), "slSetD3DDevice");
+	// if (mPref.renderAPI == sl::RenderAPI::eVULKAN)
+	// 	SuccessCheck(slSetVulkanInfo(*((sl::VulkanInfo*)mDevice.Get())), "slSetVulkanInfo");
 #endif
 
-		mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		if (mFenceEvent == nullptr)
-			return false;
+	ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE,
+		IID_PPV_ARGS(&mFence)));
 
-		CreateCommandObjects();
-		CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1, RTV_TOY_SIZE);
-		CreateSwapChain();
+	mParam.cbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		return true;
-	}
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
+	{
+		/*_In_  DXGI_FORMAT Format							*/mParam.swapChainFormat,
+		/*_In_  UINT SampleCount							*/4,
+		/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
+		/*_Out_  UINT NumQualityLevels						*/0
+	};
+	ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+
+	m4xMsaaQuality = msQualityLevels.NumQualityLevels;
+	// m4xMsaaState = true;
+	assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
+
+	#ifdef _DEBUG
+	LogAdapters();
+	#endif
+
+	mFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (mFenceEvent == nullptr)
+	return false;
+
+	CreateCommandObjects();
+	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1, RTV_TOY_SIZE);
+	CreateSwapChain();
+
+	return true;
 }
 
 bool AppBase::SuccessCheck(sl::Result result, const char* location)
