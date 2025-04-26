@@ -1144,10 +1144,10 @@ bool AppBase::LoadStreamline()
 			sl::Feature myFeatures[] = {
 				sl::kFeatureDLSS,
 				sl::kFeatureNIS,
-				sl::kFeatureDLSS_G,
+				// sl::kFeatureDLSS_G,
 				sl::kFeatureReflex,
 				sl::kFeatureDeepDVC,
-				// sl::kFeatureLatewarp,
+				sl::kFeatureLatewarp,
 				sl::kFeaturePCL
 			};
 			mPref.featuresToLoad = myFeatures;
@@ -1162,7 +1162,7 @@ bool AppBase::LoadStreamline()
 			}
 
 			if (mPref.renderAPI == sl::RenderAPI::eD3D12)
-				slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
+				slSetFeatureLoaded(sl::kFeatureDLSS_G, true);
 		}
 
 //		// 2. manual hooking (허나, slInit을 적용하여 manual hooking 없이 정상 동작이 이뤄진다.)
