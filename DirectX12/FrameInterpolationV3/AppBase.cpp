@@ -46,6 +46,7 @@ AppBase::~AppBase()
 	OutputDebugStringW(L"*Info, Release Singleton\n");
 	SL_LOG_VERBOSE("Release Singleton!");
 	sl::log::destroyInterface();
+	slShutdown();
 	g_appBase = nullptr;
 }
 
@@ -94,6 +95,7 @@ bool AppBase::Initialize()
 	if (!LoadStreamline())
 		return false;
 
+	// Load Streamline 단계와 통합
 	// if (!InitDirect3D())
 	// 	return false;
 
@@ -151,6 +153,9 @@ int AppBase::Run()
 				//==========================================
 				CalculateFrameStats();
 
+				// New Function
+				SLFrameInit();
+
 				Update();
 				Render();
 				RenderImGui();
@@ -170,16 +175,16 @@ int AppBase::Run()
 				}
 
 				// Swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(1, 0));
+				ThrowIfFailed(mSwapChain->Present(mParam.vsyncEnabled ? 1 : 0, 0));
 				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 				// Advance the fence value to mark commands up to this fence point.
-				mCurrFrameResource->Fence = ++mCurrentFence;
+				mCurrFrameResource->Fence = ++mFrameCount;
 
 				// Add an instruction to the command queue to set a new fence point. 
 				// Because we are on the GPU timeline, the new fence point won't be 
 				// set until the GPU finishes processing all the commands prior to this Signal().
-				mCommandQueue->Signal(mFence.Get(), mCurrentFence);
+				mCommandQueue->Signal(mFence.Get(), mFrameCount);
 			}
 			else
 			{
@@ -754,7 +759,15 @@ void AppBase::CreateSwapChain()
 	};
 
 	// Note: Swap chain uses queue to perform flush.
+#ifdef _ST
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12)
+		slSetFeatureLoaded(sl::kFeatureDLSS_G, true);
+#endif
 	ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &sd, mSwapChain.GetAddressOf()));
+#ifdef _ST
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12)
+		slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
+#endif
 
 	for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 	{
@@ -766,20 +779,20 @@ void AppBase::CreateSwapChain()
 void AppBase::FlushCommandQueue()
 {
 	// Advance the fence value to mark commands up to this fence point.
-	mCurrentFence++;
+	mFrameCount++;
 
 	// Add an instruction to the command queue to set a new fence point.  Because we 
 	// are on the GPU timeline, the new fence point won't be set until the GPU finishes
 	// processing all the commands prior to this Signal().
-	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
+	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFrameCount));
 
 	// Wait until the GPU has completed commands up to this fence point.
-	if (mFence->GetCompletedValue() < mCurrentFence)
+	if (mFence->GetCompletedValue() < mFrameCount)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, L"", false, EVENT_ALL_ACCESS);
 
 		// Fire event when GPU hits current fence.  
-		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
+		ThrowIfFailed(mFence->SetEventOnCompletion(mFrameCount, eventHandle));
 
 		// Wait until the GPU hits current fence event is fired.
 		WaitForSingleObject(eventHandle, INFINITE);
@@ -1144,7 +1157,7 @@ bool AppBase::LoadStreamline()
 			sl::Feature myFeatures[] = {
 				sl::kFeatureDLSS,
 				sl::kFeatureNIS,
-				// sl::kFeatureDLSS_G,
+				// sl::kFeatureDLSS_G,	// 현재 DLL 로드 시 오류가 발생하여 주석 처리
 				sl::kFeatureReflex,
 				sl::kFeatureDeepDVC,
 				sl::kFeatureLatewarp,
@@ -1161,8 +1174,10 @@ bool AppBase::LoadStreamline()
 				return false;
 			}
 
+			// 단 하나의 swapchain에 대해서만 적용을 진행해야한다.
+			// DLSS_G 기능은 feature에서 제거가 되어있어 실제 동작은 불가
 			if (mPref.renderAPI == sl::RenderAPI::eD3D12)
-				slSetFeatureLoaded(sl::kFeatureDLSS_G, true);
+				slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
 		}
 
 //		// 2. manual hooking (허나, slInit을 적용하여 manual hooking 없이 정상 동작이 이뤄진다.)
@@ -1335,6 +1350,142 @@ bool AppBase::SuccessCheck(sl::Result result, const char* location)
 	}
 
 	return false;
+}
+
+bool AppBase::BeginFrame()
+{
+	bool turn_on;
+
+	// STREAMLINE
+	if (mParam.dlssgEnable) {
+		//waitForQueue();
+
+		//SLWrapper::Get().CleanupDLSSG(true);
+
+		//// Get new sizes
+		//DXGI_SWAP_CHAIN_DESC1 newSwapChainDesc;
+		//if (SUCCEEDED(m_SwapChain_native->GetDesc1(&newSwapChainDesc))) {
+		//	m_SwapChainDesc.Width = newSwapChainDesc.Width;
+		//	m_SwapChainDesc.Height = newSwapChainDesc.Height;
+		//	m_DeviceParams.backBufferWidth = newSwapChainDesc.Width;
+		//	m_DeviceParams.backBufferHeight = newSwapChainDesc.Height;
+		//}
+
+		//BackBufferResizing();
+
+		//// Delete swapchain and resources
+		//m_SwapChain->SetFullscreenState(false, nullptr);
+		//ReleaseRenderTargets();
+
+		//m_SwapChain = nullptr;
+		//m_SwapChain_native = nullptr;
+
+		//// If we turn off dlssg, then unload dlssg featuree
+		//if (turn_on)
+		//	SLWrapper::Get().FeatureLoad(sl::kFeatureDLSS_G, true);
+		//else {
+		//	SLWrapper::Get().FeatureLoad(sl::kFeatureDLSS_G, false);
+		//}
+
+		//m_UseProxySwapchain = turn_on;
+
+		//// Recreate Swapchain and resources 
+		//RefCountPtr<IDXGISwapChain1> pSwapChain1_base;
+		//auto hr = m_DxgiFactory2->CreateSwapChainForHwnd(m_GraphicsQueue, m_hWnd, &m_SwapChainDesc, &m_FullScreenDesc, nullptr, &pSwapChain1_base);
+		//if (hr != S_OK)  donut::log::fatal("CreateSwapChainForHwnd failed");
+		//hr = pSwapChain1_base->QueryInterface(IID_PPV_ARGS(&m_SwapChain));
+		//if (hr != S_OK)  donut::log::fatal("QueryInterface failed");
+		//SLWrapper::Get().ProxyToNative(m_SwapChain, (void**)&m_SwapChain_native);
+
+		//if (!CreateRenderTargets())
+		//	donut::log::fatal("CreateRenderTarget failed");
+
+		//BackBufferResized();
+
+		//// Reload DLSSG
+		//SLWrapper::Get().FeatureLoad(sl::kFeatureDLSS_G, true);
+		//SLWrapper::Get().Quiet_DLSSG_SwapChainRecreation();
+	}
+	else if (mParam.latewarpEnable)
+	{
+		//waitForQueue();
+
+		//// Get new sizes
+		//DXGI_SWAP_CHAIN_DESC1 newSwapChainDesc;
+		//if (SUCCEEDED(m_SwapChain_native->GetDesc1(&newSwapChainDesc))) {
+		//	m_SwapChainDesc.Width = newSwapChainDesc.Width;
+		//	m_SwapChainDesc.Height = newSwapChainDesc.Height;
+		//	m_DeviceParams.backBufferWidth = newSwapChainDesc.Width;
+		//	m_DeviceParams.backBufferHeight = newSwapChainDesc.Height;
+		//}
+
+		//BackBufferResizing();
+
+		//// Delete swapchain and resources
+		//m_SwapChain->SetFullscreenState(false, nullptr);
+		//ReleaseRenderTargets();
+
+		//m_SwapChain = nullptr;
+		//m_SwapChain_native = nullptr;
+
+		//// If we turn off Latewarp, then unload Latewarp feature
+		//if (turn_on) {
+		//	SLWrapper::Get().FeatureLoad(sl::kFeatureLatewarp, true);
+		//}
+		//else {
+		//	SLWrapper::Get().FeatureLoad(sl::kFeatureLatewarp, false);
+		//}
+
+		//m_UseProxySwapchain = turn_on;
+
+		//// Recreate Swapchain and resources 
+		//RefCountPtr<IDXGISwapChain1> pSwapChain1_base;
+		//auto hr = m_DxgiFactory2->CreateSwapChainForHwnd(m_GraphicsQueue, m_hWnd, &m_SwapChainDesc, &m_FullScreenDesc, nullptr, &pSwapChain1_base);
+		//if (hr != S_OK)  donut::log::fatal("CreateSwapChainForHwnd failed");
+		//hr = pSwapChain1_base->QueryInterface(IID_PPV_ARGS(&m_SwapChain));
+		//if (hr != S_OK)  donut::log::fatal("QueryInterface failed");
+		//SLWrapper::Get().ProxyToNative(m_SwapChain, (void**)&m_SwapChain_native);
+
+		//if (!CreateRenderTargets())
+		//	donut::log::fatal("CreateRenderTarget failed");
+
+		//BackBufferResized();
+
+		//// Reload Latewarp
+		//SLWrapper::Get().FeatureLoad(sl::kFeatureLatewarp, true);
+		//SLWrapper::Get().Quiet_Latewarp_SwapChainRecreation();
+	}
+	else
+	{
+		// DXGI_SWAP_CHAIN_DESC1 newSwapChainDesc;
+		// DXGI_SWAP_CHAIN_FULLSCREEN_DESC newFullScreenDesc;
+		// if (SUCCEEDED(mSwapChain->GetDesc1(&newSwapChainDesc)) && SUCCEEDED(mSwapChain->GetFullscreenDesc(&newFullScreenDesc)))
+		// {
+		// 	if (m_FullScreenDesc.Windowed != newFullScreenDesc.Windowed)
+		// 	{
+		// 		waitForQueue();
+		// 
+		// 		BackBufferResizing();
+		// 
+		// 		m_FullScreenDesc = newFullScreenDesc;
+		// 		m_SwapChainDesc = newSwapChainDesc;
+		// 		m_DeviceParams.backBufferWidth = newSwapChainDesc.Width;
+		// 		m_DeviceParams.backBufferHeight = newSwapChainDesc.Height;
+		// 
+		// 		if (newFullScreenDesc.Windowed)
+		// 			glfwSetWindowMonitor(m_Window, nullptr, 50, 50, newSwapChainDesc.Width, newSwapChainDesc.Height, 0);
+		// 
+		// 		ResizeSwapChain();
+		// 		BackBufferResized();
+		// 	}
+		// }
+	}
+}
+
+void AppBase::SLFrameInit()
+{
+
+
 }
 
 bool AppBase::InitDebugLayer()

@@ -196,6 +196,9 @@ public:
 	bool InitSLLog();
 	bool LoadStreamline();
 	bool SuccessCheck(sl::Result result, const char* location);
+
+	bool BeginFrame();
+	void SLFrameInit();
 #pragma endregion Streamline
 
 	// Root assets path.
@@ -216,7 +219,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
 
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
-	UINT64 mCurrentFence = 0;
+	UINT64 mFrameCount = 0;
 	HANDLE mFenceEvent = nullptr;
 	int mCurrBackBuffer = 0;
 

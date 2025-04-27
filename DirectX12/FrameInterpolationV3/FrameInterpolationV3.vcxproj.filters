@@ -56,9 +56,6 @@
     <ClCompile Include="GpuWaves.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SLWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -184,9 +181,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GpuWaves.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SLWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DeviceManager.h">
