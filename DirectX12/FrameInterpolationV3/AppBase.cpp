@@ -1480,6 +1480,8 @@ bool AppBase::BeginFrame()
 		// 	}
 		// }
 	}
+
+	return true;
 }
 
 void AppBase::SLFrameInit()
