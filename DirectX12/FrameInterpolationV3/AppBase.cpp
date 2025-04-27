@@ -178,13 +178,13 @@ int AppBase::Run()
 				ThrowIfFailed(mSwapChain->Present(mParam.vsyncEnabled ? 1 : 0, 0));
 				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
-				// Advance the fence value to mark commands up to this fence point.
-				mCurrFrameResource->Fence = ++mFrameCount;
-
 				// Add an instruction to the command queue to set a new fence point. 
 				// Because we are on the GPU timeline, the new fence point won't be 
 				// set until the GPU finishes processing all the commands prior to this Signal().
 				mCommandQueue->Signal(mFence.Get(), mFrameCount);
+
+				// Advance the fence value to mark commands up to this fence point.
+				mCurrFrameResource->Fence = ++mFrameCount;
 			}
 			else
 			{
