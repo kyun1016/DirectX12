@@ -3075,36 +3075,3 @@ void MyApp::CopyRTV(const int srvIdx)
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	mCommandList->ResourceBarrier(1, &SRVUserBufBarrier);
 }
-
-//void MyApp::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
-//{
-//
-//}
-//
-//void MyApp::ReflexCallback_SimStart(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID)
-//{
-//}
-//
-//void MyApp::ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID)
-//{
-//}

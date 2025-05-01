@@ -130,8 +130,6 @@ int AppBase::Run()
 
 	mTimer.Reset();
 
-	UpdateFeatureAvailable();
-
 	while (msg.message != WM_QUIT)
 	{
 		// If there are Window messages then process them.
@@ -821,11 +819,12 @@ void AppBase::CalculateFrameStats()
 	// Compute averages over one second period.
 	if ((mTimer.TotalTime() - timeElapsed) >= 1.0f)
 	{
-		float fps = (float)frameCnt; // fps = frameCnt / 1
-		float mspf = 1000.0f / fps;
+		mFPS = (double)frameCnt; // fps = frameCnt / 1
+		mMSpFrame = 1000.0f / mFPS;
+		mSpFrame = 1.0f / mFPS;
 
-		std::wstring fpsStr = std::to_wstring(fps);
-		std::wstring mspfStr = std::to_wstring(mspf);
+		std::wstring fpsStr = std::to_wstring(mFPS);
+		std::wstring mspfStr = std::to_wstring(mMSpFrame);
 
 		std::wstring windowText = mWndCaption +
 			L"    fps: " + fpsStr +
@@ -1112,55 +1111,114 @@ void AppBase::UpdateFeatureAvailable()
 		SL_LOG_WARN("Abnormal API");
 	}
 
-	// Check if features are fully functional (2nd call of slIsFeatureSupported onwards)
-	m_dlss_available = slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo) == sl::Result::eOk;
-	if (m_dlss_available) 
+	sl::FeatureRequirements requirements{};
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureDLSS, requirements)))
 	{
-		SL_LOG_INFO("DLSS is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("DLSS is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("DLSS is not fully functional on this system.");
+	else
+	{
+		// Check if features are fully functional (2nd call of slIsFeatureSupported onwards)
+		m_dlss_av
+			ailable = slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo) == sl::Result::eOk;
+		if (m_dlss_available)
+		{
+			SL_LOG_INFO("DLSS is supported on this system.");
+		}
+		else SL_LOG_WARN("DLSS is not fully functional on this system.");
+	}
+	
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureNIS, requirements)))
+	{
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("NIS is not fully functional on this system.");
+	}
+	else
+	{
+		m_nis_available = slIsFeatureSupported(sl::kFeatureNIS, adapterInfo) == sl::Result::eOk;
+		if (m_nis_available)
+		{
+			SL_LOG_INFO("NIS is supported on this system.");
+		}
+		else SL_LOG_WARN("NIS is not fully functional on this system.");
+	}
 
-	m_nis_available = slIsFeatureSupported(sl::kFeatureNIS, adapterInfo) == sl::Result::eOk;
-	if (m_nis_available)
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureDLSS_G, requirements)))
 	{
-		SL_LOG_INFO("NIS is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("DLSS-G is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("NIS is not fully functional on this system.");
+	else
+	{
+		m_dlssg_available = slIsFeatureSupported(sl::kFeatureDLSS_G, adapterInfo) == sl::Result::eOk;
+		if (m_dlssg_available)
+		{
+			SL_LOG_INFO("DLSS-G is supported on this system.");
+		}
+		else SL_LOG_WARN("DLSS-G is not fully functional on this system.");
+	}
 
-	m_dlssg_available = slIsFeatureSupported(sl::kFeatureDLSS_G, adapterInfo) == sl::Result::eOk;
-	if (m_dlssg_available)
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureReflex, requirements)))
 	{
-		SL_LOG_INFO("DLSS-G is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("Reflex is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("DLSS-G is not fully functional on this system.");
+	else
+	{
+		m_reflex_available = slIsFeatureSupported(sl::kFeatureReflex, adapterInfo) == sl::Result::eOk;
+		if (m_reflex_available)
+		{
+			SL_LOG_INFO("Reflex is supported on this system.");
+		}
+		else SL_LOG_WARN("Reflex is not fully functional on this system.");
+	}
 
-	m_reflex_available = slIsFeatureSupported(sl::kFeatureReflex, adapterInfo) == sl::Result::eOk;
-	if (m_reflex_available)
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeaturePCL, requirements)))
 	{
-		SL_LOG_INFO("Reflex is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("PCL is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("Reflex is not fully functional on this system.");
+	else
+	{
+		m_pcl_available = SuccessCheck(slIsFeatureSupported(sl::kFeaturePCL, adapterInfo), "slIsFeatureSupported_PCL");
+		if (m_pcl_available)
+		{
+			SL_LOG_INFO("PCL is supported on this system.");
+		}
+		else SL_LOG_WARN("PCL is not fully functional on this system.");
+	}
 
-	m_pcl_available = SuccessCheck(slIsFeatureSupported(sl::kFeaturePCL, adapterInfo), "slIsFeatureSupported_PCL");
-	if (m_pcl_available)
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureDeepDVC, requirements)))
 	{
-		SL_LOG_INFO("PCL is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("DeepDVC is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("PCL is not fully functional on this system.");
+	else
+	{
+		m_deepdvc_available = slIsFeatureSupported(sl::kFeatureDeepDVC, adapterInfo) == sl::Result::eOk;
+		if (m_deepdvc_available)
+		{
+			SL_LOG_INFO("DeepDVC is supported on this system.");
+		}
+		else SL_LOG_WARN("DeepDVC is not fully functional on this system.");
+	}
 
-	m_deepdvc_available = slIsFeatureSupported(sl::kFeatureDeepDVC, adapterInfo) == sl::Result::eOk;
-	if (m_deepdvc_available)
-	{
-		SL_LOG_INFO("DeepDVC is supported on this system.");
-	}
-	else SL_LOG_WARN("DeepDVC is not fully functional on this system.");
 
-	m_latewarp_available = slIsFeatureSupported(sl::kFeatureLatewarp, adapterInfo) == sl::Result::eOk;
-	if (m_latewarp_available)
+	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureLatewarp, requirements)))
 	{
-		SL_LOG_INFO("Latewarp is supported on this system.");
+		// Feature is not requested on slInit or failed to load, check logs, handle error
+		SL_LOG_WARN("Latewarp is not fully functional on this system.");
 	}
-	else SL_LOG_WARN("Latewarp is not fully functional on this system.");
+	else
+	{
+		m_latewarp_available = slIsFeatureSupported(sl::kFeatureLatewarp, adapterInfo) == sl::Result::eOk;
+		if (m_latewarp_available)
+		{
+			SL_LOG_INFO("Latewarp is supported on this system.");
+		}
+		else SL_LOG_WARN("Latewarp is not fully functional on this system.");
+	}
 }
 
 std::wstring AppBase::GetSlInterposerDllLocation() {
@@ -1230,7 +1288,7 @@ bool AppBase::LoadStreamline()
 			sl::Feature myFeatures[] = {
 				sl::kFeatureDLSS,
 				sl::kFeatureNIS,
-				// sl::kFeatureDLSS_G,	// 현재 DLL 로드 시 오류가 발생하여 주석 처리
+				sl::kFeatureDLSS_G,	// 현재 DLL 로드 시 오류가 발생하여 주석 처리
 				sl::kFeatureReflex,
 				sl::kFeatureDeepDVC,
 				sl::kFeatureLatewarp,
@@ -1240,6 +1298,7 @@ bool AppBase::LoadStreamline()
 			mPref.numFeaturesToLoad = static_cast<uint32_t>(std::size(myFeatures));
 			mPref.renderAPI = sl::RenderAPI::eD3D12;
 			mPref.pathToLogsAndData = L"..\\StreamlineCore\\streamline\\bin\\x64\\";
+			// mPref.flags |= PreferenceFlag::eAllowOTA | 
 
 			mSLInitialised = SuccessCheck(slInit(mPref, SDK_VERSION), "slInit");
 			if (!mSLInitialised) {
@@ -1364,6 +1423,10 @@ bool AppBase::LoadStreamline()
 	CreateCommandObjects();
 	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1, RTV_TOY_SIZE);
 	CreateSwapChain();
+
+
+	// 사용 가능 기능 검사
+	UpdateFeatureAvailable();
 
 	return true;
 }
@@ -1559,14 +1622,37 @@ bool AppBase::BeginFrame()
 
 void AppBase::SLFrameInit()
 {
+	// Initialize
+	bool needNewPasses = false;
+
 	if (m_ui.Resolution_changed) {
 		m_ui.Resolution.x = mParam.backBufferWidth;
 		m_ui.Resolution.y = mParam.backBufferHeight;
 		m_ui.Resolution_changed = false;
 	}
 
+	sl::Extent nullExtent{};
+	bool validViewportExtent = (m_backbufferViewportExtent != nullExtent);
+	if (validViewportExtent)
+	{
+		m_DisplaySize = donut::math::int2(m_backbufferViewportExtent.width, m_backbufferViewportExtent.height);
+	}
+	else
+	{
+		m_DisplaySize = donut::math::int2(mParam.backBufferWidth, mParam.backBufferHeight);
+	}
+
+	float lodBias = 0.f;
+
+	// RESIZE (from ui)
+	m_ui.Resolution.x = mParam.backBufferWidth;
+	m_ui.Resolution.y = mParam.backBufferHeight;
+
+	// DeepDVC VRAM Usage
 	QueryDeepDVCState(m_ui.DeepDVC_VRAM);
 
+#pragma region DLSSG
+	// DLSS-G Setup
 	if (m_dlssg_available)
 	{
 		bool& prevDlssgWanted = m_dlssg_shoudLoad;
@@ -1595,8 +1681,8 @@ void AppBase::SLFrameInit()
 		if (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC)
 		{
 			dlssgConst.flags |= sl::DLSSGFlags::eDynamicResolutionEnabled;
-			dlssgConst.dynamicResWidth = mParam.backBufferWidth / 2;
-			dlssgConst.dynamicResHeight = mParam.backBufferHeight / 2;
+			dlssgConst.dynamicResWidth = m_DisplaySize.x / 2;
+			dlssgConst.dynamicResHeight = m_DisplaySize.y / 2;
 		}
 
 		// This is where we query DLSS-G minimum swapchain size
@@ -1653,7 +1739,7 @@ void AppBase::SLFrameInit()
 			}
 		}
 
-		m_ui.DLSSG_fps = static_cast<float>(fps_multiplier * 1.0 / GetDeviceManager()->GetAverageFrameTimeSeconds());
+		m_ui.DLSSG_fps = static_cast<float>(fps_multiplier * 1.0 / mSpFrame);
 
 		if (status != sl::DLSSGStatus::eOk) {
 			if (status == sl::DLSSGStatus::eFailResolutionTooLow)
@@ -1671,6 +1757,207 @@ void AppBase::SLFrameInit()
 		else {
 			m_ui.DLSSG_status = "";
 		}
+	}
+
+	// After we've actually set DLSS-G on/off, free resources
+	if (m_ui.DLSSG_cleanup_needed)
+	{
+		CleanupDLSSG(false);
+		m_ui.DLSSG_cleanup_needed = false;
+	}
+#pragma endregion DLSSG
+
+#pragma region Latewarp
+	// Latewarp
+	bool prevLatewarpWanted;
+	Get_Latewarp_SwapChainRecreation(prevLatewarpWanted);
+	// If there is a change, trigger a swapchain recreation
+	if (prevLatewarpWanted != !!m_ui.Latewarp_active)
+	{
+		Set_Latewarp_SwapChainRecreation(m_ui.Latewarp_active);
+	}
+#pragma endregion Latewarp
+
+#pragma region REFLEX
+	// REFLEX Setup
+	auto reflexConst = sl::ReflexOptions{};
+	reflexConst.mode = (sl::ReflexMode)m_ui.REFLEX_Mode;
+	reflexConst.useMarkersToOptimize = true;
+	reflexConst.virtualKey = VK_F13;
+	reflexConst.frameLimitUs = m_ui.REFLEX_CapedFPS == 0 ? 0 : int(1000000. / m_ui.REFLEX_CapedFPS);
+	SetReflexConsts(reflexConst);
+
+	bool flashIndicatorDriverAvailable;
+	QueryReflexStats(m_ui.REFLEX_LowLatencyAvailable, flashIndicatorDriverAvailable, m_ui.REFLEX_Stats);
+	SetReflexFlashIndicator(flashIndicatorDriverAvailable);
+#pragma endregion REFLEX
+#pragma region DLSS
+	// DLSS SETUP
+
+	//Make sure DLSS is available
+	if (m_ui.AAMode == UIData::AntiAliasingMode::DLSS && !GetDLSSAvailable())
+	{
+		SL_LOG_WARN("DLSS antialiasing is not available. Switching to TAA. ");
+		m_ui.AAMode = UIData::AntiAliasingMode::TEMPORAL;
+	}
+
+	// Reset DLSS vars if we stop using it
+	if (m_ui.DLSS_Last_AA == UIData::AntiAliasingMode::DLSS && m_ui.AAMode != UIData::AntiAliasingMode::DLSS) {
+		DLSS_Last_Mode = sl::DLSSMode::eOff;
+		m_ui.DLSS_Mode = sl::DLSSMode::eOff;
+		m_DLSS_Last_DisplaySize = { 0,0 };
+		CleanupDLSS(true); // We can also expressly tell SL to cleanup DLSS resources.
+	}
+	// If we turn on DLSS then we set its default values
+	else if (m_ui.DLSS_Last_AA != UIData::AntiAliasingMode::DLSS && m_ui.AAMode == UIData::AntiAliasingMode::DLSS) {
+		DLSS_Last_Mode = sl::DLSSMode::eBalanced;
+		m_ui.DLSS_Mode = sl::DLSSMode::eBalanced;
+		m_DLSS_Last_DisplaySize = { 0,0 };
+	}
+	m_ui.DLSS_Last_AA = m_ui.AAMode;
+
+	// If we are using DLSS set its constants
+	if ((m_ui.AAMode == UIData::AntiAliasingMode::DLSS && m_ui.DLSS_Mode != sl::DLSSMode::eOff))
+	{
+		sl::DLSSOptions dlssConstants = {};
+		dlssConstants.mode = m_ui.DLSS_Mode;
+		dlssConstants.outputWidth = m_DisplaySize.x;
+		dlssConstants.outputHeight = m_DisplaySize.y;
+		dlssConstants.colorBuffersHDR = sl::Boolean::eTrue;
+		dlssConstants.sharpness = m_RecommendedDLSSSettings.sharpness;
+
+		if (m_ui.DLSSPresetsAnyNonDefault())
+		{
+			dlssConstants.dlaaPreset = m_ui.DLSS_presets[static_cast<int>(sl::DLSSMode::eDLAA)];
+			dlssConstants.qualityPreset = m_ui.DLSS_presets[static_cast<int>(sl::DLSSMode::eMaxQuality)];
+			dlssConstants.balancedPreset = m_ui.DLSS_presets[static_cast<int>(sl::DLSSMode::eBalanced)];
+			dlssConstants.performancePreset = m_ui.DLSS_presets[static_cast<int>(sl::DLSSMode::eMaxPerformance)];
+			dlssConstants.ultraPerformancePreset = m_ui.DLSS_presets[static_cast<int>(sl::DLSSMode::eUltraPerformance)];
+		}
+
+		dlssConstants.useAutoExposure = sl::Boolean::eFalse;
+
+		// Changing presets requires a restart of DLSS
+		if (m_ui.DLSSPresetsChanged())
+			CleanupDLSS(true);
+
+		m_ui.DLSSPresetsUpdate();
+
+		SetDLSSOptions(dlssConstants);
+
+		// Check if we need to update the rendertarget size.
+		bool DLSS_resizeRequired = (m_ui.DLSS_Mode != DLSS_Last_Mode) || (m_DisplaySize.x != m_DLSS_Last_DisplaySize.x) || (m_DisplaySize.y != m_DLSS_Last_DisplaySize.y);
+		if (DLSS_resizeRequired) {
+			// Only quality, target width and height matter here
+			QueryDLSSOptimalSettings(m_RecommendedDLSSSettings);
+
+			if (m_RecommendedDLSSSettings.optimalRenderSize.x <= 0 || m_RecommendedDLSSSettings.optimalRenderSize.y <= 0) {
+				m_ui.AAMode = UIData::AntiAliasingMode::NONE;
+				m_ui.DLSS_Mode = sl::DLSSMode::eBalanced;
+				m_RenderingRectSize = m_DisplaySize;
+			}
+			else {
+				DLSS_Last_Mode = m_ui.DLSS_Mode;
+				m_DLSS_Last_DisplaySize = m_DisplaySize;
+			}
+		}
+
+		// in variable ratio mode, pick a random ratio between min and max rendering resolution
+		donut::math::int2 maxSize = m_RecommendedDLSSSettings.maxRenderSize;
+		donut::math::int2 minSize = m_RecommendedDLSSSettings.minRenderSize;
+		float texLodXDimension;
+		if (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC)
+		{
+			// Even if we request dynamic res, it is possible that the DLSS mode has max==min
+			if (any(maxSize != minSize))
+			{
+				if (m_ui.DLSS_Dynamic_Res_change)
+				{
+					m_ui.DLSS_Dynamic_Res_change = false;
+					std::uniform_int_distribution<int> distributionWidth(minSize.x, maxSize.x);
+					int newWidth = distributionWidth(m_Generator);
+
+					// Height is initially based on width and aspect
+					int newHeight = (int)(newWidth * (float)m_DisplaySize.y / (float)m_DisplaySize.x);
+
+					// But that height might be too small or too large for the min/max settings of the DLSS
+					// mode (in theory); skip changing the res if it is out of range.
+					// We predict this never to happen. It is more of a safety measure.
+					if (newHeight >= minSize.y && newHeight <= maxSize.y) m_RenderingRectSize = { newWidth , newHeight };
+				}
+
+				// For dynamic ratio, we want to choose the minimum rendering size
+				// to select a Texture LOD that will preserve its sharpness over a large range of rendering resolution.
+				// Ideally, the texture LOD would be allowed to be variable as well based on the dynamic scale
+				// but we don't support that here yet.
+				texLodXDimension = (float)minSize.x;
+
+				// If the OUTPUT buffer resized or the DLSS mode changed, we need to recreate passes in dynamic mode.
+				// In fixed resolution DLSS, this just happens when we change DLSS mode because it causes one of the
+				// other cases below to hit (likely texLod).
+				if (DLSS_resizeRequired) needNewPasses = true;
+			}
+			else
+			{
+				m_RenderingRectSize = maxSize;
+				texLodXDimension = (float)m_RenderingRectSize.x;
+			}
+		}
+		else if (m_ui.AAMode == UIData::AntiAliasingMode::DLSS)
+		{
+			m_RenderingRectSize = m_RecommendedDLSSSettings.optimalRenderSize;
+			texLodXDimension = (float)m_RenderingRectSize.x;
+		}
+
+		// Use the formula of the DLSS programming guide for the Texture LOD Bias...
+		lodBias = std::log2f(texLodXDimension / m_DisplaySize.x) - 1;
+	}
+	else {
+		sl::DLSSOptions dlssConstants = {};
+		dlssConstants.mode = sl::DLSSMode::eOff;
+		SetDLSSOptions(dlssConstants);
+		m_RenderingRectSize = m_DisplaySize;
+	}
+#pragma endregion DLSS
+	// PASS SETUP
+	{
+		bool needNewPasses = false;
+
+		// Here, we intentionally leave the renderTargets oversized: (displaySize, displaySize) instead of (m_RenderingRectSize, displaySize), to show the power of sl::Extent
+		bool useFullSizeRenderingBuffers = m_ui.DLSS_always_use_extents || (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC);
+
+		donut::math::int2 renderSize = useFullSizeRenderingBuffers ? m_DisplaySize : m_RenderingRectSize;
+
+		if (IsUpdateRequired(renderSize, m_DisplaySize))
+		{
+			// TODO: Check This Point!
+			// m_BindingCache.Clear();
+			// 
+			// m_RenderTargets = nullptr;
+			// m_RenderTargets = std::make_unique<RenderTargets>();
+			// m_RenderTargets->Init(GetDevice(), renderSize, m_DisplaySize, framebuffer->getDesc().colorAttachments[0].texture->getDesc().format);
+			// 
+			needNewPasses = true;
+		}
+
+		// Render scene, change bias
+		if (m_ui.DLSS_lodbias_useoveride) lodBias = m_ui.DLSS_lodbias_overide;
+		if (m_PreviousLodBias != lodBias)
+		{
+			needNewPasses = true;
+			m_PreviousLodBias = lodBias;
+		}
+
+		if (SetupView())
+		{
+			needNewPasses = true;
+		}
+
+		if (needNewPasses)
+		{
+			// CreateRenderPasses(exposureResetRequired, lodBias);
+		}
+
 	}
 
 }
@@ -1712,6 +1999,249 @@ bool AppBase::ShutdownDebugLayer()
 #endif
 	return true;
 }
+
+
+void AppBase::SetSLConsts(const sl::Constants& consts)
+{
+	if (!mSLInitialised) {
+		SL_LOG_WARN("SL not initialised.");
+		return;
+	}
+
+	SuccessCheck(slSetConstants(consts, *m_currentFrame, m_viewport), "slSetConstants");
+}
+
+void AppBase::FeatureLoad(sl::Feature feature, const bool turn_on)
+{
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12) {
+		bool loaded;
+		slIsFeatureLoaded(feature, loaded);
+		if (loaded && !turn_on) {
+			slSetFeatureLoaded(feature, turn_on);
+		}
+		else if (!loaded && turn_on) {
+			slSetFeatureLoaded(feature, turn_on);
+		}
+	}
+}
+
+void AppBase::TagResources_General(nvrhi::ICommandList* commandList, const donut::engine::IView* view, nvrhi::ITexture* motionVectors, nvrhi::ITexture* depth, nvrhi::ITexture* finalColorHudless)
+{
+	if (!mSLInitialised) {
+		SL_LOG_WARN("Streamline not initialised.");
+		return;
+	}
+
+	sl::Extent renderExtent{ 0, 0, depth->getDesc().width, depth->getDesc().height };
+	sl::Extent fullExtent{ 0, 0, finalColorHudless->getDesc().width, finalColorHudless->getDesc().height };
+	void* cmdbuffer = mCommandList.Get();
+	sl::Resource motionVectorsResource{}, depthResource{}, finalColorHudlessResource{};
+
+	motionVectorsResource = 
+	GetSLResource(commandList, motionVectorsResource, motionVectors, view);
+	GetSLResource(commandList, depthResource, depth, view);
+	GetSLResource(commandList, finalColorHudlessResource, finalColorHudless, view);
+
+	sl::ResourceTag motionVectorsResourceTag = sl::ResourceTag{ &motionVectorsResource, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+	sl::ResourceTag depthResourceTag = sl::ResourceTag{ &depthResource, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+	sl::ResourceTag finalColorHudlessResourceTag = sl::ResourceTag{ &finalColorHudlessResource, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
+
+	sl::ResourceTag inputs[] = { motionVectorsResourceTag, depthResourceTag, finalColorHudlessResourceTag };
+	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_General");
+}
+
+void AppBase::TagResources_DLSS_NIS(nvrhi::ICommandList& commandList, const donut::engine::IView* view, Texture& output, Texture& input)
+{
+	if (!mSLInitialised) {
+		SL_LOG_WARN("Streamline not initialised.");
+		return;
+	}
+
+	sl::Extent renderExtent{ 0, 0, Input->getDesc().width, Input->getDesc().height };
+	sl::Extent fullExtent{ 0, 0, Output->getDesc().width, Output->getDesc().height };
+	void* cmdbuffer = GetNativeCommandList(commandList);
+	sl::Resource inputResource{};
+
+	// GetSLResource(commandList, outputResource, Output, view);
+	// GetSLResource(commandList, inputResource, Input, view);
+	// sl::Resource outputResource{
+	// 	/* ResourceType	*/ .type              = sl::ResourceType::eTex2d		, //! Indicates the type of resource
+	// 	/* void*		*/ .native            = output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
+	// 	/* void*		*/ .memory            =	nullptr							, //! vkDeviceMemory or nullptr
+	// 	/* void*		*/ .view              = nullptr							, //! VkImageView/VkBufferView or nullptr
+	// 	/* uint32_t		*/ .state             = D3D12_RESOURCE_STATE_COMMON		, //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
+	// 	/* uint32_t		*/ .width             =	0								, //! Width in pixels
+	// 	/* uint32_t		*/ .height            =	0								, //! Height in pixels
+	// 	/* uint32_t		*/ .nativeFormat      =	0								, //! Native format
+	// 	/* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
+	// 	/* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
+	// 	/* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
+	// 	/* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
+	// 	/* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
+	// 	/* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
+	// };
+	sl::Resource outputResource{
+		/* ResourceType	.type              */ sl::ResourceType::eTex2d		, //! Indicates the type of resource
+		/* void*		.native            */ output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
+		/* void*		.memory            */ nullptr							, //! vkDeviceMemory or nullptr
+		/* void*		.view              */ nullptr							, //! VkImageView/VkBufferView or nullptr
+		/* uint32_t		.state             */ D3D12_RESOURCE_STATE_COMMON		 //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
+		// /* uint32_t		*/ .width             =	0								, //! Width in pixels
+		// /* uint32_t		*/ .height            =	0								, //! Height in pixels
+		// /* uint32_t		*/ .nativeFormat      =	0								, //! Native format
+		// /* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
+		// /* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
+		// /* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
+		// /* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
+		// /* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
+		// /* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
+	}
+
+
+	sl::ResourceTag inputResourceTag = sl::ResourceTag{ &inputResource, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+	sl::ResourceTag outputResourceTag = sl::ResourceTag{ &outputResource, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
+
+	sl::ResourceTag inputs[] = { inputResourceTag, outputResourceTag };
+	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_dlss_nis");
+}
+
+
+void AppBase::SetDLSSOptions(const sl::DLSSOptions consts)
+{
+	if (!mSLInitialised || !m_dlss_available) {
+		SL_LOG_WARN("SL not initialised or DLSS not available.");
+		return;
+	}
+
+	m_dlss_consts = consts;
+	SuccessCheck(slDLSSSetOptions(m_viewport, m_dlss_consts), "slDLSSSetOptions");
+}
+
+void AppBase::QueryDLSSOptimalSettings(DLSSSettings& settings)
+{
+}
+
+void AppBase::EvaluateDLSS(ID3D12CommandList* commandList)
+{
+}
+
+void AppBase::CleanupDLSS(bool wfi)
+{
+	if (!mSLInitialised) {
+		SL_LOG_WARN("SL not initialised.");
+		return;
+	}
+	if (!m_dlss_available)
+	{
+		return;
+	}
+
+	if (wfi) {
+		// mDevice->waitForIdle();
+		FlushCommandQueue();
+	}
+
+	sl::Result status = slFreeResources(sl::kFeatureDLSS, m_viewport);
+	// if we've never ran the feature on this viewport, this call may return 'eErrorInvalidParameter'
+	assert(status == sl::Result::eOk || status == sl::Result::eErrorInvalidParameter);
+}
+
+void AppBase::SetNISOptions(const sl::NISOptions consts)
+{
+}
+
+void AppBase::EvaluateNIS(ID3D12CommandList* commandList)
+{
+}
+
+void AppBase::CleanupNIS(bool wfi)
+{
+}
+
+void AppBase::SetDeepDVCOptions(const sl::DeepDVCOptions consts)
+{
+}
+void AppBase::QueryDeepDVCState(uint64_t& estimatedVRamUsage)
+{
+	if (!mSLInitialised || !m_deepdvc_available) {
+		SL_LOG_WARN("SL not initialised or DeepDVC not available.");
+		return;
+	}
+	sl::DeepDVCState state;
+	SuccessCheck(slDeepDVCGetState(m_viewport, state), "slDeepDVCGetState");
+	estimatedVRamUsage = state.estimatedVRAMUsageInBytes;
+}
+
+void AppBase::EvaluateDeepDVC(ID3D12CommandList* commandList)
+{
+}
+
+void AppBase::CleanupDeepDVC()
+{
+}
+
+void AppBase::Callback_FrameCount_Reflex_Sleep_Input_SimStart(AppBase& manager)
+{
+}
+
+void AppBase::ReflexTriggerFlash()
+{
+}
+
+void AppBase::ReflexTriggerPcPing()
+{
+}
+
+void AppBase::QueryReflexStats(bool& reflex_lowLatencyAvailable, bool& reflex_flashAvailable, std::string& stats)
+{
+	if (m_reflex_available) {
+		sl::ReflexState state;
+		SuccessCheck(slReflexGetState(state), "Reflex_State");
+
+		reflex_lowLatencyAvailable = state.lowLatencyAvailable;
+		reflex_flashAvailable = state.flashIndicatorDriverControlled;
+
+		auto rep = state.frameReport[63];
+		if (state.latencyReportAvailable && rep.gpuRenderEndTime != 0) {
+
+			auto frameID = rep.frameID;
+			auto totalGameToRenderLatencyUs = rep.gpuRenderEndTime - rep.inputSampleTime;
+			auto simDeltaUs = rep.simEndTime - rep.simStartTime;
+			auto renderDeltaUs = rep.renderSubmitEndTime - rep.renderSubmitStartTime;
+			auto presentDeltaUs = rep.presentEndTime - rep.presentStartTime;
+			auto driverDeltaUs = rep.driverEndTime - rep.driverStartTime;
+			auto osRenderQueueDeltaUs = rep.osRenderQueueEndTime - rep.osRenderQueueStartTime;
+			auto gpuRenderDeltaUs = rep.gpuRenderEndTime - rep.gpuRenderStartTime;
+
+			stats = "frameID: " + std::to_string(frameID);
+			stats += "\ntotalGameToRenderLatencyUs: " + std::to_string(totalGameToRenderLatencyUs);
+			stats += "\nsimDeltaUs: " + std::to_string(simDeltaUs);
+			stats += "\nrenderDeltaUs: " + std::to_string(renderDeltaUs);
+			stats += "\npresentDeltaUs: " + std::to_string(presentDeltaUs);
+			stats += "\ndriverDeltaUs: " + std::to_string(driverDeltaUs);
+			stats += "\nosRenderQueueDeltaUs: " + std::to_string(osRenderQueueDeltaUs);
+			stats += "\ngpuRenderDeltaUs: " + std::to_string(gpuRenderDeltaUs);
+		}
+		else {
+			stats = "Latency Report Unavailable";
+		}
+	}
+}
+
+void AppBase::SetReflexConsts(const sl::ReflexOptions options)
+{
+	if (!mSLInitialised || !m_reflex_available)
+	{
+		SL_LOG_WARN("SL not initialised or Reflex not available.");
+		return;
+	}
+
+	m_reflex_consts = options;
+	SuccessCheck(slReflexSetOptions(m_reflex_consts), "Reflex_Options");
+
+	return;
+}
+
 
 void AppBase::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
 {
@@ -1781,31 +2311,6 @@ void AppBase::ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID)
 	}
 }
 
-void AppBase::QueryDeepDVCState(uint64_t& estimatedVRamUsage)
-{
-	if (!mSLInitialised || !m_deepdvc_available) {
-		SL_LOG_WARN("SL not initialised or DeepDVC not available.");
-		return;
-	}
-	sl::DeepDVCState state;
-	SuccessCheck(slDeepDVCGetState(m_viewport, state), "slDeepDVCGetState");
-	estimatedVRamUsage = state.estimatedVRAMUsageInBytes;
-}
-
-void AppBase::SetReflexConsts(const sl::ReflexOptions options)
-{
-	if (!mSLInitialised || !m_reflex_available)
-	{
-		SL_LOG_WARN("SL not initialised or Reflex not available.");
-		return;
-	}
-
-	m_reflex_consts = options;
-	SuccessCheck(slReflexSetOptions(m_reflex_consts), "Reflex_Options");
-
-	return;
-}
-
 void AppBase::SetDLSSGOptions(const sl::DLSSGOptions consts)
 {
 	if (!mSLInitialised || !m_dlssg_available) {
@@ -1862,4 +2367,11 @@ void AppBase::CleanupDLSSG(bool wfi)
 	sl::Result status = slFreeResources(sl::kFeatureDLSS_G, m_viewport);
 	// if we've never ran the feature on this viewport, this call may return 'eErrorInvalidParameter'
 	assert(status == sl::Result::eOk || status == sl::Result::eErrorInvalidParameter || status == sl::Result::eErrorFeatureMissing);
+}
+
+bool AppBase::SetupView()
+{
+	// if (m_TemporalAntiAliasingPass) m_TemporalAntiAliasingPass->SetJitter(m_ui.TemporalAntiAliasingJitter);
+
+	return false;
 }

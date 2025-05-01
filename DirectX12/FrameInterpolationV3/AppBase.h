@@ -1,4 +1,5 @@
 #pragma once
+#include <random>
 #include <d3d12.h>
 #include <wrl/client.h> // ComPtr
 #include <dxgi1_4.h>
@@ -33,7 +34,6 @@
 
 // donut/core
 #include "log.h"
-
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -187,13 +187,10 @@ public:
 #pragma endregion ImGui
 #pragma region Streamline
 	bool mSLInitialised = false;
-	// sl::log::ILog* mLog;
 	sl::Preferences mPref;
 	UIData m_ui;
 
 	void UpdateFeatureAvailable();
-	// void logFunctionCallback(sl::LogType type, const char* msg);
-	// sl::Resource allocateResourceCallback(const sl::ResourceAllocationDesc* resDesc, void* device);
 	std::wstring GetSlInterposerDllLocation();
 	bool InitSLLog();
 	bool LoadStreamline();
@@ -201,6 +198,9 @@ public:
 
 	bool BeginFrame();
 	void SLFrameInit();
+
+	// struct & support functions
+	sl::Constants m_slConstants = {};
 
 	struct PipelineCallbacks {
 		std::function<void(AppBase&, uint32_t)> beforeFrame = nullptr;
@@ -236,9 +236,106 @@ public:
 	bool m_reflex_driverFlashIndicatorEnable = false;
 	bool m_pcl_available = false;
 
+	// For Streamline
 	sl::FrameToken* m_currentFrame;
 	sl::ViewportHandle m_viewport = { 0 };
+	sl::Extent m_backbufferViewportExtent{};
 
+	struct DLSSSettings
+	{
+		donut::math::int2 optimalRenderSize;
+		donut::math::int2 minRenderSize;
+		donut::math::int2 maxRenderSize;
+		float sharpness;
+	} m_RecommendedDLSSSettings;
+
+	donut::math::int2 m_DLSS_Last_DisplaySize = { 0,0 };
+
+	donut::math::int2 m_RenderingRectSize = { 0, 0 };
+
+	donut::math::int2 m_RenderSize;// size of render targets pre-DLSS
+	donut::math::int2 m_DisplaySize; // size of render targets post-DLSS
+
+	std::default_random_engine m_Generator;
+	float m_PreviousLodBias;
+
+
+	sl::DLSSMode DLSS_Last_Mode = sl::DLSSMode::eOff;
+
+	void SetSLConsts(const sl::Constants& consts);
+	void FeatureLoad(sl::Feature feature, const bool turn_on);
+	
+	// Tag 지정 방법
+	// SL_API sl::Result slSetTagForFrame(const sl::FrameToken& frame, const sl::ViewportHandle& viewport, const sl::ResourceTag* resources, uint32_t numResources, sl::CommandBuffer* cmdBuffer);
+	// SL_API sl::Result slSetTag(const sl::ViewportHandle& viewport, const sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer);
+	void TagResources_General(
+		nvrhi::ICommandList* commandList,
+		const donut::engine::IView* view,
+		nvrhi::ITexture* motionVectors,
+		nvrhi::ITexture* depth,
+		nvrhi::ITexture* finalColorHudless);
+
+	void TagResources_DLSS_NIS(
+		nvrhi::ICommandList* commandList,
+		const donut::engine::IView* view,
+		nvrhi::ITexture* output,
+		nvrhi::ITexture* input);
+
+	void TagResources_DLSS_FG(
+		nvrhi::ICommandList* commandList,
+		bool validViewportExtent = false,
+		sl::Extent backBufferExtent = {});
+
+	void TagResources_DeepDVC(
+		ID3D12CommandList& commandList,
+		const donut::engine::IView* view,
+		nvrhi::ITexture* output);
+
+	void UnTagResources_DeepDVC();
+
+	void TagResources_Latewarp(
+		nvrhi::ICommandList* commandList,
+		const donut::engine::IView* view,
+		nvrhi::ITexture* backbuffer,
+		nvrhi::ITexture* uiColorAlpha,
+		nvrhi::ITexture* noWarpMask,
+		sl::Extent backBufferExtent);
+
+	// DLSS
+	void SetDLSSOptions(const sl::DLSSOptions consts);
+	bool GetDLSSAvailable() { return m_dlss_available; }
+	bool GetDLSSLastEnable() { return m_dlss_consts.mode != sl::DLSSMode::eOff; }
+	void QueryDLSSOptimalSettings(DLSSSettings& settings);
+	void EvaluateDLSS(ID3D12CommandList* commandList);
+	void CleanupDLSS(bool wfi);
+
+	// NIS
+	void SetNISOptions(const sl::NISOptions consts);
+	bool GetNISAvailable() { return m_nis_available; }
+	bool GetNISLastEnable() { return m_nis_consts.mode != sl::NISMode::eOff; }
+	void EvaluateNIS(ID3D12CommandList* commandList);
+	void CleanupNIS(bool wfi);
+
+	// DeepDVC
+	void SetDeepDVCOptions(const sl::DeepDVCOptions consts);
+	bool GetDeepDVCAvailable() { return m_deepdvc_available; }
+	bool GetDeepDVCLastEnable() { return m_deepdvc_consts.mode != sl::DeepDVCMode::eOff; }
+	void QueryDeepDVCState(uint64_t& estimatedVRamUsage);
+	void EvaluateDeepDVC(ID3D12CommandList* commandList);
+	void CleanupDeepDVC();
+
+	// Reflex
+	bool GetReflexAvailable() { return m_reflex_available; }
+	bool GetPCLAvailable() const { return m_pcl_available; }
+	static void Callback_FrameCount_Reflex_Sleep_Input_SimStart(AppBase& manager);
+
+	void ReflexTriggerFlash();
+	void ReflexTriggerPcPing();
+	void QueryReflexStats(bool& reflex_lowLatencyAvailable, bool& reflex_flashAvailable, std::string& stats);
+	void SetReflexFlashIndicator(bool enabled) { m_reflex_driverFlashIndicatorEnable = enabled; }
+	bool GetReflexFlashIndicatorEnable() { return m_reflex_driverFlashIndicatorEnable; }
+
+	void SetReflexConsts(const sl::ReflexOptions consts);
 	void ReflexCallback_Sleep(AppBase& manager, uint32_t frameID);
 	void ReflexCallback_SimStart(AppBase& manager, uint32_t frameID);
 	void ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID);
@@ -246,10 +343,7 @@ public:
 	void ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID);
 	void ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID);
 	void ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID);
-
-	void QueryDeepDVCState(uint64_t& estimatedVRamUsage);
-	void SetReflexConsts(const sl::ReflexOptions options);
-
+	sl::FrameToken* GetCurrentFrameToken() { return m_currentFrame; }
 	// DLSSG
 	void SetDLSSGOptions(const sl::DLSSGOptions consts);
 	bool GetDLSSGAvailable() { return m_dlssg_available; }
@@ -261,7 +355,27 @@ public:
 	void Quiet_DLSSG_SwapChainRecreation() { m_dlssg_triggerswapchainRecreation = false; }
 	void CleanupDLSSG(bool wfi);
 
+	// Latewarp
+	bool GetLatewarpAvailable() { return m_latewarp_available; }
+	void Set_Latewarp_SwapChainRecreation(bool on) { m_latewarp_triggerSwapchainRecreation = true; m_latewarp_shouldLoad = on; }
+	bool Get_Latewarp_SwapChainRecreation(bool& turn_on) const { turn_on = m_latewarp_shouldLoad; return m_latewarp_triggerSwapchainRecreation; }
+	void Quiet_Latewarp_SwapChainRecreation() { m_latewarp_triggerSwapchainRecreation = false; }
+	void EvaluateLatewarp() {}
+
+	// 
+	bool IsUpdateRequired(donut::math::int2 renderSize, donut::math::int2 displaySize) const
+	{
+		if (any(m_RenderSize != renderSize) || any(m_DisplaySize != displaySize)) return true;
+		return false;
+	}
+
+	bool SetupView();
+
+
 #pragma endregion Streamline
+	double mMSpFrame = 0.0;
+	double mSpFrame = 0.0;
+	double mFPS = 0.0;
 
 	// Root assets path.
 	std::wstring mAssetsPath;
