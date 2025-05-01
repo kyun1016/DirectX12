@@ -130,6 +130,8 @@ int AppBase::Run()
 
 	mTimer.Reset();
 
+	UpdateFeatureAvailable();
+
 	while (msg.message != WM_QUIT)
 	{
 		// If there are Window messages then process them.
@@ -156,9 +158,14 @@ int AppBase::Run()
 				// New Function
 				SLFrameInit();
 
+				if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, mFrameCount);
 				Update();
+				if (m_callbacks.afterAnimate) m_callbacks.afterAnimate(*this, mFrameCount);
+
+				if (m_callbacks.beforeRender) m_callbacks.beforeRender(*this, mFrameCount);
 				Render();
 				RenderImGui();
+				if (m_callbacks.afterRender) m_callbacks.afterRender(*this, mFrameCount);
 
 				// Done recording commands.
 				ThrowIfFailed(mCommandList->Close());
@@ -1090,6 +1097,72 @@ void AppBase::ShowImguiViewport(bool* p_open)
 }
 
 
+void AppBase::UpdateFeatureAvailable()
+{
+	sl::AdapterInfo adapterInfo;
+
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12) {
+		// auto a = ((ID3D12Device*)m_Device->getNativeObject(nvrhi::ObjectTypes::D3D12_Device))->GetAdapterLuid();
+		auto a = mDevice->GetAdapterLuid();
+		adapterInfo.deviceLUID = (uint8_t*)&a;
+		adapterInfo.deviceLUIDSizeInBytes = sizeof(LUID);
+	}
+	else
+	{
+		SL_LOG_WARN("Abnormal API");
+	}
+
+	// Check if features are fully functional (2nd call of slIsFeatureSupported onwards)
+	m_dlss_available = slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo) == sl::Result::eOk;
+	if (m_dlss_available) 
+	{
+		SL_LOG_INFO("DLSS is supported on this system.");
+	}
+	else SL_LOG_WARN("DLSS is not fully functional on this system.");
+
+	m_nis_available = slIsFeatureSupported(sl::kFeatureNIS, adapterInfo) == sl::Result::eOk;
+	if (m_nis_available)
+	{
+		SL_LOG_INFO("NIS is supported on this system.");
+	}
+	else SL_LOG_WARN("NIS is not fully functional on this system.");
+
+	m_dlssg_available = slIsFeatureSupported(sl::kFeatureDLSS_G, adapterInfo) == sl::Result::eOk;
+	if (m_dlssg_available)
+	{
+		SL_LOG_INFO("DLSS-G is supported on this system.");
+	}
+	else SL_LOG_WARN("DLSS-G is not fully functional on this system.");
+
+	m_reflex_available = slIsFeatureSupported(sl::kFeatureReflex, adapterInfo) == sl::Result::eOk;
+	if (m_reflex_available)
+	{
+		SL_LOG_INFO("Reflex is supported on this system.");
+	}
+	else SL_LOG_WARN("Reflex is not fully functional on this system.");
+
+	m_pcl_available = SuccessCheck(slIsFeatureSupported(sl::kFeaturePCL, adapterInfo), "slIsFeatureSupported_PCL");
+	if (m_pcl_available)
+	{
+		SL_LOG_INFO("PCL is supported on this system.");
+	}
+	else SL_LOG_WARN("PCL is not fully functional on this system.");
+
+	m_deepdvc_available = slIsFeatureSupported(sl::kFeatureDeepDVC, adapterInfo) == sl::Result::eOk;
+	if (m_deepdvc_available)
+	{
+		SL_LOG_INFO("DeepDVC is supported on this system.");
+	}
+	else SL_LOG_WARN("DeepDVC is not fully functional on this system.");
+
+	m_latewarp_available = slIsFeatureSupported(sl::kFeatureLatewarp, adapterInfo) == sl::Result::eOk;
+	if (m_latewarp_available)
+	{
+		SL_LOG_INFO("Latewarp is supported on this system.");
+	}
+	else SL_LOG_WARN("Latewarp is not fully functional on this system.");
+}
+
 std::wstring AppBase::GetSlInterposerDllLocation() {
 
 	wchar_t path[MAX_PATH] = { 0 };
@@ -1486,7 +1559,119 @@ bool AppBase::BeginFrame()
 
 void AppBase::SLFrameInit()
 {
+	if (m_ui.Resolution_changed) {
+		m_ui.Resolution.x = mParam.backBufferWidth;
+		m_ui.Resolution.y = mParam.backBufferHeight;
+		m_ui.Resolution_changed = false;
+	}
 
+	QueryDeepDVCState(m_ui.DeepDVC_VRAM);
+
+	if (m_dlssg_available)
+	{
+		bool& prevDlssgWanted = m_dlssg_shoudLoad;
+		bool dlssgWanted = (m_ui.DLSSG_mode != sl::DLSSGMode::eOff);
+
+		// If there is a change, trigger a swapchain recreation
+		if (prevDlssgWanted != dlssgWanted)
+		{
+			m_dlssg_triggerswapchainRecreation = true;
+			m_dlssg_shoudLoad = dlssgWanted;
+		}
+
+		// This is where DLSS-G is toggled On and Off (using dlssgConst.mode) and where we set DLSS-G parameters.  
+		auto dlssgConst = sl::DLSSGOptions{};
+		dlssgConst.mode = m_ui.DLSSG_mode;
+		dlssgConst.numFramesToGenerate = m_ui.DLSSG_numFrames - 1; // ui is multiplier (e.g. 2x), subtract 1 to count generated frames only
+
+		// Explicitly manage DLSS-G resources in order to prevent stutter when
+		// temporarily disabled.
+		dlssgConst.flags |= sl::DLSSGFlags::eRetainResourcesWhenOff;
+
+		// Turn off DLSSG if we are changing the UI
+		if (m_ui.MouseOverUI) {
+			dlssgConst.mode = sl::DLSSGMode::eOff;
+		}
+		if (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC)
+		{
+			dlssgConst.flags |= sl::DLSSGFlags::eDynamicResolutionEnabled;
+			dlssgConst.dynamicResWidth = mParam.backBufferWidth / 2;
+			dlssgConst.dynamicResHeight = mParam.backBufferHeight / 2;
+		}
+
+		// This is where we query DLSS-G minimum swapchain size
+		uint64_t estimatedVramUsage;
+		sl::DLSSGStatus status;
+		int fps_multiplier;
+		int minSize = 0;
+		int numFramesMaxMultiplier = 0;
+		void* pDLSSGInputsProcessingFence{};
+		uint64_t lastPresentDLSSGInputsProcessingFenceValue{};
+		auto lastDLSSGFenceValue = m_dlssg_settings.lastPresentInputsProcessingCompletionFenceValue;
+		QueryDLSSGState(estimatedVramUsage, fps_multiplier, status, minSize, numFramesMaxMultiplier, pDLSSGInputsProcessingFence, lastPresentDLSSGInputsProcessingFenceValue);
+		m_ui.DLSSG_numFramesMaxMultiplier = (numFramesMaxMultiplier + 1);
+		
+		if (static_cast<int>(mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Width) < minSize ||
+			static_cast<int>(mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Height) < minSize) {
+			SL_LOG_INFO("Swapchain is too small. DLSSG is disabled.");
+			dlssgConst.mode = sl::DLSSGMode::eOff;
+		}
+
+		auto dlssgEnabledLastFrame = GetDLSSGLastEnable();
+		SetDLSSGOptions(dlssgConst);
+
+		auto fenceValue = lastPresentDLSSGInputsProcessingFenceValue;
+		// This is where we query DLSS-G FPS, estimated VRAM usage and status
+		QueryDLSSGState(estimatedVramUsage, fps_multiplier, status, minSize, numFramesMaxMultiplier, pDLSSGInputsProcessingFence, lastPresentDLSSGInputsProcessingFenceValue);
+		assert(fenceValue == lastPresentDLSSGInputsProcessingFenceValue);
+
+		if (pDLSSGInputsProcessingFence != nullptr)
+		{
+			if (dlssgEnabledLastFrame)
+			{
+				if (lastPresentDLSSGInputsProcessingFenceValue == 0 || lastPresentDLSSGInputsProcessingFenceValue > lastDLSSGFenceValue)
+				{
+					// This wait is redundant until SL DLSS FG allows SMSCG but done for now for demonstration purposes.
+					// It needs to be queued before any of the inputs are modified in the subsequent command list submission.
+					// SLWrapper::Get().QueueGPUWaitOnSyncObjectSet(GetDevice(), nvrhi::CommandQueue::Graphics, pDLSSGInputsProcessingFence, lastPresentDLSSGInputsProcessingFenceValue);
+					if (mDevice != nullptr)
+						mCommandQueue->Wait(reinterpret_cast<ID3D12Fence*>(pDLSSGInputsProcessingFence), lastPresentDLSSGInputsProcessingFenceValue);
+				}
+			}
+			else
+			{
+				if (lastPresentDLSSGInputsProcessingFenceValue < lastDLSSGFenceValue)
+				{
+					assert(false);
+					SL_LOG_ERROR("Inputs synchronization fence value retrieved from DLSSGState object out of order: \
+                    current frame: %ld, last frame: %ld ", lastPresentDLSSGInputsProcessingFenceValue, lastDLSSGFenceValue);
+				}
+				else if (lastPresentDLSSGInputsProcessingFenceValue != 0)
+				{
+					SL_LOG_INFO("DLSSG was inactive in the last preseting frame!");
+				}
+			}
+		}
+
+		m_ui.DLSSG_fps = static_cast<float>(fps_multiplier * 1.0 / GetDeviceManager()->GetAverageFrameTimeSeconds());
+
+		if (status != sl::DLSSGStatus::eOk) {
+			if (status == sl::DLSSGStatus::eFailResolutionTooLow)
+				m_ui.DLSSG_status = "Resolution Too Low";
+			else if (status == sl::DLSSGStatus::eFailReflexNotDetectedAtRuntime)
+				m_ui.DLSSG_status = "Reflex Not Detected";
+			else if (status == sl::DLSSGStatus::eFailHDRFormatNotSupported)
+				m_ui.DLSSG_status = "HDR Format Not Supported";
+			else if (status == sl::DLSSGStatus::eFailCommonConstantsInvalid)
+				m_ui.DLSSG_status = "Common Constants Invalid";
+			else if (status == sl::DLSSGStatus::eFailGetCurrentBackBufferIndexNotCalled)
+				m_ui.DLSSG_status = "Common Constants Invalid";
+			SL_LOG_WARN("Encountered DLSSG State Error: ", m_ui.DLSSG_status.c_str());
+		}
+		else {
+			m_ui.DLSSG_status = "";
+		}
+	}
 
 }
 
@@ -1528,4 +1713,153 @@ bool AppBase::ShutdownDebugLayer()
 	return true;
 }
 
+void AppBase::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
+{
+	if (m_reflex_available)
+	{
+		SuccessCheck(slGetNewFrameToken(m_currentFrame, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slReflexSleep(*m_currentFrame), "Reflex_Sleep");
+	}
+}
 
+void AppBase::ReflexCallback_SimStart(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available) {
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationStart, *temp), "PCL_SimStart");
+	}
+}
+
+void AppBase::ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available)
+	{
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationEnd, *temp), "PCL_SimEnd");
+	}
+}
+
+void AppBase::ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available)
+	{
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitStart, *temp), "PCL_SubmitStart");
+	}
+}
+
+void AppBase::ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available)
+	{
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitEnd, *temp), "PCL_SubmitEnd");
+	}
+}
+
+void AppBase::ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available)
+	{
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentStart, *temp), "PCL_PresentStart");
+	}
+}
+
+void AppBase::ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID)
+{
+	if (m_pcl_available)
+	{
+		sl::FrameToken* temp;
+		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
+		SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentEnd, *temp), "PCL_PresentEnd");
+	}
+}
+
+void AppBase::QueryDeepDVCState(uint64_t& estimatedVRamUsage)
+{
+	if (!mSLInitialised || !m_deepdvc_available) {
+		SL_LOG_WARN("SL not initialised or DeepDVC not available.");
+		return;
+	}
+	sl::DeepDVCState state;
+	SuccessCheck(slDeepDVCGetState(m_viewport, state), "slDeepDVCGetState");
+	estimatedVRamUsage = state.estimatedVRAMUsageInBytes;
+}
+
+void AppBase::SetReflexConsts(const sl::ReflexOptions options)
+{
+	if (!mSLInitialised || !m_reflex_available)
+	{
+		SL_LOG_WARN("SL not initialised or Reflex not available.");
+		return;
+	}
+
+	m_reflex_consts = options;
+	SuccessCheck(slReflexSetOptions(m_reflex_consts), "Reflex_Options");
+
+	return;
+}
+
+void AppBase::SetDLSSGOptions(const sl::DLSSGOptions consts)
+{
+	if (!mSLInitialised || !m_dlssg_available) {
+		SL_LOG_WARN("SL not initialised or DLSSG not available.");
+		return;
+	}
+
+	m_dlssg_consts = consts;
+
+	SuccessCheck(slDLSSGSetOptions(m_viewport, m_dlssg_consts), "slDLSSGSetOptions");
+}
+
+void AppBase::QueryDLSSGState(uint64_t& estimatedVRamUsage, int& fps_multiplier, sl::DLSSGStatus& status, int& minSize, int& maxFrameCount, void*& pFence, uint64_t& fenceValue)
+{
+	if (!mSLInitialised || !m_dlssg_available) {
+		SL_LOG_WARN("SL not initialised or DLSSG not available.");
+		return;
+	}
+
+	SuccessCheck(slDLSSGGetState(m_viewport, m_dlssg_settings, &m_dlssg_consts), "slDLSSGGetState");
+
+	estimatedVRamUsage = m_dlssg_settings.estimatedVRAMUsageInBytes;
+	fps_multiplier = m_dlssg_settings.numFramesActuallyPresented;
+	status = m_dlssg_settings.status;
+	minSize = m_dlssg_settings.minWidthOrHeight;
+	maxFrameCount = m_dlssg_settings.numFramesToGenerateMax;
+	pFence = m_dlssg_settings.inputsProcessingCompletionFence;
+	fenceValue = m_dlssg_settings.lastPresentInputsProcessingCompletionFenceValue;
+}
+
+bool AppBase::Get_DLSSG_SwapChainRecreation(bool& turn_on) const
+{
+	turn_on = m_dlssg_shoudLoad;
+	auto tmp = m_dlssg_triggerswapchainRecreation;
+	return tmp;
+}
+
+void AppBase::CleanupDLSSG(bool wfi)
+{
+	if (!mSLInitialised) {
+		SL_LOG_WARN("SL not initialised.");
+		return;
+	}
+	if (!m_dlssg_available)
+	{
+		return;
+	}
+
+	if (wfi) {
+		// m_Device->waitForIdle();
+		FlushCommandQueue();
+	}
+
+	sl::Result status = slFreeResources(sl::kFeatureDLSS_G, m_viewport);
+	// if we've never ran the feature on this viewport, this call may return 'eErrorInvalidParameter'
+	assert(status == sl::Result::eOk || status == sl::Result::eErrorInvalidParameter || status == sl::Result::eErrorFeatureMissing);
+}

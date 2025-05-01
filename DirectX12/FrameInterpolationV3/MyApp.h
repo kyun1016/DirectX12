@@ -228,6 +228,15 @@ private:
 	int mImguiWidth = 0;
 	int mImguiHeight = 0;
 #pragma endregion Imgui
+#pragma region Streamline
+	//void ReflexCallback_Sleep(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_SimStart(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID);
+	//void ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID);
+#pragma endregion Streamline
 
 #pragma region Land
 	float GetHillsHeight(const float x, const float z) const;

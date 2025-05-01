@@ -189,7 +189,9 @@ public:
 	bool mSLInitialised = false;
 	// sl::log::ILog* mLog;
 	sl::Preferences mPref;
+	UIData m_ui;
 
+	void UpdateFeatureAvailable();
 	// void logFunctionCallback(sl::LogType type, const char* msg);
 	// sl::Resource allocateResourceCallback(const sl::ResourceAllocationDesc* resDesc, void* device);
 	std::wstring GetSlInterposerDllLocation();
@@ -199,6 +201,66 @@ public:
 
 	bool BeginFrame();
 	void SLFrameInit();
+
+	struct PipelineCallbacks {
+		std::function<void(AppBase&, uint32_t)> beforeFrame = nullptr;
+		std::function<void(AppBase&, uint32_t)> beforeAnimate = nullptr;
+		std::function<void(AppBase&, uint32_t)> afterAnimate = nullptr;
+		std::function<void(AppBase&, uint32_t)> beforeRender = nullptr;
+		std::function<void(AppBase&, uint32_t)> afterRender = nullptr;
+		std::function<void(AppBase&, uint32_t)> beforePresent = nullptr;
+		std::function<void(AppBase&, uint32_t)> afterPresent = nullptr;
+	} m_callbacks;
+
+	bool m_dlss_available = false;
+	sl::DLSSOptions m_dlss_consts{};
+
+	bool m_nis_available = false;
+	sl::NISOptions m_nis_consts{};
+
+	bool m_deepdvc_available = false;
+	sl::DeepDVCOptions m_deepdvc_consts{};  
+
+	bool m_dlssg_available = false;
+	bool m_dlssg_triggerswapchainRecreation = false;
+	bool m_dlssg_shoudLoad = false;
+	sl::DLSSGOptions m_dlssg_consts{};
+	sl::DLSSGState m_dlssg_settings{};
+
+	bool m_latewarp_available = false;
+	bool m_latewarp_triggerSwapchainRecreation = false;
+	bool m_latewarp_shouldLoad = false;
+
+	bool m_reflex_available = false;
+	sl::ReflexOptions m_reflex_consts{};
+	bool m_reflex_driverFlashIndicatorEnable = false;
+	bool m_pcl_available = false;
+
+	sl::FrameToken* m_currentFrame;
+	sl::ViewportHandle m_viewport = { 0 };
+
+	void ReflexCallback_Sleep(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_SimStart(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID);
+	void ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID);
+
+	void QueryDeepDVCState(uint64_t& estimatedVRamUsage);
+	void SetReflexConsts(const sl::ReflexOptions options);
+
+	// DLSSG
+	void SetDLSSGOptions(const sl::DLSSGOptions consts);
+	bool GetDLSSGAvailable() { return m_dlssg_available; }
+	bool GetDLSSGLastEnable() { return m_dlssg_consts.mode != sl::DLSSGMode::eOff; }
+	uint64_t GetDLSSGLastFenceValue() { return m_dlssg_settings.lastPresentInputsProcessingCompletionFenceValue; }
+	void QueryDLSSGState(uint64_t& estimatedVRamUsage, int& fps_multiplier, sl::DLSSGStatus& status, int& minSize, int& maxFrameCount, void*& pFence, uint64_t& fenceValue);
+	void Set_DLSSG_SwapChainRecreation(bool on) { m_dlssg_triggerswapchainRecreation = true; m_dlssg_shoudLoad = on; }
+	bool Get_DLSSG_SwapChainRecreation(bool& turn_on) const;
+	void Quiet_DLSSG_SwapChainRecreation() { m_dlssg_triggerswapchainRecreation = false; }
+	void CleanupDLSSG(bool wfi);
+
 #pragma endregion Streamline
 
 	// Root assets path.

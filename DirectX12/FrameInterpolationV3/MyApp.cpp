@@ -50,6 +50,15 @@ MyApp::MyApp(uint32_t width, uint32_t height, std::wstring name)
 		// mLayerCBIdx[2] = 1;
 		// mLayerCBIdx[3] = 1;
 	}
+
+
+	m_callbacks.beforeFrame = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_Sleep(m, f); };
+	m_callbacks.beforeAnimate = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_SimStart(m, f); };
+	m_callbacks.afterAnimate = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_SimEnd(m, f); };
+	m_callbacks.beforeRender = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_RenderStart(m, f); };
+	m_callbacks.afterRender = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_RenderEnd(m, f); };
+	m_callbacks.beforePresent = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_PresentStart(m, f); };
+	m_callbacks.afterPresent = [](AppBase& m, uint32_t f) { MyApp::GetInstance()->ReflexCallback_PresentEnd(m, f); };
 }
 MyApp::~MyApp()
 {
@@ -3066,3 +3075,36 @@ void MyApp::CopyRTV(const int srvIdx)
 	mCommandList->ResourceBarrier(1, &RenderBarrier);
 	mCommandList->ResourceBarrier(1, &SRVUserBufBarrier);
 }
+
+//void MyApp::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
+//{
+//
+//}
+//
+//void MyApp::ReflexCallback_SimStart(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID)
+//{
+//}
+//
+//void MyApp::ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID)
+//{
+//}
