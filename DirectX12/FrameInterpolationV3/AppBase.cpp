@@ -36,6 +36,14 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name)
 
 	UpdateForSizeChange(width, height);
 	// mCamera = make_unique<Camera>();
+
+	m_callbacks.beforeFrame = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_Sleep(m, f); };
+	m_callbacks.beforeAnimate = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_SimStart(m, f); };
+	m_callbacks.afterAnimate = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_SimEnd(m, f); };
+	m_callbacks.beforeRender = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_RenderStart(m, f); };
+	m_callbacks.afterRender = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_RenderEnd(m, f); };
+	m_callbacks.beforePresent = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_PresentStart(m, f); };
+	m_callbacks.afterPresent = [](AppBase& m, uint32_t f) { g_appBase->ReflexCallback_PresentEnd(m, f); };
 }
 
 AppBase::~AppBase()
@@ -126,6 +134,7 @@ int AppBase::Run()
 {
 	Initialize();
 
+
 	MSG msg{ 0 };
 
 	mTimer.Reset();
@@ -136,7 +145,7 @@ int AppBase::Run()
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+ 			DispatchMessage(&msg);
 		}
 		else if (mSyncEn)
 		{
@@ -153,16 +162,17 @@ int AppBase::Run()
 				//==========================================
 				CalculateFrameStats();
 
-				// New Function
-				SLFrameInit();
-
 				if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, mFrameCount);
 				Update();
 				if (m_callbacks.afterAnimate) m_callbacks.afterAnimate(*this, mFrameCount);
 
 				if (m_callbacks.beforeRender) m_callbacks.beforeRender(*this, mFrameCount);
+				// New Function
+				SLFrameInit();
 				Render();
 				RenderImGui();
+				// SLFrameSetting();
+
 				if (m_callbacks.afterRender) m_callbacks.afterRender(*this, mFrameCount);
 
 				// Done recording commands.
@@ -179,6 +189,7 @@ int AppBase::Run()
 					ImGui::RenderPlatformWindowsDefault();
 				}
 
+				if (m_callbacks.beforePresent) m_callbacks.beforePresent(*this, mFrameCount);
 				// Swap the back and front buffers
 				ThrowIfFailed(mSwapChain->Present(mParam.vsyncEnabled ? 1 : 0, 0));
 				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
@@ -190,6 +201,7 @@ int AppBase::Run()
 
 				// Advance the fence value to mark commands up to this fence point.
 				mCurrFrameResource->Fence = ++mFrameCount;
+				if (m_callbacks.afterPresent) m_callbacks.afterPresent(*this, mFrameCount);
 			}
 			else
 			{
@@ -1091,7 +1103,677 @@ void AppBase::ShowImguiViewport(bool* p_open)
 
 	//	ImGui::Image(my_tex_id, Imfloat2(my_tex_w, my_tex_h), uv_min, uv_max, tint_col, border_col);
 	//}
-	
+}
+void AppBase::ShowStreamlineWindow()
+{
+	ImGui::Begin("streamline", &mShowStreamlineWindow);
+
+	if (ImGui::IsAnyItemHovered() || ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y))) {
+		m_ui.MouseOverUI = true;
+	}
+	else
+		m_ui.MouseOverUI = false;
+
+	ImGui::Text("Engine FPS: %.0f ", mFPS);
+	if (m_ui.DLSSG_mode != sl::DLSSGMode::eOff) {
+		ImGui::Text("True FPS: %.0f ", m_ui.DLSSG_fps);
+	}
+	// Vsync
+	if (m_ui.DLSSG_mode != sl::DLSSGMode::eOff && !m_dev_view) {
+		pushDisabled();
+		m_ui.EnableVsync = false;
+	}
+	ImGui::Checkbox("VSync", &m_ui.EnableVsync);
+	if (m_ui.DLSSG_mode != sl::DLSSGMode::eOff && !m_dev_view) {
+		popDisabled();
+	}
+
+	// Resolution 
+	std::vector<std::string> Resolutions_strings = { "1280 x 720", "1920 x 1080", "2560 x 1440", "3840 x 2160" };
+	std::vector<donut::math::int2> Resolutions_values = { {1280, 720}, {1920, 1080}, {2560, 1440}, {3840, 2160} };
+	int resIndex = -1;
+	for (auto i = 0; i < Resolutions_values.size(); ++i) {
+		if (Resolutions_values[i].x == m_ui.Resolution.x && Resolutions_values[i].y == m_ui.Resolution.y) {
+			resIndex = i;
+		}
+	}
+	if (resIndex == -1) {
+		Resolutions_strings.push_back(std::to_string(m_ui.Resolution.x) + " x " + std::to_string(m_ui.Resolution.y) + " (custom)");
+		Resolutions_values.push_back(m_ui.Resolution);
+		resIndex = (int)Resolutions_strings.size() - 1;
+	}
+	auto preIndex = resIndex;
+	if (ImGui::BeginCombo("Resolution", Resolutions_strings[resIndex].c_str()))
+	{
+		for (auto i = 0; i < Resolutions_strings.size(); ++i)
+		{
+			bool is_selected = i == resIndex;
+			auto is_selected_pre = i == resIndex;
+			if (ImGui::Selectable(Resolutions_strings[i].c_str(), is_selected)) resIndex = i;
+			if (is_selected) ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	m_ui.Resolution = Resolutions_values[resIndex];
+	if (preIndex != resIndex) {
+		m_ui.Resolution_changed = true;
+	}
+
+	ImGui::Separator();
+	ImGui::Checkbox("Developer Menu", &m_dev_view);
+
+	if (!m_dev_view) {
+		//
+		//  Reflex & Reflex Frame Warp
+		//
+		ImGui::Separator();
+
+		ImGui::Text("Nvidia Reflex Low Latency");
+		ImGui::SameLine();
+		if (!m_ui.REFLEX_Supported) pushDisabled();
+
+		if (m_ui.DLSSG_mode != sl::DLSSGMode::eOff)
+		{
+			auto i = (int)m_ui.REFLEX_Mode - 1;
+			i = i < 0 ? 0 : i;
+			ImGui::Combo("##Reflex", &i, "On\0On + Boost\0");
+			m_ui.REFLEX_Mode = i + 1;
+		}
+		else
+		{
+			ImGui::Combo("##Reflex", (int*)&m_ui.REFLEX_Mode, "Off\0On\0On + Boost\0");
+		}
+
+		ImGui::Text("Frame Warp");
+		ImGui::SameLine();
+		if (!m_ui.Latewarp_Supported || !m_ui.REFLEX_Supported) pushDisabled();
+		ImGui::Combo("##Latewarp", &m_ui.Latewarp_active, "Off\0On\0");
+		if (!m_ui.Latewarp_Supported || !m_ui.REFLEX_Supported) popDisabled();
+
+		//
+		//  Generic DLSS
+		//
+
+		ImGui::Separator();
+
+		ImGui::Text("NVIDIA DLSS");
+		ImGui::SameLine();
+		ImGui::Combo("##DLSSMode", &m_dev_view_TopLevelDLSS, "Off\0On\0");
+
+		ImGui::Indent();
+		if (m_dev_view_TopLevelDLSS == 0) {
+			pushDisabled();
+			m_ui.DLSS_Mode = sl::DLSSMode::eOff;
+			m_dev_view_dlss_mode = 0;
+			m_ui.DLSSG_mode = sl::DLSSGMode::eOff;
+			m_ui.REFLEX_Mode = 0;
+			m_ui.NIS_Mode = sl::NISMode::eOff;
+		}
+
+
+
+		//
+		//  DLSS Frame Gen
+		//
+
+		ImGui::Text("Frame Generation");
+		ImGui::SameLine();
+		if (!m_ui.DLSSG_Supported || !m_ui.REFLEX_Supported) pushDisabled();
+		if (ImGui::Combo("##FrameGeneration", (int*)&m_ui.DLSSG_mode, "Off\0On\0Auto (Dynamic Frame Generation)\0"))
+		{
+			if (m_ui.DLSSG_mode == sl::DLSSGMode::eOff)
+			{
+				m_ui.DLSSG_cleanup_needed = true;
+			}
+		}
+		if (m_ui.DLSSG_mode != sl::DLSSGMode::eOff)
+		{
+			ImGui::Indent();
+			ImGui::Text("Generated Frames");
+			ImGui::SameLine();
+			ImGui::SliderInt("##MultiframeCount", &m_ui.DLSSG_numFrames, 2, m_ui.DLSSG_numFramesMaxMultiplier, "%dx", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::Unindent();
+		}
+		if (!m_ui.DLSSG_Supported || !m_ui.REFLEX_Supported) popDisabled();
+		if (m_ui.DLSSG_status != "") ImGui::Text((std::string("State: ") + m_ui.DLSSG_status).c_str());
+
+		//
+		//  DLSS SuperRes
+		//
+
+		auto DLSSModeNames = std::vector<std::string>({
+			"Off##DLSSModes",
+			"Auto##DLSSModes",
+			"Quality##DLSSModes",
+			"Balanced##DLSSModes",
+			"Performance##DLSSModes",
+			"UltraPerformance##DLSSModes",
+			"DLAA##DLSSModes"
+			});
+
+		ImGui::Text("Super Resolution");
+		ImGui::SameLine();
+		if (!m_ui.DLSS_Supported) pushDisabled();
+		if (ImGui::BeginCombo("##SuperRes", DLSSModeNames[m_dev_view_dlss_mode].data()))
+		{
+			for (int i = 0; i < DLSSModeNames.size(); ++i)
+			{
+				bool is_selected = i == m_dev_view_dlss_mode;
+
+				if (ImGui::Selectable(DLSSModeNames[i].data(), is_selected)) m_dev_view_dlss_mode = i;
+				if (is_selected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+			if (ImGui::IsItemHovered()) m_ui.MouseOverUI = true;
+		}
+
+		if (!m_ui.DLSS_Supported) popDisabled();
+
+		if (m_dev_view_dlss_mode == 0) m_ui.DLSS_Mode = sl::DLSSMode::eOff;
+		else if (m_dev_view_dlss_mode == 2) m_ui.DLSS_Mode = sl::DLSSMode::eMaxQuality;
+		else if (m_dev_view_dlss_mode == 3) m_ui.DLSS_Mode = sl::DLSSMode::eBalanced;
+		else if (m_dev_view_dlss_mode == 4) m_ui.DLSS_Mode = sl::DLSSMode::eMaxPerformance;
+		else if (m_dev_view_dlss_mode == 5) m_ui.DLSS_Mode = sl::DLSSMode::eUltraPerformance;
+		//else if (m_dev_view_dlss_mode == 6) m_ui.DLSS_Mode = sl::DLSSMode::eUltraQuality;
+		else if (m_dev_view_dlss_mode == 6) m_ui.DLSS_Mode = sl::DLSSMode::eDLAA;
+		else if (m_dev_view_dlss_mode == 1) {
+			if (m_ui.Resolution.x < 1920) m_ui.DLSS_Mode = sl::DLSSMode::eOff;
+			else if (m_ui.Resolution.x < 2560) m_ui.DLSS_Mode = sl::DLSSMode::eMaxQuality;
+			else if (m_ui.Resolution.x < 3840) m_ui.DLSS_Mode = sl::DLSSMode::eMaxPerformance;
+			else m_ui.DLSS_Mode = sl::DLSSMode::eUltraPerformance;
+		}
+
+		if (m_ui.DLSS_Mode != sl::DLSSMode::eOff) {
+			m_ui.AAMode = UIData::AntiAliasingMode::DLSS;
+		}
+		else {
+			m_ui.AAMode = UIData::AntiAliasingMode::NONE;
+		}
+
+		//
+		//  NIS Sharpening
+		//
+
+		ImGui::Text("NIS Sharpening");
+		ImGui::SameLine();
+		if (!m_ui.NIS_Supported) pushDisabled();
+		int nis_mode = m_ui.NIS_Mode == sl::NISMode::eScaler ? 1 : 0;
+		ImGui::Combo("##NISMode", &nis_mode, "Off\0On\0");
+		m_ui.NIS_Mode = nis_mode == 1 ? sl::NISMode::eScaler : sl::NISMode::eOff;
+		if (nis_mode == 1)
+		{
+			ImGui::DragFloat("Sharpness", &m_ui.NIS_Sharpness, 0.05f, 0, 1);
+		}
+		if (!m_ui.NIS_Supported) popDisabled();
+
+
+		if (ImGui::IsItemHovered()) m_ui.MouseOverUI = true;
+
+		if (m_ui.REFLEX_Mode != 0) {
+			ImGui::Indent();
+			bool useFrameCap = m_ui.REFLEX_CapedFPS != 0;
+			ImGui::Checkbox("Reflex FPS Capping", &useFrameCap);
+			if (useFrameCap) {
+				if (m_ui.REFLEX_CapedFPS == 0) { m_ui.REFLEX_CapedFPS = 60; }
+				ImGui::SameLine();
+				ImGui::DragInt("##FPSReflexCap", &m_ui.REFLEX_CapedFPS, 1.f, 20, 240);
+			}
+			else {
+				m_ui.REFLEX_CapedFPS = 0;
+			}
+			ImGui::Unindent();
+		}
+
+		if (!m_ui.REFLEX_Supported) popDisabled();
+
+		if (m_dev_view_TopLevelDLSS == 0) popDisabled();
+		ImGui::Unindent();
+
+		//
+		//  DeepDVC
+		//
+
+		ImGui::Separator();
+		ImGui::Text("NVIDIA DeepDVC");
+		ImGui::Indent();
+		ImGui::Text("Supported: %s", m_ui.DeepDVC_Supported ? "yes" : "no");
+		if (m_ui.DeepDVC_Supported) {
+			int deeoDVC_mode = m_ui.DeepDVC_Mode == sl::DeepDVCMode::eOn ? 1 : 0;
+			ImGui::Text("DeepDVC Mode");
+			ImGui::SameLine();
+			ImGui::Combo("##DeepDVC Mode", &deeoDVC_mode, "Off\0On\0");
+			m_ui.DeepDVC_Mode = deeoDVC_mode == 1 ? sl::DeepDVCMode::eOn : sl::DeepDVCMode::eOff;
+			if (m_ui.DeepDVC_Mode == sl::DeepDVCMode::eOn)
+			{
+				ImGui::Text("VRAM = %4.2f MB", m_ui.DeepDVC_VRAM / 1024 / 1024.0f);
+				ImGui::Text("Intensity");
+				ImGui::SameLine();
+				ImGui::DragFloat("##Intensity", &m_ui.DeepDVC_Intensity, 0.01f, 0, 1);
+				ImGui::Text("Saturation Boost");
+				ImGui::SameLine();
+				ImGui::DragFloat("##Saturation Boost", &m_ui.DeepDVC_SaturationBoost, 0.01f, 0, 1);
+			}
+		}
+
+
+	}
+
+	else { // if m_dev_view
+
+		//
+		// DLSS SuperRes and AA
+		//
+
+		ImGui::Separator();
+		ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+		ImGui::Text("AA and DLSS");
+		ImGui::PopStyleColor();
+
+		ImGui::Text("DLSS_Supported: %s", m_ui.DLSS_Supported ? "yes" : "no");
+
+		if (m_ui.DLSS_Supported) {
+			ImGui::Combo("AA Mode", (int*)&m_ui.AAMode, "None\0TemporalAA\0DLSS\0");
+		}
+		else {
+			ImGui::Combo("TAA Fallback", (int*)&m_ui.AAMode, "None\0TemporalAA");
+		}
+
+		if (m_ui.AAMode == UIData::AntiAliasingMode::TEMPORAL) {
+			ImGui::Combo("TAA Camera Jitter", (int*)&m_ui.TemporalAntiAliasingJitter, "MSAA\0Halton\0R2\0White Noise\0");
+		}
+
+
+		if (m_ui.AAMode == UIData::AntiAliasingMode::DLSS)
+		{
+			if (m_ui.DLSS_Mode == sl::DLSSMode::eOff) m_ui.DLSS_Mode = sl::DLSSMode::eBalanced;
+
+			// We do not show 'eOff' 
+			const char* DLSSModeNames[] = {
+				"Off",
+				"Performance",
+				"Balanced",
+				"Quality",
+				"Ultra-Performance",
+				"Ultra-Quality",
+				"DLAA"
+			};
+
+			if (ImGui::BeginCombo("DLSS Mode", DLSSModeNames[(int)m_ui.DLSS_Mode]))
+			{
+				for (int i = 0; i < static_cast<int>(sl::DLSSMode::eCount); ++i)
+				{
+					if ((i == static_cast<int>(sl::DLSSMode::eUltraQuality)) || (i == static_cast<int>(sl::DLSSMode::eOff))) continue;
+
+					bool is_selected = (i == (int)m_ui.DLSS_Mode);
+
+					if (ImGui::Selectable(DLSSModeNames[i], is_selected)) {
+						m_ui.DLSS_Mode = (sl::DLSSMode)i;
+					}
+					if (is_selected) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			auto PresetSlotNames = std::vector<std::string>({
+				"Off##Presets",
+				"MaxPerformance##Presets",
+				"Balanced##Presets",
+				"MaxQuality##Presets",
+				"UltraPerformance##Presets",
+				"UltraQuality##Presets",
+				"DLAA##Presets"
+				});
+
+			const std::map<sl::DLSSPreset, std::string> DLSSPresetToDropdownMap = {
+				{sl::DLSSPreset::eDefault, "Default##Presets"},
+				{sl::DLSSPreset::ePresetA, "Preset A##Presets"},
+				{sl::DLSSPreset::ePresetB, "Preset B##Presets"},
+				{sl::DLSSPreset::ePresetC, "Preset C##Presets"},
+				{sl::DLSSPreset::ePresetD, "Preset D##Presets"},
+				{sl::DLSSPreset::ePresetE, "Preset E##Presets"},
+				{sl::DLSSPreset::ePresetF, "Preset F##Presets"},
+				{sl::DLSSPreset::ePresetJ, "Preset J##Presets"},
+			};
+
+			if (ImGui::CollapsingHeader("Presets")) {
+				ImGui::Indent();
+
+				for (int j = 0; j < static_cast<int>(sl::DLSSMode::eCount); j++) {
+
+					if ((j == static_cast<int>(sl::DLSSMode::eUltraQuality)) || (j == static_cast<int>(sl::DLSSMode::eOff))) continue;
+
+					const std::string* currentPresetString = nullptr;
+
+					auto currentPreset = DLSSPresetToDropdownMap.find(m_ui.DLSS_presets[j]);
+
+					if (currentPreset != DLSSPresetToDropdownMap.end()) {
+						currentPresetString = &DLSSPresetToDropdownMap.at(m_ui.DLSS_presets[j]);
+					}
+					else {
+						currentPresetString = &DLSSPresetToDropdownMap.at(sl::DLSSPreset::eDefault);
+						SL_LOG_INFO("Warning: There is a mismatch in the preset supported by the sample and the preset selected by the snippet");
+					}
+
+					if (ImGui::BeginCombo(PresetSlotNames[j].c_str(), currentPresetString->data())) {
+						for (const auto& [presetEnum, presetName] : DLSSPresetToDropdownMap) {
+
+							bool is_selected = (presetEnum == m_ui.DLSS_presets[j]);
+
+							if (ImGui::Selectable(presetName.data(), is_selected)) m_ui.DLSS_presets[j] = presetEnum;
+							if (is_selected) ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+						if (ImGui::IsItemHovered()) m_ui.MouseOverUI = true;
+					}
+				}
+				ImGui::Unindent();
+			}
+
+			static const char* DLSSResModeNames[] = {
+				"Fixed",
+				"Dynamic"
+			};
+
+			if (ImGui::BeginCombo("DLSS Resolution Mode", DLSSResModeNames[(int)m_ui.DLSS_Resolution_Mode]))
+			{
+				for (int i = 0; i < (int)UIData::RenderingResolutionMode::COUNT; ++i)
+				{
+					bool is_selected = (i == (int)m_ui.DLSS_Resolution_Mode);
+					if (ImGui::Selectable(DLSSResModeNames[i], is_selected)) m_ui.DLSS_Resolution_Mode = (UIData::RenderingResolutionMode)i;
+					if (is_selected) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC)
+			{
+				if (ImGui::Button("Change Res"))
+				{
+					m_ui.DLSS_Dynamic_Res_change = true;
+				}
+			}
+
+			ImGui::Checkbox("Debug: Show full input buffer", &m_ui.DLSS_DebugShowFullRenderingBuffer);
+			ImGui::Checkbox("Debug: Force Extent use", &m_ui.DLSS_always_use_extents);
+
+			ImGui::Checkbox("Overide LOD Bias", &m_ui.DLSS_lodbias_useoveride);
+			if (m_ui.DLSS_lodbias_useoveride) {
+				ImGui::SameLine();
+				ImGui::SliderFloat("", &m_ui.DLSS_lodbias_overide, -2, 2);
+			}
+
+		}
+
+		//
+		// Reflex
+		//
+
+		ImGui::Separator();
+		ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+		ImGui::Text("Reflex");
+		ImGui::PopStyleColor();
+
+		ImGui::Text("Reflex Supported (PCL tracking): %s", m_ui.REFLEX_Supported ? "yes" : "no");
+		ImGui::Text("Reflex LowLatency Supported: %s", m_ui.REFLEX_LowLatencyAvailable ? "yes" : "no");
+		if (m_ui.REFLEX_Supported && m_ui.REFLEX_LowLatencyAvailable) {
+			ImGui::Combo("Reflex Low Latency", (int*)&m_ui.REFLEX_Mode, "Off\0On\0On + Boost\0");
+
+			bool useFrameCap = m_ui.REFLEX_CapedFPS != 0;
+			ImGui::Checkbox("Reflex FPS Capping", &useFrameCap);
+
+			if (useFrameCap) {
+				if (m_ui.REFLEX_CapedFPS == 0) { m_ui.REFLEX_CapedFPS = 60; }
+				ImGui::SameLine();
+				ImGui::DragInt("##FPSReflexCap", &m_ui.REFLEX_CapedFPS, 1.f, 20, 240);
+			}
+			else {
+				m_ui.REFLEX_CapedFPS = 0;
+			}
+
+			if (ImGui::CollapsingHeader("Stats Report")) {
+				ImGui::Indent();
+				ImGui::Text(m_ui.REFLEX_Stats.c_str());
+				ImGui::Unindent();
+			}
+		}
+
+		ImGui::Text("Frame Warp");
+		ImGui::SameLine();
+		if (!m_ui.Latewarp_Supported || !m_ui.REFLEX_Supported) pushDisabled();
+		ImGui::Combo("##Latewarp", &m_ui.Latewarp_active, "Off\0On\0");
+		if (!m_ui.Latewarp_Supported || !m_ui.REFLEX_Supported) popDisabled();
+
+		//
+		// DLSS Frame Generatioon
+		//
+
+		ImGui::Separator();
+		ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+		ImGui::Text("DLSS-G");
+		ImGui::PopStyleColor();
+
+		ImGui::Text("DLSS-G Supported: %s", m_ui.DLSSG_Supported ? "yes" : "no");
+		if (m_ui.DLSSG_Supported) {
+
+			if (m_ui.REFLEX_Mode == (int)sl::ReflexMode::eOff) {
+				ImGui::Text("Reflex needs to be enabled for DLSSG to be enabled");
+				m_ui.DLSSG_mode = sl::DLSSGMode::eOff;
+			}
+			else {
+				if (ImGui::Combo("DLSS-G Mode", (int*)&m_ui.DLSSG_mode, "Off\0On\0Auto (Dynamic Frame Generation)\0"))
+				{
+					if (m_ui.DLSSG_mode == sl::DLSSGMode::eOff)
+					{
+						m_ui.DLSSG_cleanup_needed = true;
+					}
+				}
+			}
+
+
+		}
+
+
+		//
+		//  NIS Sharpening
+		//
+
+		ImGui::Separator();
+		ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+		ImGui::Text("NIS Sharpening");
+		ImGui::PopStyleColor();
+
+		ImGui::Text("NIS Supported: %s", m_ui.NIS_Supported ? "yes" : "no");
+
+		if (m_ui.NIS_Supported) {
+			int nis_mode = m_ui.NIS_Mode == sl::NISMode::eScaler ? 1 : 0;
+			ImGui::Combo("NIS Mode", &nis_mode, "Off\0On\0");
+			m_ui.NIS_Mode = nis_mode == 1 ? sl::NISMode::eScaler : sl::NISMode::eOff;
+			ImGui::DragFloat("Sharpness", &m_ui.NIS_Sharpness, 0.05f, 0, 1);
+		}
+
+		//
+		//  Additional Settings
+		//
+
+		ImGui::Separator();
+
+		if (ImGui::CollapsingHeader("Additional settings")) {
+
+			ImGui::Indent();
+
+			// Scene
+			ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+			ImGui::Text("Scene");
+			ImGui::PopStyleColor();
+
+			// // Scene 
+			// const std::string currentScene = m_app->GetCurrentSceneName();
+			// if (ImGui::BeginCombo("Scene", currentScene.c_str()))
+			// {
+			// 	const std::vector<std::string>& scenes = m_app->GetAvailableScenes();
+			// 	for (const std::string& scene : scenes)
+			// 	{
+			// 		bool is_selected = scene == currentScene;
+			// 		if (ImGui::Selectable(scene.c_str(), is_selected))
+			// 			m_app->SetCurrentSceneName(scene);
+			// 		if (is_selected)
+			// 			ImGui::SetItemDefaultFocus();
+			// 	}
+			// 	ImGui::EndCombo();
+			// }
+
+			// Animation
+			ImGui::Checkbox("Animate", &m_ui.EnableAnimations);
+			if (m_ui.EnableAnimations) {
+				ImGui::SameLine();
+				ImGui::DragFloat("Speed", &m_ui.AnimationSpeed, 0.01f, 0.01f, 2.f);
+			}
+
+			ImGui::SliderFloat("Ambient Intensity", &m_ui.AmbientIntensity, 0.f, 1.f);
+
+			ImGui::Checkbox("Enable Procedural Sky", &m_ui.EnableProceduralSky);
+			if (m_ui.EnableProceduralSky && ImGui::CollapsingHeader("Sky Parameters"))
+			{
+				ImGui::Indent();
+				ImGui::SliderFloat("Brightness", &m_ui.SkyParams.brightness, 0.f, 1.f);
+				ImGui::SliderFloat("Glow Size", &m_ui.SkyParams.glowSize, 0.f, 90.f);
+				ImGui::SliderFloat("Glow Sharpness", &m_ui.SkyParams.glowSharpness, 1.f, 10.f);
+				ImGui::SliderFloat("Glow Intensity", &m_ui.SkyParams.glowIntensity, 0.f, 1.f);
+				ImGui::SliderFloat("Horizon Size", &m_ui.SkyParams.horizonSize, 0.f, 90.f);
+				ImGui::Unindent();
+			}
+
+			// Additional Load
+			ImGui::Separator();
+			ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+			ImGui::Text("Additional Load");
+			ImGui::PopStyleColor();
+
+			// CPU Load
+			bool enableCPULoad = m_ui.CpuLoad != 0;
+			ImGui::Checkbox("Additional CPU Load", &enableCPULoad);
+			if (enableCPULoad) {
+				if (m_ui.CpuLoad == 0) { m_ui.CpuLoad = 0.5; }
+				ImGui::SameLine();
+				ImGui::DragFloat("##CPULoad", &m_ui.CpuLoad, 1.f, 0.001f, 50);
+			}
+			else {
+				m_ui.CpuLoad = 0;
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Runs a while loop for a given number of ms");
+
+
+			// GPU Load
+			bool enableGPULoad = m_ui.GpuLoad != 0;
+			ImGui::Checkbox("Additional GPU Load", &enableGPULoad);
+			if (enableGPULoad) {
+				if (m_ui.GpuLoad == 0) { m_ui.GpuLoad = 1; }
+				ImGui::SameLine();
+				ImGui::DragInt("##GPULoad", &m_ui.GpuLoad, 1.f, 1, 300);
+			}
+			else {
+				m_ui.GpuLoad = 0;
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Repeats the Gbuffer pass an additional number of times");
+
+			ImGui::Separator();
+			ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+			ImGui::Text("Debug visualisation");
+			ImGui::PopStyleColor();
+
+			ImGui::Checkbox("Overlay Buffers", &m_ui.VisualiseBuffers);
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Shows the depth and motion vector buffers.");
+
+			// Pipeline
+			ImGui::Separator();
+			ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+			ImGui::Text("Pipeline options");
+			ImGui::PopStyleColor();
+
+			ImGui::Checkbox("Enable SSAO", &m_ui.EnableSsao);
+			ImGui::Checkbox("Enable Bloom", &m_ui.EnableBloom);
+
+			if (m_ui.EnableBloom && ImGui::CollapsingHeader("Bloom Settings"))
+			{
+				ImGui::Indent();
+				ImGui::DragFloat("Bloom Sigma", &m_ui.BloomSigma, 0.01f, 0.1f, 100.f);
+				ImGui::DragFloat("Bloom Alpha", &m_ui.BloomAlpha, 0.01f, 0.01f, 1.0f);
+				ImGui::Unindent();
+			}
+
+			ImGui::Checkbox("Enable Shadows", &m_ui.EnableShadows);
+			ImGui::Checkbox("Enable Tonemapping", &m_ui.EnableToneMapping);
+			if (m_ui.EnableToneMapping && ImGui::CollapsingHeader("ToneMapping Params"))
+			{
+				ImGui::Indent();
+				ImGui::DragFloat("Exposure Bias", &m_ui.ToneMappingParams.exposureBias, 0.1f, -2, 2);
+				ImGui::Unindent();
+			}
+
+			if (m_ui.NIS_Mode == sl::NISMode::eOff)
+			{
+				// Viewport Extent
+				ImGui::Separator();
+				ImGui::PushStyleColor(ImGuiCol_Text, TITLE_COL);
+				ImGui::Text("Backbuffer Viewport Extent");
+				ImGui::PopStyleColor();
+
+				uint32_t nViewports = (uint32_t)m_ui.BackBufferExtents.size();
+				nViewports = std::max(1u, nViewports); // can't have 0 viewports
+				std::vector<const char*> nViewports_strings = { "1", "2", "3" };
+				if (ImGui::BeginCombo("nViewports", nViewports_strings[nViewports - 1]))
+				{
+					for (auto i = 0; i < nViewports_strings.size(); ++i)
+					{
+						bool is_selected = (i == (nViewports - 1));
+						if (ImGui::Selectable(nViewports_strings[i], is_selected)) nViewports = i + 1;
+						if (is_selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+				// check if we need to add/remove viewports based on the new selection
+				if (nViewports == 3)
+				{
+					m_ui.BackBufferExtents.resize(3);
+				}
+				else if (nViewports == 2)
+				{
+					m_ui.BackBufferExtents.resize(2);
+				}
+				else
+				{
+					m_ui.BackBufferExtents.resize(1);
+					float viewportX{ static_cast<float>(m_ui.BackBufferExtents[0].left) };
+					float viewportY{ static_cast<float>(m_ui.BackBufferExtents[0].top) };
+					float viewportW{ static_cast<float>(m_ui.BackBufferExtents[0].width) };
+					float viewportH{ static_cast<float>(m_ui.BackBufferExtents[0].height) };
+
+					// ensure values set to the slider are in the valid range.
+					viewportX = std::clamp(viewportX, 0.f, static_cast<uint32_t>(viewportW) > 1 ? viewportW - 1 : 0);
+					ImGui::SliderFloat("OffsetLeft", &(viewportX), 0.f, static_cast<uint32_t>(viewportW) > 1 ? viewportW - 1 : 0);
+
+					viewportY = std::clamp(viewportY, 0.f, static_cast<uint32_t>(viewportH) > 1 ? viewportH - 1 : 0);
+					ImGui::SliderFloat("OffsetTop", &(viewportY), 0.f, static_cast<uint32_t>(viewportH) > 1 ? viewportH - 1 : 0);
+
+					int width = m_ui.Resolution.x;
+					int height = m_ui.Resolution.y;
+					viewportW = std::clamp(viewportW, 0.f, static_cast<float>(width - viewportX));
+					ImGui::SliderFloat("Width", &(viewportW), 0.f, static_cast<float>(width - viewportX));
+
+					viewportH = std::clamp(viewportH, 0.f, static_cast<float>(height - viewportY));
+					ImGui::SliderFloat("Height", &(viewportH), 0.f, static_cast<float>(height - viewportY));
+
+					m_ui.BackBufferExtents[0] = { static_cast<uint32_t>(viewportY), static_cast<uint32_t>(viewportX), static_cast<uint32_t>(viewportW), static_cast<uint32_t>(viewportH) };
+				}
+			}
+
+			ImGui::Unindent();
+
+		}
+
+	}
+
+	ImGui::End();
 
 }
 
@@ -1120,14 +1802,14 @@ void AppBase::UpdateFeatureAvailable()
 	else
 	{
 		// Check if features are fully functional (2nd call of slIsFeatureSupported onwards)
-		m_dlss_av
-			ailable = slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo) == sl::Result::eOk;
+		m_dlss_available = slIsFeatureSupported(sl::kFeatureDLSS, adapterInfo) == sl::Result::eOk;
 		if (m_dlss_available)
 		{
 			SL_LOG_INFO("DLSS is supported on this system.");
 		}
 		else SL_LOG_WARN("DLSS is not fully functional on this system.");
 	}
+	m_dlss_consts;
 	
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureNIS, requirements)))
 	{
@@ -1143,6 +1825,7 @@ void AppBase::UpdateFeatureAvailable()
 		}
 		else SL_LOG_WARN("NIS is not fully functional on this system.");
 	}
+	m_nis_consts;
 
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureDLSS_G, requirements)))
 	{
@@ -1158,6 +1841,7 @@ void AppBase::UpdateFeatureAvailable()
 		}
 		else SL_LOG_WARN("DLSS-G is not fully functional on this system.");
 	}
+	m_dlssg_consts;
 
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureReflex, requirements)))
 	{
@@ -1173,6 +1857,7 @@ void AppBase::UpdateFeatureAvailable()
 		}
 		else SL_LOG_WARN("Reflex is not fully functional on this system.");
 	}
+	m_reflex_consts;
 
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeaturePCL, requirements)))
 	{
@@ -1181,13 +1866,14 @@ void AppBase::UpdateFeatureAvailable()
 	}
 	else
 	{
-		m_pcl_available = SuccessCheck(slIsFeatureSupported(sl::kFeaturePCL, adapterInfo), "slIsFeatureSupported_PCL");
+		m_pcl_available = SuccessCheck(slIsFeatureSupported(sl::kFeaturePCL, adapterInfo), str_temp);
 		if (m_pcl_available)
 		{
 			SL_LOG_INFO("PCL is supported on this system.");
 		}
 		else SL_LOG_WARN("PCL is not fully functional on this system.");
 	}
+	m_pcl_consts;
 
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureDeepDVC, requirements)))
 	{
@@ -1203,6 +1889,7 @@ void AppBase::UpdateFeatureAvailable()
 		}
 		else SL_LOG_WARN("DeepDVC is not fully functional on this system.");
 	}
+	m_deepdvc_consts;
 
 
 	if (SL_FAILED(result, slGetFeatureRequirements(sl::kFeatureLatewarp, requirements)))
@@ -1298,11 +1985,13 @@ bool AppBase::LoadStreamline()
 			mPref.numFeaturesToLoad = static_cast<uint32_t>(std::size(myFeatures));
 			mPref.renderAPI = sl::RenderAPI::eD3D12;
 			mPref.pathToLogsAndData = L"..\\StreamlineCore\\streamline\\bin\\x64\\";
-			// mPref.flags |= PreferenceFlag::eAllowOTA | 
+			// mPref.flags &= ~sl::PreferenceFlags::eAllowOTA | ~sl::PreferenceFlags::eLoadDownloadedPlugins;
+			mPref.flags |= sl::PreferenceFlags::eAllowOTA | sl::PreferenceFlags::eLoadDownloadedPlugins;
+			// mPref.flags |= PreferenceFlags::eUseFrameBasedResourceTagging; // 태깅 관련 사라진 기능
 
-			mSLInitialised = SuccessCheck(slInit(mPref, SDK_VERSION), "slInit");
+			mSLInitialised = SuccessCheck(slInit(mPref, SDK_VERSION), str_temp);
 			if (!mSLInitialised) {
-				SL_LOG_WARN("Failed to initailze SL");
+				SL_LOG_WARN("Failed to initailze SL: %s", str_temp);
 				return false;
 			}
 
@@ -1389,7 +2078,10 @@ bool AppBase::LoadStreamline()
 	// if (mPref.renderAPI == sl::RenderAPI::eD3D11)
 	// 	SuccessCheck(slSetD3DDevice((ID3D11Device*)mDevice.Get()), "slSetD3DDevice");
 	if (mPref.renderAPI == sl::RenderAPI::eD3D12)
-		SuccessCheck(slSetD3DDevice((ID3D12Device*)mDevice.Get()), "slSetD3DDevice");
+		if (!SuccessCheck(slSetD3DDevice((ID3D12Device*)mDevice.Get()), str_temp))
+		{
+			SL_LOG_WARN(str_temp.c_str());
+		}
 	// if (mPref.renderAPI == sl::RenderAPI::eVULKAN)
 	// 	SuccessCheck(slSetVulkanInfo(*((sl::VulkanInfo*)mDevice.Get())), "slSetVulkanInfo");
 #endif
@@ -1431,7 +2123,7 @@ bool AppBase::LoadStreamline()
 	return true;
 }
 
-bool AppBase::SuccessCheck(sl::Result result, const char* location)
+bool AppBase::SuccessCheck(sl::Result result, std::string& o_log)
 {
 	if (result == sl::Result::eOk)
 		return true;
@@ -1478,11 +2170,11 @@ bool AppBase::SuccessCheck(sl::Result result, const char* location)
 
 	auto a = errors.find(result);
 	if (a != errors.end()) {
-		SL_LOG_WARN("%s", std::string("Error: ") + a->second + (location == nullptr ? "" : (std::string(" encountered in ") + std::string(location))));
+		o_log = std::string("Error: ") + a->second;
 	}	
 	else
 	{
-		SL_LOG_WARN("%s", std::string("Unknown error ") + std::to_string(static_cast<int>(result)) + (location == nullptr ? "" : (std::string(" encountered in ") + std::string(location))));
+		o_log = std::string("Unknown error ") + std::to_string(static_cast<int>(result));
 	}
 
 	return false;
@@ -1622,14 +2314,13 @@ bool AppBase::BeginFrame()
 
 void AppBase::SLFrameInit()
 {
+	// ID3D12Resource& framebuffer = mFrameResources;
+	// ID3D12Resource& framebuffer = mSwapChainBuffer[mCurrBackBuffer];
+	
+	uint32_t backbufferWidth = mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Width;
+	uint32_t backbufferHeight = mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Height;
 	// Initialize
 	bool needNewPasses = false;
-
-	if (m_ui.Resolution_changed) {
-		m_ui.Resolution.x = mParam.backBufferWidth;
-		m_ui.Resolution.y = mParam.backBufferHeight;
-		m_ui.Resolution_changed = false;
-	}
 
 	sl::Extent nullExtent{};
 	bool validViewportExtent = (m_backbufferViewportExtent != nullExtent);
@@ -1639,14 +2330,22 @@ void AppBase::SLFrameInit()
 	}
 	else
 	{
-		m_DisplaySize = donut::math::int2(mParam.backBufferWidth, mParam.backBufferHeight);
+		m_DisplaySize = donut::math::int2(backbufferWidth, backbufferHeight);
 	}
 
 	float lodBias = 0.f;
 
 	// RESIZE (from ui)
-	m_ui.Resolution.x = mParam.backBufferWidth;
-	m_ui.Resolution.y = mParam.backBufferHeight;
+	if (m_ui.Resolution_changed) {
+		m_ui.Resolution.x = mParam.backBufferWidth;
+		m_ui.Resolution.y = mParam.backBufferHeight;
+		m_ui.Resolution_changed = false;
+	}
+	else
+	{
+		m_ui.Resolution.x = backbufferWidth;
+		m_ui.Resolution.y = backbufferHeight;
+	}
 
 	// DeepDVC VRAM Usage
 	QueryDeepDVCState(m_ui.DeepDVC_VRAM);
@@ -1926,7 +2625,7 @@ void AppBase::SLFrameInit()
 		// Here, we intentionally leave the renderTargets oversized: (displaySize, displaySize) instead of (m_RenderingRectSize, displaySize), to show the power of sl::Extent
 		bool useFullSizeRenderingBuffers = m_ui.DLSS_always_use_extents || (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC);
 
-		donut::math::int2 renderSize = useFullSizeRenderingBuffers ? m_DisplaySize : m_RenderingRectSize;
+		donut::math::int2 renderSize = useFullSizeRenderingBuffers ? m_DisplaySize : m_RenderingRectSize;	// 이 구간을 통해 실제 렌더링 사이즈와 디스플레이 사이즈 중 한가지를 선택하게 만든다. (즉, 메모리 초기화 구문을 해당 위치로 수정하거나, 그외 수단을 통해 제어 조작이 필요)
 
 		if (IsUpdateRequired(renderSize, m_DisplaySize))
 		{
@@ -1960,6 +2659,103 @@ void AppBase::SLFrameInit()
 
 	}
 
+}
+
+void AppBase::SLFrameSetting()
+{
+	if (m_dlss_available)
+	{
+		//! We can also add all tags here
+		//!
+		//! NOTE: These are considered local tags and will NOT impact any tags set in global scope.
+		// const sl::BaseStructure* inputs[] = { &myViewport, &depthTag, &mvecTag, &colorInTag, &colorOutTag };
+		
+		//! Evaluates feature
+		//! 
+		//! Use this method to mark the section in your rendering pipeline
+		//! where specific feature should be injected.
+		//!
+		//! @param feature Feature we are working with
+		//! @param frame Current frame handle obtained from SL
+		//! @param inputs The chained structures providing the input data (viewport, tags, constants etc)
+		//! @param numInputs Number of inputs
+		//! @param cmdBuffer Command buffer to use (must be created on device where feature is supported)
+		//! @return sl::ResultCode::eOk if successful, error code otherwise (see sl_result.h for details)
+		//! 
+		//! IMPORTANT: Frame and viewport must match whatever is used to set common and or feature options and constants (if any)
+		//! 
+		//! NOTE: It is allowed to pass in buffer tags as inputs, they are considered to be a "local" tags and do NOT interact with
+		//! same tags sent in the global scope using slSetTag API.
+		//!
+		//! This method is NOT thread safe and requires DX/VK device to be created before calling it.
+		// SL_API sl::Result slEvaluateFeature(sl::Feature feature, const sl::FrameToken & frame, const sl::BaseStructure * *inputs, uint32_t numInputs, sl::CommandBuffer * cmdBuffer);
+		// 
+		// sl::FrameToken;
+		EvaluateDLSS(mCommandList.Get());
+	}
+	else
+	{
+		// Default up-scaling pass like, for example, TAAU goes here
+	}
+
+	// DLSS
+
+	// NOTE: Showing only depth tag for simplicity
+	//
+	// LOCAL tagging for the evaluate call, using state which is valid now on the command list we are using to evaluate DLSS
+	// sl::Resource depth = sl::Resource{ sl::ResourceType::eTex2d, myNativeObject, nullptr, nullptr, depthStateOnEval };
+	// sl::ResourceTag depthTag = sl::ResourceTag{ &depth, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &depthExtent };
+	// const sl::BaseStructure* inputs[] = { &myViewport, &depthTag };
+	// if (SL_FAILED(result, slEvaluateFeature(sl::kFeatureDLSS, currentFrameToken, inputs, _countof(inputs), myCmdList)))
+	// {
+	// 	// Handle error, check the logs
+	// }
+	// else
+	// {
+	// 	// IMPORTANT: Host is responsible for restoring state on the command list used
+	// 	restoreState(myCmdList);
+	// }
+
+	// DLSS-G
+
+	// Now we tag depth GLOBALLY with state which is valid when frame present is called
+	// sl::Resource depth = sl::Resource{ sl::ResourceType::eTex2d, myNativeObject, nullptr, nullptr, depthStateOnPresent };
+	// sl::ResourceTag depthTag = sl::ResourceTag{ &depth, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &depthExtent };
+	// if (SL_FAILED(result, slSetTagForFrame(*currentFrame, viewport, &depthTag, 1, myCmdList)))
+	// {
+	// 	// Handle error, check the logs
+	// }
+
+
+	//// 프레임 생성 추적
+	//sl::FrameToken* prevFrame;
+	//uint32_t prevIndex = *currentFrame - 1;
+	//slGetNewFrameToken(prev, &prevIndex); // NOTE: providing optional frame index
+
+	//sl::FrameToken* nextFrame;
+	//uint32_t nextIndex = *currentFrame + 1;
+	//slGetNewFrameToken(next, &nextIndex); // NOTE: providing optional frame index
+
+
+	//// 기본 세팅 옵션 확인
+	//// Using helpers from sl_dlss.h
+
+	//sl::DLSSOptimalSettings dlssSettings;
+	//sl::DLSSOptions dlssOptions;
+	//// These are populated based on user selection in the UI
+	//dlssOptions.mode = myUI->getDLSSMode(); // e.g. sl::eDLSSModeBalanced;
+	//dlssOptions.outputWidth = myUI->getOutputWidth();    // e.g 1920;
+	//dlssOptions.outputHeight = myUI->getOutputHeight(); // e.g. 1080;
+	//// Now let's check what should our rendering resolution be
+	//if (SL_FAILED(result, slDLSSGetOptimalSettings(dlssOptions, dlssSettings))
+	//{
+	//	// Handle error here
+	//}
+	//// Setup rendering based on the provided values in the sl::DLSSSettings structure
+	//myViewport->setSize(dlssSettings.renderWidth, dlssSettings.renderHeight);
+
+	//// 명시적으로 기능 로드
+	//SL_API sl::Result slSetFeatureLoaded(sl::Feature feature, bool loaded);
 }
 
 bool AppBase::InitDebugLayer()
@@ -2008,7 +2804,9 @@ void AppBase::SetSLConsts(const sl::Constants& consts)
 		return;
 	}
 
-	SuccessCheck(slSetConstants(consts, *m_currentFrame, m_viewport), "slSetConstants");
+
+	if (!SuccessCheck(slSetConstants(consts, *m_currentFrame, m_viewport), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 }
 
 void AppBase::FeatureLoad(sl::Feature feature, const bool turn_on)
@@ -2025,85 +2823,131 @@ void AppBase::FeatureLoad(sl::Feature feature, const bool turn_on)
 	}
 }
 
-void AppBase::TagResources_General(nvrhi::ICommandList* commandList, const donut::engine::IView* view, nvrhi::ITexture* motionVectors, nvrhi::ITexture* depth, nvrhi::ITexture* finalColorHudless)
+void AppBase::TagResources_General(ID3D12GraphicsCommandList* commandList, ID3D12Resource* motionVectors, ID3D12Resource* depth, ID3D12Resource* finalColorHudless)
 {
 	if (!mSLInitialised) {
 		SL_LOG_WARN("Streamline not initialised.");
 		return;
 	}
-
-	sl::Extent renderExtent{ 0, 0, depth->getDesc().width, depth->getDesc().height };
-	sl::Extent fullExtent{ 0, 0, finalColorHudless->getDesc().width, finalColorHudless->getDesc().height };
-	void* cmdbuffer = mCommandList.Get();
+	sl::Extent renderExtent{ 0, 0, depth->GetDesc().Width, depth->GetDesc().Height };
+	sl::Extent fullExtent{ 0, 0, finalColorHudless->GetDesc().Width, finalColorHudless->GetDesc().Height };
+	void* cmdbuffer = commandList;
 	sl::Resource motionVectorsResource{}, depthResource{}, finalColorHudlessResource{};
-
-	motionVectorsResource = 
-	GetSLResource(commandList, motionVectorsResource, motionVectors, view);
-	GetSLResource(commandList, depthResource, depth, view);
-	GetSLResource(commandList, finalColorHudlessResource, finalColorHudless, view);
+	GetSLResource(commandList, motionVectorsResource, motionVectors);
+	GetSLResource(commandList, depthResource, depth);
+	GetSLResource(commandList, finalColorHudlessResource, finalColorHudless);
 
 	sl::ResourceTag motionVectorsResourceTag = sl::ResourceTag{ &motionVectorsResource, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
 	sl::ResourceTag depthResourceTag = sl::ResourceTag{ &depthResource, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
 	sl::ResourceTag finalColorHudlessResourceTag = sl::ResourceTag{ &finalColorHudlessResource, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
-
 	sl::ResourceTag inputs[] = { motionVectorsResourceTag, depthResourceTag, finalColorHudlessResourceTag };
-	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_General");
+
+	if(!SuccessCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 }
 
-void AppBase::TagResources_DLSS_NIS(nvrhi::ICommandList& commandList, const donut::engine::IView* view, Texture& output, Texture& input)
+void AppBase::TagResources_DLSS_NIS(ID3D12GraphicsCommandList* commandList, ID3D12Resource* output, ID3D12Resource* input)
 {
 	if (!mSLInitialised) {
 		SL_LOG_WARN("Streamline not initialised.");
 		return;
 	}
 
-	sl::Extent renderExtent{ 0, 0, Input->getDesc().width, Input->getDesc().height };
-	sl::Extent fullExtent{ 0, 0, Output->getDesc().width, Output->getDesc().height };
-	void* cmdbuffer = GetNativeCommandList(commandList);
-	sl::Resource inputResource{};
+	sl::Extent renderExtent{ 0, 0, input->GetDesc().Width, input->GetDesc().Height };
+	sl::Extent fullExtent{ 0, 0, output->GetDesc().Width, output->GetDesc().Height };
+	void* cmdbuffer = commandList;
+	sl::Resource outputResource{}, inputResource{};
 
-	// GetSLResource(commandList, outputResource, Output, view);
-	// GetSLResource(commandList, inputResource, Input, view);
-	// sl::Resource outputResource{
-	// 	/* ResourceType	*/ .type              = sl::ResourceType::eTex2d		, //! Indicates the type of resource
-	// 	/* void*		*/ .native            = output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
-	// 	/* void*		*/ .memory            =	nullptr							, //! vkDeviceMemory or nullptr
-	// 	/* void*		*/ .view              = nullptr							, //! VkImageView/VkBufferView or nullptr
-	// 	/* uint32_t		*/ .state             = D3D12_RESOURCE_STATE_COMMON		, //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
-	// 	/* uint32_t		*/ .width             =	0								, //! Width in pixels
-	// 	/* uint32_t		*/ .height            =	0								, //! Height in pixels
-	// 	/* uint32_t		*/ .nativeFormat      =	0								, //! Native format
-	// 	/* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
-	// 	/* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
-	// 	/* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
-	// 	/* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
-	// 	/* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
-	// 	/* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
-	// };
-	sl::Resource outputResource{
-		/* ResourceType	.type              */ sl::ResourceType::eTex2d		, //! Indicates the type of resource
-		/* void*		.native            */ output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
-		/* void*		.memory            */ nullptr							, //! vkDeviceMemory or nullptr
-		/* void*		.view              */ nullptr							, //! VkImageView/VkBufferView or nullptr
-		/* uint32_t		.state             */ D3D12_RESOURCE_STATE_COMMON		 //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
-		// /* uint32_t		*/ .width             =	0								, //! Width in pixels
-		// /* uint32_t		*/ .height            =	0								, //! Height in pixels
-		// /* uint32_t		*/ .nativeFormat      =	0								, //! Native format
-		// /* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
-		// /* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
-		// /* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
-		// /* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
-		// /* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
-		// /* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
-	}
-
+	GetSLResource(commandList, outputResource, output);
+	GetSLResource(commandList, inputResource, input);
 
 	sl::ResourceTag inputResourceTag = sl::ResourceTag{ &inputResource, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
 	sl::ResourceTag outputResourceTag = sl::ResourceTag{ &outputResource, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
 
 	sl::ResourceTag inputs[] = { inputResourceTag, outputResourceTag };
-	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_dlss_nis");
+	if (!SuccessCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 }
+
+//void AppBase::TagResources_General(nvrhi::ICommandList* commandList, const donut::engine::IView* view, nvrhi::ITexture* motionVectors, nvrhi::ITexture* depth, nvrhi::ITexture* finalColorHudless)
+//{
+//	if (!mSLInitialised) {
+//		SL_LOG_WARN("Streamline not initialised.");
+//		return;
+//	}
+//
+//	sl::Extent renderExtent{ 0, 0, depth->getDesc().width, depth->getDesc().height };
+//	sl::Extent fullExtent{ 0, 0, finalColorHudless->getDesc().width, finalColorHudless->getDesc().height };
+//	void* cmdbuffer = mCommandList.Get();
+//	sl::Resource motionVectorsResource{}, depthResource{}, finalColorHudlessResource{};
+//
+//	motionVectorsResource = 
+//	GetSLResource(commandList, motionVectorsResource, motionVectors, view);
+//	GetSLResource(commandList, depthResource, depth, view);
+//	GetSLResource(commandList, finalColorHudlessResource, finalColorHudless, view);
+//
+//	sl::ResourceTag motionVectorsResourceTag = sl::ResourceTag{ &motionVectorsResource, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+//	sl::ResourceTag depthResourceTag = sl::ResourceTag{ &depthResource, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+//	sl::ResourceTag finalColorHudlessResourceTag = sl::ResourceTag{ &finalColorHudlessResource, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
+//
+//	sl::ResourceTag inputs[] = { motionVectorsResourceTag, depthResourceTag, finalColorHudlessResourceTag };
+//	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_General");
+//}
+//
+//void AppBase::TagResources_DLSS_NIS(nvrhi::ICommandList& commandList, const donut::engine::IView* view, Texture& output, Texture& input)
+//{
+//	if (!mSLInitialised) {
+//		SL_LOG_WARN("Streamline not initialised.");
+//		return;
+//	}
+//
+//	sl::Extent renderExtent{ 0, 0, Input->getDesc().width, Input->getDesc().height };
+//	sl::Extent fullExtent{ 0, 0, Output->getDesc().width, Output->getDesc().height };
+//	void* cmdbuffer = GetNativeCommandList(commandList);
+//	sl::Resource inputResource{};
+//
+//	// GetSLResource(commandList, outputResource, Output, view);
+//	// GetSLResource(commandList, inputResource, Input, view);
+//	// sl::Resource outputResource{
+//	// 	/* ResourceType	*/ .type              = sl::ResourceType::eTex2d		, //! Indicates the type of resource
+//	// 	/* void*		*/ .native            = output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
+//	// 	/* void*		*/ .memory            =	nullptr							, //! vkDeviceMemory or nullptr
+//	// 	/* void*		*/ .view              = nullptr							, //! VkImageView/VkBufferView or nullptr
+//	// 	/* uint32_t		*/ .state             = D3D12_RESOURCE_STATE_COMMON		, //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
+//	// 	/* uint32_t		*/ .width             =	0								, //! Width in pixels
+//	// 	/* uint32_t		*/ .height            =	0								, //! Height in pixels
+//	// 	/* uint32_t		*/ .nativeFormat      =	0								, //! Native format
+//	// 	/* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
+//	// 	/* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
+//	// 	/* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
+//	// 	/* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
+//	// 	/* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
+//	// 	/* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
+//	// };
+//	sl::Resource outputResource{
+//		/* ResourceType	.type              */ sl::ResourceType::eTex2d		, //! Indicates the type of resource
+//		/* void*		.native            */ output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
+//		/* void*		.memory            */ nullptr							, //! vkDeviceMemory or nullptr
+//		/* void*		.view              */ nullptr							, //! VkImageView/VkBufferView or nullptr
+//		/* uint32_t		.state             */ D3D12_RESOURCE_STATE_COMMON		 //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
+//		// /* uint32_t		*/ .width             =	0								, //! Width in pixels
+//		// /* uint32_t		*/ .height            =	0								, //! Height in pixels
+//		// /* uint32_t		*/ .nativeFormat      =	0								, //! Native format
+//		// /* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
+//		// /* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
+//		// /* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
+//		// /* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
+//		// /* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
+//		// /* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
+//	}
+//
+//
+//	sl::ResourceTag inputResourceTag = sl::ResourceTag{ &inputResource, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
+//	sl::ResourceTag outputResourceTag = sl::ResourceTag{ &outputResource, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
+//
+//	sl::ResourceTag inputs[] = { inputResourceTag, outputResourceTag };
+//	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_dlss_nis");
+//}
 
 
 void AppBase::SetDLSSOptions(const sl::DLSSOptions consts)
@@ -2114,7 +2958,15 @@ void AppBase::SetDLSSOptions(const sl::DLSSOptions consts)
 	}
 
 	m_dlss_consts = consts;
-	SuccessCheck(slDLSSSetOptions(m_viewport, m_dlss_consts), "slDLSSSetOptions");
+	
+	if(!SuccessCheck(slDLSSSetOptions(m_viewport, m_dlss_consts), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+	if(!SuccessCheck(slDLSSGetOptimalSettings(m_dlss_consts, m_dlss_settings), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+
+	// if (!SuccessCheck(slAllocateResources(sl::kFeatureDLSS, m_viewport), str_temp))
+	// 	SL_LOG_WARN(str_temp.c_str());
+	
 }
 
 void AppBase::QueryDLSSOptimalSettings(DLSSSettings& settings)
@@ -2123,6 +2975,23 @@ void AppBase::QueryDLSSOptimalSettings(DLSSSettings& settings)
 
 void AppBase::EvaluateDLSS(ID3D12CommandList* commandList)
 {
+	void* nativeCommandList = nullptr;
+
+	if (mPref.renderAPI == sl::RenderAPI::eD3D12)
+		nativeCommandList = commandList;
+
+	if (nativeCommandList == nullptr) {
+		SL_LOG_WARN("Failed to retrieve context for DLSS evaluation.");
+		return;
+	}
+
+	sl::ViewportHandle view(m_viewport);
+	const sl::BaseStructure* inputs[] = { &view };
+	if(!SuccessCheck(slEvaluateFeature(sl::kFeatureDLSS, *m_currentFrame, inputs, _countof(inputs), nativeCommandList), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+
+	//Our pipeline is very simple so we can simply clear it, but normally state tracking should be implemented.
+	// commandList->clearState();
 }
 
 void AppBase::CleanupDLSS(bool wfi)
@@ -2168,7 +3037,9 @@ void AppBase::QueryDeepDVCState(uint64_t& estimatedVRamUsage)
 		return;
 	}
 	sl::DeepDVCState state;
-	SuccessCheck(slDeepDVCGetState(m_viewport, state), "slDeepDVCGetState");
+	if (!SuccessCheck(slDeepDVCGetState(m_viewport, state), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+	
 	estimatedVRamUsage = state.estimatedVRAMUsageInBytes;
 }
 
@@ -2196,7 +3067,8 @@ void AppBase::QueryReflexStats(bool& reflex_lowLatencyAvailable, bool& reflex_fl
 {
 	if (m_reflex_available) {
 		sl::ReflexState state;
-		SuccessCheck(slReflexGetState(state), "Reflex_State");
+		if(!SuccessCheck(slReflexGetState(state), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 
 		reflex_lowLatencyAvailable = state.lowLatencyAvailable;
 		reflex_flashAvailable = state.flashIndicatorDriverControlled;
@@ -2237,7 +3109,8 @@ void AppBase::SetReflexConsts(const sl::ReflexOptions options)
 	}
 
 	m_reflex_consts = options;
-	SuccessCheck(slReflexSetOptions(m_reflex_consts), "Reflex_Options");
+	if(!SuccessCheck(slReflexSetOptions(m_reflex_consts), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 
 	return;
 }
@@ -2247,8 +3120,10 @@ void AppBase::ReflexCallback_Sleep(AppBase& manager, uint32_t frameID)
 {
 	if (m_reflex_available)
 	{
-		SuccessCheck(slGetNewFrameToken(m_currentFrame, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slReflexSleep(*m_currentFrame), "Reflex_Sleep");
+		if(!SuccessCheck(slGetNewFrameToken(m_currentFrame, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if(!SuccessCheck(slReflexSleep(*m_currentFrame), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2256,8 +3131,10 @@ void AppBase::ReflexCallback_SimStart(AppBase& manager, uint32_t frameID)
 {
 	if (m_pcl_available) {
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationStart, *temp), "PCL_SimStart");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if(!SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationStart, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2266,8 +3143,10 @@ void AppBase::ReflexCallback_SimEnd(AppBase& manager, uint32_t frameID)
 	if (m_pcl_available)
 	{
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationEnd, *temp), "PCL_SimEnd");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if(!SuccessCheck(slPCLSetMarker(sl::PCLMarker::eSimulationEnd, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2276,8 +3155,10 @@ void AppBase::ReflexCallback_RenderStart(AppBase& manager, uint32_t frameID)
 	if (m_pcl_available)
 	{
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitStart, *temp), "PCL_SubmitStart");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if(!SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitStart, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2286,8 +3167,10 @@ void AppBase::ReflexCallback_RenderEnd(AppBase& manager, uint32_t frameID)
 	if (m_pcl_available)
 	{
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitEnd, *temp), "PCL_SubmitEnd");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if (!SuccessCheck(slPCLSetMarker(sl::PCLMarker::eRenderSubmitEnd, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2296,8 +3179,10 @@ void AppBase::ReflexCallback_PresentStart(AppBase& manager, uint32_t frameID)
 	if (m_pcl_available)
 	{
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentStart, *temp), "PCL_PresentStart");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if (!SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentStart, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2306,8 +3191,10 @@ void AppBase::ReflexCallback_PresentEnd(AppBase& manager, uint32_t frameID)
 	if (m_pcl_available)
 	{
 		sl::FrameToken* temp;
-		SuccessCheck(slGetNewFrameToken(temp, &frameID), "SL_GetFrameToken");
-		SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentEnd, *temp), "PCL_PresentEnd");
+		if(!SuccessCheck(slGetNewFrameToken(temp, &frameID), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+		if (!SuccessCheck(slPCLSetMarker(sl::PCLMarker::ePresentEnd, *temp), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
 	}
 }
 
@@ -2320,7 +3207,8 @@ void AppBase::SetDLSSGOptions(const sl::DLSSGOptions consts)
 
 	m_dlssg_consts = consts;
 
-	SuccessCheck(slDLSSGSetOptions(m_viewport, m_dlssg_consts), "slDLSSGSetOptions");
+	if(!SuccessCheck(slDLSSGSetOptions(m_viewport, m_dlssg_consts), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 }
 
 void AppBase::QueryDLSSGState(uint64_t& estimatedVRamUsage, int& fps_multiplier, sl::DLSSGStatus& status, int& minSize, int& maxFrameCount, void*& pFence, uint64_t& fenceValue)
@@ -2330,7 +3218,8 @@ void AppBase::QueryDLSSGState(uint64_t& estimatedVRamUsage, int& fps_multiplier,
 		return;
 	}
 
-	SuccessCheck(slDLSSGGetState(m_viewport, m_dlssg_settings, &m_dlssg_consts), "slDLSSGGetState");
+	if(!SuccessCheck(slDLSSGGetState(m_viewport, m_dlssg_settings, &m_dlssg_consts), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
 
 	estimatedVRamUsage = m_dlssg_settings.estimatedVRAMUsageInBytes;
 	fps_multiplier = m_dlssg_settings.numFramesActuallyPresented;

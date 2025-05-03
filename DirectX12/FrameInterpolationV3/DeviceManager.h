@@ -96,7 +96,7 @@ struct UIData
         }
         return e;
     }
-private:
+// private:
     friend class UIRenderer;
     std::vector<sl::Extent>             BackBufferExtents{};
 public:

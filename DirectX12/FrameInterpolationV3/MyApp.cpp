@@ -2459,6 +2459,8 @@ void MyApp::UpdateImGui()
 		ShowViewportWindow();
 	if (mShowCubeMapWindow)
 		ShowCubeMapWindow();
+	if (mShowStreamlineWindow)
+		ShowStreamlineWindow();
 }
 
 void MyApp::ShowMainWindow()
@@ -2474,6 +2476,7 @@ void MyApp::ShowMainWindow()
 		ImGui::Checkbox("Light", &mShowLightWindow);
 		ImGui::Checkbox("Viewport", &mShowViewportWindow);
 		ImGui::Checkbox("Cubemap", &mShowCubeMapWindow);
+		ImGui::Checkbox("Streamline", &mShowStreamlineWindow);
 		ImGui::TreePop();
 	}
 

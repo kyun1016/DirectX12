@@ -9,6 +9,7 @@
 #include "../EngineCore/GameTimer.h"
 #include "../EngineCore/D3DUtil.h"
 #include "../ImGuiCore/imgui.h"
+#include "../ImGuiCore/imgui_internal.h"
 #include "FrameResource.h"
 #include "DeviceManager.h"
 
@@ -92,7 +93,7 @@ public:
 	static constexpr int APP_ID = 231313132;
 	static constexpr uint64_t SDK_VERSION = sl::kSDKVersion;
 
-	static constexpr int APP_NUM_FRAME_RESOURCES = 5;	// must bigger than 1
+	static constexpr int APP_NUM_FRAME_RESOURCES = 2;	// must bigger than 1
 	static constexpr int APP_NUM_BACK_BUFFERS = 3;
 	
 	static constexpr int APP_SRV_HEAP_SIZE = 64;
@@ -176,28 +177,48 @@ protected:
 	virtual void UpdateImGui();
 	void RenderImGui();
 	void ShowImguiViewport(bool* open);
+	void ShowStreamlineWindow();
+
+	bool mShowStreamlineWindow = false;
 public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mImGuiHeap;
 	bool mShowDemoWindow = false;
 	bool mShowAnotherWindow = false;
 	bool mShowViewport = false;
+
+	bool m_dev_view = false;
+	int m_dev_view_TopLevelDLSS = 1;
+	int m_dev_view_dlss_mode = 0;
+
+	static constexpr ImU32 TITLE_COL = IM_COL32(0, 255, 0, 255);
+
 	ID3D12DescriptorHeap* mSrvDescHeap;
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 
+	void pushDisabled() {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+	void popDisabled() {
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
 #pragma endregion ImGui
 #pragma region Streamline
 	bool mSLInitialised = false;
 	sl::Preferences mPref;
 	UIData m_ui;
+	std::string str_temp;
 
 	void UpdateFeatureAvailable();
 	std::wstring GetSlInterposerDllLocation();
 	bool InitSLLog();
 	bool LoadStreamline();
-	bool SuccessCheck(sl::Result result, const char* location);
+	bool SuccessCheck(sl::Result result, std::string& o_log);
 
 	bool BeginFrame();
 	void SLFrameInit();
+	void SLFrameSetting();
 
 	// struct & support functions
 	sl::Constants m_slConstants = {};
@@ -214,6 +235,7 @@ public:
 
 	bool m_dlss_available = false;
 	sl::DLSSOptions m_dlss_consts{};
+	sl::DLSSOptimalSettings m_dlss_settings{};
 
 	bool m_nis_available = false;
 	sl::NISOptions m_nis_consts{};
@@ -230,11 +252,13 @@ public:
 	bool m_latewarp_available = false;
 	bool m_latewarp_triggerSwapchainRecreation = false;
 	bool m_latewarp_shouldLoad = false;
+	// sl::eLowLatency;
 
 	bool m_reflex_available = false;
 	sl::ReflexOptions m_reflex_consts{};
 	bool m_reflex_driverFlashIndicatorEnable = false;
 	bool m_pcl_available = false;
+	sl::PCLOptions m_pcl_consts{};
 
 	// For Streamline
 	sl::FrameToken* m_currentFrame;
@@ -268,38 +292,45 @@ public:
 	// Tag 지정 방법
 	// SL_API sl::Result slSetTagForFrame(const sl::FrameToken& frame, const sl::ViewportHandle& viewport, const sl::ResourceTag* resources, uint32_t numResources, sl::CommandBuffer* cmdBuffer);
 	// SL_API sl::Result slSetTag(const sl::ViewportHandle& viewport, const sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer);
+	void GetSLResource(
+		ID3D12GraphicsCommandList* commandList,
+		sl::Resource& slResource,
+		ID3D12Resource* inputTex)
+	{
+		slResource = sl::Resource{ sl::ResourceType::eTex2d, inputTex, nullptr, nullptr, static_cast<uint32_t>(inputTex->GetDesc().Flags) };
+	}
+	
 	void TagResources_General(
-		nvrhi::ICommandList* commandList,
-		const donut::engine::IView* view,
-		nvrhi::ITexture* motionVectors,
-		nvrhi::ITexture* depth,
-		nvrhi::ITexture* finalColorHudless);
+		ID3D12GraphicsCommandList* commandList,
+		ID3D12Resource* motionVectors,
+		ID3D12Resource* depth,
+		ID3D12Resource* finalColorHudless);
 
 	void TagResources_DLSS_NIS(
-		nvrhi::ICommandList* commandList,
-		const donut::engine::IView* view,
-		nvrhi::ITexture* output,
-		nvrhi::ITexture* input);
+		ID3D12GraphicsCommandList* commandList,
+		ID3D12Resource* output,
+		ID3D12Resource* input);
 
-	void TagResources_DLSS_FG(
-		nvrhi::ICommandList* commandList,
-		bool validViewportExtent = false,
-		sl::Extent backBufferExtent = {});
 
-	void TagResources_DeepDVC(
-		ID3D12CommandList& commandList,
-		const donut::engine::IView* view,
-		nvrhi::ITexture* output);
+	//void TagResources_DLSS_FG(
+	//	nvrhi::ICommandList* commandList,
+	//	bool validViewportExtent = false,
+	//	sl::Extent backBufferExtent = {});
 
-	void UnTagResources_DeepDVC();
+	//void TagResources_DeepDVC(
+	//	ID3D12CommandList& commandList,
+	//	const donut::engine::IView* view,
+	//	nvrhi::ITexture* output);
 
-	void TagResources_Latewarp(
-		nvrhi::ICommandList* commandList,
-		const donut::engine::IView* view,
-		nvrhi::ITexture* backbuffer,
-		nvrhi::ITexture* uiColorAlpha,
-		nvrhi::ITexture* noWarpMask,
-		sl::Extent backBufferExtent);
+	//void UnTagResources_DeepDVC();
+
+	//void TagResources_Latewarp(
+	//	nvrhi::ICommandList* commandList,
+	//	const donut::engine::IView* view,
+	//	nvrhi::ITexture* backbuffer,
+	//	nvrhi::ITexture* uiColorAlpha,
+	//	nvrhi::ITexture* noWarpMask,
+	//	sl::Extent backBufferExtent);
 
 	// DLSS
 	void SetDLSSOptions(const sl::DLSSOptions consts);
