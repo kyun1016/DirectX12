@@ -295,7 +295,6 @@ private:
 
 	bool mUpdateBoundingMesh = false;
 	DirectX::BoundingFrustum mCamFrustum;
-	Camera mCamera;
 
 	UINT mHeapDisplacementIdx = 0;
 	UINT mHeapDiffIdx = 0;

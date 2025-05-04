@@ -48,6 +48,17 @@ AppBase::AppBase(uint32_t width, uint32_t height, std::wstring name)
 
 AppBase::~AppBase()
 {
+	// Un-set all tags
+	sl::ResourceTag inputs[] = {
+		sl::ResourceTag{nullptr, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent},
+		sl::ResourceTag{nullptr, sl::kBufferTypeBackbuffer, sl::ResourceLifecycle::eValidUntilPresent},
+		sl::ResourceTag{nullptr, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent},
+		sl::ResourceTag{nullptr, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent},
+		sl::ResourceTag{nullptr, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent},
+		sl::ResourceTag{nullptr, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent} };
+	if(!SuccessCheck(slSetTag(m_viewport, inputs, _countof(inputs), nullptr), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+
 #if defined(DEBUG) || defined(_DEBUG) 
 	ShutdownDebugLayer();
 #endif
@@ -134,7 +145,6 @@ int AppBase::Run()
 {
 	Initialize();
 
-
 	MSG msg{ 0 };
 
 	mTimer.Reset();
@@ -170,8 +180,8 @@ int AppBase::Run()
 				// New Function
 				SLFrameInit();
 				Render();
+				SLFrameSetting();
 				RenderImGui();
-				// SLFrameSetting();
 
 				if (m_callbacks.afterRender) m_callbacks.afterRender(*this, mFrameCount);
 
@@ -191,7 +201,7 @@ int AppBase::Run()
 
 				if (m_callbacks.beforePresent) m_callbacks.beforePresent(*this, mFrameCount);
 				// Swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(mParam.vsyncEnabled ? 1 : 0, 0));
+				ThrowIfFailed(mSwapChain->Present(m_ui.EnableVsync ? 1 : 0, 0));
 				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 				// Add an instruction to the command queue to set a new fence point. 
@@ -1806,6 +1816,7 @@ void AppBase::UpdateFeatureAvailable()
 		if (m_dlss_available)
 		{
 			SL_LOG_INFO("DLSS is supported on this system.");
+			m_ui.DLSS_Supported = true;
 		}
 		else SL_LOG_WARN("DLSS is not fully functional on this system.");
 	}
@@ -1822,6 +1833,7 @@ void AppBase::UpdateFeatureAvailable()
 		if (m_nis_available)
 		{
 			SL_LOG_INFO("NIS is supported on this system.");
+			m_ui.NIS_Supported = true;
 		}
 		else SL_LOG_WARN("NIS is not fully functional on this system.");
 	}
@@ -1838,6 +1850,7 @@ void AppBase::UpdateFeatureAvailable()
 		if (m_dlssg_available)
 		{
 			SL_LOG_INFO("DLSS-G is supported on this system.");
+			m_ui.DLSSG_Supported = true;
 		}
 		else SL_LOG_WARN("DLSS-G is not fully functional on this system.");
 	}
@@ -1853,6 +1866,7 @@ void AppBase::UpdateFeatureAvailable()
 		m_reflex_available = slIsFeatureSupported(sl::kFeatureReflex, adapterInfo) == sl::Result::eOk;
 		if (m_reflex_available)
 		{
+			m_ui.REFLEX_Supported = true;
 			SL_LOG_INFO("Reflex is supported on this system.");
 		}
 		else SL_LOG_WARN("Reflex is not fully functional on this system.");
@@ -1885,6 +1899,7 @@ void AppBase::UpdateFeatureAvailable()
 		m_deepdvc_available = slIsFeatureSupported(sl::kFeatureDeepDVC, adapterInfo) == sl::Result::eOk;
 		if (m_deepdvc_available)
 		{
+			m_ui.DeepDVC_Supported = true;
 			SL_LOG_INFO("DeepDVC is supported on this system.");
 		}
 		else SL_LOG_WARN("DeepDVC is not fully functional on this system.");
@@ -1902,10 +1917,277 @@ void AppBase::UpdateFeatureAvailable()
 		m_latewarp_available = slIsFeatureSupported(sl::kFeatureLatewarp, adapterInfo) == sl::Result::eOk;
 		if (m_latewarp_available)
 		{
+			m_ui.Latewarp_Supported = true;
 			SL_LOG_INFO("Latewarp is supported on this system.");
 		}
 		else SL_LOG_WARN("Latewarp is not fully functional on this system.");
 	}
+}
+
+void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize, donut::math::uint2 displaySize, DXGI_FORMAT bufferFormat, donut::math::uint sampleCount, bool enableMotionVectors, bool useReverseProjection)
+{
+	D3D12_RESOURCE_DESC texDesc;
+	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
+	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	texDesc.Alignment = 0;
+	texDesc.Width = renderSize.x;	// Render Size (DLSS Render 사이즈에 맞게 설정)
+	texDesc.Height = renderSize.y;
+	texDesc.DepthOrArraySize = 1;
+	texDesc.MipLevels = 1;	// Mip Map 미활용
+	texDesc.Format = bufferFormat;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.SampleDesc.Quality = 0;
+	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+
+	// DLSS
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_TAAUInput"])	//Temporal Anti-Aliasing Upsample
+	);
+
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_TAAUOutput"])
+	);
+
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_DepthBuffer"])
+	);
+
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_MotionVectorBuffer"])
+	);
+
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_ExposureBuffer"])
+	);
+
+	// NIS
+	mDevice->CreateCommittedResource(
+		&heapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_ExposureBuffer"])
+	);
+
+	//
+	/*
+	nvrhi::TextureDesc desc;
+	desc.width = size.x;
+	desc.height = size.y;
+	desc.initialState = nvrhi::ResourceStates::RenderTarget;
+	desc.isRenderTarget = true;
+	desc.useClearValue = true;
+	desc.clearValue = nvrhi::Color(0.f);
+	desc.sampleCount = sampleCount;
+	desc.dimension = sampleCount > 1 ? nvrhi::TextureDimension::Texture2DMS : nvrhi::TextureDimension::Texture2D;
+	desc.keepInitialState = true;
+	desc.isTypeless = false;
+	desc.isUAV = false;
+	desc.mipLevels = 1;
+
+	desc.format = nvrhi::Format::SRGBA8_UNORM;
+	desc.debugName = "GBufferDiffuse";
+	GBufferDiffuse = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::SRGBA8_UNORM;
+	desc.debugName = "GBufferSpecular";
+	GBufferSpecular = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::RGBA16_SNORM;
+	desc.debugName = "GBufferNormals";
+	GBufferNormals = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::RGBA16_FLOAT;
+	desc.debugName = "GBufferEmissive";
+	GBufferEmissive = device->createTexture(desc);
+
+	const nvrhi::Format depthFormats[] = {
+		nvrhi::Format::D24S8,
+		nvrhi::Format::D32S8,
+		nvrhi::Format::D32,
+		nvrhi::Format::D16 };
+
+	const nvrhi::FormatSupport depthFeatures =
+		nvrhi::FormatSupport::Texture |
+		nvrhi::FormatSupport::DepthStencil |
+		nvrhi::FormatSupport::ShaderLoad;
+
+	desc.format = nvrhi::utils::ChooseFormat(device, depthFeatures, depthFormats, std::size(depthFormats));
+	desc.isTypeless = true;
+	desc.initialState = nvrhi::ResourceStates::DepthWrite;
+	desc.clearValue = useReverseProjection ? nvrhi::Color(0.f) : nvrhi::Color(1.f);
+	desc.debugName = "GBufferDepth";
+	Depth = device->createTexture(desc);
+
+	desc.isTypeless = false;
+	desc.format = nvrhi::Format::RG16_FLOAT;
+	desc.initialState = nvrhi::ResourceStates::RenderTarget;
+	desc.debugName = "GBufferMotionVectors";
+	desc.clearValue = nvrhi::Color(0.f);
+	if (!enableMotionVectors)
+	{
+		desc.width = 1;
+		desc.height = 1;
+	}
+	MotionVectors = device->createTexture(desc);
+
+	GBufferFramebuffer = std::make_shared<FramebufferFactory>(device);
+	GBufferFramebuffer->RenderTargets = {
+		GBufferDiffuse,
+		GBufferSpecular,
+		GBufferNormals,
+		GBufferEmissive };
+
+	if (enableMotionVectors)
+		GBufferFramebuffer->RenderTargets.push_back(MotionVectors);
+
+	GBufferFramebuffer->DepthTarget = Depth;
+
+	m_Size = size;
+	m_SampleCount = sampleCount;
+	m_UseReverseProjection = useReverseProjection;
+	*/
+	/*
+	nvrhi::TextureDesc desc;
+	desc.width = renderSize.x;
+	desc.height = renderSize.y;
+	desc.isRenderTarget = true;
+	desc.useClearValue = true;
+	desc.clearValue = nvrhi::Color(1.f);
+	desc.sampleCount = sampleCount;
+	desc.dimension = sampleCount > 1 ? nvrhi::TextureDimension::Texture2DMS : nvrhi::TextureDimension::Texture2D;
+	desc.keepInitialState = true;
+	desc.isVirtual = device->queryFeatureSupport(nvrhi::Feature::VirtualResources);
+
+	desc.clearValue = nvrhi::Color(0.f);
+	desc.isTypeless = false;
+	desc.isUAV = sampleCount == 1;
+	desc.format = nvrhi::Format::RGBA16_FLOAT;
+	desc.initialState = nvrhi::ResourceStates::RenderTarget;
+	desc.debugName = "HdrColor";
+	HdrColor = device->createTexture(desc);
+
+	// The render targets below this point are non-MSAA
+	desc.sampleCount = 1;
+	desc.dimension = nvrhi::TextureDimension::Texture2D;
+	desc.format = nvrhi::Format::R8_UNORM;
+	desc.isUAV = true;
+	desc.debugName = "AmbientOcclusion";
+	AmbientOcclusion = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::RGBA16_FLOAT;
+	desc.width = displaySize.x;
+	desc.height = displaySize.y;
+	desc.isUAV = true;
+	desc.debugName = "AAResolvedColor";
+	AAResolvedColor = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::RGBA16_SNORM;
+	desc.isUAV = true;
+	desc.debugName = "TemporalFeedback1";
+	TemporalFeedback1 = device->createTexture(desc);
+	desc.debugName = "TemporalFeedback2";
+	TemporalFeedback2 = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::SRGBA8_UNORM;
+	desc.isUAV = false;
+	desc.debugName = "LdrColor";
+	LdrColor = device->createTexture(desc);
+
+	desc.format = nvrhi::Format::RGBA8_UNORM;
+	desc.isUAV = true;
+	desc.debugName = "ColorspaceCorrectionColor";
+	ColorspaceCorrectionColor = device->createTexture(desc);
+
+	desc.format = backbufferFormat;
+	desc.isUAV = true;
+	desc.debugName = "NisColor";
+	NisColor = device->createTexture(desc);
+
+	desc.format = backbufferFormat;
+	desc.isUAV = true;
+	desc.debugName = "PreUIColor";
+	PreUIColor = device->createTexture(desc);
+	*/
+
+	auto texture = std::make_unique<Texture>();
+	std::wstring name = L"DLSS_MotionVector";
+	mStreamlineTex[name] = std::move(texture);
+
+	
+
+	mDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_Depth"])
+	);
+
+	mDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&mStreamlineTex["DLSS_MotionVector"])
+	);
+
+	texture = std::make_unique<Texture>();
+	name = L"DLSS_Input";
+	mStreamlineTex[name] = std::move(texture);
+
+	texture = std::make_unique<Texture>();
+	name = L"DLSS_Output";
+	mStreamlineTex[name] = std::move(texture);
+
+	// DLSS_NIS용 Texture 선언
+	texture = std::make_unique<Texture>();
+	name = L"DLSS_NIS_Input";
+	mStreamlineTex[name] = std::move(texture);
+
+	texture = std::make_unique<Texture>();
+	name = L"DLSS_NIS_Output";
+	mStreamlineTex[name] = std::move(texture);
+
+	// DeepDVC용 Texture 선언
+	texture = std::make_unique<Texture>();
+	name = L"DeepDVC_Output";
+	mStreamlineTex[name] = std::move(texture);
+
+	// Latewarp용 Texture 선언
+	texture = std::make_unique<Texture>();
+	name = L"Latewarp_Output";
+	mStreamlineTex[name] = std::move(texture);
 }
 
 std::wstring AppBase::GetSlInterposerDllLocation() {
@@ -2120,6 +2402,8 @@ bool AppBase::LoadStreamline()
 	// 사용 가능 기능 검사
 	UpdateFeatureAvailable();
 
+	BuildStreamlineTexture();
+
 	return true;
 }
 
@@ -2320,7 +2604,7 @@ void AppBase::SLFrameInit()
 	uint32_t backbufferWidth = mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Width;
 	uint32_t backbufferHeight = mSwapChainBuffer[mCurrBackBuffer]->GetDesc().Height;
 	// Initialize
-	bool needNewPasses = false;
+	mNeedNewPasses = false;
 
 	sl::Extent nullExtent{};
 	bool validViewportExtent = (m_backbufferViewportExtent != nullExtent);
@@ -2594,7 +2878,7 @@ void AppBase::SLFrameInit()
 				// If the OUTPUT buffer resized or the DLSS mode changed, we need to recreate passes in dynamic mode.
 				// In fixed resolution DLSS, this just happens when we change DLSS mode because it causes one of the
 				// other cases below to hit (likely texLod).
-				if (DLSS_resizeRequired) needNewPasses = true;
+				if (DLSS_resizeRequired) mNeedNewPasses = true;
 			}
 			else
 			{
@@ -2620,7 +2904,7 @@ void AppBase::SLFrameInit()
 #pragma endregion DLSS
 	// PASS SETUP
 	{
-		bool needNewPasses = false;
+		bool mNeedNewPasses = false;
 
 		// Here, we intentionally leave the renderTargets oversized: (displaySize, displaySize) instead of (m_RenderingRectSize, displaySize), to show the power of sl::Extent
 		bool useFullSizeRenderingBuffers = m_ui.DLSS_always_use_extents || (m_ui.DLSS_Resolution_Mode == UIData::RenderingResolutionMode::DYNAMIC);
@@ -2636,23 +2920,23 @@ void AppBase::SLFrameInit()
 			// m_RenderTargets = std::make_unique<RenderTargets>();
 			// m_RenderTargets->Init(GetDevice(), renderSize, m_DisplaySize, framebuffer->getDesc().colorAttachments[0].texture->getDesc().format);
 			// 
-			needNewPasses = true;
+			mNeedNewPasses = true;
 		}
 
 		// Render scene, change bias
 		if (m_ui.DLSS_lodbias_useoveride) lodBias = m_ui.DLSS_lodbias_overide;
 		if (m_PreviousLodBias != lodBias)
 		{
-			needNewPasses = true;
+			mNeedNewPasses = true;
 			m_PreviousLodBias = lodBias;
 		}
 
 		if (SetupView())
 		{
-			needNewPasses = true;
+			mNeedNewPasses = true;
 		}
 
-		if (needNewPasses)
+		if (mNeedNewPasses)
 		{
 			// CreateRenderPasses(exposureResetRequired, lodBias);
 		}
@@ -2663,7 +2947,84 @@ void AppBase::SLFrameInit()
 
 void AppBase::SLFrameSetting()
 {
-	if (m_dlss_available)
+	// Deffered Shading
+	{
+		// DO GBUFFER
+		GBufferFillPass::Context gbufferContext;
+
+		for (auto i = 0; i <= m_ui.GpuLoad; ++i) {
+			RenderCompositeView(m_CommandList,
+				m_View.get(), m_ViewPrevious.get(),
+				*m_RenderTargets->GBufferFramebuffer,
+				m_Scene->GetSceneGraph()->GetRootNode(),
+				*m_OpaqueDrawStrategy,
+				*m_GBufferPass,
+				gbufferContext,
+				"GBufferFill");
+		}
+
+		// DO MOTION VECTORS
+		if (m_PreviousViewsValid) m_TemporalAntiAliasingPass->RenderMotionVectors(m_CommandList, *m_View, *m_ViewPrevious);
+
+		// DO SSAO
+		nvrhi::ITexture* ambientOcclusionTarget = nullptr;
+		if (m_ui.EnableSsao && m_SsaoPass)
+		{
+			m_SsaoPass->Render(m_CommandList, m_ui.SsaoParams, *m_View);
+			ambientOcclusionTarget = m_RenderTargets->AmbientOcclusion;
+		}
+
+		// DO DEFFERED
+		DeferredLightingPass::Inputs deferredInputs;
+		deferredInputs.SetGBuffer(*m_RenderTargets);
+		deferredInputs.ambientOcclusion = m_ui.EnableSsao ? m_RenderTargets->AmbientOcclusion : nullptr;
+		deferredInputs.ambientColorTop = m_AmbientTop;
+		deferredInputs.ambientColorBottom = m_AmbientBottom;
+		deferredInputs.lights = &m_Scene->GetSceneGraph()->GetLights();
+		deferredInputs.output = m_RenderTargets->HdrColor;
+
+		m_DeferredLightingPass->Render(m_CommandList, *m_View, deferredInputs);
+	}
+
+	// SET STREAMLINE CONSTANTS
+	{
+		// This section of code updates the streamline constants every frame. Regardless of whether we are utilising the streamline plugins, as long as streamline is in use, we must set its constants.
+
+		mCamera.GetView4x4f() * mCamera.GetView4x4f();
+		donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+		float aspectRatio = float(m_RenderingRectSize.x) / float(m_RenderingRectSize.y);
+		
+		donut::math::float4x4 projection = perspProjD3DStyleReverse(dm::radians(mCamera.GetFovY()), aspectRatio, mCamera.GetNearZ());
+
+		donut::math::float2 jitterOffset = { 0.3125f, 0.0625f };
+
+		sl::Constants slConstants = {};
+		slConstants.cameraAspectRatio = aspectRatio;
+		slConstants.cameraFOV = dm::radians(mCamera.GetFovY());
+		slConstants.cameraFar = mCamera.GetNearZ();
+		slConstants.cameraMotionIncluded = sl::Boolean::eTrue;
+		slConstants.cameraNear = mCamera.GetFarZ();
+		slConstants.cameraPinholeOffset = { 0.f, 0.f };
+		slConstants.cameraPos = make_sl_float3(mCamera.GetPosition3f());
+		slConstants.cameraFwd = make_sl_float3(mCamera.GetLook3f());
+		slConstants.cameraUp = make_sl_float3(mCamera.GetUp3f());
+		slConstants.cameraRight = make_sl_float3(mCamera.GetRight3f());
+		slConstants.cameraViewToClip = make_sl_float4x4(projection);
+		slConstants.clipToCameraView = make_sl_float4x4(donut::math::inverse(projection));
+		slConstants.clipToPrevClip = make_sl_float4x4(reprojectionMatrix);
+		slConstants.depthInverted = sl::Boolean::eFalse; // m_View->IsReverseDepth() ? sl::Boolean::eTrue : sl::Boolean::eFalse;
+		slConstants.jitterOffset = make_sl_float2(jitterOffset);
+		slConstants.mvecScale = { 1.0f / m_RenderingRectSize.x , 1.0f / m_RenderingRectSize.y }; // This are scale factors used to normalize mvec (to -1,1) and donut has mvec in pixel space
+		slConstants.prevClipToClip = make_sl_float4x4(donut::math::inverse(reprojectionMatrix));
+		slConstants.reset = mNeedNewPasses ? sl::Boolean::eTrue : sl::Boolean::eFalse;
+		slConstants.motionVectors3D = sl::Boolean::eFalse;
+		slConstants.motionVectorsInvalidValue = FLT_MIN;
+
+		SetSLConsts(slConstants);
+	}
+
+	if (m_ui.DLSS_Mode != sl::DLSSMode::eOff)
 	{
 		//! We can also add all tags here
 		//!
@@ -2756,6 +3117,8 @@ void AppBase::SLFrameSetting()
 
 	//// 명시적으로 기능 로드
 	//SL_API sl::Result slSetFeatureLoaded(sl::Feature feature, bool loaded);
+
+	std::swap(mCamera, mCameraPrevious);
 }
 
 bool AppBase::InitDebugLayer()
@@ -2869,87 +3232,6 @@ void AppBase::TagResources_DLSS_NIS(ID3D12GraphicsCommandList* commandList, ID3D
 		SL_LOG_WARN(str_temp.c_str());
 }
 
-//void AppBase::TagResources_General(nvrhi::ICommandList* commandList, const donut::engine::IView* view, nvrhi::ITexture* motionVectors, nvrhi::ITexture* depth, nvrhi::ITexture* finalColorHudless)
-//{
-//	if (!mSLInitialised) {
-//		SL_LOG_WARN("Streamline not initialised.");
-//		return;
-//	}
-//
-//	sl::Extent renderExtent{ 0, 0, depth->getDesc().width, depth->getDesc().height };
-//	sl::Extent fullExtent{ 0, 0, finalColorHudless->getDesc().width, finalColorHudless->getDesc().height };
-//	void* cmdbuffer = mCommandList.Get();
-//	sl::Resource motionVectorsResource{}, depthResource{}, finalColorHudlessResource{};
-//
-//	motionVectorsResource = 
-//	GetSLResource(commandList, motionVectorsResource, motionVectors, view);
-//	GetSLResource(commandList, depthResource, depth, view);
-//	GetSLResource(commandList, finalColorHudlessResource, finalColorHudless, view);
-//
-//	sl::ResourceTag motionVectorsResourceTag = sl::ResourceTag{ &motionVectorsResource, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
-//	sl::ResourceTag depthResourceTag = sl::ResourceTag{ &depthResource, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
-//	sl::ResourceTag finalColorHudlessResourceTag = sl::ResourceTag{ &finalColorHudlessResource, sl::kBufferTypeHUDLessColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
-//
-//	sl::ResourceTag inputs[] = { motionVectorsResourceTag, depthResourceTag, finalColorHudlessResourceTag };
-//	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_General");
-//}
-//
-//void AppBase::TagResources_DLSS_NIS(nvrhi::ICommandList& commandList, const donut::engine::IView* view, Texture& output, Texture& input)
-//{
-//	if (!mSLInitialised) {
-//		SL_LOG_WARN("Streamline not initialised.");
-//		return;
-//	}
-//
-//	sl::Extent renderExtent{ 0, 0, Input->getDesc().width, Input->getDesc().height };
-//	sl::Extent fullExtent{ 0, 0, Output->getDesc().width, Output->getDesc().height };
-//	void* cmdbuffer = GetNativeCommandList(commandList);
-//	sl::Resource inputResource{};
-//
-//	// GetSLResource(commandList, outputResource, Output, view);
-//	// GetSLResource(commandList, inputResource, Input, view);
-//	// sl::Resource outputResource{
-//	// 	/* ResourceType	*/ .type              = sl::ResourceType::eTex2d		, //! Indicates the type of resource
-//	// 	/* void*		*/ .native            = output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
-//	// 	/* void*		*/ .memory            =	nullptr							, //! vkDeviceMemory or nullptr
-//	// 	/* void*		*/ .view              = nullptr							, //! VkImageView/VkBufferView or nullptr
-//	// 	/* uint32_t		*/ .state             = D3D12_RESOURCE_STATE_COMMON		, //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
-//	// 	/* uint32_t		*/ .width             =	0								, //! Width in pixels
-//	// 	/* uint32_t		*/ .height            =	0								, //! Height in pixels
-//	// 	/* uint32_t		*/ .nativeFormat      =	0								, //! Native format
-//	// 	/* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
-//	// 	/* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
-//	// 	/* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
-//	// 	/* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
-//	// 	/* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
-//	// 	/* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
-//	// };
-//	sl::Resource outputResource{
-//		/* ResourceType	.type              */ sl::ResourceType::eTex2d		, //! Indicates the type of resource
-//		/* void*		.native            */ output.Resource					, //! ID3D11Resource/ID3D12Resource/VkBuffer/VkImage
-//		/* void*		.memory            */ nullptr							, //! vkDeviceMemory or nullptr
-//		/* void*		.view              */ nullptr							, //! VkImageView/VkBufferView or nullptr
-//		/* uint32_t		.state             */ D3D12_RESOURCE_STATE_COMMON		 //! State as D3D12_RESOURCE_STATES or VkImageLayout		//! IMPORTANT: State is MANDATORY and needs to be correct when tagged resources are actually used.
-//		// /* uint32_t		*/ .width             =	0								, //! Width in pixels
-//		// /* uint32_t		*/ .height            =	0								, //! Height in pixels
-//		// /* uint32_t		*/ .nativeFormat      =	0								, //! Native format
-//		// /* uint32_t		*/ .mipLevels         =	0								, //! Number of mip-map levels
-//		// /* uint32_t		*/ .arrayLayers       =	0								, //! Number of arrays
-//		// /* uint64_t		*/ .gpuVirtualAddress =	0								, //! Virtual address on GPU (if applicable)
-//		// /* uint32_t		*/ .flags             =									, //! VkImageCreateFlags
-//		// /* uint32_t		*/ .usage             =	0								, //! VkImageUsageFlags
-//		// /* uint32_t		*/ .reserved          =	0								 //! Reserved for internal use
-//	}
-//
-//
-//	sl::ResourceTag inputResourceTag = sl::ResourceTag{ &inputResource, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExtent };
-//	sl::ResourceTag outputResourceTag = sl::ResourceTag{ &outputResource, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &fullExtent };
-//
-//	sl::ResourceTag inputs[] = { inputResourceTag, outputResourceTag };
-//	successCheck(slSetTag(m_viewport, inputs, _countof(inputs), cmdbuffer), "slSetTag_dlss_nis");
-//}
-
-
 void AppBase::SetDLSSOptions(const sl::DLSSOptions consts)
 {
 	if (!mSLInitialised || !m_dlss_available) {
@@ -2961,16 +3243,37 @@ void AppBase::SetDLSSOptions(const sl::DLSSOptions consts)
 	
 	if(!SuccessCheck(slDLSSSetOptions(m_viewport, m_dlss_consts), str_temp))
 		SL_LOG_WARN(str_temp.c_str());
-	if(!SuccessCheck(slDLSSGetOptimalSettings(m_dlss_consts, m_dlss_settings), str_temp))
-		SL_LOG_WARN(str_temp.c_str());
-
-	// if (!SuccessCheck(slAllocateResources(sl::kFeatureDLSS, m_viewport), str_temp))
+	// if(!SuccessCheck(slDLSSGetOptimalSettings(m_dlss_consts, m_dlss_settings), str_temp))
 	// 	SL_LOG_WARN(str_temp.c_str());
-	
+
+	if (m_dlss_consts.mode != sl::DLSSMode::eOff)
+	{
+		void* cmdbuffer = mCommandList.Get();
+		if (!SuccessCheck(slAllocateResources(cmdbuffer, sl::kFeatureDLSS, m_viewport), str_temp))
+			SL_LOG_WARN(str_temp.c_str());
+	}
 }
 
 void AppBase::QueryDLSSOptimalSettings(DLSSSettings& settings)
 {
+	if (!mSLInitialised || !m_dlss_available) {
+		SL_LOG_WARN("SL not initialised or DLSS not available.");
+		settings = DLSSSettings{};
+		return;
+	}
+
+	sl::DLSSOptimalSettings dlssOptimal = {};
+	if (!SuccessCheck(slDLSSGetOptimalSettings(m_dlss_consts, dlssOptimal), str_temp))
+		SL_LOG_WARN(str_temp.c_str());
+
+	settings.optimalRenderSize.x = static_cast<int>(dlssOptimal.optimalRenderWidth);
+	settings.optimalRenderSize.y = static_cast<int>(dlssOptimal.optimalRenderHeight);
+	settings.sharpness = dlssOptimal.optimalSharpness;
+
+	settings.minRenderSize.x = dlssOptimal.renderWidthMin;
+	settings.minRenderSize.y = dlssOptimal.renderHeightMin;
+	settings.maxRenderSize.x = dlssOptimal.renderWidthMax;
+	settings.maxRenderSize.y = dlssOptimal.renderHeightMax;
 }
 
 void AppBase::EvaluateDLSS(ID3D12CommandList* commandList)
@@ -2985,8 +3288,8 @@ void AppBase::EvaluateDLSS(ID3D12CommandList* commandList)
 		return;
 	}
 
-	sl::ViewportHandle view(m_viewport);
-	const sl::BaseStructure* inputs[] = { &view };
+	// sl::ViewportHandle view(m_viewport);
+	const sl::BaseStructure* inputs[] = { &m_viewport };
 	if(!SuccessCheck(slEvaluateFeature(sl::kFeatureDLSS, *m_currentFrame, inputs, _countof(inputs), nativeCommandList), str_temp))
 		SL_LOG_WARN(str_temp.c_str());
 

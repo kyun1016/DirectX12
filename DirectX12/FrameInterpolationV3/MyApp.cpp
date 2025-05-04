@@ -295,6 +295,14 @@ void MyApp::BuildRootSignature()
 		/* UINT RegisterSpace						*/.RegisterSpace = 11,
 		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
 	};
+	D3D12_DESCRIPTOR_RANGE TexStreamlineTable // register t0[0] (Space12)
+	{
+		/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		/* UINT NumDescriptors						*/.NumDescriptors = (UINT)mStreamlineTex.size(),
+		/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+		/* UINT RegisterSpace						*/.RegisterSpace = 12,
+		/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+	};
 	
 	/*D3D12_SHADER_VISIBILITY
 	{
@@ -309,7 +317,7 @@ void MyApp::BuildRootSignature()
 	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[17];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[18];
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
 	slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
@@ -328,11 +336,12 @@ void MyApp::BuildRootSignature()
 	slotRootParameter[14].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[15].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[16].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[17].InitAsDescriptorTable(1, &TexStreamlineTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(17, slotRootParameter, (UINT)staticSamplers.size(),
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(std::size(slotRootParameter), slotRootParameter, (UINT)staticSamplers.size(),
 		staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
@@ -379,6 +388,7 @@ void MyApp::BuildDescriptorHeaps()
 												+ (UINT)mEmissiveTex.size()
 												+ (UINT)mTreeMapTex.size()
 												+ (UINT)mCubeMapTex.size()
+												+ (UINT)mStreamlineTex.size()
 												+ (UINT)MAX_LIGHTS
 												+ mCSBlurFilter->DescriptorCount() 
 												+ mCSWaves->DescriptorCount(),
@@ -478,6 +488,9 @@ void MyApp::BuildDescriptorHeaps()
 	BuildTexture2DArraySrv(mTreeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 	mhGPUCube = hGPUDescriptor;
 	BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
+
+	mhGPUStreamline = hGPUDescriptor;
+	// BuildTexture2DSrv(mStreamlineTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -580,11 +593,14 @@ void MyApp::BuildShadersAndInputLayout()
 	char texNormSize[100];
 	char texArraySize[100];
 	char texCubeSize[100];
+	char texStreamlineSize[100];
+
 	strcpy_s(maxLights, std::to_string(MAX_LIGHTS).c_str());
 	strcpy_s(texDiffSize, std::to_string(mDiffuseTex.size() + SRV_USER_SIZE).c_str());
 	strcpy_s(texNormSize, std::to_string(mNormalTex.size()).c_str());
 	strcpy_s(texArraySize, std::to_string(mTreeMapTex.size()).c_str());
 	strcpy_s(texCubeSize, std::to_string(mCubeMapTex.size()).c_str());
+	strcpy_s(texStreamlineSize, std::to_string(mStreamlineTex.size()).c_str());
 	const D3D_SHADER_MACRO defines[] =
 	{
 		"MAX_LIGHTS", maxLights,
@@ -592,6 +608,7 @@ void MyApp::BuildShadersAndInputLayout()
 		"TEX_NORM_SIZE", texNormSize,
 		"TEX_ARRAY_SIZE", texArraySize,
 		"TEX_CUBE_SIZE", texCubeSize,
+		"TEX_STREAMLINE_SIZE", texStreamlineSize,
 		NULL, NULL
 	};
 	const D3D_SHADER_MACRO skinnedDefines[] =
@@ -1863,6 +1880,7 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootDescriptorTable(13, mhGPUShadow);
 		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUArray);
 		mCommandList->SetGraphicsRootDescriptorTable(16, mhGPUCube);
+		mCommandList->SetGraphicsRootDescriptorTable(17, mhGPUStreamline);
 
 		mLastVertexBufferView = mAllRitems[0]->Geo->VertexBufferView();
 		mLastIndexBufferView = mAllRitems[0]->Geo->IndexBufferView();

@@ -205,12 +205,15 @@ public:
 	}
 #pragma endregion ImGui
 #pragma region Streamline
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> mStreamlineTex;
+	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUStreamline;
 	bool mSLInitialised = false;
 	sl::Preferences mPref;
 	UIData m_ui;
 	std::string str_temp;
 
 	void UpdateFeatureAvailable();
+	void BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize, donut::math::uint2 displaySize, DXGI_FORMAT bufferFormat, donut::math::uint sampleCount = 1, bool enableMotionVectors = true, bool useReverseProjection = true);
 	std::wstring GetSlInterposerDllLocation();
 	bool InitSLLog();
 	bool LoadStreamline();
@@ -218,7 +221,51 @@ public:
 
 	bool BeginFrame();
 	void SLFrameInit();
+	bool mNeedNewPasses = false;
 	void SLFrameSetting();
+
+	// help functions
+	inline sl::float2 make_sl_float2(donut::math::float2 donutF) { return sl::float2{ donutF.x, donutF.y }; }
+	inline sl::float3 make_sl_float3(donut::math::float3 donutF) { return sl::float3{ donutF.x, donutF.y, donutF.z }; }
+	inline sl::float3 make_sl_float3(DirectX::XMFLOAT3 float3) { return sl::float3{ float3.x, float3.y, float3.z }; }
+	inline sl::float4 make_sl_float4(donut::math::float4 donutF) { return sl::float4{ donutF.x, donutF.y, donutF.z, donutF.w }; }
+	inline sl::float4x4 make_sl_float4x4(donut::math::float4x4 donutF4x4) {
+		sl::float4x4 outF4x4;
+		outF4x4.setRow(0, make_sl_float4(donutF4x4.row0));
+		outF4x4.setRow(1, make_sl_float4(donutF4x4.row1));
+		outF4x4.setRow(2, make_sl_float4(donutF4x4.row2));
+		outF4x4.setRow(3, make_sl_float4(donutF4x4.row3));
+		return outF4x4;
+	}
+	inline sl::float4x4 make_sl_float4x4(DirectX::XMFLOAT4X4 float4x4) {
+		sl::float4x4 outF4x4;
+		outF4x4.setRow(0, sl::float4{ float4x4._11,float4x4._12,float4x4._13,float4x4._14 });
+		outF4x4.setRow(1, sl::float4{ float4x4._21,float4x4._22,float4x4._23,float4x4._24 });
+		outF4x4.setRow(2, sl::float4{ float4x4._31,float4x4._32,float4x4._33,float4x4._34 });
+		outF4x4.setRow(3, sl::float4{ float4x4._41,float4x4._42,float4x4._43,float4x4._44 });
+		return outF4x4;
+	}
+
+	inline donut::math::affine3 make_donut_affine3(DirectX::XMFLOAT4X4 float4x4) {
+		donut::math::affine3 out{
+			float4x4._11,float4x4._12,float4x4._13,
+			float4x4._21,float4x4._22,float4x4._23,
+			float4x4._31,float4x4._32,float4x4._33
+		};
+		return out;
+	}
+
+	donut::math::float4x4 perspProjD3DStyleReverse(float verticalFOV, float aspect, float zNear)
+	{
+		float yScale = 1.0f / tanf(0.5f * verticalFOV);
+		float xScale = yScale / aspect;
+
+		return donut::math::float4x4(
+			xScale, 0, 0, 0,
+			0, yScale, 0, 0,
+			0, 0, 0, 1,
+			0, 0, zNear, 0);
+	}
 
 	// struct & support functions
 	sl::Constants m_slConstants = {};
@@ -420,6 +467,8 @@ public:
 	UINT m4xMsaaQuality = 0;		// quality level of 4X MSAA
 
 	GameTimer mTimer;
+	Camera mCamera;
+	Camera mCameraPrevious;
 
 	// Pipeline objects.
 	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;

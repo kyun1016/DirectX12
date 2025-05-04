@@ -52,6 +52,10 @@
 #define TEX_CUBE_SIZE 1
 #endif
 
+#ifndef TEX_STREAMLINE_SIZE
+#define TEX_STREAMLINE_SIZE 1
+#endif
+
 struct Light
 {
     float3 Strength;
@@ -130,6 +134,7 @@ Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space8);
 Texture2D gSsaoMap[MAX_LIGHTS] : register(t0, space9);
 Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space10);
 TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space11);
+TextureCube gStreamlineMap[TEX_STREAMLINE_SIZE] : register(t0, space12);
 
 
 // Put in space1, so the texture array does not overlap with these resources.  
