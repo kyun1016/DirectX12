@@ -3,6 +3,9 @@
 #include <sl_security.h>
 #include <sl_core_api.h>
 
+using namespace donut::math;
+#include "taa_cb.h"
+
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -2949,30 +2952,8 @@ void AppBase::SLFrameSetting()
 {
 	// Deffered Shading
 	{
-		// DO GBUFFER
-		GBufferFillPass::Context gbufferContext;
-
-		for (auto i = 0; i <= m_ui.GpuLoad; ++i) {
-			RenderCompositeView(m_CommandList,
-				m_View.get(), m_ViewPrevious.get(),
-				*m_RenderTargets->GBufferFramebuffer,
-				m_Scene->GetSceneGraph()->GetRootNode(),
-				*m_OpaqueDrawStrategy,
-				*m_GBufferPass,
-				gbufferContext,
-				"GBufferFill");
-		}
-
 		// DO MOTION VECTORS
-		if (m_PreviousViewsValid) m_TemporalAntiAliasingPass->RenderMotionVectors(m_CommandList, *m_View, *m_ViewPrevious);
-
-		// DO SSAO
-		nvrhi::ITexture* ambientOcclusionTarget = nullptr;
-		if (m_ui.EnableSsao && m_SsaoPass)
-		{
-			m_SsaoPass->Render(m_CommandList, m_ui.SsaoParams, *m_View);
-			ambientOcclusionTarget = m_RenderTargets->AmbientOcclusion;
-		}
+		RenderMotionVectors();
 
 		// DO DEFFERED
 		DeferredLightingPass::Inputs deferredInputs;
@@ -2989,10 +2970,8 @@ void AppBase::SLFrameSetting()
 	// SET STREAMLINE CONSTANTS
 	{
 		// This section of code updates the streamline constants every frame. Regardless of whether we are utilising the streamline plugins, as long as streamline is in use, we must set its constants.
-
-		mCamera.GetView4x4f() * mCamera.GetView4x4f();
 		donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
-		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_float4x4(mCamera.GetProj4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_float4x4(mCameraPrevious.GetProj4x4f());
 		float aspectRatio = float(m_RenderingRectSize.x) / float(m_RenderingRectSize.y);
 		
 		donut::math::float4x4 projection = perspProjD3DStyleReverse(dm::radians(mCamera.GetFovY()), aspectRatio, mCamera.GetNearZ());
@@ -3119,6 +3098,67 @@ void AppBase::SLFrameSetting()
 	//SL_API sl::Result slSetFeatureLoaded(sl::Feature feature, bool loaded);
 
 	std::swap(mCamera, mCameraPrevious);
+}
+
+void AppBase::RenderMotionVectors()
+{
+	BeginMarker("Motion Vectors");
+	for (uint viewIndex = 0; viewIndex < 1; viewIndex++)
+	{
+		TemporalAntiAliasingConstants taaConstants = {};
+		donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_float4x4(mCamera.GetProj4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_float4x4(mCameraPrevious.GetProj4x4f());
+		taaConstants.reprojectionMatrix = reprojectionMatrix;
+		taaConstants.inputViewOrigin = float2(0.0f, 0.0f);
+		taaConstants.inputViewSize = float2(m_RenderingRectSize.x, m_RenderingRectSize.y);
+		taaConstants.stencilMask = 1;
+		mCommandList->writeBuffer(m_TemporalAntiAliasingCB, &taaConstants, sizeof(taaConstants));
+
+		nvrhi::GraphicsState state;
+		state.pipeline = m_MotionVectorsPso;
+		state.framebuffer = m_MotionVectorsFramebufferFactory->GetFramebuffer(*view);
+		state.bindings = { m_MotionVectorsBindingSet };
+		state.viewport = viewportState;
+		commandList->setGraphicsState(state);
+
+		nvrhi::DrawArguments args;
+		args.instanceCount = 1;
+		args.vertexCount = 4;
+		commandList->draw(args);
+	}
+
+	// This section of code updates the streamline constants every frame. Regardless of whether we are utilising the streamline plugins, as long as streamline is in use, we must set its constants.
+	donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+	donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+	float aspectRatio = float(m_RenderingRectSize.x) / float(m_RenderingRectSize.y);
+
+	donut::math::float4x4 projection = perspProjD3DStyleReverse(dm::radians(mCamera.GetFovY()), aspectRatio, mCamera.GetNearZ());
+
+	donut::math::float2 jitterOffset = { 0.3125f, 0.0625f };
+
+	sl::Constants slConstants = {};
+	slConstants.cameraAspectRatio = aspectRatio;
+	slConstants.cameraFOV = dm::radians(mCamera.GetFovY());
+	slConstants.cameraFar = mCamera.GetNearZ();
+	slConstants.cameraMotionIncluded = sl::Boolean::eTrue;
+	slConstants.cameraNear = mCamera.GetFarZ();
+	slConstants.cameraPinholeOffset = { 0.f, 0.f };
+	slConstants.cameraPos = make_sl_float3(mCamera.GetPosition3f());
+	slConstants.cameraFwd = make_sl_float3(mCamera.GetLook3f());
+	slConstants.cameraUp = make_sl_float3(mCamera.GetUp3f());
+	slConstants.cameraRight = make_sl_float3(mCamera.GetRight3f());
+	slConstants.cameraViewToClip = make_sl_float4x4(projection);
+	slConstants.clipToCameraView = make_sl_float4x4(donut::math::inverse(projection));
+	slConstants.clipToPrevClip = make_sl_float4x4(reprojectionMatrix);
+	slConstants.depthInverted = sl::Boolean::eFalse; // m_View->IsReverseDepth() ? sl::Boolean::eTrue : sl::Boolean::eFalse;
+	slConstants.jitterOffset = make_sl_float2(jitterOffset);
+	slConstants.mvecScale = { 1.0f / m_RenderingRectSize.x , 1.0f / m_RenderingRectSize.y }; // This are scale factors used to normalize mvec (to -1,1) and donut has mvec in pixel space
+	slConstants.prevClipToClip = make_sl_float4x4(donut::math::inverse(reprojectionMatrix));
+	slConstants.reset = mNeedNewPasses ? sl::Boolean::eTrue : sl::Boolean::eFalse;
+	slConstants.motionVectors3D = sl::Boolean::eFalse;
+	slConstants.motionVectorsInvalidValue = FLT_MIN;
+
+	EndMarker();
 }
 
 bool AppBase::InitDebugLayer()

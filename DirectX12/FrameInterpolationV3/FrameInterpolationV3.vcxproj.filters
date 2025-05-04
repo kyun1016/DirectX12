@@ -151,6 +151,9 @@
     <FxCompile Include="WaveCS.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
+    <FxCompile Include="sl_MotionVector.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -193,6 +196,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="extra.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="view_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="taa_cb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -248,6 +248,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="sl_MotionVector.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="SSAO.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -377,12 +385,14 @@
     <ClInclude Include="extra.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="GpuWaves.h" />
+    <ClInclude Include="taa_cb.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="SsaoMap.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="view_cb.h" />
     <ClInclude Include="Waves.h" />
   </ItemGroup>
   <ItemGroup>

@@ -20,14 +20,34 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-void main(
-	in uint iVertex : SV_VertexID,
-	out float4 o_posClip : SV_Position,
-	out float2 o_uv : UV)
-{
-	uint u = iVertex & 1;
-	uint v = (iVertex >> 1) & 1;
+#ifndef TAA_CB_H
+#define TAA_CB_H
 
-	o_posClip = float4(float(u) * 2 - 1, 1 - float(v) * 2, QUAD_Z, 1);
-	o_uv = float2(u, v);
-}
+struct TemporalAntiAliasingConstants
+{
+    float4x4 reprojectionMatrix;
+
+    float2 inputViewOrigin;
+    float2 inputViewSize;
+
+    float2 outputViewOrigin;
+    float2 outputViewSize;
+
+    float2 inputPixelOffset;
+    float2 outputTextureSizeInv;
+
+    float2 inputOverOutputViewSize;
+    float2 outputOverInputViewSize;
+
+    float clampingFactor;
+    float newFrameWeight;
+    float pqC;
+    float invPqC;
+
+    uint stencilMask;
+    uint useHistoryClampRelax;
+    uint padding0;
+    uint padding1;
+};
+
+#endif // TAA_CB_H

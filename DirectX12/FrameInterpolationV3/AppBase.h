@@ -39,6 +39,17 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #pragma region ImGui
+
+namespace DirectX
+{
+	namespace Detail
+	{
+		static const UINT PIX_EVENT_UNICODE_VERSION = 0;
+		static const UINT PIX_EVENT_ANSI_VERSION = 1;
+		static const size_t PIX_STRING_BUFFER_COUNT = 1024;
+	}
+}
+
 // Simple free list based allocator
 struct ExampleDescriptorHeapAllocator
 {
@@ -247,12 +258,20 @@ public:
 	}
 
 	inline donut::math::affine3 make_donut_affine3(DirectX::XMFLOAT4X4 float4x4) {
-		donut::math::affine3 out{
-			float4x4._11,float4x4._12,float4x4._13,
-			float4x4._21,float4x4._22,float4x4._23,
-			float4x4._31,float4x4._32,float4x4._33
+		return donut::math::affine3(
+			float4x4._11, float4x4._12, float4x4._13,
+			float4x4._21, float4x4._22, float4x4._23,
+			float4x4._31, float4x4._32, float4x4._33,
+			0.f, 0.f, 0.f);
+	}
+
+	inline donut::math::float4x4 make_donut_float4x4(DirectX::XMFLOAT4X4 float4x4) {
+		return donut::math::float4x4{
+			float4x4._11,float4x4._12,float4x4._13,float4x4._14,
+			float4x4._21,float4x4._22,float4x4._23,float4x4._24,
+			float4x4._31,float4x4._32,float4x4._33,float4x4._34,
+			float4x4._41,float4x4._42,float4x4._43,float4x4._44
 		};
-		return out;
 	}
 
 	donut::math::float4x4 perspProjD3DStyleReverse(float verticalFOV, float aspect, float zNear)
@@ -266,6 +285,28 @@ public:
 			0, 0, 0, 1,
 			0, 0, zNear, 0);
 	}
+
+	inline void BeginMarker(ID3D12GraphicsCommandList* pCommandList, UINT64 /*metadata*/, PCSTR pFormat)
+	{
+		using namespace DirectX::Detail;
+		UINT size = static_cast<UINT>((strlen(pFormat) + 1) * sizeof(pFormat[0]));
+		pCommandList->BeginEvent(PIX_EVENT_ANSI_VERSION, pFormat, size);
+	}
+	inline void BeginMarker(PCSTR pFormat)
+	{
+		BeginMarker(mCommandList.Get(), 0, pFormat);
+	}
+
+	inline void EndMarker(ID3D12GraphicsCommandList* pCommandList)
+	{
+		pCommandList->EndEvent();
+	}
+	inline void EndMarker()
+	{
+		EndMarker(mCommandList.Get());
+	}
+
+	void RenderMotionVectors();
 
 	// struct & support functions
 	sl::Constants m_slConstants = {};
