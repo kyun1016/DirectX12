@@ -36,6 +36,11 @@
 // donut/core
 #include "log.h"
 
+using namespace donut::math;
+#include "taa_cb.h"
+#include "view_cb.h"
+#include "gbuffer_cb.h"
+
 #pragma comment(lib, "d3dcompiler.lib")
 
 #pragma region ImGui
@@ -217,17 +222,55 @@ public:
 #pragma endregion ImGui
 #pragma region Streamline
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> mStreamlineTex;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mStreamlinePSOs;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUStreamline;
 	bool mSLInitialised = false;
 	sl::Preferences mPref;
 	UIData m_ui;
 	std::string str_temp;
+	
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mStreamlineRootSignature;
+
+	struct sl_FrameBuffer
+	{
+		D3D12_RESOURCE_DESC GBufferDiffuseDesc;
+		D3D12_RESOURCE_DESC GBufferSpecularDesc;
+		D3D12_RESOURCE_DESC GBufferNormalDesc;
+		D3D12_RESOURCE_DESC GBufferEmissiveDesc;
+		D3D12_RESOURCE_DESC GBufferDepthDesc;
+		D3D12_RESOURCE_DESC GBufferMotionVectorsDesc;
+		
+		GBufferFillConstants GBufferConstants;
+		std::unique_ptr<UploadBuffer<GBufferFillConstants>> GBufferCB;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferDiffuse;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferSpecular;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferNormal;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferEmissive;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferDepth;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferMotionVectors;
+	} m_sl_framebuffer;
+
+	struct sl_data_motion_vector
+	{
+		TemporalAntiAliasingConstants taaConstants;
+		std::unique_ptr<UploadBuffer<TemporalAntiAliasingConstants>> taaCB;
+		
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pso;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GBufferDepth;
+		D3D12_GPU_DESCRIPTOR_HANDLE handleGPU;
+		Microsoft::WRL::ComPtr<ID3DBlob> VS;
+		Microsoft::WRL::ComPtr<ID3DBlob> PS;
+		std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+		D3D12_PRIMITIVE_TOPOLOGY primType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+	} m_sl_data_mv;
 
 	void UpdateFeatureAvailable();
-	void BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize, donut::math::uint2 displaySize, DXGI_FORMAT bufferFormat, donut::math::uint sampleCount = 1, bool enableMotionVectors = true, bool useReverseProjection = true);
+	void BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize);
 	std::wstring GetSlInterposerDllLocation();
 	bool InitSLLog();
 	bool LoadStreamline();
+	void BuildStreamlinePSOs();
 	bool SuccessCheck(sl::Result result, std::string& o_log);
 
 	bool BeginFrame();
@@ -235,10 +278,15 @@ public:
 	bool mNeedNewPasses = false;
 	void SLFrameSetting();
 
+	void UpdateGBufferCB();
+	void RenderGBuffer();
+	void RenderMotionVectors();
+
 	// help functions
 	inline sl::float2 make_sl_float2(donut::math::float2 donutF) { return sl::float2{ donutF.x, donutF.y }; }
 	inline sl::float3 make_sl_float3(donut::math::float3 donutF) { return sl::float3{ donutF.x, donutF.y, donutF.z }; }
 	inline sl::float3 make_sl_float3(DirectX::XMFLOAT3 float3) { return sl::float3{ float3.x, float3.y, float3.z }; }
+	inline donut::math::float3 make_donut_float3(DirectX::XMFLOAT3 float3) { return donut::math::float3{ float3.x, float3.y, float3.z }; }
 	inline sl::float4 make_sl_float4(donut::math::float4 donutF) { return sl::float4{ donutF.x, donutF.y, donutF.z, donutF.w }; }
 	inline sl::float4x4 make_sl_float4x4(donut::math::float4x4 donutF4x4) {
 		sl::float4x4 outF4x4;
@@ -305,8 +353,6 @@ public:
 	{
 		EndMarker(mCommandList.Get());
 	}
-
-	void RenderMotionVectors();
 
 	// struct & support functions
 	sl::Constants m_slConstants = {};

@@ -3,9 +3,6 @@
 #include <sl_security.h>
 #include <sl_core_api.h>
 
-using namespace donut::math;
-#include "taa_cb.h"
-
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -1927,28 +1924,47 @@ void AppBase::UpdateFeatureAvailable()
 	}
 }
 
-void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize, donut::math::uint2 displaySize, DXGI_FORMAT bufferFormat, donut::math::uint sampleCount, bool enableMotionVectors, bool useReverseProjection)
+void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 renderSize)
 {
-	D3D12_RESOURCE_DESC texDesc;
-	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
-	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	texDesc.Alignment = 0;
-	texDesc.Width = renderSize.x;	// Render Size (DLSS Render 사이즈에 맞게 설정)
-	texDesc.Height = renderSize.y;
-	texDesc.DepthOrArraySize = 1;
-	texDesc.MipLevels = 1;	// Mip Map 미활용
-	texDesc.Format = bufferFormat;
-	texDesc.SampleDesc.Count = 1;
-	texDesc.SampleDesc.Quality = 0;
-	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	m_sl_framebuffer.GBufferDiffuseDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	m_sl_framebuffer.GBufferDiffuseDesc.Alignment = 0;
+	m_sl_framebuffer.GBufferDiffuseDesc.Width = renderSize.x;	// Render Size (DLSS Render 사이즈에 맞게 설정)
+	m_sl_framebuffer.GBufferDiffuseDesc.Height = renderSize.y;
+	m_sl_framebuffer.GBufferDiffuseDesc.DepthOrArraySize = 1;
+	m_sl_framebuffer.GBufferDiffuseDesc.MipLevels = 1;	// Mip Map 미활용
+	m_sl_framebuffer.GBufferDiffuseDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	m_sl_framebuffer.GBufferDiffuseDesc.SampleDesc.Count = 1;
+	m_sl_framebuffer.GBufferDiffuseDesc.SampleDesc.Quality = 0;
+	m_sl_framebuffer.GBufferDiffuseDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	m_sl_framebuffer.GBufferDiffuseDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+	m_sl_framebuffer.GBufferSpecularDesc = m_sl_framebuffer.GBufferDiffuseDesc;
+	m_sl_framebuffer.GBufferNormalDesc = m_sl_framebuffer.GBufferDiffuseDesc;
+	m_sl_framebuffer.GBufferEmissiveDesc = m_sl_framebuffer.GBufferDiffuseDesc;
+	m_sl_framebuffer.GBufferDepthDesc = m_sl_framebuffer.GBufferDiffuseDesc;
+	m_sl_framebuffer.GBufferMotionVectorsDesc = m_sl_framebuffer.GBufferDiffuseDesc;
+
+	m_sl_framebuffer.GBufferNormalDesc.Format = DXGI_FORMAT_R16G16B16A16_SNORM;
+	m_sl_framebuffer.GBufferEmissiveDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	m_sl_framebuffer.GBufferDepthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	m_sl_framebuffer.GBufferDepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	m_sl_framebuffer.GBufferMotionVectorsDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
+	
+
 	D3D12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferDiffuseDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferDiffuse));
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferSpecularDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferSpecular));
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferNormalDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferNormal));
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferEmissiveDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferEmissive));
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferDepthDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferDepth));
+	mDevice->CreateCommittedResource(&heapProperty, D3D12_HEAP_FLAG_NONE, &m_sl_framebuffer.GBufferMotionVectorsDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&m_sl_framebuffer.GBufferMotionVectors));
 
 	// DLSS
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_TAAUInput"])	//Temporal Anti-Aliasing Upsample
@@ -1957,7 +1973,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_TAAUOutput"])
@@ -1966,7 +1982,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_DepthBuffer"])
@@ -1975,7 +1991,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_MotionVectorBuffer"])
@@ -1984,7 +2000,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_ExposureBuffer"])
@@ -1994,7 +2010,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	mDevice->CreateCommittedResource(
 		&heapProperty,
 		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
+		&m_sl_framebuffer.GBufferDiffuseDesc,
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&mStreamlineTex["DLSS_ExposureBuffer"])
@@ -2140,57 +2156,6 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 	desc.debugName = "PreUIColor";
 	PreUIColor = device->createTexture(desc);
 	*/
-
-	auto texture = std::make_unique<Texture>();
-	std::wstring name = L"DLSS_MotionVector";
-	mStreamlineTex[name] = std::move(texture);
-
-	
-
-	mDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(&mStreamlineTex["DLSS_Depth"])
-	);
-
-	mDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&texDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(&mStreamlineTex["DLSS_MotionVector"])
-	);
-
-	texture = std::make_unique<Texture>();
-	name = L"DLSS_Input";
-	mStreamlineTex[name] = std::move(texture);
-
-	texture = std::make_unique<Texture>();
-	name = L"DLSS_Output";
-	mStreamlineTex[name] = std::move(texture);
-
-	// DLSS_NIS용 Texture 선언
-	texture = std::make_unique<Texture>();
-	name = L"DLSS_NIS_Input";
-	mStreamlineTex[name] = std::move(texture);
-
-	texture = std::make_unique<Texture>();
-	name = L"DLSS_NIS_Output";
-	mStreamlineTex[name] = std::move(texture);
-
-	// DeepDVC용 Texture 선언
-	texture = std::make_unique<Texture>();
-	name = L"DeepDVC_Output";
-	mStreamlineTex[name] = std::move(texture);
-
-	// Latewarp용 Texture 선언
-	texture = std::make_unique<Texture>();
-	name = L"Latewarp_Output";
-	mStreamlineTex[name] = std::move(texture);
 }
 
 std::wstring AppBase::GetSlInterposerDllLocation() {
@@ -2405,9 +2370,117 @@ bool AppBase::LoadStreamline()
 	// 사용 가능 기능 검사
 	UpdateFeatureAvailable();
 
-	BuildStreamlineTexture();
+	BuildStreamlineTexture(
+		/*ID3D12Device* device				*/ mDevice.Get(),
+		/*donut::math::uint2 renderSize		*/ donut::math::uint2(mParam.backBufferWidth, mParam.backBufferHeight)
+	);
+	BuildStreamlinePSOs();
+
+	// BuildFrameResources
+	{
+		m_sl_framebuffer.GBufferCB = std::make_unique<UploadBuffer<GBufferFillConstants>>(mDevice.Get(), 1, true);
+		m_sl_data_mv.taaCB = std::make_unique<UploadBuffer<TemporalAntiAliasingConstants>>(mDevice.Get(), 1, true);
+	}
 
 	return true;
+}
+
+void AppBase::BuildStreamlinePSOs()
+{
+	m_sl_data_mv.VS = D3DUtil::CompileShader(L"sl_MotionVector.hlsl", nullptr, "VS", "vs_5_1");
+	m_sl_data_mv.PS = D3DUtil::CompileShader(L"sl_MotionVector.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_sl_data_mv.inputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+	m_sl_data_mv.psoDesc =
+	{
+		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mStreamlineRootSignature.Get(),
+		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(m_sl_data_mv.VS->GetBufferPointer()), m_sl_data_mv.VS->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(m_sl_data_mv.PS->GetBufferPointer()), m_sl_data_mv.PS->GetBufferSize()},
+		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
+		/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
+		/* D3D12_STREAM_OUTPUT_DESC StreamOutput{							*/.StreamOutput = {
+		/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
+		/*			UINT Stream;											*/
+		/*			LPCSTR SemanticName;									*/
+		/*			UINT SemanticIndex;										*/
+		/*			BYTE StartComponent;									*/
+		/*			BYTE ComponentCount;									*/
+		/*			BYTE OutputSlot;										*/
+		/*		}															*/
+		/*		UINT NumEntries;											*/	0,
+		/*		const UINT* pBufferStrides;									*/	0,
+		/*		UINT NumStrides;											*/	0,
+		/*		UINT RasterizedStream;										*/	0
+		/* }																*/},
+		/* D3D12_BLEND_DESC BlendState{										*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+		/*		BOOL AlphaToCoverageEnable									*/
+		/*		BOOL IndependentBlendEnable									*/
+		/*		D3D12_RENDER_TARGET_BLEND_DESC RenderTarget[8]				*/
+		/* }																*/
+		/* UINT SampleMask													*/.SampleMask = UINT_MAX,
+		/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
+		/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
+		/*		BOOL FrontCounterClockwise									*/		false,
+		/*		INT DepthBias												*/		D3D12_DEFAULT_DEPTH_BIAS,
+		/*		FLOAT DepthBiasClamp										*/		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+		/*		FLOAT SlopeScaledDepthBias									*/		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+		/*		BOOL DepthClipEnable										*/		true,
+		/*		BOOL MultisampleEnable										*/		false,
+		/*		BOOL AntialiasedLineEnable									*/		false,
+		/*		UINT ForcedSampleCount										*/		0,
+		/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+		/* }																*/},
+		/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		/*		BOOL DepthEnable											*/		.DepthEnable = false,
+		/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+		/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+		/*		BOOL StencilEnable											*/		.StencilEnable = false,
+		/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+		/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+		/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
+		/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
+		/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+		/*		}															*/		},
+		/* }																*/ },
+		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = m_sl_data_mv.inputLayout.data(),
+		/*		UINT NumElements											*/		.NumElements = (UINT)m_sl_data_mv.inputLayout.size()
+		/*	}																*/ },
+		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+		/* UINT NumRenderTargets											*/.NumRenderTargets = 1,
+		/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mParam.swapChainFormat, mParam.swapChainFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
+		/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mParam.depthStencilFormat,
+		/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
+		/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
+		/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
+		/*	}																*/},
+		/* UINT NodeMask													*/.NodeMask = 0,
+		/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
+		/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
+	};
+	m_sl_data_mv.psoDesc.BlendState.IndependentBlendEnable = true;
+
+
+	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&m_sl_data_mv.psoDesc, IID_PPV_ARGS(&m_sl_data_mv.pso)));
 }
 
 bool AppBase::SuccessCheck(sl::Result result, std::string& o_log)
@@ -2952,19 +3025,16 @@ void AppBase::SLFrameSetting()
 {
 	// Deffered Shading
 	{
+		UpdateGBufferCB();
+		// DO GBUFFER
+		RenderGBuffer();
+
 		// DO MOTION VECTORS
 		RenderMotionVectors();
 
-		// DO DEFFERED
-		DeferredLightingPass::Inputs deferredInputs;
-		deferredInputs.SetGBuffer(*m_RenderTargets);
-		deferredInputs.ambientOcclusion = m_ui.EnableSsao ? m_RenderTargets->AmbientOcclusion : nullptr;
-		deferredInputs.ambientColorTop = m_AmbientTop;
-		deferredInputs.ambientColorBottom = m_AmbientBottom;
-		deferredInputs.lights = &m_Scene->GetSceneGraph()->GetLights();
-		deferredInputs.output = m_RenderTargets->HdrColor;
+		// DO SSAO
 
-		m_DeferredLightingPass->Render(m_CommandList, *m_View, deferredInputs);
+		// DO DEFFERED
 	}
 
 	// SET STREAMLINE CONSTANTS
@@ -3100,64 +3170,138 @@ void AppBase::SLFrameSetting()
 	std::swap(mCamera, mCameraPrevious);
 }
 
+void AppBase::UpdateGBufferCB()
+{
+	{
+		PlanarViewConstants& constants = m_sl_framebuffer.GBufferConstants.view;
+
+		constants.matWorldToView = affineToHomogeneous(make_donut_affine3(mCamera.GetView4x4f()));
+		constants.matViewToClip = make_donut_float4x4(mCamera.GetProj4x4f());
+		constants.matWorldToClip = constants.matWorldToView * constants.matViewToClip;
+		constants.matClipToView = inverse(constants.matViewToClip);
+		constants.matViewToWorld = inverse(constants.matWorldToView);
+		constants.matClipToWorld = inverse(constants.matWorldToClip);
+
+		// TAA, DLSS에서 Reprojection 간 jitter offset을 적용하여 aliasing을 줄이는 목적
+		// 현재 따로 구현이 이뤄져 있지 않아 우선 건드리지 않도록 하겠다....
+		constants.matViewToClipNoOffset = dm::float4x4::zero();
+		constants.matWorldToClipNoOffset = dm::float4x4::zero();
+		constants.matClipToViewNoOffset = dm::float4x4::zero();
+		constants.matClipToWorldNoOffset = dm::float4x4::zero();
+
+		constants.viewportOrigin = float2(0.f, 0.f);
+		constants.viewportSize = float2(m_RenderingRectSize.x, m_RenderingRectSize.y);
+		constants.viewportSizeInv = 1.f / constants.viewportSize;
+
+		constants.clipToWindowScale = float2(0.5f * m_RenderingRectSize.x, -0.5f * m_RenderingRectSize.y);
+		constants.clipToWindowBias = constants.viewportOrigin + constants.viewportSize * 0.5f;
+
+		constants.windowToClipScale = 1.f / constants.clipToWindowScale;
+		constants.windowToClipBias = -constants.clipToWindowBias * constants.windowToClipScale;
+
+		constants.cameraDirectionOrPosition = constants.matViewToClip[2][3] == 0.f
+			? float4(make_donut_float3(mCamera.GetPosition3f()), 0.f)
+			: float4(constants.matWorldToView[2], 1.f);
+
+		constants.pixelOffset = { -0.187500000f, -0.312500000f };
+	}
+
+	{
+		PlanarViewConstants& constants = m_sl_framebuffer.GBufferConstants.viewPrev;
+
+		constants.matWorldToView = affineToHomogeneous(make_donut_affine3(mCameraPrevious.GetView4x4f()));
+		constants.matViewToClip = make_donut_float4x4(mCameraPrevious.GetProj4x4f());
+		constants.matWorldToClip = constants.matWorldToView * constants.matViewToClip;
+		constants.matClipToView = inverse(constants.matViewToClip);
+		constants.matViewToWorld = inverse(constants.matWorldToView);
+		constants.matClipToWorld = inverse(constants.matWorldToClip);
+
+		// TAA, DLSS에서 Reprojection 간 jitter offset을 적용하여 aliasing을 줄이는 목적
+		// 현재 따로 구현이 이뤄져 있지 않아 우선 건드리지 않도록 하겠다....
+		constants.matViewToClipNoOffset = dm::float4x4::zero();
+		constants.matWorldToClipNoOffset = dm::float4x4::zero();
+		constants.matClipToViewNoOffset = dm::float4x4::zero();
+		constants.matClipToWorldNoOffset = dm::float4x4::zero();
+
+		constants.viewportOrigin = float2(0.f, 0.f);
+		constants.viewportSize = float2(m_RenderingRectSize.x, m_RenderingRectSize.y);
+		constants.viewportSizeInv = 1.f / constants.viewportSize;
+
+		constants.clipToWindowScale = float2(0.5f * m_RenderingRectSize.x, -0.5f * m_RenderingRectSize.y);
+		constants.clipToWindowBias = constants.viewportOrigin + constants.viewportSize * 0.5f;
+
+		constants.windowToClipScale = 1.f / constants.clipToWindowScale;
+		constants.windowToClipBias = -constants.clipToWindowBias * constants.windowToClipScale;
+
+		constants.cameraDirectionOrPosition = constants.matViewToClip[2][3] == 0.f
+			? float4(make_donut_float3(mCameraPrevious.GetPosition3f()), 0.f)
+			: float4(constants.matWorldToView[2], 1.f);
+
+		constants.pixelOffset = { -0.187500000f, -0.312500000f };
+	}
+
+
+	m_sl_framebuffer.GBufferCB->CopyData(0, m_sl_framebuffer.GBufferConstants);
+}
+
+void AppBase::RenderGBuffer()
+{
+	BeginMarker("GBufferFill");
+	for (uint viewIndex = 0; viewIndex < 1; viewIndex++)
+	{
+		donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
+		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_float4x4(mCamera.GetProj4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_float4x4(mCameraPrevious.GetProj4x4f());
+
+	}
+	EndMarker();
+}
+
 void AppBase::RenderMotionVectors()
 {
 	BeginMarker("Motion Vectors");
 	for (uint viewIndex = 0; viewIndex < 1; viewIndex++)
 	{
-		TemporalAntiAliasingConstants taaConstants = {};
 		donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
 		donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_float4x4(mCamera.GetProj4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_float4x4(mCameraPrevious.GetProj4x4f());
-		taaConstants.reprojectionMatrix = reprojectionMatrix;
-		taaConstants.inputViewOrigin = float2(0.0f, 0.0f);
-		taaConstants.inputViewSize = float2(m_RenderingRectSize.x, m_RenderingRectSize.y);
-		taaConstants.stencilMask = 1;
-		mCommandList->writeBuffer(m_TemporalAntiAliasingCB, &taaConstants, sizeof(taaConstants));
+		m_sl_data_mv.taaConstants.reprojectionMatrix = reprojectionMatrix;
+		m_sl_data_mv.taaConstants.inputViewOrigin = float2(0.0f, 0.0f);
+		m_sl_data_mv.taaConstants.inputViewSize = float2(m_RenderingRectSize.x, m_RenderingRectSize.y);
+		m_sl_data_mv.taaConstants.stencilMask = 1;
+		m_sl_data_mv.taaCB->CopyData(0, m_sl_data_mv.taaConstants);
 
-		nvrhi::GraphicsState state;
-		state.pipeline = m_MotionVectorsPso;
-		state.framebuffer = m_MotionVectorsFramebufferFactory->GetFramebuffer(*view);
-		state.bindings = { m_MotionVectorsBindingSet };
-		state.viewport = viewportState;
-		commandList->setGraphicsState(state);
+		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		mCommandList->SetGraphicsRootSignature(mStreamlineRootSignature.Get());
+		mCommandList->IASetPrimitiveTopology(m_sl_data_mv.primType);
 
-		nvrhi::DrawArguments args;
-		args.instanceCount = 1;
-		args.vertexCount = 4;
-		commandList->draw(args);
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
+		rtvs[0] = mhCPUSwapChainBuffer[mCurrBackBuffer];		// 기존
+		mCommandList->OMSetRenderTargets(1, rtvs, false, &mhCPUDSVBuffer[0]);
+		mCommandList->SetGraphicsRootConstantBufferView(18, m_sl_data_mv.taaCB->Resource()->GetGPUVirtualAddress());
+		mCommandList->SetGraphicsRootDescriptorTable(19, m_sl_data_mv.handleGPU);
+		D3D12_INDEX_BUFFER_VIEW IBV = {};
+		D3D12_VERTEX_BUFFER_VIEW VBV = {};
+		mCommandList->IASetIndexBuffer(&IBV);
+		mCommandList->IASetVertexBuffers(0, 1, &VBV);
+
+		D3D12_RESOURCE_BARRIER barrier
+			= CD3DX12_RESOURCE_BARRIER::Transition(m_sl_data_mv.GBufferDepth.Get(),
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
+		mCommandList->ResourceBarrier(1, &barrier);
+		// barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
+		// barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+		mCommandList->DrawInstanced(
+			/* _In_ UINT VertexCountPerInstance	*/ 4,
+			/* _In_ UINT InstanceCount			*/ 1,
+			/* _In_ UINT StartVertexLocation	*/ 0,
+			/* _In_ UINT StartInstanceLocation	*/ 0
+		);
 	}
-
-	// This section of code updates the streamline constants every frame. Regardless of whether we are utilising the streamline plugins, as long as streamline is in use, we must set its constants.
-	donut::math::affine3 viewReprojection = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * make_donut_affine3(mCameraPrevious.GetView4x4f());
-	donut::math::float4x4 reprojectionMatrix = donut::math::inverse(make_donut_affine3(mCamera.GetView4x4f())) * affineToHomogeneous(viewReprojection) * make_donut_affine3(mCameraPrevious.GetView4x4f());
-	float aspectRatio = float(m_RenderingRectSize.x) / float(m_RenderingRectSize.y);
-
-	donut::math::float4x4 projection = perspProjD3DStyleReverse(dm::radians(mCamera.GetFovY()), aspectRatio, mCamera.GetNearZ());
-
-	donut::math::float2 jitterOffset = { 0.3125f, 0.0625f };
-
-	sl::Constants slConstants = {};
-	slConstants.cameraAspectRatio = aspectRatio;
-	slConstants.cameraFOV = dm::radians(mCamera.GetFovY());
-	slConstants.cameraFar = mCamera.GetNearZ();
-	slConstants.cameraMotionIncluded = sl::Boolean::eTrue;
-	slConstants.cameraNear = mCamera.GetFarZ();
-	slConstants.cameraPinholeOffset = { 0.f, 0.f };
-	slConstants.cameraPos = make_sl_float3(mCamera.GetPosition3f());
-	slConstants.cameraFwd = make_sl_float3(mCamera.GetLook3f());
-	slConstants.cameraUp = make_sl_float3(mCamera.GetUp3f());
-	slConstants.cameraRight = make_sl_float3(mCamera.GetRight3f());
-	slConstants.cameraViewToClip = make_sl_float4x4(projection);
-	slConstants.clipToCameraView = make_sl_float4x4(donut::math::inverse(projection));
-	slConstants.clipToPrevClip = make_sl_float4x4(reprojectionMatrix);
-	slConstants.depthInverted = sl::Boolean::eFalse; // m_View->IsReverseDepth() ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-	slConstants.jitterOffset = make_sl_float2(jitterOffset);
-	slConstants.mvecScale = { 1.0f / m_RenderingRectSize.x , 1.0f / m_RenderingRectSize.y }; // This are scale factors used to normalize mvec (to -1,1) and donut has mvec in pixel space
-	slConstants.prevClipToClip = make_sl_float4x4(donut::math::inverse(reprojectionMatrix));
-	slConstants.reset = mNeedNewPasses ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-	slConstants.motionVectors3D = sl::Boolean::eFalse;
-	slConstants.motionVectorsInvalidValue = FLT_MIN;
-
 	EndMarker();
 }
 

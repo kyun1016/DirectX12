@@ -204,6 +204,9 @@
     <ClInclude Include="taa_cb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gbuffer_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="results.txt">

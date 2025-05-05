@@ -20,6 +20,9 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
+#include "Memory.hlsli"
+
+#ifdef STREAMLINE
 #ifndef MOTION_VECTORS_HLSLI
 #define MOTION_VECTORS_HLSLI
 
@@ -42,7 +45,6 @@ float3 GetMotionVector(float3 svPosition, float3 prevWorldPos, PlanarViewConstan
 
 #endif
 
-
 void VS(
 	in uint iVertex : SV_VertexID,
 	out float4 o_posClip : SV_Position,
@@ -57,13 +59,6 @@ void VS(
 
 
 #pragma pack_matrix(row_major)
-
-#include "taa_cb.h"
-
-cbuffer c_TemporalAA : register(b0)
-{
-    TemporalAntiAliasingConstants g_TemporalAA;
-};
 
 Texture2D<float> t_GBufferDepth : register(t0);
 #if USE_STENCIL
@@ -105,3 +100,4 @@ void PS(
 
     o_color.xy = prevWindowPos.xy - i_position.xy;
 }
+#endif

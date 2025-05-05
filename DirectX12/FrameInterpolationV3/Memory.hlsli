@@ -52,8 +52,8 @@
 #define TEX_CUBE_SIZE 1
 #endif
 
-#ifndef TEX_STREAMLINE_SIZE
-#define TEX_STREAMLINE_SIZE 1
+#ifndef STREAMLINE
+#define STREAMLINE 1
 #endif
 
 struct Light
@@ -134,8 +134,18 @@ Texture2D gShadowMap[MAX_LIGHTS] : register(t0, space8);
 Texture2D gSsaoMap[MAX_LIGHTS] : register(t0, space9);
 Texture2DArray gTreeMapArray[TEX_ARRAY_SIZE] : register(t0, space10);
 TextureCube gCubeMap[TEX_CUBE_SIZE] : register(t0, space11);
-TextureCube gStreamlineMap[TEX_STREAMLINE_SIZE] : register(t0, space12);
+// Texture2D gStreamlineMap[TEX_STREAMLINE_SIZE] : register(t0, space12);
 
+// for streamline
+#ifdef STREAMLINE
+Texture2D<float> t_GBufferDepth : register(t0, space12);
+Texture2D<float> t_GBufferDiffuse : register(t1, space12);
+Texture2D<float> t_GBufferSpecular : register(t2, space12);
+Texture2D<float> t_GBufferNormal : register(t3, space12);
+Texture2D<float> t_GBufferEmissive : register(t4, space12);
+Texture2D<float> t_GBufferMotionVectors : register(t5, space12);
+Texture2D<uint2> t_GBufferStencil : register(t6, sapce12);
+#endif
 
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
@@ -201,6 +211,14 @@ cbuffer cbShaderToy : register(b3)
     float2 iResolution;
     float dummy;
 };
+
+#ifdef STREAMLINE
+#include "taa_cb.h"
+cbuffer c_TemporalAA : register(b4)
+{
+    TemporalAntiAliasingConstants g_TemporalAA;
+};
+#endif
 
 
 //***************************************************************************************
