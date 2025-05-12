@@ -266,8 +266,6 @@ private:
 
 	PassConstants mMainPassCB;
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mMainInputLayout;		//input layout description
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mSkinnedInputLayout;

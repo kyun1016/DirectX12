@@ -145,6 +145,8 @@ int AppBase::Run()
 {
 	Initialize();
 
+	InitSLPost();
+
 	MSG msg{ 0 };
 
 	mTimer.Reset();
@@ -2305,6 +2307,13 @@ bool AppBase::LoadStreamline()
 #if defined(DEBUG) || defined(_DEBUG) 
 	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
 	ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
+
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDredSettings))))
+	{
+		mDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+		mDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+	}
+
 #endif
 	ThrowIfFailed(CreateDXGIFactory2(_DEBUG, IID_PPV_ARGS(&mDxgiFactory)));
 	// Try to create hardware device.
@@ -2366,7 +2375,11 @@ bool AppBase::LoadStreamline()
 	CreateRtvAndDsvDescriptorHeaps(APP_NUM_BACK_BUFFERS + RTV_USER_SIZE, 1, RTV_TOY_SIZE);
 	CreateSwapChain();
 
+	return true;
+}
 
+void AppBase::InitSLPost()
+{
 	// 사용 가능 기능 검사
 	UpdateFeatureAvailable();
 
@@ -2381,8 +2394,6 @@ bool AppBase::LoadStreamline()
 		m_sl_framebuffer.GBufferCB = std::make_unique<UploadBuffer<GBufferFillConstants>>(mDevice.Get(), 1, true);
 		m_sl_data_mv.taaCB = std::make_unique<UploadBuffer<TemporalAntiAliasingConstants>>(mDevice.Get(), 1, true);
 	}
-
-	return true;
 }
 
 void AppBase::BuildStreamlinePSOs()
@@ -2392,16 +2403,16 @@ void AppBase::BuildStreamlinePSOs()
 
 	m_sl_data_mv.inputLayout =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		// { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		// { "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 	m_sl_data_mv.psoDesc =
 	{
-		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mStreamlineRootSignature.Get(),
+		/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
 		/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(m_sl_data_mv.VS->GetBufferPointer()), m_sl_data_mv.VS->GetBufferSize()},
 		/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(m_sl_data_mv.PS->GetBufferPointer()), m_sl_data_mv.PS->GetBufferSize()},
 		/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
@@ -2461,8 +2472,8 @@ void AppBase::BuildStreamlinePSOs()
 		/*		}															*/		},
 		/* }																*/ },
 		/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
-		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = m_sl_data_mv.inputLayout.data(),
-		/*		UINT NumElements											*/		.NumElements = (UINT)m_sl_data_mv.inputLayout.size()
+		/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = nullptr,
+		/*		UINT NumElements											*/		.NumElements = 0
 		/*	}																*/ },
 		/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 		/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
@@ -3271,7 +3282,7 @@ void AppBase::RenderMotionVectors()
 
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-		mCommandList->SetGraphicsRootSignature(mStreamlineRootSignature.Get());
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 		mCommandList->IASetPrimitiveTopology(m_sl_data_mv.primType);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];

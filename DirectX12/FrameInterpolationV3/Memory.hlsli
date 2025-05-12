@@ -144,7 +144,22 @@ Texture2D<float> t_GBufferSpecular : register(t2, space12);
 Texture2D<float> t_GBufferNormal : register(t3, space12);
 Texture2D<float> t_GBufferEmissive : register(t4, space12);
 Texture2D<float> t_GBufferMotionVectors : register(t5, space12);
-Texture2D<uint2> t_GBufferStencil : register(t6, sapce12);
+// Texture2D<uint2> t_GBufferStencil : register(t6, sapce12);
+
+// StructuredBuffer<float> t_GBufferDepth : register(t0, space12);
+// StructuredBuffer<float> t_GBufferDiffuse : register(t1, space12);
+// StructuredBuffer<float> t_GBufferSpecular : register(t2, space12);
+// StructuredBuffer<float> t_GBufferNormal : register(t3, space12);
+// StructuredBuffer<float> t_GBufferEmissive : register(t4, space12);
+// StructuredBuffer<float> t_GBufferMotionVectors : register(t5, space12);
+// struct StencilData
+// {
+//     uint a;
+//     uint b;
+//     int dummy1;
+//     int dummy2;
+// };
+// StructuredBuffer<StencilData> t_GBufferStencil : register(t6, sapce12);
 #endif
 
 // Put in space1, so the texture array does not overlap with these resources.  

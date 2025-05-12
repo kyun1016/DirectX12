@@ -317,7 +317,7 @@ void MyApp::BuildRootSignature()
 	} 	D3D12_SHADER_VISIBILITY;*/
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[18];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[17];
 	// Perfomance TIP: Order from most frequent to least frequent.
 	slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
 	slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
@@ -336,7 +336,7 @@ void MyApp::BuildRootSignature()
 	slotRootParameter[14].InitAsDescriptorTable(1, &SsaoMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[15].InitAsDescriptorTable(1, &TexArrayTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[16].InitAsDescriptorTable(1, &TexCubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[17].InitAsDescriptorTable(1, &TexStreamlineTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	// slotRootParameter[17].InitAsDescriptorTable(1, &TexStreamlineTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = D3DUtil::GetStaticSamplers();
 

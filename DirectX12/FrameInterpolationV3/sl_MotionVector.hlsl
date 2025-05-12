@@ -28,6 +28,10 @@
 
 #include "view_cb.h"
 
+#ifndef QUAD_Z
+#define QUAD_Z 1.0f
+#endif
+
 float3 GetMotionVector(float3 svPosition, float3 prevWorldPos, PlanarViewConstants view, PlanarViewConstants viewPrev)
 {
     float4 clipPos = mul(float4(prevWorldPos, 1), viewPrev.matWorldToClip);
@@ -60,11 +64,6 @@ void VS(
 
 #pragma pack_matrix(row_major)
 
-Texture2D<float> t_GBufferDepth : register(t0);
-#if USE_STENCIL
-Texture2D<uint2> t_GBufferStencil : register(t1);
-#endif
-
 void PS(
     in float4 i_position : SV_Position,
     in float2 i_uv : UV,
@@ -78,7 +77,7 @@ void PS(
     if ((stencil & g_TemporalAA.stencilMask) == g_TemporalAA.stencilMask)
         discard;
 #endif
-    float depth = t_GBufferDepth[i_position.xy].x;
+    float depth = 1.0f; // t_GBufferDepth[i_position.xy].x;
 
     float4 clipPos;
     clipPos.x = i_uv.x * 2 - 1;

@@ -229,7 +229,7 @@ public:
 	UIData m_ui;
 	std::string str_temp;
 	
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> mStreamlineRootSignature;
+	// Microsoft::WRL::ComPtr<ID3D12RootSignature> mStreamlineRootSignature;
 
 	struct sl_FrameBuffer
 	{
@@ -270,6 +270,7 @@ public:
 	std::wstring GetSlInterposerDllLocation();
 	bool InitSLLog();
 	bool LoadStreamline();
+	void InitSLPost();
 	void BuildStreamlinePSOs();
 	bool SuccessCheck(sl::Result result, std::string& o_log);
 
@@ -566,6 +567,8 @@ public:
 	HANDLE mFenceEvent = nullptr;
 	int mCurrBackBuffer = 0;
 
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mSwapChainBuffer;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUSwapChainBuffer;
@@ -600,6 +603,7 @@ public:
 	// Debug
 	Microsoft::WRL::ComPtr<ID3D12Debug> mD12Debug;
 	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
+	Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> mDredSettings;
 #endif
 
 	float mMouseNdcX = 0.0f;
