@@ -1789,6 +1789,29 @@ void AppBase::ShowStreamlineWindow()
 
 }
 
+void AppBase::BuildTexture2DSrv(const std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize)
+{
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	for (const auto& tex : texMap)
+	{
+		auto texture = tex.second;
+
+		srvDesc.Format = texture->GetDesc().Format;
+		srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+		mDevice->CreateShaderResourceView(texture.Get(), &srvDesc, hCpuSrv);
+		hCpuSrv.Offset(1, descriptorSize);
+		hGpuSrv.Offset(1, descriptorSize);
+	}
+}
+
+
 
 void AppBase::UpdateFeatureAvailable()
 {
@@ -2306,6 +2329,7 @@ bool AppBase::LoadStreamline()
 #endif
 #if defined(DEBUG) || defined(_DEBUG) 
 	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&mD12Debug)));
+
 	ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&mDxgiDebug)));
 
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDredSettings))))
@@ -2491,7 +2515,7 @@ void AppBase::BuildStreamlinePSOs()
 	m_sl_data_mv.psoDesc.BlendState.IndependentBlendEnable = true;
 
 
-	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&m_sl_data_mv.psoDesc, IID_PPV_ARGS(&m_sl_data_mv.pso)));
+	// ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&m_sl_data_mv.psoDesc, IID_PPV_ARGS(&m_sl_data_mv.pso)));
 }
 
 bool AppBase::SuccessCheck(sl::Result result, std::string& o_log)

@@ -109,6 +109,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "25. StreamLine", "25. Strea
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StreamlineCore", "StreamlineCore\StreamlineCore.vcxproj", "{C31BC33F-7CA2-42E1-8109-372572DCED0B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameInterpolationV4", "FrameInterpolationV4\FrameInterpolationV4.vcxproj", "{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -381,6 +383,14 @@ Global
 		{C31BC33F-7CA2-42E1-8109-372572DCED0B}.Release|x64.Build.0 = Release|x64
 		{C31BC33F-7CA2-42E1-8109-372572DCED0B}.Release|x86.ActiveCfg = Release|Win32
 		{C31BC33F-7CA2-42E1-8109-372572DCED0B}.Release|x86.Build.0 = Release|Win32
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Debug|x64.ActiveCfg = Debug|x64
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Debug|x64.Build.0 = Debug|x64
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Debug|x86.ActiveCfg = Debug|Win32
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Debug|x86.Build.0 = Debug|Win32
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Release|x64.ActiveCfg = Release|x64
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Release|x64.Build.0 = Release|x64
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Release|x86.ActiveCfg = Release|Win32
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -419,6 +429,7 @@ Global
 		{6699FF1B-E02D-4E33-AEE0-6E94D223E49C} = {C3DDC28F-F21D-4B6A-A6C0-842299EFB49B}
 		{4655E774-D092-4DB3-BE29-3262EB982327} = {718D64CD-8069-42BB-9281-5695669C6622}
 		{C31BC33F-7CA2-42E1-8109-372572DCED0B} = {7351FB27-F415-4AE2-AAB5-F99B0E59083F}
+		{6B5523B0-A9A7-4F85-A96A-91E5B120A4B0} = {C3DDC28F-F21D-4B6A-A6C0-842299EFB49B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18487EB4-6B46-410B-8F2B-A554E251FB01}

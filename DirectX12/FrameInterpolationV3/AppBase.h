@@ -221,6 +221,7 @@ public:
 	}
 #pragma endregion ImGui
 #pragma region Streamline
+	void BuildTexture2DSrv(const std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>>& texMap, D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE& hCpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE& hGpuSrv, UINT descriptorSize);
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> mStreamlineTex;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mStreamlinePSOs;
 	D3D12_GPU_DESCRIPTOR_HANDLE mhGPUStreamline;

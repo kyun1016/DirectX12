@@ -490,7 +490,7 @@ void MyApp::BuildDescriptorHeaps()
 	BuildTextureCubeSrv(mCubeMapTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 
 	mhGPUStreamline = hGPUDescriptor;
-	// BuildTexture2DSrv(mStreamlineTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
+	AppBase::BuildTexture2DSrv(mStreamlineTex, srvDesc, hCPUDescriptor, hGPUDescriptor, mParam.cbvSrvUavDescriptorSize);
 
 	{
 		//=========================================
@@ -1880,7 +1880,7 @@ void MyApp::Render()
 		mCommandList->SetGraphicsRootDescriptorTable(13, mhGPUShadow);
 		mCommandList->SetGraphicsRootDescriptorTable(15, mhGPUArray);
 		mCommandList->SetGraphicsRootDescriptorTable(16, mhGPUCube);
-		mCommandList->SetGraphicsRootDescriptorTable(17, mhGPUStreamline);
+		// mCommandList->SetGraphicsRootDescriptorTable(17, mhGPUStreamline);
 
 		mLastVertexBufferView = mAllRitems[0]->Geo->VertexBufferView();
 		mLastIndexBufferView = mAllRitems[0]->Geo->IndexBufferView();
