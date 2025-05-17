@@ -2,8 +2,8 @@
 #define NOMINMAX
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "Math.h"
-
-#include "log.h"
-#include "VFS.h"
-#include "string_utils.h"
+#include "../DonutCore/Math.h"
+#include "../DonutCore/log.h"
+#include "../DonutCore/json.h"
+#include "../DonutCore/VFS.h"
+#include "../DonutCore/string_utils.h"
