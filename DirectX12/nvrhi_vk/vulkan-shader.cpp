@@ -20,8 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "vulkan-backend.h"
-#include <nvrhi/common/misc.h>
+#include "pch.h"
 
 namespace nvrhi::vulkan
 {

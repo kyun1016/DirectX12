@@ -20,7 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d12-backend.h"
+#include "pch.h"
 
 namespace nvrhi::d3d12
 {

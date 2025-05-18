@@ -20,11 +20,9 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d12-backend.h"
+#include "pch.h"
 #include <pix.h>
 #include <sstream>
-
-#include <nvrhi/common/misc.h>
 
 namespace nvrhi::d3d12
 {

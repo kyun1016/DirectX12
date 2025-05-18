@@ -20,10 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <array>
-#include <assert.h>
-
-#include "vulkan-backend.h"
+#include "pch.h"
 
 #define ENABLE_SHORTCUT_CONVERSIONS 1
 

@@ -27,6 +27,6 @@
 #include "../nvrhi/common/resourcebindingmap.h"
 #include "../nvrhi/common/sparse-bitset.h"
 #include "../nvrhi/common/state-tracking.h"
-#include "../nvrhi/common/versioning.h"
+// #include "../nvrhi/common/versioning.h"
 
 #include "../nvrhi/validation/validation-backend.h"

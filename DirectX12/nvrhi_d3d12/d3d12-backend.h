@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <nvrhi/d3d12.h>
+#include "../nvrhi/d3d12.h"
 
 #ifndef NVRHI_D3D12_WITH_NVAPI
 #define NVRHI_D3D12_WITH_NVAPI 0
@@ -33,7 +33,7 @@
 #include <nvapi.h>
 #endif
 
-#include <nvrhi/common/aftermath.h>
+#include "../nvrhi/common/aftermath.h"
 #if NVRHI_WITH_AFTERMATH
 #include <GFSDK_Aftermath.h>
 #endif
@@ -61,11 +61,11 @@
 #include <unordered_map>
 #include <utility>
 
-#include <nvrhi/common/resourcebindingmap.h>
-#include <nvrhi/utils.h>
-#include "../common/state-tracking.h"
-#include "../common/dxgi-format.h"
-#include "../common/versioning.h"
+#include "../nvrhi/common/resourcebindingmap.h"
+#include "../nvrhi/utils.h"
+#include "../nvrhi/common/state-tracking.h"
+#include "../nvrhi/common/dxgi-format.h"
+#include "../nvrhi/common/versioning.h"
 
 #ifdef NVRHI_WITH_RTXMU
 #include <rtxmu/D3D12AccelStructManager.h>

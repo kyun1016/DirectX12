@@ -66,9 +66,18 @@
     <ClCompile Include="vulkan-queue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan-backend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvrhi_vulkanPch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

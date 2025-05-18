@@ -20,11 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "vulkan-backend.h"
-#include <unordered_map>
-#include <sstream>
-
-#include <nvrhi/common/misc.h>
+#include "pch.h"
 
 #if defined(NVRHI_SHARED_LIBRARY_BUILD)
 // Define the Vulkan dynamic dispatcher - this needs to occur in exactly one cpp file in the program.

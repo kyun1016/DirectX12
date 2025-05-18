@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d11-backend.h"
-
-#include <nvrhi/common/misc.h>
+#include "pch.h"
 
 namespace nvrhi::d3d11
 {

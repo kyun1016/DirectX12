@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d11-backend.h"
-
-#include <nvrhi/utils.h>
+#include "pch.h"
 #include <sstream>
 #include <iomanip>
 

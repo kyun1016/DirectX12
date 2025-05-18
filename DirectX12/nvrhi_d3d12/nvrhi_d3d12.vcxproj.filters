@@ -60,9 +60,18 @@
     <ClCompile Include="d3d12-graphics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3d12-backend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nvrhi_d3d12Pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

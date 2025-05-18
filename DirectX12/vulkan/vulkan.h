@@ -1,6 +1,6 @@
 #ifndef VULKAN_H_
 #define VULKAN_H_ 1
-
+#define VK_USE_PLATFORM_WIN32_KHR 1
 /*
 ** Copyright 2015-2024 The Khronos Group Inc.
 **

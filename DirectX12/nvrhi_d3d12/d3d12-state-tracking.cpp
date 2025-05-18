@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d12-backend.h"
-
-#include <nvrhi/common/misc.h>
+#include "pch.h"
 #include <sstream>
 
 namespace nvrhi::d3d12

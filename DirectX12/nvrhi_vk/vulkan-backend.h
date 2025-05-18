@@ -25,13 +25,13 @@
 #include "../nvrhi/vulkan.h"
 #include "../nvrhi/utils.h"
 #include "../nvrhi/common/aftermath.h"
-#include "../common/state-tracking.h"
-#include "../common/versioning.h"
+#include "../nvrhi/common/state-tracking.h"
+#include "../nvrhi/common/versioning.h"
 #include <mutex>
 #include <list>
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
+#include "../vulkan/vulkan.hpp"
 
 #ifdef NVRHI_WITH_RTXMU
 #include <rtxmu/VkAccelStructManager.h>

@@ -20,11 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "d3d12-backend.h"
-
-#include <nvrhi/common/containers.h>
-#include <nvrhi/common/misc.h>
-#include <nvrhi/utils.h>
+#include "pch.h"
 
 #include <vector>
 #include <set>

@@ -21,9 +21,7 @@
 */
 
 
-#include "d3d12-backend.h"
-#include <nvrhi/utils.h>
-#include <nvrhi/common/misc.h>
+#include "pch.h"
 
 #include <sstream>
 #include <iomanip>
