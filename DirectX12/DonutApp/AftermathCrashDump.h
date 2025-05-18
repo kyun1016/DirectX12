@@ -23,7 +23,7 @@
 #pragma once
 #include <filesystem>
 #include <set>
-#include "../nvrhi/aftermath.h"
+#include "../nvrhi/common/aftermath.h"
 
 namespace donut::app
 {

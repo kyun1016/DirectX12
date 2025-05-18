@@ -48,6 +48,9 @@ freely, subject to the following restrictions:
 */
 
 #pragma once
+#define DONUT_WITH_DX11 1
+#define DONUT_WITH_DX12 1
+#define DONUT_WITH_VULKAN 1
 
 #if DONUT_WITH_DX11 || DONUT_WITH_DX12
 #include <DXGI.h>
@@ -62,7 +65,7 @@ freely, subject to the following restrictions:
 #endif
 
 #if DONUT_WITH_VULKAN
-#include <nvrhi/vulkan.h>
+#include "../nvrhi/vulkan.h"
 #endif
 
 #if DONUT_WITH_AFTERMATH

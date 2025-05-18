@@ -18,6 +18,41 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common\aftermath.h" />
+    <ClInclude Include="common\containers.h" />
+    <ClInclude Include="common\dxgi-format.h" />
+    <ClInclude Include="common\misc.h" />
+    <ClInclude Include="common\resource.h" />
+    <ClInclude Include="common\resourcebindingmap.h" />
+    <ClInclude Include="common\sparse-bitset.h" />
+    <ClInclude Include="common\state-tracking.h" />
+    <ClInclude Include="common\versioning.h" />
+    <ClInclude Include="d3d11.h" />
+    <ClInclude Include="d3d12.h" />
+    <ClInclude Include="nvrhi.h" />
+    <ClInclude Include="nvrhiPch.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="validation.h" />
+    <ClInclude Include="validation\validation-backend.h" />
+    <ClInclude Include="vulkan.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="aftermath.cpp" />
+    <ClCompile Include="dxgi-format.cpp" />
+    <ClCompile Include="format-info.cpp" />
+    <ClCompile Include="misc.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="sparse-bitset.cpp" />
+    <ClCompile Include="state-tracking.cpp" />
+    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="validation-commandlist.cpp" />
+    <ClCompile Include="validation-device.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -111,6 +146,8 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,6 +163,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,31 +173,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="aftermath.cpp" />
-    <ClCompile Include="dxgi-format.cpp" />
-    <ClCompile Include="format-info.cpp" />
-    <ClCompile Include="misc.cpp" />
-    <ClCompile Include="sparse-bitset.cpp" />
-    <ClCompile Include="state-tracking.cpp" />
-    <ClCompile Include="utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="aftermath.h" />
-    <ClInclude Include="containers.h" />
-    <ClInclude Include="d3d11.h" />
-    <ClInclude Include="d3d12.h" />
-    <ClInclude Include="dxgi-format.h" />
-    <ClInclude Include="misc.h" />
-    <ClInclude Include="nvrhi.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="sparse-bitset.h" />
-    <ClInclude Include="state-tracking.h" />
-    <ClInclude Include="utils.h" />
-    <ClInclude Include="validation.h" />
-    <ClInclude Include="versioning.h" />
-    <ClInclude Include="vulkan.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

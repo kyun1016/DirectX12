@@ -20,7 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "../nvrhi/aftermath.h"
+#include "pch.h"
 
 namespace nvrhi
 {

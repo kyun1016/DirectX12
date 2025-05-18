@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include <nvrhi/nvrhi.h>
+#include "../vulkan/vulkan.h"
+#include "../nvrhi/nvrhi.h"
 
 namespace nvrhi 
 {
@@ -64,6 +64,7 @@ namespace nvrhi::vulkan
         int transferQueueIndex = -1;
         VkQueue computeQueue;
         int computeQueueIndex = -1;
+
 
         VkAllocationCallbacks *allocationCallbacks = nullptr;
 

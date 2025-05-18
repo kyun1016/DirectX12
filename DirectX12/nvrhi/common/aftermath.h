@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../nvrhi/nvrhi.h"
+#include "../../nvrhi/nvrhi.h"
 #include <unordered_map>
 #include <functional>
 #include <deque>

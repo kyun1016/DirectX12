@@ -20,7 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "dxgi-format.h"
+#include "pch.h"
 
 namespace nvrhi
 {

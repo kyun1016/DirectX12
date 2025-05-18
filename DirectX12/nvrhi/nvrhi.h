@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "../nvrhi/containers.h"
-#include "../nvrhi/resource.h"
+#include "../nvrhi/common/containers.h"
+#include "../nvrhi/common/resource.h"
 
 #include <cstdint>
 #include <cmath>

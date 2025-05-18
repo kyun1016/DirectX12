@@ -20,7 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include "../nvrhi/utils.h"
+#include "pch.h"
 #include <sstream>
 
 namespace nvrhi::utils
