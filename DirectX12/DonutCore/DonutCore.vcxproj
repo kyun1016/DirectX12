@@ -143,7 +143,11 @@
     <ClInclude Include="basics.h" />
     <ClInclude Include="box.h" />
     <ClInclude Include="chunk.h" />
+    <ClInclude Include="chunkDescs.h" />
+    <ClInclude Include="chunkFile.h" />
+    <ClInclude Include="circular_buffer.h" />
     <ClInclude Include="color.h" />
+    <ClInclude Include="Compression.h" />
     <ClInclude Include="DonutCorePch.h" />
     <ClInclude Include="frustum.h" />
     <ClInclude Include="json.h" />
@@ -154,11 +158,18 @@
     <ClInclude Include="quat.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="string_utils.h" />
+    <ClInclude Include="TarFile.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="VFS.h" />
+    <ClInclude Include="WinResFS.h" />
+    <ClInclude Include="ZipFile.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="chunkFile.cpp" />
+    <ClCompile Include="chunkReader.cpp" />
+    <ClCompile Include="chunkWriter.cpp" />
     <ClCompile Include="color.cpp" />
+    <ClCompile Include="Compression.cpp" />
     <ClCompile Include="frustum.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="log.cpp" />
@@ -168,8 +179,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="string_utils.cpp" />
+    <ClCompile Include="TarFile.cpp" />
     <ClCompile Include="vector.cpp" />
     <ClCompile Include="VFS.cpp" />
+    <ClCompile Include="WinResFS.cpp" />
+    <ClCompile Include="ZipFile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

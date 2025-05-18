@@ -35,10 +35,6 @@ this software is released into the Public Domain.
 */
 
 #include "pch.h"
-#include "../DonutCore/json.h"
-#include "../DonutCore/VFS.h"
-#include "../DonutCore/log.h"
-#include "../Json/reader.h"
 
 using namespace donut::math;
 using namespace donut::vfs;

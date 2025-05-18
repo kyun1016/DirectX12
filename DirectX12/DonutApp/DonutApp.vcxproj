@@ -139,15 +139,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AftermathCrashDump.h" />
+    <ClInclude Include="ApplicationBase.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DeviceManager.h" />
+    <ClInclude Include="DeviceManager_DX11.h" />
+    <ClInclude Include="DeviceManager_DX12.h" />
+    <ClInclude Include="DeviceManager_VK.h" />
+    <ClInclude Include="DonutAppPch.h" />
+    <ClInclude Include="imgui_console.h" />
+    <ClInclude Include="imgui_nvrhi.h" />
+    <ClInclude Include="imgui_renderer.h" />
+    <ClInclude Include="MediaFileSystem.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Timer.h" />
+    <ClInclude Include="UserInterfaceUtils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AftermathCrashDump.cpp" />
+    <ClCompile Include="ApplicationBase.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DeviceManager.cpp" />
+    <ClCompile Include="DeviceManager_DX11.cpp" />
+    <ClCompile Include="DeviceManager_DX12.cpp" />
+    <ClCompile Include="DeviceManager_VK.cpp" />
+    <ClCompile Include="imgui_console.cpp" />
+    <ClCompile Include="imgui_nvrhi.cpp" />
+    <ClCompile Include="imgui_renderer.cpp" />
+    <ClCompile Include="MediaFileSystem.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="UserInterfaceUtils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

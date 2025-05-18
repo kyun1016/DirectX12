@@ -139,16 +139,56 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AudioCache.h" />
+    <ClInclude Include="AudioEngine.h" />
+    <ClInclude Include="BindingCache.h" />
+    <ClInclude Include="CommonRenderPasses.h" />
+    <ClInclude Include="ConsoleInterpreter.h" />
+    <ClInclude Include="ConsoleObjects.h" />
+    <ClInclude Include="dds.h" />
+    <ClInclude Include="DDSFile.h" />
+    <ClInclude Include="DescriptorTableManager.h" />
     <ClInclude Include="DonutEnginePch.h" />
+    <ClInclude Include="FramebufferFactory.h" />
+    <ClInclude Include="GltfImporter.h" />
+    <ClInclude Include="IesProfile.h" />
+    <ClInclude Include="KeyframeAnimation.h" />
+    <ClInclude Include="MaterialBindingCache.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneGraph.h" />
+    <ClInclude Include="SceneTypes.h" />
+    <ClInclude Include="ShaderFactory.h" />
+    <ClInclude Include="ShadowMap.h" />
+    <ClInclude Include="TextureCache.h" />
+    <ClInclude Include="View.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioCache.cpp" />
+    <ClCompile Include="AudioEngine.cpp" />
+    <ClCompile Include="BindingCache.cpp" />
+    <ClCompile Include="CommonRenderPasses.cpp" />
+    <ClCompile Include="ConsoleInterpreter.cpp" />
+    <ClCompile Include="ConsoleObjects.cpp" />
+    <ClCompile Include="DDSFile.cpp" />
+    <ClCompile Include="DescriptorTableManager.cpp" />
+    <ClCompile Include="FramebufferFactory.cpp" />
+    <ClCompile Include="GltfImporter.cpp" />
+    <ClCompile Include="IesProfile.cpp" />
+    <ClCompile Include="KeyframeAnimation.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="MaterialBindingCache.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneGraph.cpp" />
+    <ClCompile Include="SceneTypes.cpp" />
+    <ClCompile Include="ShaderFactory.cpp" />
+    <ClCompile Include="stb_impl.c" />
+    <ClCompile Include="TextureCache.cpp" />
+    <ClCompile Include="View.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

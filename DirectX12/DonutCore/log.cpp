@@ -21,7 +21,6 @@
 */
 
 #include "pch.h"
-#include "log.h"
 
 #include <cstdio>
 #include <cstdarg>
