@@ -20,13 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/IesProfile.h>
-#include <donut/engine/ShaderFactory.h>
-#include <donut/engine/DescriptorTableManager.h>
-#include <donut/core/vfs/VFS.h>
-#include <donut/core/math/math.h>
-#include <donut/core/log.h>
-#include <nvrhi/utils.h>
+#include "pch.h"
 #include <sstream>
 
 #if DONUT_WITH_STATIC_SHADERS

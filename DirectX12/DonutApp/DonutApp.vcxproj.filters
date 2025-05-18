@@ -60,6 +60,9 @@
     <ClInclude Include="DonutAppPch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DonutEnginePch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">

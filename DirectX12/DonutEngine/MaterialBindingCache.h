@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <donut/engine/SceneTypes.h>
-#include <nvrhi/nvrhi.h>
+#include "../DonutEngine/SceneTypes.h"
+#include "../nvrhi/nvrhi.h"
 #include <unordered_map>
 #include <mutex>
 

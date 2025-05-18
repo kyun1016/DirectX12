@@ -20,10 +20,9 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/SceneTypes.h>
+#include "pch.h"
 
 using namespace donut::math;
-#include <donut/shaders/material_cb.h>
 
 namespace donut::engine
 {

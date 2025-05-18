@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{6aec17c9-f003-4377-b0a7-d64ad1f9cdcd}</ProjectGuid>
+    <RootNamespace>DonutShaders</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)Libraries\Libs\$(ProjectName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Libraries\Libs\$(ProjectName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="binding_helpers.hlsli" />
+    <None Include="brdf.hlsli" />
+    <None Include="forward_vertex.hlsli" />
+    <None Include="gbuffer.hlsli" />
+    <None Include="hash_based_rng.hlsli" />
+    <None Include="lighting.hlsli" />
+    <None Include="material_bindings.hlsli" />
+    <None Include="motion_vectors.hlsli" />
+    <None Include="packing.hlsli" />
+    <None Include="scene_material.hlsli" />
+    <None Include="shadows.hlsli" />
+    <None Include="sky.hlsli" />
+    <None Include="surface.hlsli" />
+    <None Include="utils.hlsli" />
+    <None Include="vulkan.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bindless.h" />
+    <ClInclude Include="blit_cb.h" />
+    <ClInclude Include="bloom_cb.h" />
+    <ClInclude Include="deferred_lighting_cb.h" />
+    <ClInclude Include="depth_cb.h" />
+    <ClInclude Include="DonutShadersPch.h" />
+    <ClInclude Include="forward_cb.h" />
+    <ClInclude Include="gbuffer_cb.h" />
+    <ClInclude Include="light_cb.h" />
+    <ClInclude Include="light_probe_cb.h" />
+    <ClInclude Include="light_types.h" />
+    <ClInclude Include="material_cb.h" />
+    <ClInclude Include="mipmapgen_cb.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="pixel_readback_cb.h" />
+    <ClInclude Include="skinning_cb.h" />
+    <ClInclude Include="sky_cb.h" />
+    <ClInclude Include="ssao_cb.h" />
+    <ClInclude Include="taa_cb.h" />
+    <ClInclude Include="tonemapping_cb.h" />
+    <ClInclude Include="view_cb.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pass\blit_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\bloom_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\cubemap_gs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\deferred_lighting_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\depth_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\depth_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\environment_map_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\exposure_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\forward_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\forward_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\fullscreen_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\gbuffer_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\gbuffer_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\histogram_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\ies_profile_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\imgui_pixel.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\imgui_vertex.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\joints.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\light_probe.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\material_id_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\mipmapgen_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\motion_vectors_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\pixel_readback_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\rect_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\sharpen_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\skinning_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\sky_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\ssao_blur_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\ssao_compute_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\ssao_deinterleave_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\taa_cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="pass\tonemapping_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

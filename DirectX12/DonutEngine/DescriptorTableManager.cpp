@@ -20,7 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/DescriptorTableManager.h>
+#include "pch.h"
 
 donut::engine::DescriptorHandle::DescriptorHandle()
     : m_DescriptorIndex(-1)

@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <donut/core/math/math.h>
-#include <nvrhi/nvrhi.h>
+#include "../DonutCore/Math.h"
+#include "../nvrhi/nvrhi.h"
 #include <memory>
 #include <unordered_map>
 

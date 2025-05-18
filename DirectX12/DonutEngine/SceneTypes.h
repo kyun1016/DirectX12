@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <donut/core/math/math.h>
-#include <donut/engine/DescriptorTableManager.h>
-#include <donut/shaders/light_types.h>
-#include <nvrhi/nvrhi.h>
+#include "../DonutCore/Math.h"
+#include "../DonutEngine/DescriptorTableManager.h"
+#include "../DonutShaders/light_types.h"
+#include "../nvrhi/nvrhi.h"
 #include <memory>
 
 struct MaterialConstants;

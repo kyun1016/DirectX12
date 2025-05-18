@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <donut/core/math/math.h>
-#include <nvrhi/nvrhi.h>
+#include "../DonutCore/math.h"
+#include "../nvrhi/nvrhi.h"
 #include <vector>
 #include <memory>
 

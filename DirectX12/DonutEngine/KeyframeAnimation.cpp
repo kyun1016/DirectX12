@@ -34,10 +34,7 @@ jurisdictions which recognize such a disclaimer. In such jurisdictions,
 this software is released into the Public Domain.
 */
 
-#include <donut/engine/KeyframeAnimation.h>
-#include <donut/core/json.h>
-#include <donut/core/log.h>
-#include <json/value.h>
+#include "pch.h"
 #include <cassert>
 
 using namespace donut::math;

@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,13 +20,13 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/View.h>
+#include "pch.h"
 #include <algorithm>
 
 using namespace donut::math;
 using namespace donut::engine;
 
-#include <donut/shaders/view_cb.h>
+// #include <donut/shaders/view_cb.h>
 
 void IView::FillPlanarViewConstants(PlanarViewConstants& constants) const
 {

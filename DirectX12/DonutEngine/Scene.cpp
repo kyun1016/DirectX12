@@ -34,15 +34,7 @@ jurisdictions which recognize such a disclaimer. In such jurisdictions,
 this software is released into the Public Domain.
 */
 
-#include <donut/engine/Scene.h>
-#include <donut/engine/GltfImporter.h>
-#include <donut/core/json.h>
-#include <donut/core/log.h>
-#include <donut/core/string_utils.h>
-#include <nvrhi/common/misc.h>
-#include <json/value.h>
-
-#include "donut/engine/ShaderFactory.h"
+#include "pch.h"
 
 #if DONUT_WITH_STATIC_SHADERS
 #if DONUT_WITH_DX11
@@ -62,10 +54,6 @@ this software is released into the Public Domain.
 #endif
 
 using namespace donut::math;
-#include <donut/shaders/material_cb.h>
-#include <donut/shaders/skinning_cb.h>
-#include <donut/shaders/bindless.h>
-
 using namespace donut::vfs;
 using namespace donut::engine;
 

@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="material_bindings.hlsli" />
+    <None Include="motion_vectors.hlsli" />
+    <None Include="packing.hlsli" />
+    <None Include="scene_material.hlsli" />
+    <None Include="shadows.hlsli" />
+    <None Include="sky.hlsli" />
+    <None Include="surface.hlsli" />
+    <None Include="utils.hlsli" />
+    <None Include="vulkan.hlsli" />
+    <None Include="binding_helpers.hlsli" />
+    <None Include="brdf.hlsli" />
+    <None Include="forward_vertex.hlsli" />
+    <None Include="gbuffer.hlsli" />
+    <None Include="hash_based_rng.hlsli" />
+    <None Include="lighting.hlsli" />
+    <None Include="pass\blit_ps.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="material_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mipmapgen_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pixel_readback_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="skinning_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sky_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ssao_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="taa_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tonemapping_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="view_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bindless.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="blit_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bloom_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="deferred_lighting_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="depth_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="forward_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gbuffer_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="light_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="light_probe_cb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="light_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DonutShadersPch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="pass\exposure_cs.hlsl" />
+    <FxCompile Include="pass\forward_ps.hlsl" />
+    <FxCompile Include="pass\forward_vs.hlsl" />
+    <FxCompile Include="pass\fullscreen_vs.hlsl" />
+    <FxCompile Include="pass\gbuffer_ps.hlsl" />
+    <FxCompile Include="pass\gbuffer_vs.hlsl" />
+    <FxCompile Include="pass\histogram_cs.hlsl" />
+    <FxCompile Include="pass\ies_profile_cs.hlsl" />
+    <FxCompile Include="pass\imgui_pixel.hlsl" />
+    <FxCompile Include="pass\imgui_vertex.hlsl" />
+    <FxCompile Include="pass\joints.hlsl" />
+    <FxCompile Include="pass\light_probe.hlsl" />
+    <FxCompile Include="pass\material_id_ps.hlsl" />
+    <FxCompile Include="pass\mipmapgen_cs.hlsl" />
+    <FxCompile Include="pass\motion_vectors_ps.hlsl" />
+    <FxCompile Include="pass\pixel_readback_cs.hlsl" />
+    <FxCompile Include="pass\rect_vs.hlsl" />
+    <FxCompile Include="pass\sharpen_ps.hlsl" />
+    <FxCompile Include="pass\skinning_cs.hlsl" />
+    <FxCompile Include="pass\sky_ps.hlsl" />
+    <FxCompile Include="pass\ssao_blur_cs.hlsl" />
+    <FxCompile Include="pass\ssao_compute_cs.hlsl" />
+    <FxCompile Include="pass\ssao_deinterleave_cs.hlsl" />
+    <FxCompile Include="pass\taa_cs.hlsl" />
+    <FxCompile Include="pass\tonemapping_ps.hlsl" />
+    <FxCompile Include="pass\bloom_ps.hlsl" />
+    <FxCompile Include="pass\cubemap_gs.hlsl" />
+    <FxCompile Include="pass\deferred_lighting_cs.hlsl" />
+    <FxCompile Include="pass\depth_ps.hlsl" />
+    <FxCompile Include="pass\depth_vs.hlsl" />
+    <FxCompile Include="pass\environment_map_ps.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

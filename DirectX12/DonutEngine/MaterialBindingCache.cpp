@@ -20,8 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/MaterialBindingCache.h>
-#include <donut/core/log.h>
+#include "pch.h"
 
 using namespace donut::engine;
 

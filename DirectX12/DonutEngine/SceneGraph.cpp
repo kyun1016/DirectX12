@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/SceneGraph.h>
-#include <donut/core/log.h>
-#include <donut/core/json.h>
+#include "pch.h"
 #include <sstream>
 
 using namespace donut::engine;

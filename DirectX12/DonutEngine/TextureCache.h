@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <donut/engine/SceneTypes.h>
-#include <donut/core/log.h>
+#include "../DonutEngine/SceneTypes.h"
+#include "../DonutCore/log.h"
 
-#include <nvrhi/nvrhi.h>
+#include "../nvrhi/nvrhi.h"
 #include <atomic>
 #include <filesystem>
 #include <unordered_map>

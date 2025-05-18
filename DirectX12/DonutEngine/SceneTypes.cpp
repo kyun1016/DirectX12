@@ -20,15 +20,8 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/SceneGraph.h>
-#include <donut/engine/ShadowMap.h>
-#include <donut/core/json.h>
-#include <json/value.h>
-
+#include "pch.h"
 using namespace donut::math;
-#include <donut/shaders/light_cb.h>
-#include <donut/shaders/bindless.h>
-
 using namespace donut::engine;
 
 void Light::FillLightConstants(LightConstants& lightConstants) const

@@ -20,12 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/ConsoleInterpreter.h>
-
-#include <donut/engine/ConsoleObjects.h>
-#include <donut/engine/TextureCache.h>
-#include <donut/core/string_utils.h>
-#include <donut/core/log.h>
+#include "pch.h"
 
 #include <cassert>
 

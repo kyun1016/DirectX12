@@ -20,16 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#define CGLTF_IMPLEMENTATION
-#include <cgltf.h>
-
-#include <donut/engine/GltfImporter.h>
-#include <donut/engine/TextureCache.h>
-#include <donut/engine/SceneGraph.h>
-#include <donut/core/vfs/VFS.h>
-#include <donut/core/log.h>
-
-#include "nvrhi/common/misc.h"
+#include "pch.h"
 
 using namespace donut::math;
 using namespace donut::vfs;

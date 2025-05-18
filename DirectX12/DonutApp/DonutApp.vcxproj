@@ -147,6 +147,7 @@
     <ClInclude Include="DeviceManager_DX12.h" />
     <ClInclude Include="DeviceManager_VK.h" />
     <ClInclude Include="DonutAppPch.h" />
+    <ClInclude Include="DonutEnginePch.h" />
     <ClInclude Include="imgui_console.h" />
     <ClInclude Include="imgui_nvrhi.h" />
     <ClInclude Include="imgui_renderer.h" />

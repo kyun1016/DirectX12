@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/ConsoleObjects.h>
-#include <donut/core/log.h>
-#include <donut/core/string_utils.h>
+#include "pch.h"
 
 #include <cassert>
 #include <cstring>

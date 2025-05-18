@@ -92,9 +92,6 @@
     <ClCompile Include="SceneGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stb_impl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TextureCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -152,5 +149,10 @@
     <ClCompile Include="ShaderFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="stb_impl.c">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

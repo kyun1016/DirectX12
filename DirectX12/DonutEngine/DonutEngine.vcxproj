@@ -186,7 +186,9 @@
     <ClCompile Include="SceneGraph.cpp" />
     <ClCompile Include="SceneTypes.cpp" />
     <ClCompile Include="ShaderFactory.cpp" />
-    <ClCompile Include="stb_impl.c" />
+    <None Include="stb_impl.c">
+      <FileType>CppCode</FileType>
+    </None>
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="View.cpp" />
   </ItemGroup>

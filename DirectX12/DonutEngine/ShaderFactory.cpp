@@ -20,12 +20,10 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/ShaderFactory.h>
-#include <donut/core/vfs/VFS.h>
-#include <donut/core/log.h>
-#include <ShaderMake/ShaderBlob.h>
+#include "pch.h"
+
 #if DONUT_WITH_AFTERMATH
-#include <donut/app/AftermathCrashDump.h>
+// #include <donut/app/AftermathCrashDump.h>
 #endif
 
 using namespace std;
@@ -94,7 +92,7 @@ std::shared_ptr<IBlob> ShaderFactory::GetBytecode(const char* fileName, const ch
     return data;
 }
 
-nvrhi::ShaderHandle ShaderFactory::CreateShader(const char* fileName, const char* entryName, const vector<ShaderMacro>* pDefines, const nvrhi::ShaderDesc& desc)
+nvrhi::ShaderHandle ShaderFactory::CreateShader(const char* fileName, const char* entryName, const std::vector<ShaderMacro>* pDefines, const nvrhi::ShaderDesc& desc)
 {
     std::shared_ptr<IBlob> byteCode = GetBytecode(fileName, entryName);
 
@@ -124,7 +122,7 @@ nvrhi::ShaderHandle ShaderFactory::CreateStaticShader(StaticShader shader, const
     if (!shader.pBytecode || !shader.size)
         return nullptr;
 
-    vector<ShaderMake::ShaderConstant> constants;
+    std::vector<ShaderMake::ShaderConstant> constants;
     if (pDefines)
     {
         for (const ShaderMacro& define : *pDefines)
@@ -168,7 +166,7 @@ nvrhi::ShaderLibraryHandle ShaderFactory::CreateStaticShaderLibrary(StaticShader
     if (!shader.pBytecode || !shader.size)
         return nullptr;
 
-    vector<ShaderMake::ShaderConstant> constants;
+    std::vector<ShaderMake::ShaderConstant> constants;
     if (pDefines)
     {
         for (const ShaderMacro& define : *pDefines)

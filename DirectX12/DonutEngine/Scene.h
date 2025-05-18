@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <donut/engine/SceneGraph.h>
-#include <nvrhi/nvrhi.h>
+#include "../DonutEngine/SceneGraph.h"
+#include "../nvrhi/nvrhi.h"
 #include <vector>
 #include <memory>
 #include <mutex>

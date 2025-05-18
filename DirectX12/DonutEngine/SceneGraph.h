@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <donut/engine/SceneTypes.h>
-#include <donut/engine/KeyframeAnimation.h>
+#include "../DonutEngine/SceneTypes.h"
+#include "../DonutEngine/KeyframeAnimation.h"
 #include "../DonutCore/Math.h"
 #include <memory>
 #include <unordered_map>

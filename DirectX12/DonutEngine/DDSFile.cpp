@@ -61,14 +61,9 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/DDSFile.h>
-
-#include "dds.h"
+#include "pch.h"
 
 #include <iterator>
-
-#include <donut/engine/TextureCache.h>
-#include <donut/core/vfs/VFS.h>
 
 #define D3D11_RESOURCE_MISC_TEXTURECUBE 0x4
 

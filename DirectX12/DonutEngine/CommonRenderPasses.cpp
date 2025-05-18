@@ -20,9 +20,7 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/engine/CommonRenderPasses.h>
-#include <donut/engine/ShaderFactory.h>
-#include <donut/engine/BindingCache.h>
+#include "pch.h"
 
 #if DONUT_WITH_STATIC_SHADERS
 #if DONUT_WITH_DX11
@@ -46,7 +44,7 @@
 #endif
 
 using namespace donut::math;
-#include <donut/shaders/blit_cb.h>
+// #include <donut/shaders/blit_cb.h>
 
 using namespace donut::engine;
 
