@@ -20,12 +20,8 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/app/MediaFileSystem.h>
-#include <donut/app/ApplicationBase.h>
-#include <donut/core/log.h>
-#include <donut/core/string_utils.h>
-#include <donut/core/vfs/TarFile.h>
-#include <donut/core/vfs/Compression.h>
+#include "pch.h"
+
 #ifdef DONUT_WITH_MINIZ
 #include <donut/core/vfs/ZipFile.h>
 #endif

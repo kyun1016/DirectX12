@@ -48,9 +48,9 @@ freely, subject to the following restrictions:
 */
 
 #pragma once
-#define DONUT_WITH_DX11 1
-#define DONUT_WITH_DX12 1
-#define DONUT_WITH_VULKAN 1
+// // #define DONUT_WITH_DX11 1
+// #define DONUT_WITH_DX12 1
+// // #define DONUT_WITH_VULKAN 1
 
 #if DONUT_WITH_DX11 || DONUT_WITH_DX12
 #include <DXGI.h>

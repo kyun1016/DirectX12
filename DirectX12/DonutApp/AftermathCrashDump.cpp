@@ -124,7 +124,7 @@ uint64_t donut::app::AftermathCrashDump::GetShaderHashForBinary(std::pair<const 
     if (api == nvrhi::GraphicsAPI::VULKAN)
     {
         GFSDK_Aftermath_SpirvCode spirv = {};
-        spirv.pData = shaderBinary.first;
+        spirv.pData = const_cast<void*>(shaderBinary.first);
         spirv.size = uint32_t(shaderBinary.second);
         GFSDK_Aftermath_ShaderBinaryHash hash = {};
         GFSDK_Aftermath_GetShaderHashSpirv(GFSDK_Aftermath_Version_API, &spirv, &hash);

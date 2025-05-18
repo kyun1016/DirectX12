@@ -46,21 +46,15 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source
    distribution.
 */
+#include "pch.h"
 
 #include <string>
 #include <algorithm>
 #include <locale>
 
-#include "../DonutApp/DeviceManager.h"
-#include "../DonutApp/DeviceManager_DX11.h"
-#include "../DonutCore/log.h"
-
 #include <Windows.h>
 #include <dxgi1_3.h>
 #include <dxgidebug.h>
-
-#include "../nvrhi/d3d11.h"
-#include "../nvrhi/validation.h"
 
 using nvrhi::RefCountPtr;
 

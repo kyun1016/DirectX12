@@ -43,7 +43,7 @@
 */
 
 #pragma once
-
+#include <stdint.h>
 #ifdef _WIN32
 #define DECLSPEC_SELECTANY __declspec(selectany)
 #else

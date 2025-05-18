@@ -21,9 +21,7 @@
 */
 
 #include <cassert>
-#include "Camera.h"
-#include <donut/engine/SceneGraph.h>
-#include <donut/engine/View.h>
+#include "pch.h"
 
 using namespace donut::math;
 using namespace donut::app;

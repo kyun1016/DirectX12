@@ -46,16 +46,11 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source
    distribution.
 */
+#include "pch.h"
 
 #include <string>
 #include <queue>
 #include <unordered_set>
-
-#include <donut/app/DeviceManager.h>
-#include <donut/app/DeviceManager_VK.h>
-
-#include <nvrhi/vulkan.h>
-#include <nvrhi/validation.h>
 
 // Define the Vulkan dynamic dispatcher - this needs to occur in exactly one cpp file in the program.
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

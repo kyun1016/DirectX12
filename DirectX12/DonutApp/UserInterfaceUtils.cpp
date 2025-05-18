@@ -20,13 +20,9 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <donut/app/UserInterfaceUtils.h>
-#include <donut/engine/SceneGraph.h>
-#include <donut/core/log.h>
-#include <donut/core/string_utils.h>
+#include "pch.h"
 
 #include <filesystem>
-#include <imgui.h>
 
 #ifndef _WIN32
 #include <unistd.h>

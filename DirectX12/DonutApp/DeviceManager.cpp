@@ -47,10 +47,7 @@ freely, subject to the following restrictions:
    distribution.
 */
 
-#include <donut/app/DeviceManager.h>
-#include <donut/core/math/math.h>
-#include <donut/core/log.h>
-#include <nvrhi/utils.h>
+#include "pch.h"
 
 #include <cstdio>
 #include <iomanip>

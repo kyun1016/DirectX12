@@ -46,21 +46,15 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source
    distribution.
 */
+#include "pch.h"
 
 #include <string>
 #include <algorithm>
 #include <vector>
 
-#include <donut/app/DeviceManager.h>
-#include <donut/app/DeviceManager_DX12.h>
-#include <donut/core/log.h>
-
 #include <Windows.h>
 #include <dxgi1_5.h>
 #include <dxgidebug.h>
-
-#include <nvrhi/d3d12.h>
-#include <nvrhi/validation.h>
 
 #include <sstream>
 

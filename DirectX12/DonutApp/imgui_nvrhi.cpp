@@ -43,15 +43,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+#include "pch.h"
 
 #include <stddef.h>
-
-#include <imgui.h>
-
-#include <nvrhi/nvrhi.h>
-#include <donut/engine/ShaderFactory.h>
-#include <donut/app/imgui_nvrhi.h>
-#include <donut/core/log.h>
 
 #if DONUT_WITH_STATIC_SHADERS
 #if DONUT_WITH_DX11
@@ -103,7 +97,7 @@ bool ImGui_NVRHI::createFontTexture(nvrhi::ICommandList* commandList)
         commandList->setPermanentTextureState(fontTexture, nvrhi::ResourceStates::ShaderResource);
         commandList->commitBarriers();
 
-        io.Fonts->TexID = fontTexture;
+        io.Fonts->TexID = (ImTextureID) fontTexture.Get();
     }
 
     {
