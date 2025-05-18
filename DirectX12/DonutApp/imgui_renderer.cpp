@@ -66,25 +66,25 @@ bool ImGui_Renderer::Init(std::shared_ptr<ShaderFactory> shaderFactory)
     // ImGui will use those indices to peek into the io.KeyDown[] array
     // that we will update during the application lifetime.
     ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
-    io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
-    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = 'A';
-    io.KeyMap[ImGuiKey_C] = 'C';
-    io.KeyMap[ImGuiKey_V] = 'V';
-    io.KeyMap[ImGuiKey_X] = 'X';
-    io.KeyMap[ImGuiKey_Y] = 'Y';
-    io.KeyMap[ImGuiKey_Z] = 'Z';
+    // io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+    // io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+    // io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+    // io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+    // io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+    // io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
+    // io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
+    // io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+    // io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+    // io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+    // io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+    // io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+    // io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    // io.KeyMap[ImGuiKey_A] = 'A';
+    // io.KeyMap[ImGuiKey_C] = 'C';
+    // io.KeyMap[ImGuiKey_V] = 'V';
+    // io.KeyMap[ImGuiKey_X] = 'X';
+    // io.KeyMap[ImGuiKey_Y] = 'Y';
+    // io.KeyMap[ImGuiKey_Z] = 'Z';
 
     imgui_nvrhi = std::make_unique<ImGui_NVRHI>();
     return imgui_nvrhi->init(GetDevice(), shaderFactory);
@@ -125,10 +125,12 @@ bool ImGui_Renderer::KeyboardUpdate(int key, int scancode, int action, int mods)
     if (keyIsDown)
     {
         // if the key was pressed, update ImGui immediately
-        io.KeysDown[key] = true;
+        io.AddKeyEvent((ImGuiKey)key, true);
+        // io.KeysDown[key] = true;
     } else {
         // for key up events, ImGui state is only updated after the next frame
         // this ensures that short keypresses are not missed
+        io.AddKeyEvent((ImGuiKey)key, false);
     }
 
     return io.WantCaptureKeyboard;
@@ -221,10 +223,10 @@ void ImGui_Renderer::Animate(float elapsedTimeSeconds)
     io.DisplayFramebufferScale.x = scaleX;
     io.DisplayFramebufferScale.y = scaleY;
 
-    io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
-    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+    io.KeyCtrl = ImGui::IsKeyPressed(ImGuiKey_LeftCtrl) || ImGui::IsKeyPressed(ImGuiKey_RightCtrl) || ImGui::IsKeyPressed(ImGuiMod_Ctrl);
+    io.KeyShift = ImGui::IsKeyPressed(ImGuiKey_LeftShift) || ImGui::IsKeyPressed(ImGuiKey_RightShift) || ImGui::IsKeyPressed(ImGuiMod_Shift);
+    io.KeyAlt = ImGui::IsKeyPressed(ImGuiKey_LeftAlt) || ImGui::IsKeyPressed(ImGuiKey_RightAlt) || ImGui::IsKeyPressed(ImGuiMod_Alt);
+    io.KeySuper = ImGui::IsKeyPressed(ImGuiMod_Super);
 
     imgui_nvrhi->beginFrame(elapsedTimeSeconds);
     m_beginFrameCalled = true;
@@ -253,9 +255,9 @@ void ImGui_Renderer::Render(nvrhi::IFramebuffer* framebuffer)
     // reconcile key states
     for(size_t i = 0; i < keyDown.size(); i++)
     {
-        if (io.KeysDown[i] == true && keyDown[i] == false)
+        if (ImGui::IsKeyPressed((ImGuiKey)i) && keyDown[i] == false)
         {
-            io.KeysDown[i] = false;
+            io.AddKeyEvent((ImGuiKey)i, false);
         }
     }
 }

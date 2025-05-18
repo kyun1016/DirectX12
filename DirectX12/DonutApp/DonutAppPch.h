@@ -6,6 +6,7 @@
 #define _MBCS
 #define WIN32
 #define _WINDOWS
+#define _CRT_SECURE_NO_WARNINGS
 
 // #include "../DonutCore/DonutCorePch.h"
 #include "../DonutCore/Math.h"

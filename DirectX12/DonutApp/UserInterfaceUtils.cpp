@@ -107,7 +107,7 @@ static INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM p
 
 bool donut::app::FolderDialog(const char* pTitle, const char* pDefaultFolder, std::string& outFolderName)
 {
-    BROWSEINFO browseInfo{};
+    BROWSEINFOA browseInfo{};
     browseInfo.hwndOwner = GetForegroundWindow();
     browseInfo.lpszTitle = pTitle;
     browseInfo.ulFlags = BIF_USENEWUI | BIF_NONEWFOLDERBUTTON;
@@ -116,10 +116,10 @@ bool donut::app::FolderDialog(const char* pTitle, const char* pDefaultFolder, st
         browseInfo.lpfn = BrowseCallbackProc;
         browseInfo.lParam = reinterpret_cast<LPARAM>(pDefaultFolder);
     }
-    if (PIDLIST_ABSOLUTE pIdList = SHBrowseForFolder(&browseInfo))
+    if (PIDLIST_ABSOLUTE pIdList = SHBrowseForFolderA(&browseInfo))
     {
         char path[MAX_PATH];
-        if (SHGetPathFromIDList(pIdList, path))
+        if (SHGetPathFromIDListA(pIdList, path))
         {
             if (fs::is_directory(path))
             {

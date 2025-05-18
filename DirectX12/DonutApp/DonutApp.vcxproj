@@ -157,7 +157,10 @@
     <ClInclude Include="UserInterfaceUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AftermathCrashDump.cpp" />
+    <ClCompile Include="AftermathCrashDump.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="ApplicationBase.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DeviceManager.cpp" />
