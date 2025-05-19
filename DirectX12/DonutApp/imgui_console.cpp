@@ -51,7 +51,6 @@ SOFTWARE.
 using namespace donut::app;
 using namespace donut::engine;
 
-
 static ImVec4 getSeverityColor(donut::log::Severity severity)
 {
 	using namespace donut::log;	

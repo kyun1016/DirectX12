@@ -3,6 +3,8 @@
 #include <limits>
 #include <cmath>
 
+#ifndef DONUT_BASIC_H_INCLUDED
+#define DONUT_BASIC_H_INCLUDED
 // Compile-time array size
 template <typename T, int N> char(&dim_helper(T(&)[N]))[N];
 #define dim(x) (sizeof(dim_helper(x)))
@@ -119,3 +121,4 @@ namespace donut::math
 		return T((value >> offset) & ((T(1) << width) - 1));
 	}
 }
+#endif

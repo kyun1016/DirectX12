@@ -23,6 +23,8 @@
 #pragma once
 #include <cmath>
 
+#ifndef DONUT_VECTOR_H_INCLUDED
+#define DONUT_VECTOR_H_INCLUDED
 namespace donut::math
 {
     // Macro to define conversion and subscript operators
@@ -585,3 +587,4 @@ namespace donut::math
     template<> float3 snorm8ToVector<3>(uint v);
     template<> float4 snorm8ToVector<4>(uint v);
 }
+#endif
