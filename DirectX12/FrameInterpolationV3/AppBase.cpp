@@ -182,7 +182,7 @@ int AppBase::Run()
 				// New Function
 				SLFrameInit();
 				Render();
-				SLFrameSetting();
+				// SLFrameSetting();
 				RenderImGui();
 
 				if (m_callbacks.afterRender) m_callbacks.afterRender(*this, mFrameCount);

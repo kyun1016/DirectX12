@@ -1,0 +1,156 @@
+한번 풀이해봤어 정확하게 검토 부탁해.
+
+
+
+template<typename T>
+class TimedValue{
+    struct TimeValue {
+        T value;
+        float creationTime;
+        float lifespan;
+    };
+
+private:
+    TimeValue m_TimeValue;
+}
+
+1. 내부 저장된 요소를 반영하기 위해 class 내부에 구조체를 만들어두었어.
+2. 현재 시간에 따라서 수명이 지난 요소를 자동 제거하고, 업데이트하기 위해 내부 함수를 구현했어.
+
+
+template<typename T>
+struct TimeValue {
+    T value;
+    float creationTime;
+    float finishTime;
+    float lifespan;
+    float duration;
+    TimeValue(const T& value, const float& creationTime = 0.0f, const float& lifespan = 0.0f)
+        : value(value)
+        , creationTime(creationTime)
+        , lifespan(lifespan)
+        , finishTime(creationTime + lifespan)
+        , duration(0.0f)
+    {}
+    operator=(const Timevalue& rhs)
+    {
+        value = rhs.value;
+        creationTime = rhs.creationTime;
+        finishTime = rhs.finishTime;
+        lifespan = rhs.lifespan;
+        duration = rhs.duration;
+    }
+
+    inline void set(const T& value, const float& creationTime = 0.0f, const float& lifespan = 5.0f)
+    {
+        value = value;
+        creationTime = creationTime;
+        lifespan = lifespan;
+        finishTime = creationTime + lifespan;
+        duration = 0.0f;
+    }
+
+    inline bool isExpired()
+    {
+        return lifespan <= duration;
+    }
+};
+
+template<typename T>
+class TimedValueContainer {
+public:
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T*;
+        using reference = T&;
+
+        iterator(TimeValue* ptr, TimeValue* end)
+            : m_ptr(ptr), m_end(end) {
+            skipExpired();  // 최초 expired skip
+        }
+
+        iterator& operator++() {
+            ++m_ptr;
+            skipExpired();
+            return *this;
+        }
+
+        T& operator*() { return m_ptr->value; }
+        bool operator!=(const iterator& other) const {
+            return m_ptr != other.m_ptr;
+        }
+
+    private:
+        void skipExpired() {
+            while (m_ptr != m_end && m_ptr->isExpired(currentTime))
+                ++m_ptr;
+        }
+
+        TimeValue* m_ptr;
+        TimeValue* m_end;
+        float currentTime = 0.0f; // 외부에서 전달 가능하게 수정 가능
+    };
+
+    iterator begin() { return iterator(&_arr[0], &_arr[_end]); }
+    iterator end() { return iterator(&_arr[_end], &_arr[_end]); }
+};
+
+template<typename T>
+class TimedAwareVector{
+public:
+    TimedAwareVector()
+        : _begin(0)
+        , _end(0),
+        , _size(0)
+    {
+        _arr.resize(POOL_SIZE);
+    }
+
+    void add(const T& i_data, float creationTime, float lifespan)
+    {
+        if(_arr[_end].isExpired())
+            _arr[_end++].set(i_data, creationTime, lifespan);
+    }
+
+    void update(float currentTime)
+    {
+        for(auto& a: _arr)
+        {
+            if(a.duration >= a.lifespan)
+                continue;
+            if(currentTime < a.creationTime)
+                continue;
+            
+            a.duration = currentTime - a.creationTime;
+
+            // 추가적인 내부 제어 알고리즘 구현
+        }
+    }
+
+    void pruneExpired(float currentTime)
+    {
+        size_t write = 0;
+        for (size_t read = 0; read < _end; ++read) {
+            if (!_arr[read].isExpired(currentTime)) {
+                if (write != read)
+                    _arr[write] = std::move(_arr[read]);
+                ++write;
+            }
+        }
+        _end = write;
+        _size = write;
+    }
+
+private:
+
+    std::vector<TimeValue> _arr;
+
+    constexpr static size_t POOL_SIZE = 1024;
+    constexpr static size_t CHUNK_SIZE = 64;
+    size_t _begin;
+    size_t _end;
+    size_t _size;
+}

@@ -16,6 +16,7 @@
 #endif
 
 #include "../EngineCore/EngineCorePch.h"
+#include "../EngineCore/donut/core/math/math.h"
 // #include "../StreamlineCore/StreamlineCorePch.h"
 #include "../ImGuiCore/ImGuiCorePch.h"
 #include "log.h" // donut/core/
