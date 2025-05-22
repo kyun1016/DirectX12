@@ -133,6 +133,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ECS.h" />
+    <ClInclude Include="ECSComponent.h" />
+    <ClInclude Include="ECSConfig.h" />
+    <ClInclude Include="ECSEntity.h" />
+    <ClInclude Include="ECSSystem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
