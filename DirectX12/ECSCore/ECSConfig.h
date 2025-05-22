@@ -1,4 +1,5 @@
 #pragma once
+#include "../EngineCore/SimpleMath.h"
 #include <iostream>
 #include <vector>
 #include <string>

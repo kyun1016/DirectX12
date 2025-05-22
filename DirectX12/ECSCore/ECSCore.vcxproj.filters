@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{e880d5bf-5cb2-41d1-b929-f785795e6bca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\MyComponent">
+      <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\MySystem">
+      <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -20,20 +29,26 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ECS.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ECSEntity.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ECSComponent.h">
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="ECSConfig.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="ECSComponent.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ECSCoordinator.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ECSEntity.h">
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="ECSSystem.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="GravityComponent.h">
+      <Filter>Header Files\MyComponent</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.h">
+      <Filter>Header Files\MySystem</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
