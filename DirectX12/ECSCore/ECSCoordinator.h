@@ -5,38 +5,6 @@
 
 namespace ECS
 {
-	struct Vec3
-	{
-		float x;
-		float y;
-		float z;
-	};
-	struct Quat
-	{
-		float x;
-		float y;
-		float z;
-		float w;
-	};
-
-	struct Gravity
-	{
-		Vec3 force;
-	};
-
-	struct RigidBody
-	{
-		Vec3 velocity;
-		Vec3 acceleration;
-	};
-
-	struct Transform
-	{
-		Vec3 position;
-		Vec3 rotation;
-		Vec3 scale;
-	};
-
 	class Coordinator
 	{
 	public:
@@ -129,6 +97,11 @@ namespace ECS
 		void SetSystemSignature(Signature signature)
 		{
 			mSystemManager->SetSignature<T>(signature);
+		}
+
+		void UpdateAllSystem(float dt)
+		{
+			mSystemManager->UpdateAllSystems(dt);
 		}
 
 	private:

@@ -2186,6 +2186,7 @@ void AppBase::BuildStreamlineTexture(ID3D12Device* device, donut::math::uint2 re
 std::wstring AppBase::GetSlInterposerDllLocation() {
 
 	wchar_t path[MAX_PATH] = { 0 };
+	auto data = dim(path);
 #ifdef _WIN32
 	if (GetModuleFileNameW(nullptr, path, dim(path)) == 0)
 		return std::wstring();
