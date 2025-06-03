@@ -1,107 +1,41 @@
 #pragma once
 #include "ECSCoordinator.h"
-#include "FMODAudioComponent.h"
+#include "FMODAudioRepository.h"
 
 class FMODAudioSystem : public ECS::ISystem {
 public:
     FMODAudioSystem()
     {
-        FMOD_RESULT result = FMOD::System_Create(&mSystem);
+		if (sSystem != nullptr) {
+			std::cerr << "FMOD System already initialized." << std::endl;
+			return;
+		}
+
+        FMOD_RESULT result = FMOD::System_Create(&sSystem);
 		if (result != FMOD_OK) {
 			std::cerr << "FMOD System creation failed: " << std::endl;
 		}
-        result = mSystem->init(512, FMOD_INIT_NORMAL, nullptr);
+        result = sSystem->init(512, FMOD_INIT_NORMAL, nullptr);
         if (result != FMOD_OK) {
-            std::cerr << "FMOD System creation failed: " << std::endl;
+            std::cerr << "FMOD System initialize failed: " << std::endl;
         }
+        FMODAudioRepository::Init(sSystem);
     }
     ~FMODAudioSystem()
     {
-        mSystem->release();
+		FMODAudioRepository::Shutdown();
+		sSystem->release();
     }
     
     void Update(float dt) override {
         auto& coordinator = ECS::Coordinator::GetInstance();
-        mSystem->update();
+        sSystem->update();
         for (ECS::Entity entity : mEntities) {
             auto& component = coordinator.GetComponent<FMODAudioComponent>(entity);
-            if(component.playStart)
-                PlaySound(component);
+            FMODAudioRepository::Play(component.handle, component.volume);
         }
     }
 
 private:
-    void CreateSound(FMODAudioComponent& component)
-    {
-        if (component.isLoaded) {
-            return;
-        }
-
-        int loopFlag = component.useLoop ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF;
-		loopFlag |= FMOD_DEFAULT; // Use FMOD_CREATE_STREAM for streaming audio files
-        FMOD_RESULT result = mSystem->createSound(component.filename.c_str(), loopFlag, 0, &mSoundMap[component.soundname]);
-
-        if (result != FMOD_OK) {
-            std::cout << "system->createSound() fail" << std::endl;
-            exit(-1);
-        }
-
-		component.isLoaded = true;
-    }
-
-	void PlaySound(FMODAudioComponent& component)
-	{
-		if (!component.isLoaded) {
-			CreateSound(component);
-		}
-
-        FMOD::Sound* sound = mSoundMap[component.soundname];
-		FMOD::Channel* channel = mChannelMap[sound];
-		FMOD_RESULT result = mSystem->playSound(sound, nullptr, false, &channel);
-		if (result != FMOD_OK) {
-			std::cout << "system->playSound() fail" << std::endl;
-			exit(-1);
-		}
-	}
-
-    void StopSound(FMODAudioComponent& component)
-    {
-		if (!component.isLoaded) {
-			return;
-		}
-
-		FMOD::Sound* sound = mSoundMap[component.soundname];
-		auto it = mChannelMap.find(sound);
-		if (it != mChannelMap.end()) {
-			FMOD::Channel* channel = it->second;
-            bool isPlaying = false;
-            channel->isPlaying(&isPlaying);
-            if(isPlaying) {
-                channel->stop();
-            }
-
-			mChannelMap.erase(it);
-		}
-    }
-
-	void PauseSound(FMODAudioComponent& component)
-	{
-		if (!component.isLoaded) {
-			return;
-		}
-		FMOD::Sound* sound = mSoundMap[component.soundname];
-		auto it = mChannelMap.find(sound);
-		if (it != mChannelMap.end()) {
-			FMOD::Channel* channel = it->second;
-			bool isPaused = false;
-			channel->getPaused(&isPaused);
-			if (!isPaused) {
-				channel->setPaused(true);
-			}
-		}
-	}
-
-	FMOD::System* mSystem;
-    std::unordered_map<std::string, FMOD::Sound*> mSoundMap;
-    std::unordered_map<FMOD::Sound*, FMOD::Channel*> mChannelMap;
+    static inline FMOD::System* sSystem = nullptr;
 };

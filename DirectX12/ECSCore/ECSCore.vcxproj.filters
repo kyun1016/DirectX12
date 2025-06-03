@@ -95,5 +95,8 @@
     <ClInclude Include="MeshSystem.h">
       <Filter>Header Files\Render\Mesh</Filter>
     </ClInclude>
+    <ClInclude Include="FMODAudioRepository.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

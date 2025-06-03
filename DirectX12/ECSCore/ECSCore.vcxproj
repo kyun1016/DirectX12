@@ -141,6 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FMODAudioComponent.h" />
+    <ClInclude Include="FMODAudioRepository.h" />
     <ClInclude Include="FMODAudioSystem.h" />
     <ClInclude Include="ECSCoordinator.h" />
     <ClInclude Include="ECSComponent.h" />
