@@ -74,9 +74,6 @@ void InitSoundExample()
     coordinator.AddComponent(sound2, FMODAudioComponent{ handle, 0.5f, true });
     handle = FMODAudioRepository::LoadSound("swish", path + "swish.wav", false);
     coordinator.AddComponent(sound3, FMODAudioComponent{ handle, 0.5f, true });
-    // coordinator.AddComponent(sound1, FMODAudioComponent{ path + "jaguar.wav", "jaguar", 0.5f, true, true, false });
-    // coordinator.AddComponent(sound2, FMODAudioComponent{ path + "singing.wav", "singing", 0.5f, true, true, false });
-    // coordinator.AddComponent(sound3, FMODAudioComponent{ path + "swish.wav", "swish", 0.5f, true, true, false });
 }
 
 void InitMeshExample()
@@ -99,9 +96,12 @@ void InitMeshExample()
     ECS::Entity mesh3 = coordinator.CreateEntity();
 
     std::string path = GetSoundLocation();
-    coordinator.AddComponent(mesh1, MeshComponent{ 0 });
-    coordinator.AddComponent(mesh2, MeshComponent{ 0 });
-    coordinator.AddComponent(mesh3, MeshComponent{ 0 });
+    MeshHandle handle = MeshRepository::LoadMesh(path + "jaguar");
+    coordinator.AddComponent(mesh1, MeshComponent{ handle });
+    handle = MeshRepository::LoadMesh(path + "singing");
+    coordinator.AddComponent(mesh2, MeshComponent{ handle });
+    handle = MeshRepository::LoadMesh(path + "swish");
+    coordinator.AddComponent(mesh3, MeshComponent{ handle });
 }
 
 void InitExample()

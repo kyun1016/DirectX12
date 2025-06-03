@@ -93,6 +93,11 @@ public:
 		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
 
 		// TODO: GPU 업로드 로직 구현
+
+		sMeshStorage[newHandle] = MeshEntry{ std::move(mesh), 1 };
+		sPathToHandle[path] = newHandle;
+
+		return newHandle;
 	}
 	static void UnloadMesh(MeshHandle handle)
 	{
@@ -129,8 +134,14 @@ public:
 		// TODO: GPU 업로드 로직 구현
 	}
 
+	static void Shutdown() {
+		sPathToHandle.clear();
+		sMeshStorage.clear();
+		sNextHandle = 1;
+	}
+
 private:
 	static inline std::unordered_map<std::string, MeshHandle> sPathToHandle;
 	static inline std::unordered_map<MeshHandle, MeshEntry> sMeshStorage;
-	static inline MeshHandle sNextHandle = 0;
+	static inline MeshHandle sNextHandle = 1;
 };

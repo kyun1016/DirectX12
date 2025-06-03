@@ -9,8 +9,6 @@ public:
         auto& coordinator = ECS::Coordinator::GetInstance();
         for (ECS::Entity entity : mEntities) {
             auto& component = coordinator.GetComponent<MeshComponent>(entity);
-            if(MeshRepository::IsLoaded(component.handle))
-                MeshRepository::LoadMesh("test");
 			MeshRepository::GetMesh(component.handle);
         }
     }
