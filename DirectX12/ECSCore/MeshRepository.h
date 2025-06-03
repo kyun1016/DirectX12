@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../EngineCore/SimpleMath.h"
-#include "RenderComponent.h"
+#include "MeshComponent.h"
+#include <memory>
+#include <string>
 
 struct Vertex
 {
@@ -66,19 +68,69 @@ struct Mesh
 
 struct MeshEntry {
 	std::unique_ptr<Mesh> mesh;
-	int refCount = 0;
+	int refCount = 1;
 	bool gpuUploaded = false;
 };
 
 class MeshRepository {
 public:
-	static MeshHandle LoadMesh(const std::string& path);
-	static void UnloadMesh(MeshHandle handle);
-	static Mesh* GetMesh(MeshHandle handle);
-	static void UploadToGPUIfNeeded(MeshHandle handle);
+
+	static bool IsLoaded(MeshHandle handle) {
+		auto it = sMeshStorage.find(handle);
+		return it != sMeshStorage.end();
+	}
+
+	static MeshHandle LoadMesh(const std::string& path)
+	{
+		auto it = sPathToHandle.find(path);
+		if (it != sPathToHandle.end()) {
+			MeshHandle handle = it->second;
+			sMeshStorage[handle].refCount++;
+			return handle;
+		}
+
+		MeshHandle newHandle = sNextHandle++;
+		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
+
+		// TODO: GPU 업로드 로직 구현
+	}
+	static void UnloadMesh(MeshHandle handle)
+	{
+		// TODO: GPU 언로드 로직 구현
+		auto it = sMeshStorage.find(handle);
+		if (it == sMeshStorage.end())
+			return;
+
+		it->second.refCount--;
+		if (it->second.refCount <= 0) {
+			// TODO: GPU 리소스 해제 (예: DestroyBuffer(mesh->vertexBuffer))
+
+			sMeshStorage.erase(it);
+			// 역방향 매핑 제거
+			for (auto pathIt = sPathToHandle.begin(); pathIt != sPathToHandle.end(); ++pathIt) {
+				if (pathIt->second == handle) {
+					sPathToHandle.erase(pathIt);
+					break;
+				}
+			}
+		}
+	}
+	static Mesh* GetMesh(MeshHandle handle)
+	{
+		auto it = sMeshStorage.find(handle);
+		if (it != sMeshStorage.end()) {
+			return it->second.mesh.get();
+		}
+		return nullptr;
+	}
+
+	static void UploadToGPUIfNeeded(MeshHandle handle)
+	{
+		// TODO: GPU 업로드 로직 구현
+	}
 
 private:
 	static inline std::unordered_map<std::string, MeshHandle> sPathToHandle;
 	static inline std::unordered_map<MeshHandle, MeshEntry> sMeshStorage;
-	static inline MeshHandle sNextHandle = 1;
+	static inline MeshHandle sNextHandle = 0;
 };

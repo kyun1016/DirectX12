@@ -28,6 +28,9 @@
     <Filter Include="Header Files\Render\Light">
       <UniqueIdentifier>{be60cb14-c6a3-4b0a-918a-2e6b1dc51049}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Render\Mesh">
+      <UniqueIdentifier>{7f33e4e0-2fe1-4d54-89e9-ca58dba55c2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -74,9 +77,6 @@
     <ClInclude Include="RenderComponent.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
-    <ClInclude Include="RenderConstantComponent.h">
-      <Filter>Header Files\Render</Filter>
-    </ClInclude>
     <ClInclude Include="RenderSystem.h">
       <Filter>Header Files\Render</Filter>
     </ClInclude>
@@ -85,6 +85,15 @@
     </ClInclude>
     <ClInclude Include="LightComponent.h">
       <Filter>Header Files\Render\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRepository.h">
+      <Filter>Header Files\Render\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshComponent.h">
+      <Filter>Header Files\Render\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshSystem.h">
+      <Filter>Header Files\Render\Mesh</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

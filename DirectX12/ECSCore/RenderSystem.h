@@ -1,7 +1,6 @@
 #pragma once
 #include "ECSCoordinator.h"
 #include "RenderComponent.h"
-#include "RenderConstantComponent.h"
 
 class RenderSystem : public ECS::ISystem {
 public:

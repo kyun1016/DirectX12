@@ -70,53 +70,80 @@ struct InstanceComponent
 	int dummy2 = 0;
 };
 
-using MeshHandle = std::string;
-struct MeshComponent
+
+
+struct SkinnedConstantComponent
 {
-	MeshHandle handle;
+	DirectX::SimpleMath::Matrix BoneTransforms[96];
 };
 
-struct Vertex
+struct ShaderToyConstantComponent
 {
-	Vertex()
-		: Position(0.0f, 0.0f, 0.0f)
-		, Normal(0.0f, 0.0f, 0.0f)
-		, TangentU(0.0f, 0.0f, 0.0f)
-		, TexC(0.0f, 0.0f) {
-	}
-	Vertex(
-		const DirectX::SimpleMath::Vector3& p,
-		const DirectX::SimpleMath::Vector3& n,
-		const DirectX::SimpleMath::Vector3& t,
-		const DirectX::SimpleMath::Vector2& uv) :
-		Position(p),
-		Normal(n),
-		TangentU(t),
-		TexC(uv) {
-	}
-	Vertex(
-		float px, float py, float pz,
-		float nx, float ny, float nz,
-		float tx, float ty, float tz,
-		float u, float v) :
-		Position(px, py, pz),
-		Normal(nx, ny, nz),
-		TangentU(tx, ty, tz),
-		TexC(u, v) {
-	}
+	DirectX::SimpleMath::Vector4 iMouse;
 
-	DirectX::SimpleMath::Vector3 Position;
-	DirectX::SimpleMath::Vector3 Normal;
-	DirectX::SimpleMath::Vector2 TexC;
-	DirectX::SimpleMath::Vector3 TangentU;
+	float dx;
+	float dy;
+	float threshold;
+	float strength;
+
+	float iTime;
+	DirectX::SimpleMath::Vector2 iResolution;
+	float dummy;
 };
 
-struct SkinnedVertex
+struct SsaoConstantComponent
 {
-	DirectX::SimpleMath::Vector3 Position;
-	DirectX::SimpleMath::Vector3 Normal;
-	DirectX::SimpleMath::Vector2 TexC;
-	DirectX::SimpleMath::Vector3 TangentU;
-	DirectX::SimpleMath::Vector3 BoneWeights;
-	uint8_t BoneIndices[4];
+	DirectX::SimpleMath::Matrix Proj;
+	DirectX::SimpleMath::Matrix InvProj;
+	DirectX::SimpleMath::Matrix ProjTex;
+	DirectX::SimpleMath::Vector4 OffsetVectors[14];
+
+	// For SsaoBlur.hlsl
+	DirectX::SimpleMath::Vector4 BlurWeights[3];
+
+	DirectX::SimpleMath::Vector2 InvRenderTargetSize = { 0.0f, 0.0f };
+
+	// Coordinates given in view space.
+	float OcclusionRadius = 0.5f;
+	float OcclusionFadeStart = 0.2f;
+	float OcclusionFadeEnd = 2.0f;
+	float SurfaceEpsilon = 0.05f;
+};
+
+struct PassConstantComponent
+{
+	DirectX::SimpleMath::Matrix View = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix InvView = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix Proj = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix InvProj = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix ViewProj = MathHelper::Identity4x4();
+	DirectX::SimpleMath::Matrix InvViewProj = MathHelper::Identity4x4();
+
+	DirectX::SimpleMath::Vector3 EyePosW = { 0.0f, 0.0f, 0.0f };
+	float cbPerObjectPad1 = 0.0f;
+
+	DirectX::SimpleMath::Vector2 RenderTargetSize = { 0.0f, 0.0f };
+	DirectX::SimpleMath::Vector2 InvRenderTargetSize = { 0.0f, 0.0f };
+
+	float NearZ = 0.0f;
+	float FarZ = 0.0f;
+	float TotalTime = 0.0f;
+	float DeltaTime = 0.0f;
+
+	DirectX::SimpleMath::Vector4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	DirectX::SimpleMath::Vector4 FogColor = { 0.7f, 0.7f, 0.7f, 1.0f };
+
+	float gFogStart = 5.0f;
+	float gFogRange = 150.0f;
+	DirectX::SimpleMath::Vector2 cbPerObjectPad2 = { 0.0f, 0.0f };
+
+	LightComponent Lights[MAX_LIGHTS];
+
+	uint32_t gCubeMapIndex = 0;
+};
+
+struct InstanceConstantComponent
+{
+	uint32_t BaseInstanceIndex;
 };
