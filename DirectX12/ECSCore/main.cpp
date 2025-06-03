@@ -26,6 +26,11 @@ void InitExample()
     coordinator.AddComponent(ball, RigidBody{});
     coordinator.AddComponent(ball, Gravity{});
 
+    ECS::Entity ball2 = coordinator.CreateEntity();
+    coordinator.AddComponent(ball2, Transform{});
+    coordinator.AddComponent(ball2, RigidBody{});
+    coordinator.AddComponent(ball2, Gravity{ DirectX::SimpleMath::Vector3(1.0f, 0.0f, 1.0f)});
+
     // 4. Simulation loop
     for (int i = 0; i < 10; ++i) {
         physicsSystem->Update(0.016f); // 16ms timestep
@@ -35,6 +40,12 @@ void InitExample()
             << tf.position.x << ", "
             << tf.position.y << ", "
             << tf.position.z << ")\n";
+
+        const auto& tf2 = coordinator.GetComponent<Transform>(ball2);
+        std::cout << "Position at step " << i << ": ("
+            << tf2.position.x << ", "
+            << tf2.position.y << ", "
+            << tf2.position.z << ")\n";
     }
 }
 
