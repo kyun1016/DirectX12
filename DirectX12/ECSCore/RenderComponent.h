@@ -70,8 +70,13 @@ struct InstanceComponent
 	int dummy2 = 0;
 };
 
+using MeshHandle = std::string;
+struct MeshComponent
+{
+	MeshHandle handle;
+};
 
-struct VertexComponent
+struct Vertex
 {
 	Vertex()
 		: Position(0.0f, 0.0f, 0.0f)
@@ -106,7 +111,7 @@ struct VertexComponent
 	DirectX::SimpleMath::Vector3 TangentU;
 };
 
-struct SkinnedVertexComponent
+struct SkinnedVertex
 {
 	DirectX::SimpleMath::Vector3 Position;
 	DirectX::SimpleMath::Vector3 Normal;

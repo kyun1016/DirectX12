@@ -1,6 +1,8 @@
 {
     "files.associations": {
+        "*.h": "cpp",
         "streamline_debug": "cpp",
-        "tensor": "cpp"
+        "tensor": "cpp",
+        "vector": "cpp"
     }
 }

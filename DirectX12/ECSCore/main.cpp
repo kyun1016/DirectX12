@@ -72,13 +72,13 @@ void InitExample()
     for (int i = 0; i < 10000; ++i) {
         coordinator.UpdateAllSystem(0.16f);
 
-        const auto& tf = coordinator.GetComponent<Transform>(ball);
+        const auto& tf = coordinator.GetComponent<TransformComponent>(ball);
         std::cout << "Position at step " << i << ": ("
             << tf.position.x << ", "
             << tf.position.y << ", "
             << tf.position.z << ")\n";
 
-        const auto& tf2 = coordinator.GetComponent<Transform>(ball2);
+        const auto& tf2 = coordinator.GetComponent<TransformComponent>(ball2);
         std::cout << "Position at step " << i << ": ("
             << tf2.position.x << ", "
             << tf2.position.y << ", "
