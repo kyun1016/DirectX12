@@ -22,6 +22,9 @@
     <Filter Include="Header Files\Audio">
       <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Render">
+      <UniqueIdentifier>{8e389dbe-c8e4-4fb0-b6a9-1bdfc1db8400}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -59,11 +62,17 @@
     <ClInclude Include="ECSCorePch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GravityComponent.h">
+    <ClInclude Include="PhysicsComponent.h">
       <Filter>Header Files\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioSystem.h">
       <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderComponent.h">
+      <Filter>Header Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderConstantComponent.h">
+      <Filter>Header Files\Render</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

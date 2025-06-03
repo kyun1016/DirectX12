@@ -37,7 +37,8 @@ private:
             return;
         }
 
-        const int loopFlag = component.useLoop ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF;
+        int loopFlag = component.useLoop ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF;
+		loopFlag |= FMOD_DEFAULT; // Use FMOD_CREATE_STREAM for streaming audio files
         FMOD_RESULT result = mSystem->createSound(component.filename.c_str(), loopFlag, 0, &mSoundMap[component.soundname]);
 
         if (result != FMOD_OK) {

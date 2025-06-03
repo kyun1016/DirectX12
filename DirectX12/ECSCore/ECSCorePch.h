@@ -1,8 +1,5 @@
 #pragma once
 
-
-#pragma comment(lib, "..\\FMODCore\\fmod_vc.lib")
-#pragma comment(lib, "..\\FMODCore\\fmodL_vc.lib")
 #ifdef _DEBUG
 #pragma comment(lib, "..\\Libraries\\Libs\\EngineCore\\Debug\\EngineCore.lib")
 #pragma comment(lib, "..\\Libraries\\Libs\\ImGuiCore\\Debug\\ImGuiCore.lib")

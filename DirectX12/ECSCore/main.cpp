@@ -23,29 +23,29 @@ void InitExample()
     auto& coordinator = ECS::Coordinator::GetInstance();
 
     // 1. Register Components
-    coordinator.RegisterComponent<Transform>();
-    coordinator.RegisterComponent<RigidBody>();
-    coordinator.RegisterComponent<Gravity>();
+    coordinator.RegisterComponent<TransformComponent>();
+    coordinator.RegisterComponent<RigidBodyComponent>();
+    coordinator.RegisterComponent<GravityComponent>();
 
     // 2. Register System
     auto physicsSystem = coordinator.RegisterSystem<PhysicsSystem>();
 
     ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<Transform>());
-    signature.set(coordinator.GetComponentType<RigidBody>());
-    signature.set(coordinator.GetComponentType<Gravity>());
+    signature.set(coordinator.GetComponentType<TransformComponent>());
+    signature.set(coordinator.GetComponentType<RigidBodyComponent>());
+    signature.set(coordinator.GetComponentType<GravityComponent>());
     coordinator.SetSystemSignature<PhysicsSystem>(signature);
 
     // 3. Create Entity
     ECS::Entity ball = coordinator.CreateEntity();
-    coordinator.AddComponent(ball, Transform{});
-    coordinator.AddComponent(ball, RigidBody{});
-    coordinator.AddComponent(ball, Gravity{});
+    coordinator.AddComponent(ball, TransformComponent{});
+    coordinator.AddComponent(ball, RigidBodyComponent{});
+    coordinator.AddComponent(ball, GravityComponent{});
 
     ECS::Entity ball2 = coordinator.CreateEntity();
-    coordinator.AddComponent(ball2, Transform{});
-    coordinator.AddComponent(ball2, RigidBody{});
-    coordinator.AddComponent(ball2, Gravity{ DirectX::SimpleMath::Vector3(1.0f, 0.0f, 1.0f)});
+    coordinator.AddComponent(ball2, TransformComponent{});
+    coordinator.AddComponent(ball2, RigidBodyComponent{});
+    coordinator.AddComponent(ball2, GravityComponent{ DirectX::SimpleMath::Vector3(1.0f, 0.0f, 1.0f)});
 
 
     // 1. Register Components
@@ -59,12 +59,17 @@ void InitExample()
     coordinator.SetSystemSignature<FMODAudioSystem>(audioSignature);
 
     // 3. Create Entity
-    ECS::Entity sound = coordinator.CreateEntity();
+    ECS::Entity sound1 = coordinator.CreateEntity();
+    ECS::Entity sound2 = coordinator.CreateEntity();
+    ECS::Entity sound3 = coordinator.CreateEntity();
+
     std::string path = GetSoundLocation();
-	coordinator.AddComponent(sound, FMODAudioComponent{ path + "jaguar.wav", "jaguar", 1.0f, true, true, false});
+    coordinator.AddComponent(sound1, FMODAudioComponent{ path + "jaguar.wav", "jaguar", 0.5f, true, true, false });
+    coordinator.AddComponent(sound2, FMODAudioComponent{ path + "singing.wav", "singing", 0.5f, true, true, false });
+    coordinator.AddComponent(sound3, FMODAudioComponent{ path + "swish.wav", "swish", 0.5f, true, true, false });
 
     // 4. Simulation loop
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         coordinator.UpdateAllSystem(0.16f);
 
         const auto& tf = coordinator.GetComponent<Transform>(ball);

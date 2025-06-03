@@ -148,9 +148,11 @@
     <ClInclude Include="ECSCorePch.h" />
     <ClInclude Include="ECSEntity.h" />
     <ClInclude Include="ECSSystem.h" />
-    <ClInclude Include="GravityComponent.h" />
+    <ClInclude Include="PhysicsComponent.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PhysicsSystem.h" />
+    <ClInclude Include="RenderComponent.h" />
+    <ClInclude Include="RenderConstantComponent.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

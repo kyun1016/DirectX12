@@ -1,15 +1,15 @@
 #pragma once
 #include "ECSCoordinator.h"
-#include "GravityComponent.h"
+#include "PhysicsComponent.h"
 
 class PhysicsSystem : public ECS::ISystem {
 public:
     void Update(float dt) override {
         auto& coordinator = ECS::Coordinator::GetInstance();
         for (ECS::Entity entity : mEntities) {
-            auto& rb = coordinator.GetComponent<RigidBody>(entity);
-            auto& tf = coordinator.GetComponent<Transform>(entity);
-            const auto& gravity = coordinator.GetComponent<Gravity>(entity);
+            auto& rb = coordinator.GetComponent<RigidBodyComponent>(entity);
+            auto& tf = coordinator.GetComponent<TransformComponent>(entity);
+            const auto& gravity = coordinator.GetComponent<GravityComponent>(entity);
 
             rb.acceleration = gravity.force;
             rb.velocity.x += rb.acceleration.x * dt;

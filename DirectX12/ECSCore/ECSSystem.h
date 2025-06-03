@@ -1,5 +1,6 @@
 #pragma once
 #include "ECSConfig.h"
+#include <future>
 
 namespace ECS
 {
@@ -24,6 +25,10 @@ namespace ECS
 			// Create a pointer to the system and return it so it can be used externally
 			auto system = std::make_shared<T>();
 			mSystems.insert({ type, system });
+			mSystemTasks[type] = [system](float dt) {
+				system->Update(dt);
+			};
+
 			return system;
 		}
 
@@ -71,13 +76,21 @@ namespace ECS
 		}
 
 		void UpdateAllSystems(float dt) {
-			for (auto& [_, system] : mSystems) {
-				system->Update(dt);  // 순수 가상이므로 하위 시스템에서 구현 강제됨
+			std::vector<std::future<void>> futures;
+			for (auto& [_, task] : mSystemTasks)
+			{
+				futures.emplace_back(std::async(std::launch::async, task, dt));
+			}
+
+			for (auto& fut : futures)
+			{
+				fut.get(); // 모든 시스템의 업데이트 완료 대기
 			}
 		}
 
 	private:
 		std::unordered_map<std::type_index, Signature> mSignatures{};
 		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> mSystems{};
+		std::unordered_map<std::type_index, std::function<void(float)>> mSystemTasks;
 	};
 }
