@@ -3,6 +3,16 @@
 
 namespace ECS
 {
+	class ISingletonComponent {
+	public:
+		virtual ~ISingletonComponent() = default;
+	};
+	template<typename T>
+	class SingletonComponentWrapper : public ISingletonComponent {
+	public:
+		T data;
+	};
+
 	class IComponentArray {
 	public:
 		virtual ~IComponentArray() = default;
@@ -82,6 +92,16 @@ namespace ECS
 		}
 
 		template<typename T>
+		void RegisterSingletonComponent()
+		{
+			std::type_index type = std::type_index(typeid(T));
+
+			assert(mSingletonComponents.find(type) == mSingletonComponents.end() && "Singleton already registered.");
+
+			mSingletonComponents[type] = std::make_unique<SingletonComponentWrapper<T>>();
+		}
+
+		template<typename T>
 		ComponentType GetComponentType()
 		{
 			std::type_index type = std::type_index(typeid(T));
@@ -109,6 +129,28 @@ namespace ECS
 			return GetComponentArray<T>()->GetData(entity);
 		}
 
+		template<typename T>
+		const T& GetComponent(Entity entity) const
+		{
+			return GetComponentArray<T>()->GetData(entity);
+		}
+
+		template<typename T>
+		T& GetSingletonComponent()
+		{
+			std::type_index type = typeid(T);
+			assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
+			return *static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents[type].get());
+		}
+
+		template<typename T>
+		const T& GetSingletonComponent() const
+		{
+			std::type_index type = typeid(T);
+			assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
+			return *static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get());
+		}
+
 		void EntityDestroyed(Entity entity)
 		{
 			for (auto const& pair : mComponentArrays)
@@ -122,6 +164,7 @@ namespace ECS
 	private:
 		std::unordered_map<std::type_index, ComponentType> mComponentTypes{};
 		std::unordered_map<std::type_index, std::shared_ptr<IComponentArray>> mComponentArrays{};
+		std::unordered_map<std::type_index, std::unique_ptr<ISingletonComponent>> mSingletonComponents;
 
 		ComponentType mNextComponentType{};
 

@@ -31,6 +31,12 @@
     <Filter Include="Header Files\Render\Mesh">
       <UniqueIdentifier>{7f33e4e0-2fe1-4d54-89e9-ca58dba55c2b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Render\Material">
+      <UniqueIdentifier>{2ab7f502-8be7-485a-a564-a2322ccd4eec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Render\Time">
+      <UniqueIdentifier>{214e8847-ede7-477d-804f-5e823bde06f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -97,6 +103,18 @@
     </ClInclude>
     <ClInclude Include="FMODAudioRepository.h">
       <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialComponent.h">
+      <Filter>Header Files\Render\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialSystem.h">
+      <Filter>Header Files\Render\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeComponent.h">
+      <Filter>Header Files\Render\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeSystem.h">
+      <Filter>Header Files\Render\Time</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
