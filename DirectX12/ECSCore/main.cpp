@@ -104,6 +104,30 @@ void InitMeshExample()
     coordinator.AddComponent(mesh3, MeshComponent{ handle });
 }
 
+void InitLightExample()
+{
+    auto& coordinator = ECS::Coordinator::GetInstance();
+
+    // 1. Register Components
+    coordinator.RegisterComponent<LightComponent>();
+
+    // 2. Register System
+    coordinator.RegisterSystem<LightSystem>();
+
+    ECS::Signature signature;
+    signature.set(coordinator.GetComponentType<LightComponent>());
+    coordinator.SetSystemSignature<LightSystem>(signature);
+
+    // 3. Create Entity
+    ECS::Entity light1 = coordinator.CreateEntity();
+    ECS::Entity light2 = coordinator.CreateEntity();
+    ECS::Entity light3 = coordinator.CreateEntity();
+
+    coordinator.AddComponent(light1, LightComponent{ });
+    coordinator.AddComponent(light2, LightComponent{ });
+    coordinator.AddComponent(light3, LightComponent{ });
+}
+
 void InitExample()
 {
     //================================
@@ -114,6 +138,7 @@ void InitExample()
     InitPhysicsExample();
     InitSoundExample();
     InitMeshExample();
+    InitLightExample();
 
     //================================
     // Part 3. Mesh Example

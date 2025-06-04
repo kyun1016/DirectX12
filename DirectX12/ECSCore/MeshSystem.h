@@ -9,7 +9,7 @@ public:
         auto& coordinator = ECS::Coordinator::GetInstance();
         for (ECS::Entity entity : mEntities) {
             auto& component = coordinator.GetComponent<MeshComponent>(entity);
-			MeshRepository::GetMesh(component.handle);
+            MeshRepository::GetMesh(component.handle);
         }
     }
 };
