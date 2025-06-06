@@ -27,21 +27,6 @@ void InitTimeExample()
 
     // 2. Register System
     coordinator.RegisterSystem<TimeSystem>();
-
-    //ECS::Signature signature;
-    //signature.set(coordinator.GetComponentType<AnimationTimeComponent>());
-    //coordinator.SetSystemSignature<AnimationTimeComponent>(signature);
-
-    //// 3. Create Entity
-    //ECS::Entity ball = coordinator.CreateEntity();
-    //coordinator.AddComponent(ball, TransformComponent{});
-    //coordinator.AddComponent(ball, RigidBodyComponent{});
-    //coordinator.AddComponent(ball, GravityComponent{});
-
-    //ECS::Entity ball2 = coordinator.CreateEntity();
-    //coordinator.AddComponent(ball2, TransformComponent{});
-    //coordinator.AddComponent(ball2, RigidBodyComponent{});
-    //coordinator.AddComponent(ball2, GravityComponent{ DirectX::SimpleMath::Vector3(1.0f, 0.0f, 1.0f) });
 }
 
 void InitPhysicsExample()

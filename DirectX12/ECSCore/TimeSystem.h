@@ -42,9 +42,9 @@ public:
         time.deltaTime = dt;
         time.totalTime += dt;
 
-        std::cout << "time at step: ("
-            << time.deltaTime << ", "
-            << time.totalTime << ")\n";
+        //std::cout << "time at step: ("
+        //    << time.deltaTime << ", "
+        //    << time.totalTime << ")\n";
     }
 
 private:

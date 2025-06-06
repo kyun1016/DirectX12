@@ -87,6 +87,19 @@ namespace ECS
 
 		void UpdateAllSystems() {
 			std::vector<std::future<void>> futures;
+			
+			futures.clear();
+			for (auto& [_, task] : mSystemSyncTasks)
+			{
+				futures.emplace_back(std::async(std::launch::async, task));
+			}
+
+			for (auto& fut : futures)
+			{
+				fut.get(); // 모든 시스템의 업데이트 완료 대기
+			}
+
+			futures.clear();
 			for (auto& [_, task] : mSystemUpdateTasks)
 			{
 				futures.emplace_back(std::async(std::launch::async, task));
@@ -108,16 +121,7 @@ namespace ECS
 				fut.get(); // 모든 시스템의 업데이트 완료 대기
 			}
 
-			futures.clear();
-			for (auto& [_, task] : mSystemSyncTasks)
-			{
-				futures.emplace_back(std::async(std::launch::async, task));
-			}
 
-			for (auto& fut : futures)
-			{
-				fut.get(); // 모든 시스템의 업데이트 완료 대기
-			}
 		}
 
 	private:

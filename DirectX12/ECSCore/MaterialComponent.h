@@ -45,6 +45,6 @@ struct MaterialUpdateComponent {
 struct MaterialData
 {
 	MaterialPropertyComponent Property;
-    MaterialIndexComponent Texture;
+    MaterialIndexComponent Index;
 	MaterialUVTransformComponent UVTransform;
 };

@@ -22,15 +22,15 @@ public:
             tf.position.y += rb.velocity.y * time.deltaTime;
             tf.position.z += rb.velocity.z * time.deltaTime;
 
-            std::cout << "velocity at step: ("
-                << rb.velocity.x << ", "
-                << rb.velocity.y << ", "
-                << rb.velocity.z << ")\n";
+            //std::cout << "velocity at step: ("
+            //    << rb.velocity.x << ", "
+            //    << rb.velocity.y << ", "
+            //    << rb.velocity.z << ")\n";
 
-            std::cout << "Position at step: ("
-                << tf.position.x << ", "
-                << tf.position.y << ", "
-                << tf.position.z << ")\n";
+            //std::cout << "Position at step: ("
+            //    << tf.position.x << ", "
+            //    << tf.position.y << ", "
+            //    << tf.position.z << ")\n";
         }
     }
 };
