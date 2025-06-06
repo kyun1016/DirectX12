@@ -1,12 +1,65 @@
 #pragma once
 #include "ECSCoordinator.h"
 #include "TimeComponent.h"
+#include <chrono>
+
+class Timer {
+public:
+    void Start() {
+        mLast = std::chrono::high_resolution_clock::now();
+    }
+
+    float Tick() {
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> delta = now - mLast;
+        mLast = now;
+        return delta.count();
+    }
+
+private:
+    std::chrono::high_resolution_clock::time_point mLast;
+};
 
 class TimeSystem : public ECS::ISystem {
 public:
-    void Update(float dt) override {
-        // auto& time = ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>();
-        // time.deltaTime = dt;
-        // time.totalTime += dt;
+    TimeSystem() {
+        mTimer.Start();
+    }
+
+    void Update() override {
+
+    }
+
+    void LateUpdate() override {
+
+    }
+
+    void Sync() override {
+        auto& coordinator = ECS::Coordinator::GetInstance();
+        const float dt = mTimer.Tick();
+
+        auto& time = coordinator.GetSingletonComponent<TimeComponent>();
+        time.deltaTime = dt;
+        time.totalTime += dt;
+
+        std::cout << "time at step: ("
+            << time.deltaTime << ", "
+            << time.totalTime << ")\n";
+    }
+
+private:
+    Timer mTimer;
+};
+
+class AnimationTimeSystem : public ECS::ISystem {
+public:
+    void Update() override {
+        auto& coordinator = ECS::Coordinator::GetInstance();
+        const auto& time = coordinator.GetSingletonComponent<TimeComponent>();
+
+        for (auto entity : mEntities) {
+            auto& anim = coordinator.GetComponent<AnimationTimeComponent>(entity);
+            anim.localTime += time.deltaTime * anim.speed;
+        }
     }
 };

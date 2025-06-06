@@ -5,7 +5,7 @@
 namespace ECS {
     class RenderSystem : public ECS::ISystem {
     public:
-        void Update(float dt) override {
+        void Update() override {
             auto& coordinator = ECS::Coordinator::GetInstance();
             for (ECS::Entity entity : mEntities) {
                 //auto& rb = coordinator.GetComponent<RigidBodyComponent>(entity);

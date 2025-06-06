@@ -13,6 +13,7 @@
 #include "../FMODCore/FMODCorePch.h"
 
 #include <filesystem>
+#include "TimeSystem.h"
 #include "PhysicsSystem.h"
 #include "FMODAudioSystem.h"
 #include "RenderSystem.h"

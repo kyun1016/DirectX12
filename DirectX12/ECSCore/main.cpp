@@ -18,6 +18,32 @@ std::string GetSoundLocation() {
     return dllPath;
 }
 
+void InitTimeExample()
+{
+    auto& coordinator = ECS::Coordinator::GetInstance();
+
+    // 1. Register Components
+    coordinator.RegisterSingletonComponent<TimeComponent>();
+
+    // 2. Register System
+    coordinator.RegisterSystem<TimeSystem>();
+
+    //ECS::Signature signature;
+    //signature.set(coordinator.GetComponentType<AnimationTimeComponent>());
+    //coordinator.SetSystemSignature<AnimationTimeComponent>(signature);
+
+    //// 3. Create Entity
+    //ECS::Entity ball = coordinator.CreateEntity();
+    //coordinator.AddComponent(ball, TransformComponent{});
+    //coordinator.AddComponent(ball, RigidBodyComponent{});
+    //coordinator.AddComponent(ball, GravityComponent{});
+
+    //ECS::Entity ball2 = coordinator.CreateEntity();
+    //coordinator.AddComponent(ball2, TransformComponent{});
+    //coordinator.AddComponent(ball2, RigidBodyComponent{});
+    //coordinator.AddComponent(ball2, GravityComponent{ DirectX::SimpleMath::Vector3(1.0f, 0.0f, 1.0f) });
+}
+
 void InitPhysicsExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
@@ -135,6 +161,7 @@ void InitExample()
     //================================
     auto& coordinator = ECS::Coordinator::GetInstance();
 
+    InitTimeExample();
     InitPhysicsExample();
     InitSoundExample();
     InitMeshExample();
@@ -149,7 +176,7 @@ void InitExample()
     //================================
     
     for (int i = 0; i < 10000; ++i) {
-        coordinator.UpdateAllSystem(0.16f);
+        coordinator.UpdateAllSystem();
 
         //const auto& tf = coordinator.GetComponent<TransformComponent>(ball);
         //std::cout << "Position at step " << i << ": ("

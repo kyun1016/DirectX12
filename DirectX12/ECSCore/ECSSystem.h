@@ -8,7 +8,17 @@ namespace ECS
 	{
 	public:
 		std::set<Entity> mEntities;
-		virtual void Update(float dt) = 0;
+		virtual void BeginPlay() {}
+		virtual void EndPlay() {}
+
+		virtual void PreUpdate() {}
+		virtual void Update() = 0;
+		virtual void LateUpdate() {}
+		virtual void FixedUpdate() {}
+		virtual void FinalUpdate() {}
+
+		virtual void Sync() {}
+		
 		virtual ~ISystem() = default;
 	};
 
@@ -25,9 +35,9 @@ namespace ECS
 			// Create a pointer to the system and return it so it can be used externally
 			auto system = std::make_shared<T>();
 			mSystems.insert({ type, system });
-			mSystemTasks[type] = [system](float dt) {
-				system->Update(dt);
-			};
+			mSystemUpdateTasks[type] = [system]() {	system->Update(); };
+			mSystemLateUpdateTasks[type] = [system]() {	system->LateUpdate(); };
+			mSystemSyncTasks[type] = [system]() {	system->Sync(); };
 
 			return system;
 		}
@@ -75,11 +85,33 @@ namespace ECS
 			}
 		}
 
-		void UpdateAllSystems(float dt) {
+		void UpdateAllSystems() {
 			std::vector<std::future<void>> futures;
-			for (auto& [_, task] : mSystemTasks)
+			for (auto& [_, task] : mSystemUpdateTasks)
 			{
-				futures.emplace_back(std::async(std::launch::async, task, dt));
+				futures.emplace_back(std::async(std::launch::async, task));
+			}
+
+			for (auto& fut : futures)
+			{
+				fut.get(); // 모든 시스템의 업데이트 완료 대기
+			}
+
+			futures.clear();
+			for (auto& [_, task] : mSystemLateUpdateTasks)
+			{
+				futures.emplace_back(std::async(std::launch::async, task));
+			}
+
+			for (auto& fut : futures)
+			{
+				fut.get(); // 모든 시스템의 업데이트 완료 대기
+			}
+
+			futures.clear();
+			for (auto& [_, task] : mSystemSyncTasks)
+			{
+				futures.emplace_back(std::async(std::launch::async, task));
 			}
 
 			for (auto& fut : futures)
@@ -91,6 +123,8 @@ namespace ECS
 	private:
 		std::unordered_map<std::type_index, Signature> mSignatures{};
 		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> mSystems{};
-		std::unordered_map<std::type_index, std::function<void(float)>> mSystemTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemUpdateTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemLateUpdateTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemSyncTasks;
 	};
 }

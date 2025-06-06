@@ -49,6 +49,13 @@ namespace ECS
 			mComponentManager->RegisterComponent<T>();
 		}
 
+
+		template<typename T>
+		void RegisterSingletonComponent()
+		{
+			mComponentManager->RegisterSingletonComponent<T>();
+		}
+
 		template<typename T>
 		void AddComponent(Entity entity, T component)
 		{
@@ -80,6 +87,24 @@ namespace ECS
 		}
 
 		template<typename T>
+		const T& GetComponent(Entity entity) const
+		{
+			return mComponentManager->GetComponent<T>(entity);
+		}
+
+		template<typename T>
+		T& GetSingletonComponent()
+		{
+			return mComponentManager->GetSingletonComponent<T>();
+		}
+
+		template<typename T>
+		const T& GetSingletonComponent() const
+		{
+			return mComponentManager->GetSingletonComponent<T>();
+		}
+
+		template<typename T>
 		ComponentType GetComponentType()
 		{
 			return mComponentManager->GetComponentType<T>();
@@ -99,9 +124,9 @@ namespace ECS
 			mSystemManager->SetSignature<T>(signature);
 		}
 
-		void UpdateAllSystem(float dt)
+		void UpdateAllSystem()
 		{
-			mSystemManager->UpdateAllSystems(dt);
+			mSystemManager->UpdateAllSystems();
 		}
 
 	private:

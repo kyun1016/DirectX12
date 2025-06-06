@@ -136,11 +136,10 @@ namespace ECS
 		}
 
 		template<typename T>
-		T& GetSingletonComponent()
-		{
+		T& GetSingletonComponent() {
 			std::type_index type = typeid(T);
-			assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
-			return *static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents[type].get());
+			assert(mSingletonComponents.find(type) != mSingletonComponents.end());
+			return static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents[type].get())->data;
 		}
 
 		template<typename T>
@@ -148,7 +147,7 @@ namespace ECS
 		{
 			std::type_index type = typeid(T);
 			assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
-			return *static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get());
+			return *static_cast<const SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get())->data;
 		}
 
 		void EntityDestroyed(Entity entity)
