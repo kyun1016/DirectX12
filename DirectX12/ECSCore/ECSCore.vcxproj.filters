@@ -13,29 +13,35 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Core">
-      <UniqueIdentifier>{e880d5bf-5cb2-41d1-b929-f785795e6bca}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Physics">
-      <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Audio">
       <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render">
+    <Filter Include="Header Files\ECSCore">
+      <UniqueIdentifier>{e880d5bf-5cb2-41d1-b929-f785795e6bca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems">
       <UniqueIdentifier>{8e389dbe-c8e4-4fb0-b6a9-1bdfc1db8400}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render\Light">
+    <Filter Include="Header Files\Systems\Light">
       <UniqueIdentifier>{be60cb14-c6a3-4b0a-918a-2e6b1dc51049}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render\Mesh">
+    <Filter Include="Header Files\Systems\Mesh">
       <UniqueIdentifier>{7f33e4e0-2fe1-4d54-89e9-ca58dba55c2b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render\Material">
+    <Filter Include="Header Files\Systems\Material">
       <UniqueIdentifier>{2ab7f502-8be7-485a-a564-a2322ccd4eec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Render\Time">
+    <Filter Include="Header Files\Systems\Time">
       <UniqueIdentifier>{214e8847-ede7-477d-804f-5e823bde06f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Window">
+      <UniqueIdentifier>{7f59900f-ce42-47ad-bce4-742c6cd034d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Physics">
+      <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Log">
+      <UniqueIdentifier>{b2e9ea41-351a-41af-a6a1-07cc12b917dc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,22 +54,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ECSComponent.h">
-      <Filter>Header Files\Core</Filter>
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="ECSConfig.h">
-      <Filter>Header Files\Core</Filter>
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="ECSCoordinator.h">
-      <Filter>Header Files\Core</Filter>
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="ECSEntity.h">
-      <Filter>Header Files\Core</Filter>
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="ECSSystem.h">
-      <Filter>Header Files\Core</Filter>
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="PhysicsSystem.h">
-      <Filter>Header Files\Physics</Filter>
+      <Filter>Header Files\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioComponent.h">
       <Filter>Header Files\Audio</Filter>
@@ -75,46 +81,52 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PhysicsComponent.h">
-      <Filter>Header Files\Physics</Filter>
+      <Filter>Header Files\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioSystem.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="RenderComponent.h">
-      <Filter>Header Files\Render</Filter>
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="RenderSystem.h">
-      <Filter>Header Files\Render</Filter>
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="LightSystem.h">
-      <Filter>Header Files\Render\Light</Filter>
+      <Filter>Header Files\Systems\Light</Filter>
     </ClInclude>
     <ClInclude Include="LightComponent.h">
-      <Filter>Header Files\Render\Light</Filter>
+      <Filter>Header Files\Systems\Light</Filter>
     </ClInclude>
     <ClInclude Include="MeshRepository.h">
-      <Filter>Header Files\Render\Mesh</Filter>
+      <Filter>Header Files\Systems\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="MeshComponent.h">
-      <Filter>Header Files\Render\Mesh</Filter>
+      <Filter>Header Files\Systems\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="MeshSystem.h">
-      <Filter>Header Files\Render\Mesh</Filter>
+      <Filter>Header Files\Systems\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioRepository.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="MaterialComponent.h">
-      <Filter>Header Files\Render\Material</Filter>
+      <Filter>Header Files\Systems\Material</Filter>
     </ClInclude>
     <ClInclude Include="MaterialSystem.h">
-      <Filter>Header Files\Render\Material</Filter>
+      <Filter>Header Files\Systems\Material</Filter>
     </ClInclude>
     <ClInclude Include="TimeComponent.h">
-      <Filter>Header Files\Render\Time</Filter>
+      <Filter>Header Files\Systems\Time</Filter>
     </ClInclude>
     <ClInclude Include="TimeSystem.h">
-      <Filter>Header Files\Render\Time</Filter>
+      <Filter>Header Files\Systems\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowComponent.h">
+      <Filter>Header Files\Systems\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSystem.h">
+      <Filter>Header Files\Systems\Window</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

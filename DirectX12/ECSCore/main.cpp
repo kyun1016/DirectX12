@@ -18,17 +18,6 @@ std::string GetSoundLocation() {
     return dllPath;
 }
 
-void InitTimeExample()
-{
-    auto& coordinator = ECS::Coordinator::GetInstance();
-
-    // 1. Register Components
-    coordinator.RegisterSingletonComponent<TimeComponent>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<TimeSystem>();
-}
-
 void InitPhysicsExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
@@ -144,9 +133,8 @@ void InitExample()
     //================================
 	// Load Coordinator Instance
     //================================
-    auto& coordinator = ECS::Coordinator::GetInstance();
-
-    InitTimeExample();
+    ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
+    ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
     InitPhysicsExample();
     InitSoundExample();
     InitMeshExample();
@@ -159,22 +147,7 @@ void InitExample()
     //================================
     // Simulation loop
     //================================
-    
-    for (int i = 0; i < 10000; ++i) {
-        coordinator.UpdateAllSystem();
-
-        //const auto& tf = coordinator.GetComponent<TransformComponent>(ball);
-        //std::cout << "Position at step " << i << ": ("
-        //    << tf.position.x << ", "
-        //    << tf.position.y << ", "
-        //    << tf.position.z << ")\n";
-
-        //const auto& tf2 = coordinator.GetComponent<TransformComponent>(ball2);
-        //std::cout << "Position at step " << i << ": ("
-        //    << tf2.position.x << ", "
-        //    << tf2.position.y << ", "
-        //    << tf2.position.z << ")\n";
-    }
+    ECS::Coordinator::GetInstance().Run();
 }
 
 int main()

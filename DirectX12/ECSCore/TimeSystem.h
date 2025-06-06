@@ -25,6 +25,13 @@ public:
     TimeSystem() {
         mTimer.Start();
     }
+	void BeginPlay() override {
+		auto& coordinator = ECS::Coordinator::GetInstance();
+		coordinator.RegisterSingletonComponent<TimeComponent>();
+		coordinator.GetSingletonComponent<TimeComponent>().deltaTime = 0.0f;
+		coordinator.GetSingletonComponent<TimeComponent>().totalTime = 0.0f;
+		mTimer.Tick(); // Initialize the timer
+	}
 
     void Update() override {
 
@@ -42,9 +49,9 @@ public:
         time.deltaTime = dt;
         time.totalTime += dt;
 
-        //std::cout << "time at step: ("
-        //    << time.deltaTime << ", "
-        //    << time.totalTime << ")\n";
+        std::cout << "time at step: ("
+            << time.deltaTime << ", "
+            << time.totalTime << ")\n";
     }
 
 private:

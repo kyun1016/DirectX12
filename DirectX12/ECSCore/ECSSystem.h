@@ -11,13 +11,12 @@ namespace ECS
 		virtual void BeginPlay() {}
 		virtual void EndPlay() {}
 
+		virtual void Sync() {}
 		virtual void PreUpdate() {}
 		virtual void Update() = 0;
 		virtual void LateUpdate() {}
 		virtual void FixedUpdate() {}
 		virtual void FinalUpdate() {}
-
-		virtual void Sync() {}
 		
 		virtual ~ISystem() = default;
 	};
@@ -35,9 +34,15 @@ namespace ECS
 			// Create a pointer to the system and return it so it can be used externally
 			auto system = std::make_shared<T>();
 			mSystems.insert({ type, system });
-			mSystemUpdateTasks[type] = [system]() {	system->Update(); };
-			mSystemLateUpdateTasks[type] = [system]() {	system->LateUpdate(); };
-			mSystemSyncTasks[type] = [system]() {	system->Sync(); };
+			mSystemBeginPlayTasks[type] = [system]() { system->BeginPlay(); };
+			mSystemEndPlayTasks[type] = [system]() { system->EndPlay(); };
+
+			mSystemSyncTasks[type] = [system]() { system->Sync(); };
+			mSystemPreUpdateTasks[type] = [system]() { system->PreUpdate(); };
+			mSystemUpdateTasks[type] = [system]() { system->Update(); };
+			mSystemLateUpdateTasks[type] = [system]() { system->LateUpdate(); };
+			mSystemFixedUpdateTasks[type] = [system]() { system->FixedUpdate(); };
+			mSystemFinalUpdateTasks[type] = [system]() { system->FinalUpdate(); };
 
 			return system;
 		}
@@ -85,50 +90,76 @@ namespace ECS
 			}
 		}
 
-		void UpdateAllSystems() {
+		inline void BeginPlayAllSystems()
+		{
 			std::vector<std::future<void>> futures;
-			
-			futures.clear();
+			for (auto& [_, task] : mSystemBeginPlayTasks)
+				futures.emplace_back(std::async(std::launch::async, task));
+			for (auto& fut : futures)
+				fut.get();
+		}
+		inline void SyncAllSystems() {
+			std::vector<std::future<void>> futures;
 			for (auto& [_, task] : mSystemSyncTasks)
-			{
 				futures.emplace_back(std::async(std::launch::async, task));
-			}
-
 			for (auto& fut : futures)
-			{
-				fut.get(); // 모든 시스템의 업데이트 완료 대기
-			}
-
-			futures.clear();
+				fut.get();
+		}
+		inline void PreUpdateAllSystems() {
+			std::vector<std::future<void>> futures;
+			for (auto& [_, task] : mSystemPreUpdateTasks)
+				futures.emplace_back(std::async(std::launch::async, task));
+			for (auto& fut : futures)
+				fut.get();
+		}
+		inline void UpdateAllSystems() {
+			std::vector<std::future<void>> futures;
 			for (auto& [_, task] : mSystemUpdateTasks)
-			{
 				futures.emplace_back(std::async(std::launch::async, task));
-			}
-
 			for (auto& fut : futures)
-			{
-				fut.get(); // 모든 시스템의 업데이트 완료 대기
-			}
-
-			futures.clear();
+				fut.get();
+		}
+		inline void LateUpdateAllSystems() {
+			std::vector<std::future<void>> futures;
 			for (auto& [_, task] : mSystemLateUpdateTasks)
-			{
 				futures.emplace_back(std::async(std::launch::async, task));
-			}
-
 			for (auto& fut : futures)
-			{
-				fut.get(); // 모든 시스템의 업데이트 완료 대기
-			}
-
-
+				fut.get();
+		}
+		inline void FixedUpdateAllSystems() {
+			std::vector<std::future<void>> futures;
+			for (auto& [_, task] : mSystemFixedUpdateTasks)
+				futures.emplace_back(std::async(std::launch::async, task));
+			for (auto& fut : futures)
+				fut.get();
+		}
+		inline void FinalUpdateAllSystems() {
+			std::vector<std::future<void>> futures;
+			for (auto& [_, task] : mSystemFinalUpdateTasks)
+				futures.emplace_back(std::async(std::launch::async, task));
+			for (auto& fut : futures)
+				fut.get();
+		}
+		inline void EndPlayAllSystems()
+		{
+			std::vector<std::future<void>> futures;
+			for (auto& [_, task] : mSystemEndPlayTasks)
+				futures.emplace_back(std::async(std::launch::async, task));
+			for (auto& fut : futures)
+				fut.get();
 		}
 
 	private:
 		std::unordered_map<std::type_index, Signature> mSignatures{};
 		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> mSystems{};
+
+		std::unordered_map<std::type_index, std::function<void()>> mSystemBeginPlayTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemSyncTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemPreUpdateTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemUpdateTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemLateUpdateTasks;
-		std::unordered_map<std::type_index, std::function<void()>> mSystemSyncTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemFixedUpdateTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemFinalUpdateTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystemEndPlayTasks;
 	};
 }

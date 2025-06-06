@@ -41,7 +41,6 @@ namespace ECS
 			mSystemManager->EntityDestroyed(entity);
 		}
 
-
 		// Component methods
 		template<typename T>
 		void RegisterComponent()
@@ -127,6 +126,21 @@ namespace ECS
 		void UpdateAllSystem()
 		{
 			mSystemManager->UpdateAllSystems();
+		}
+
+		void Run()
+		{
+			mSystemManager->BeginPlayAllSystems();
+			while (true) // Replace with actual game loop condition
+			{
+				mSystemManager->SyncAllSystems();
+				mSystemManager->PreUpdateAllSystems();
+				mSystemManager->UpdateAllSystems();
+				mSystemManager->LateUpdateAllSystems();
+				mSystemManager->FixedUpdateAllSystems();
+				mSystemManager->FinalUpdateAllSystems();
+			}
+			mSystemManager->EndPlayAllSystems();
 		}
 
 	private:

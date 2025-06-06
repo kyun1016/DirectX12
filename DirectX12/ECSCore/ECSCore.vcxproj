@@ -163,6 +163,8 @@
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="TimeComponent.h" />
     <ClInclude Include="TimeSystem.h" />
+    <ClInclude Include="WindowComponent.h" />
+    <ClInclude Include="WindowSystem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

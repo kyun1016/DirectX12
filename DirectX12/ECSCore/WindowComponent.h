@@ -5,9 +5,9 @@
 
 struct WindowComponent
 {
-    HWND hwnd = nullptr;
-    std::wstring caption = L"App";
-    uint32_t width = 1280;
-    uint32_t height = 720;
+    long left = 0;
+    long top = 0;
+    long right = 1080;
+    long bottom = 720;
     bool fullscreen = false;
 };
