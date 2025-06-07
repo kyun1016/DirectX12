@@ -133,6 +133,11 @@ void InitExample()
     //================================
 	// Load Coordinator Instance
     //================================
+    LOG_INFO("ECS Coordinator Init {} {} {} {}", 1,2,3,4);
+    LOG_WARN("ECS Coordinator Init");
+	LOG_ERROR("ECS Coordinator Init");
+	LOG_FATAL("ECS Coordinator Init");
+
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
     InitPhysicsExample();

@@ -6,7 +6,7 @@
 
 inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-    std::cout << "msg: " << std::hex << msg << std::hex << "  |  LPARAM: " << HIWORD(lParam) << " " << LOWORD(lParam) << "  |  WPARAM: " << HIWORD(wParam) << " " << LOWORD(wParam) << std::endl;
+    LOG_INFO("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
     switch (msg)
     {
     case WM_CREATE:

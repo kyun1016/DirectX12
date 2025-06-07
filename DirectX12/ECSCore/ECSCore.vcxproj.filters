@@ -131,5 +131,8 @@
     <ClInclude Include="InputComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>Header Files\Systems\Log</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

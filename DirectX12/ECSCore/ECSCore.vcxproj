@@ -152,6 +152,7 @@
     <ClInclude Include="InputComponent.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="LightSystem.h" />
+    <ClInclude Include="log.h" />
     <ClInclude Include="MaterialComponent.h" />
     <ClInclude Include="MaterialSystem.h" />
     <ClInclude Include="MeshComponent.h" />
