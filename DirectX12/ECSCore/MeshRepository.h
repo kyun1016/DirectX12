@@ -53,96 +53,59 @@ struct SkinnedVertex
 
 struct Mesh
 {
-	union vertex {
-		std::vector<Vertex> Vertices;
-		std::vector<SkinnedVertex> SkinnedVertices;
-	};
+	int id = 0; // 메쉬 ID
+	//union vertex {
+	//	std::vector<Vertex> Vertices;
+	//	std::vector<SkinnedVertex> SkinnedVertices;
+	//};
 
-	union index {
-		std::vector<std::uint16_t> Indices16;
-		std::vector<std::uint32_t> Indices32;
-	};
+	//union index {
+	//	std::vector<std::uint16_t> Indices16;
+	//	std::vector<std::uint32_t> Indices32;
+	//};
 
 	// TODO: GPUBufferHandle vertexBuffer;
 	// TODO: GPUBufferHandle indexBuffer;
 };
 
-struct MeshEntry {
-	std::unique_ptr<Mesh> mesh;
-	int refCount = 1;
-	bool gpuUploaded = false;
-};
-
-class MeshRepository {
+class MeshRepository : public ECS::IRepository<Mesh> {
 public:
-
-	static bool IsLoaded(ECS::RepoHandle handle) {
-		auto it = sMeshStorage.find(handle);
-		return it != sMeshStorage.end();
+	static MeshRepository& GetInstance() {
+		static MeshRepository instance;
+		return instance;
 	}
-
-	static ECS::RepoHandle LoadMesh(const std::string& path)
+protected:
+	virtual std::unique_ptr<Mesh> LoadResourceInternal(const std::string& path)
 	{
-		auto it = sPathToHandle.find(path);
-		if (it != sPathToHandle.end()) {
-			ECS::RepoHandle handle = it->second;
-			sMeshStorage[handle].refCount++;
-			return handle;
-		}
-
-		ECS::RepoHandle newHandle = sNextHandle++;
 		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
-
+		mesh->id = mNextHandle; // 임시로 핸들을 ID로 사용
+		// TODO: 파일에서 메쉬 데이터를 로드하는 로직 구현
 		// TODO: GPU 업로드 로직 구현
+		// 예시로 임의의 데이터를 채워넣음
+		//mesh->vertex.Vertices.push_back(Vertex());
+		//mesh->index.Indices32.push_back(0);
 
-		sMeshStorage[newHandle] = MeshEntry{ std::move(mesh), 1 };
-		sPathToHandle[path] = newHandle;
-
-		return newHandle;
+		return std::move(mesh);
 	}
-	static void UnloadMesh(ECS::RepoHandle handle)
+	virtual void UnloadResource(ECS::RepoHandle handle, std::unique_ptr<Mesh>& resource)
 	{
 		// TODO: GPU 언로드 로직 구현
-		auto it = sMeshStorage.find(handle);
-		if (it == sMeshStorage.end())
+		auto it = mResourceStorage.find(handle);
+		if (it == mResourceStorage.end())
 			return;
 
 		it->second.refCount--;
 		if (it->second.refCount <= 0) {
 			// TODO: GPU 리소스 해제 (예: DestroyBuffer(mesh->vertexBuffer))
 
-			sMeshStorage.erase(it);
+			mResourceStorage.erase(it);
 			// 역방향 매핑 제거
-			for (auto pathIt = sPathToHandle.begin(); pathIt != sPathToHandle.end(); ++pathIt) {
+			for (auto pathIt = mPathToHandle.begin(); pathIt != mPathToHandle.end(); ++pathIt) {
 				if (pathIt->second == handle) {
-					sPathToHandle.erase(pathIt);
+					mPathToHandle.erase(pathIt);
 					break;
 				}
 			}
 		}
 	}
-	static Mesh* GetMesh(ECS::RepoHandle handle)
-	{
-		auto it = sMeshStorage.find(handle);
-		if (it != sMeshStorage.end()) {
-			return it->second.mesh.get();
-		}
-		return nullptr;
-	}
-
-	static void UploadToGPUIfNeeded(ECS::RepoHandle handle)
-	{
-		// TODO: GPU 업로드 로직 구현
-	}
-
-	static void Shutdown() {
-		sPathToHandle.clear();
-		sMeshStorage.clear();
-		sNextHandle = 1;
-	}
-
-private:
-	static inline std::unordered_map<std::string, ECS::RepoHandle> sPathToHandle;
-	static inline std::unordered_map<ECS::RepoHandle, MeshEntry> sMeshStorage;
-	static inline ECS::RepoHandle sNextHandle = 1;
 };

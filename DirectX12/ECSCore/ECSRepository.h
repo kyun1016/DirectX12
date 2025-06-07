@@ -5,14 +5,33 @@
 namespace ECS
 {
 	template<typename T>
-	class ECSRepository {
+	class IRepository {
 	public:
-		ECSRepository() = default;
-		virtual ~ECSRepository() = default;
+		// static IRepository& GetInstance()
+		// {
+		// 	static IRepository instance;
+		// 	return instance;
+		// }
 
 		bool IsLoaded(RepoHandle handle) const {
 			std::lock_guard<std::mutex> lock(mtx);
 			return mResourceStorage.find(handle) != mResourceStorage.end();
+		}
+
+		RepoHandle Load(const std::string& path) {
+			std::lock_guard<std::mutex> lock(mtx);
+			auto it = mPathToHandle.find(path);
+			if (it != mPathToHandle.end()) {
+				mResourceStorage[it->second].refCount++;
+				return it->second;
+			}
+
+			auto resource = LoadResourceInternal(path);
+
+			RepoHandle handle = mNextHandle++;
+			mResourceStorage[handle] = { std::move(resource), 1 };
+			mPathToHandle[path] = handle;
+			return handle;
 		}
 
 		T* Get(RepoHandle handle) const {
@@ -40,33 +59,20 @@ namespace ECS
 		}
 
 	protected:
+		IRepository() = default;
+		virtual ~IRepository() = default;
 		// User-defined behavior
 		virtual std::unique_ptr<T> LoadResourceInternal(const std::string& path) = 0;
 		virtual void UnloadResource(RepoHandle handle, std::unique_ptr<T>& resource) = 0;
 
-		RepoHandle Load(const std::string& path) {
-			std::lock_guard<std::mutex> lock(mtx);
-			auto it = mPathToHandle.find(path);
-			if (it != mPathToHandle.end()) {
-				mResourceStorage[it->second].refCount++;
-				return it->second;
-			}
-
-			RepoHandle handle = mNextHandle++;
-			auto resource = LoadResourceInternal(path);
-			mResourceStorage[handle] = { std::move(resource), 1 };
-			mPathToHandle[path] = handle;
-			return handle;
-		}
-
-		struct ResourceEntry {
+		struct RepoEntry {
 			std::unique_ptr<T> resource;
 			int refCount = 1;
 		};
 
 		mutable std::mutex mtx;
 		std::unordered_map<std::string, RepoHandle> mPathToHandle;
-		std::unordered_map<HandleType, ResourceEntry> mResourceStorage;
+		std::unordered_map<RepoHandle, RepoEntry> mResourceStorage;
 		RepoHandle mNextHandle = 1;
 	};
 }
