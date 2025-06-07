@@ -25,6 +25,7 @@ namespace ECS
 	using ComponentType = std::uint8_t;
 	static constexpr ComponentType MAX_COMPONENTS = 32;
 	using Signature = std::bitset<MAX_COMPONENTS>;
+	using RepoHandle = std::uint32_t;
 }
 
 #define ENUM_OPERATORS_32(T)                 \

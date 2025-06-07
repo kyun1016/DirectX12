@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../EngineCore/SimpleMath.h"
+#include "ECSRepository.h"
 #include "MeshComponent.h"
 #include <memory>
 #include <string>
@@ -75,21 +76,21 @@ struct MeshEntry {
 class MeshRepository {
 public:
 
-	static bool IsLoaded(MeshHandle handle) {
+	static bool IsLoaded(ECS::RepoHandle handle) {
 		auto it = sMeshStorage.find(handle);
 		return it != sMeshStorage.end();
 	}
 
-	static MeshHandle LoadMesh(const std::string& path)
+	static ECS::RepoHandle LoadMesh(const std::string& path)
 	{
 		auto it = sPathToHandle.find(path);
 		if (it != sPathToHandle.end()) {
-			MeshHandle handle = it->second;
+			ECS::RepoHandle handle = it->second;
 			sMeshStorage[handle].refCount++;
 			return handle;
 		}
 
-		MeshHandle newHandle = sNextHandle++;
+		ECS::RepoHandle newHandle = sNextHandle++;
 		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
 
 		// TODO: GPU 업로드 로직 구현
@@ -99,7 +100,7 @@ public:
 
 		return newHandle;
 	}
-	static void UnloadMesh(MeshHandle handle)
+	static void UnloadMesh(ECS::RepoHandle handle)
 	{
 		// TODO: GPU 언로드 로직 구현
 		auto it = sMeshStorage.find(handle);
@@ -120,7 +121,7 @@ public:
 			}
 		}
 	}
-	static Mesh* GetMesh(MeshHandle handle)
+	static Mesh* GetMesh(ECS::RepoHandle handle)
 	{
 		auto it = sMeshStorage.find(handle);
 		if (it != sMeshStorage.end()) {
@@ -129,7 +130,7 @@ public:
 		return nullptr;
 	}
 
-	static void UploadToGPUIfNeeded(MeshHandle handle)
+	static void UploadToGPUIfNeeded(ECS::RepoHandle handle)
 	{
 		// TODO: GPU 업로드 로직 구현
 	}
@@ -141,7 +142,7 @@ public:
 	}
 
 private:
-	static inline std::unordered_map<std::string, MeshHandle> sPathToHandle;
-	static inline std::unordered_map<MeshHandle, MeshEntry> sMeshStorage;
-	static inline MeshHandle sNextHandle = 1;
+	static inline std::unordered_map<std::string, ECS::RepoHandle> sPathToHandle;
+	static inline std::unordered_map<ECS::RepoHandle, MeshEntry> sMeshStorage;
+	static inline ECS::RepoHandle sNextHandle = 1;
 };

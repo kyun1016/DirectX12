@@ -91,11 +91,12 @@ public:
         auto& coordinator = ECS::Coordinator::GetInstance();
         coordinator.RegisterSingletonComponent<WindowComponent>();
         coordinator.RegisterSingletonComponent<InputComponent>();
+        auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
         RegisterWindowClass();
         MakeWindowHandle();
-        ShowWindow(mHwnd, SW_SHOWDEFAULT);
-        UpdateWindow(mHwnd);
+        ShowWindow(wc.hwnd, SW_SHOWDEFAULT);
+        UpdateWindow(wc.hwnd);
     }
 
 	void Sync() override {
@@ -121,16 +122,15 @@ public:
     }
 
     void EndPlay() override {
-        auto& windowComponent = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-        if (mHwnd) {
-            DestroyWindow(mHwnd);
-            mHwnd = nullptr;
+        auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+        if (wc.hwnd) {
+            DestroyWindow(wc.hwnd);
+            wc.hwnd = nullptr;
         }
     }
 
 private:
     WNDCLASSEXW mWindowClass;
-    HWND mHwnd = nullptr;
     std::wstring mCaption = L"App";
 
     bool RegisterWindowClass()
@@ -161,25 +161,26 @@ private:
 
     bool MakeWindowHandle()
     {
-        auto& windowComponent = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-        RECT rect{ 0, 0, static_cast<long>(windowComponent.width), static_cast<long>(windowComponent.height) };
+        auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+        RECT rect{ 0, 0, static_cast<long>(wc.width), static_cast<long>(wc.height) };
         AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-        mHwnd = CreateWindow(
+        wc.hwnd = CreateWindow(
             /* _In_opt_ LPCWSTR lpClassName	*/ mCaption.c_str(),
             /* _In_opt_ LPCWSTR lpWindowName*/ mCaption.c_str(),
             /* _In_ DWORD dwStyle			*/ WS_OVERLAPPEDWINDOW,
             /* _In_ int X					*/ 100, // 윈도우 좌측 상단의 x 좌표
             /* _In_ int Y					*/ 100, // 윈도우 좌측 상단의 y 좌표
-            /* _In_ int nWidth				*/ windowComponent.width,
-            /* _In_ int nHeight				*/ windowComponent.height,
+            /* _In_ int nWidth				*/ wc.width,
+            /* _In_ int nHeight				*/ wc.height,
             /* _In_opt_ HWND hWndParent		*/ NULL,
             /* _In_opt_ HMENU hMenu			*/ (HMENU)0,
             /* _In_opt_ HINSTANCE hInstance	*/ mWindowClass.hInstance,
             /* _In_opt_ LPVOID lpParam		*/ NULL
         );
 
-        if (!mHwnd) {
+        if (!wc.hwnd) {
             std::cout << "CreateWindow() failed." << std::endl;
+
             MessageBox(0, L"CreateWindow Failed.", 0, 0);
             return false;
         }

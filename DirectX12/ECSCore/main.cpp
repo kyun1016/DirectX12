@@ -96,7 +96,7 @@ void InitMeshExample()
     ECS::Entity mesh3 = coordinator.CreateEntity();
 
     std::string path = GetSoundLocation();
-    MeshHandle handle = MeshRepository::LoadMesh(path + "jaguar");
+    ECS::RepoHandle handle = MeshRepository::LoadMesh(path + "jaguar");
     coordinator.AddComponent(mesh1, MeshComponent{ handle });
     handle = MeshRepository::LoadMesh(path + "singing");
     coordinator.AddComponent(mesh2, MeshComponent{ handle });

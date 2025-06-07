@@ -1,10 +1,7 @@
 #pragma once
-#include "cstdint"
-#include <string>
+#include "ECSConfig.h"
 
-
-using MeshHandle = uint32_t;
 struct MeshComponent
 {
-	MeshHandle handle;
+	ECS::RepoHandle handle;
 };

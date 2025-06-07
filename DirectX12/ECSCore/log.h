@@ -102,7 +102,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(mtx);
             SetConsoleColor(color);
-            std::cout << std::put_time(&time, "[%m-%d %H:%M]")
+            std::cout << std::put_time(&time, "[%m-%d %H:%M:%S]")
                 << FormatPrefix(level)
                 << "[tid:" << tid <<"]"
                 << "[" << getPrettyTimestamp() << "]"

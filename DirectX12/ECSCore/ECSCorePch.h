@@ -10,6 +10,7 @@
 #pragma comment(lib, "..\\Libraries\\Libs\\FMODCore\\Release\\FMODCore.lib")
 #endif
 
+#include "../ImGuiCore/ImGuiCorePch.h"
 #include "../FMODCore/FMODCorePch.h"
 
 #include <filesystem>

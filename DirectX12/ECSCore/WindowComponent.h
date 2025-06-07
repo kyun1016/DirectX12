@@ -16,6 +16,7 @@ enum class eWindowFlags : std::uint32_t
 ENUM_OPERATORS_32(eWindowFlags)
 struct WindowComponent
 {
+	HWND hwnd = nullptr;
     std::uint32_t width = 1080;
 	std::uint32_t height = 720;
 

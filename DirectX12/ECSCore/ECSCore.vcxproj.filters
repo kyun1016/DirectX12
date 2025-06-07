@@ -43,6 +43,12 @@
     <Filter Include="Header Files\Systems\Log">
       <UniqueIdentifier>{b2e9ea41-351a-41af-a6a1-07cc12b917dc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Systems\ImGui">
+      <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\DX12_Render">
+      <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -133,6 +139,24 @@
     </ClInclude>
     <ClInclude Include="log.h">
       <Filter>Header Files\Systems\Log</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiComponent.h">
+      <Filter>Header Files\Systems\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiSystem.h">
+      <Filter>Header Files\Systems\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RenderComponent.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RootSignatureSystem.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RootSignatureRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ECSRepository.h">
+      <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

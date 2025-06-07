@@ -36,6 +36,7 @@ namespace ECS
 
 		void DestroyEntity(Entity entity)
 		{
+			std::lock_guard<std::mutex> lock(mtx);
 			mEntityManager->DestroyEntity(entity);
 			mComponentManager->EntityDestroyed(entity);
 			mSystemManager->EntityDestroyed(entity);
@@ -45,6 +46,7 @@ namespace ECS
 		template<typename T>
 		void RegisterComponent()
 		{
+			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->RegisterComponent<T>();
 		}
 
@@ -52,12 +54,14 @@ namespace ECS
 		template<typename T>
 		void RegisterSingletonComponent()
 		{
+			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->RegisterSingletonComponent<T>();
 		}
 
 		template<typename T>
 		void AddComponent(Entity entity, T component)
 		{
+			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->AddComponent<T>(entity, component);
 
 			auto signature = mEntityManager->GetSignature(entity);
@@ -70,6 +74,7 @@ namespace ECS
 		template<typename T>
 		void RemoveComponent(Entity entity)
 		{
+			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->RemoveComponent<T>(entity);
 
 			auto signature = mEntityManager->GetSignature(entity);
@@ -145,6 +150,7 @@ namespace ECS
 
 	private:
 		Coordinator() = default;
+		std::mutex mtx;
 		std::unique_ptr<EntityManager> mEntityManager;
 		std::unique_ptr<ComponentManager> mComponentManager;
 		std::unique_ptr<SystemManager> mSystemManager;
