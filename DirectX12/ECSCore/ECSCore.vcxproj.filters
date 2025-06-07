@@ -128,5 +128,8 @@
     <ClInclude Include="WindowSystem.h">
       <Filter>Header Files\Systems\Window</Filter>
     </ClInclude>
+    <ClInclude Include="InputComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

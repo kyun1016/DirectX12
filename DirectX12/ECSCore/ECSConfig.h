@@ -25,3 +25,31 @@ namespace ECS
 	static constexpr ComponentType MAX_COMPONENTS = 32;
 	using Signature = std::bitset<MAX_COMPONENTS>;
 }
+
+#define ENUM_OPERATORS_32(T)                 \
+inline bool operator&(T a, T b)              \
+{                                            \
+    return ((uint32_t)a & (uint32_t)b) != 0; \
+}                                            \
+                                             \
+inline T& operator&=(T& a, T b)              \
+{                                            \
+    a = (T)((uint32_t)a & (uint32_t)b);      \
+    return a;                                \
+}                                            \
+                                             \
+inline T operator|(T a, T b)                 \
+{                                            \
+    return (T)((uint32_t)a | (uint32_t)b);   \
+}                                            \
+                                             \
+inline T& operator |= (T& lhs, T rhs)        \
+{                                            \
+    lhs = (T)((uint32_t)lhs | (uint32_t)rhs);\
+    return lhs;                              \
+}                                            \
+                                             \
+inline T operator~(T a)                      \
+{                                            \
+    return (T)~((uint32_t)a);                \
+}

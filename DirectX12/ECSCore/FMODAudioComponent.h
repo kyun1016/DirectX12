@@ -5,7 +5,7 @@
 using AudioHandle = uint32_t;
 
 struct FMODAudioComponent {
-	AudioHandle handle;
+	AudioHandle handle = 0;
 	float volume = 1.0f;
 	bool loop = false;
 };

@@ -25,7 +25,6 @@ namespace ECS
 		std::unordered_map<Entity, size_t> mEntityToIndexMap;
 		std::unordered_map<size_t, Entity> mIndexToEntityMap;
 		size_t mSize = 0;
-
 	public:
 		void InsertData(Entity entity, T component)
 		{

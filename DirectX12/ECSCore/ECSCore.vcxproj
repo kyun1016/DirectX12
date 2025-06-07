@@ -149,6 +149,7 @@
     <ClInclude Include="ECSCorePch.h" />
     <ClInclude Include="ECSEntity.h" />
     <ClInclude Include="ECSSystem.h" />
+    <ClInclude Include="InputComponent.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="LightSystem.h" />
     <ClInclude Include="MaterialComponent.h" />
