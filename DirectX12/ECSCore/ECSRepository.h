@@ -63,7 +63,26 @@ namespace ECS
 		virtual ~IRepository() = default;
 		// User-defined behavior
 		virtual std::unique_ptr<T> LoadResourceInternal(const std::string& path) = 0;
-		virtual void UnloadResource(RepoHandle handle, std::unique_ptr<T>& resource) = 0;
+		virtual bool UnloadResource(RepoHandle handle)
+		{
+			auto it = mResourceStorage.find(handle);
+			if (it == mResourceStorage.end())
+				return false;
+
+			it->second.refCount--;
+			if (it->second.refCount <= 0) {
+				mResourceStorage.erase(it);
+				for (auto pathIt = mPathToHandle.begin(); pathIt != mPathToHandle.end(); ++pathIt) {
+					if (pathIt->second == handle) {
+						mPathToHandle.erase(pathIt);
+						break;
+					}
+				}
+				return true;
+			}
+
+			return false;
+		}
 
 		struct RepoEntry {
 			std::unique_ptr<T> resource;

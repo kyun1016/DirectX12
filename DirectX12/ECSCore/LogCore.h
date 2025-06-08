@@ -50,33 +50,33 @@ enum class eConsoleForeground : uint32_t
 
 
 #define LOG_VERBOSE(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Verbose, eConsoleForeground::GRAY, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Verbose, eConsoleForeground::GRAY, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 
 #define LOG_HINT(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Hint, eConsoleForeground::GREEN, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Hint, eConsoleForeground::GREEN, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 
 #define LOG_INFO(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Info, eConsoleForeground::WHITE, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Info, eConsoleForeground::WHITE, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 
 #define LOG_WARN(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Warning, eConsoleForeground::YELLOW, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Warning, eConsoleForeground::YELLOW, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 
 #define LOG_ERROR(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Error, eConsoleForeground::RED, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Error, eConsoleForeground::RED, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 #define LOG_FATAL(fmt,...) { \
-    Logger::GetInstance().Log(eLogLevel::Fatal, eConsoleForeground::RED, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
+    LogCore::GetInstance().Log(eLogLevel::Fatal, eConsoleForeground::RED, __FILE__,__LINE__,__func__,fmt,##__VA_ARGS__); \
 }
 
 
-class Logger {
+class LogCore {
 public:
-    static Logger& GetInstance() {
-        static Logger instance;
+    static LogCore& GetInstance() {
+        static LogCore instance;
         return instance;
     }
 

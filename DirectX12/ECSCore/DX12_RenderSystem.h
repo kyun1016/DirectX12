@@ -3,8 +3,12 @@
 #include "RenderComponent.h"
 
 namespace ECS {
-    class RenderSystem : public ECS::ISystem {
+    class DX12_RenderSystem : public ECS::ISystem {
     public:
+        DX12_RenderSystem()
+        {
+
+        }
         void Update() override {
             auto& coordinator = ECS::Coordinator::GetInstance();
             for (ECS::Entity entity : mEntities) {

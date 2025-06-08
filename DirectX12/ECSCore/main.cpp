@@ -138,6 +138,8 @@ void InitExample()
 	LOG_ERROR("ECS Coordinator Init");
 	LOG_FATAL("ECS Coordinator Init");
 
+	DX12_Core::GetInstance().Initialize();
+
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
     InitPhysicsExample();

@@ -54,6 +54,7 @@ struct SkinnedVertex
 struct Mesh
 {
 	int id = 0; // 메쉬 ID
+	std::string path;
 	//union vertex {
 	//	std::vector<Vertex> Vertices;
 	//	std::vector<SkinnedVertex> SkinnedVertices;
@@ -79,6 +80,7 @@ protected:
 	{
 		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
 		mesh->id = mNextHandle; // 임시로 핸들을 ID로 사용
+		mesh->path = path;
 		// TODO: 파일에서 메쉬 데이터를 로드하는 로직 구현
 		// TODO: GPU 업로드 로직 구현
 		// 예시로 임의의 데이터를 채워넣음
@@ -87,25 +89,15 @@ protected:
 
 		return std::move(mesh);
 	}
-	virtual void UnloadResource(ECS::RepoHandle handle, std::unique_ptr<Mesh>& resource)
+	virtual bool UnloadResource(ECS::RepoHandle handle)
 	{
-		// TODO: GPU 언로드 로직 구현
-		auto it = mResourceStorage.find(handle);
-		if (it == mResourceStorage.end())
-			return;
-
-		it->second.refCount--;
-		if (it->second.refCount <= 0) {
+		if (IRepository<Mesh>::UnloadResource(handle))
+		{
 			// TODO: GPU 리소스 해제 (예: DestroyBuffer(mesh->vertexBuffer))
 
-			mResourceStorage.erase(it);
-			// 역방향 매핑 제거
-			for (auto pathIt = mPathToHandle.begin(); pathIt != mPathToHandle.end(); ++pathIt) {
-				if (pathIt->second == handle) {
-					mPathToHandle.erase(pathIt);
-					break;
-				}
-			}
+			return true;
 		}
+
+		return false;
 	}
 };

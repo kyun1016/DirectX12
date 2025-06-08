@@ -10,7 +10,7 @@ public:
         for (ECS::Entity entity : mEntities) {
             auto& component = coordinator.GetComponent<MeshComponent>(entity);
 			auto mesh = MeshRepository::GetInstance().Get(component.handle);
-            LOG_INFO("Mesh System {}", mesh->id);
+            LOG_VERBOSE("Mesh System {}: {}", mesh->id, mesh->path);
         }
     }
 };

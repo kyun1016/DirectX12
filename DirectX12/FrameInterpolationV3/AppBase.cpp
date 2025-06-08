@@ -362,7 +362,6 @@ void AppBase::CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numR
 			mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mParam.dsvDescriptorSize;
 		}
 	}
-	
 }
 // DX12 Debug Layer <- GPU에서 에러나는 걸 로그로 출력
 void AppBase::OnResize()

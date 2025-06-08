@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Audio">
-      <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\ECSCore">
       <UniqueIdentifier>{e880d5bf-5cb2-41d1-b929-f785795e6bca}</UniqueIdentifier>
     </Filter>
@@ -40,14 +37,23 @@
     <Filter Include="Header Files\Systems\Physics">
       <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\Log">
-      <UniqueIdentifier>{b2e9ea41-351a-41af-a6a1-07cc12b917dc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Systems\ImGui">
       <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\Systems\DX12_Render">
       <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Audio">
+      <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\LogCore">
+      <UniqueIdentifier>{b2e9ea41-351a-41af-a6a1-07cc12b917dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DX12_Core">
+      <UniqueIdentifier>{b004769a-524f-45fa-884a-f9605ecb922f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Helper">
+      <UniqueIdentifier>{60221525-0509-4e35-8a99-3c52674e79f2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +62,9 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12_Core.cpp">
+      <Filter>Header Files\DX12_Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,7 +87,7 @@
       <Filter>Header Files\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioComponent.h">
-      <Filter>Header Files\Audio</Filter>
+      <Filter>Header Files\Systems\Audio</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
@@ -90,12 +99,9 @@
       <Filter>Header Files\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioSystem.h">
-      <Filter>Header Files\Audio</Filter>
+      <Filter>Header Files\Systems\Audio</Filter>
     </ClInclude>
     <ClInclude Include="RenderComponent.h">
-      <Filter>Header Files\Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderSystem.h">
       <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="LightSystem.h">
@@ -114,7 +120,7 @@
       <Filter>Header Files\Systems\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioRepository.h">
-      <Filter>Header Files\Audio</Filter>
+      <Filter>Header Files\Systems\Audio</Filter>
     </ClInclude>
     <ClInclude Include="MaterialComponent.h">
       <Filter>Header Files\Systems\Material</Filter>
@@ -137,8 +143,8 @@
     <ClInclude Include="InputComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="log.h">
-      <Filter>Header Files\Systems\Log</Filter>
+    <ClInclude Include="LogCore.h">
+      <Filter>Header Files\LogCore</Filter>
     </ClInclude>
     <ClInclude Include="ImGuiComponent.h">
       <Filter>Header Files\Systems\ImGui</Filter>
@@ -157,6 +163,12 @@
     </ClInclude>
     <ClInclude Include="ECSRepository.h">
       <Filter>Header Files\ECSCore</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RenderSystem.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_Core.h">
+      <Filter>Header Files\DX12_Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

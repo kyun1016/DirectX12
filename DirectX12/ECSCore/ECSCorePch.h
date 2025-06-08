@@ -18,6 +18,8 @@
 #include "WindowSystem.h"
 #include "PhysicsSystem.h"
 #include "FMODAudioSystem.h"
-#include "RenderSystem.h"
 #include "MeshSystem.h"
 #include "LightSystem.h"
+
+#include "DX12_RenderSystem.h"
+#include "DX12_Core.h"

@@ -15,7 +15,7 @@
 #include <cassert>
 #include <typeindex>
 #include <typeinfo>
-#include "log.h"
+#include "LogCore.h"
 
 namespace ECS
 {

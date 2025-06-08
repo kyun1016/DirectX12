@@ -6,7 +6,7 @@
 
 inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-    LOG_INFO("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
+    LOG_VERBOSE("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
     switch (msg)
     {
     case WM_CREATE:
@@ -151,7 +151,7 @@ private:
         };
 
         if (!RegisterClassEx(&mWindowClass)) {
-            std::cout << "RegisterClassEx() failed." << std::endl;
+            LOG_ERROR("RegisterClassEx() failed.");
             MessageBox(0, L"Register WindowClass Failed.", 0, 0);
             return false;
         }
@@ -179,7 +179,7 @@ private:
         );
 
         if (!wc.hwnd) {
-            std::cout << "CreateWindow() failed." << std::endl;
+            LOG_ERROR("CreateWindow() failed.");
 
             MessageBox(0, L"CreateWindow Failed.", 0, 0);
             return false;
