@@ -1,6 +1,7 @@
 #pragma once
-#include "ECSCoordinator.h"
+#include "DX12_Config.h"
 #include "RenderComponent.h"
+#include "ECSCoordinator.h"
 
 namespace ECS {
     class DX12_RenderSystem : public ECS::ISystem {

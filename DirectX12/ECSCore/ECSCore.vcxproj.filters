@@ -63,9 +63,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DX12_Core.cpp">
-      <Filter>Header Files\DX12_Core</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ECSComponent.h">
@@ -172,6 +169,12 @@
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureRepository.h">
       <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_DeviceSystem.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_Config.h">
+      <Filter>Header Files\DX12_Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

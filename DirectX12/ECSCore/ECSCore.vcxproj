@@ -133,7 +133,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DX12_Core.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -141,8 +140,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DX12_Config.h" />
     <ClInclude Include="DX12_Core.h" />
     <ClInclude Include="DX12_Component.h" />
+    <ClInclude Include="DX12_DeviceSystem.h" />
     <ClInclude Include="DX12_Repository.h" />
     <ClInclude Include="DX12_RootSignatureRepository.h" />
     <ClInclude Include="DX12_RootSignatureSystem.h" />

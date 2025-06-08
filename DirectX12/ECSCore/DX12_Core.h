@@ -1,66 +1,6 @@
 #pragma once
-#include <d3d12.h>
-#include <wrl/client.h> // For ComPtr
-#include <dxgi1_6.h>
-#include <dxgidebug.h>
-#include <string>
-#include <Windows.h>
-#include <DirectXMath.h>
-#include <DirectXColors.h>
-#include "LogCore.h"
-#include "../ImGuiCore/imgui.h"
-#include "../ImGuiCore/imgui_impl_dx12.h"
-#include "../ImGuiCore/imgui_impl_win32.h"
-#include "ECSConfig.h"
-#include "ECSRepository.h"
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "dxguid")
-#pragma comment(lib, "d3d12")
-#pragma comment(lib, "dxgi")
-
-#ifndef ReleaseCom
-#define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
-#endif
-
-inline std::string WStringToString(const std::wstring& wstr)
-{
-	if (wstr.empty()) return std::string();
-
-	int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0,
-		wstr.c_str(), (int)wstr.size(),
-		nullptr, 0, nullptr, nullptr);
-
-	std::string result(sizeNeeded, 0);
-	WideCharToMultiByte(CP_UTF8, 0,
-		wstr.c_str(), (int)wstr.size(),
-		&result[0], sizeNeeded, nullptr, nullptr);
-
-	return result;
-}
-
-inline std::wstring StringToWString(const std::string& str)
-{
-	if (str.empty()) return std::wstring();
-
-	int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0,
-		str.c_str(), (int)str.size(),
-		nullptr, 0);
-
-	std::wstring result(sizeNeeded, 0);
-	MultiByteToWideChar(CP_UTF8, 0,
-		str.c_str(), (int)str.size(),
-		&result[0], sizeNeeded);
-
-	return result;
-}
-
-inline static void ThrowIfFailed(HRESULT hr) {
-	if (FAILED(hr)) {
-		// 디버깅할 때 여기에 breakpoint 설정
-		LOG_ERROR("DirectX 12 Error: {}", std::to_string(hr));
-		throw std::exception();
-	}
-}
+#include "DX12_Config.h"
+#include "DX12_DeviceSystem.h"
 
 class DX12_Core {
 public:
@@ -71,12 +11,12 @@ public:
 
 	// Initialize DirectX 12 resources
 	inline bool Initialize() {
-		InitDebugLayer();
-		InitFactory();
-#if defined(DEBUG) || defined(_DEBUG) 
-		LogAdapters();
-#endif
-		InitDevice();
+		// auto& coordinator = ECS::Coordinator::GetInstance();
+		// auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();
+		// mDevice = deviceSystem->GetDevice();
+		mDeviceSystem.Initialize();
+		mDevice = mDeviceSystem.GetDevice(); // 시스템 간 공유가 필요 없는 로직은 DX12_Core에서 처리하는 방식으로 구현
+
 		if (!InitFence()) return false;
 		InitMSAA();
 		InitCommandObjects();
@@ -91,6 +31,7 @@ public:
 	}
 
 private:
+	DX12_DeviceSystem mDeviceSystem;
 	inline void InitDebugLayer()
 	{
 #if defined(DEBUG) || defined(_DEBUG) 
@@ -187,7 +128,28 @@ private:
 	}
 	inline void CreateSwapChain()
 	{
-
+		mSwapChain.Reset();
+		DXGI_SWAP_CHAIN_DESC sd
+		{
+			///* DXGI_MODE_DESC BufferDesc					*/
+			///* 	UINT Width									*/mParam.backBufferWidth,
+			///* 	UINT Height									*/mParam.backBufferHeight,
+			///* 	DXGI_RATIONAL RefreshRate					*/
+			///*		UINT Numerator							*/60,
+			///*		UINT Denominator						*/1,
+			///* 	DXGI_FORMAT Format							*/mParam.swapChainFormat,
+			///* 	DXGI_MODE_SCANLINE_ORDER ScanlineOrdering	*/DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
+			///* 	DXGI_MODE_SCALING Scaling					*/DXGI_MODE_SCALING_UNSPECIFIED,
+			///* DXGI_SAMPLE_DESC SampleDesc					*/
+			///*	UINT Count									*/m4xMsaaState ? 4u : 1u,
+			///*	UINT Quality								*/m4xMsaaState ? (m4xMsaaQuality - 1) : 0u,
+			///* DXGI_USAGE BufferUsage						*/DXGI_USAGE_RENDER_TARGET_OUTPUT,
+			///* UINT BufferCount								*/APP_NUM_BACK_BUFFERS,
+			///* HWND OutputWindow							*/mHwndWindow,
+			///* BOOL Windowed								*/true,				// TBD
+			///* DXGI_SWAP_EFFECT SwapEffect					*/DXGI_SWAP_EFFECT_FLIP_DISCARD,
+			///* UINT Flags									*/DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
+		};
 	}
 	inline void InitRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numRTVST)
 	{

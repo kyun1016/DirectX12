@@ -22,14 +22,12 @@ private:
 
 class TimeSystem : public ECS::ISystem {
 public:
-    TimeSystem() {
-        mTimer.Start();
-    }
 	void BeginPlay() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
 		coordinator.RegisterSingletonComponent<TimeComponent>();
 		coordinator.GetSingletonComponent<TimeComponent>().deltaTime = 0.0f;
 		coordinator.GetSingletonComponent<TimeComponent>().totalTime = 0.0f;
+        mTimer.Start();
 		mTimer.Tick(); // Initialize the timer
 	}
 

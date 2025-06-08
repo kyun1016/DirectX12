@@ -1,7 +1,7 @@
 #pragma once
-#include "DX12_Core.h"
-#include "ECSRepository.h"
+#include "DX12_Config.h"
 #include "DX12_Component.h"
+#include "ECSRepository.h"
 
 class DX12_DescriptorHeapRepository : public ECS::IRepository<RenderTargetComponent>
 {

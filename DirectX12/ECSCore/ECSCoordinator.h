@@ -114,7 +114,6 @@ namespace ECS
 			return mComponentManager->GetComponentType<T>();
 		}
 
-
 		// System methods
 		template<typename T>
 		std::shared_ptr<T> RegisterSystem()
