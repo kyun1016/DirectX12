@@ -152,14 +152,11 @@
     <ClInclude Include="ImGuiSystem.h">
       <Filter>Header Files\Systems\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_RenderComponent.h">
+    <ClInclude Include="DX12_Component.h">
       <Filter>Header Files\Systems\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureSystem.h">
       <Filter>Header Files\Systems\DX12_Render</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_RootSignatureRepository.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ECSRepository.h">
       <Filter>Header Files\ECSCore</Filter>
@@ -169,6 +166,12 @@
     </ClInclude>
     <ClInclude Include="DX12_Core.h">
       <Filter>Header Files\DX12_Core</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_Repository.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RootSignatureRepository.h">
+      <Filter>Header Files\Systems\DX12_Render</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -54,7 +54,7 @@ inline std::wstring StringToWString(const std::string& str)
 	return result;
 }
 
-inline void ThrowIfFailed(HRESULT hr) {
+inline static void ThrowIfFailed(HRESULT hr) {
 	if (FAILED(hr)) {
 		// 디버깅할 때 여기에 breakpoint 설정
 		LOG_ERROR("DirectX 12 Error: {}", std::to_string(hr));
@@ -79,12 +79,18 @@ public:
 		InitDevice();
 		if (!InitFence()) return false;
 		InitMSAA();
-		InitParameters();
 		InitCommandObjects();
+
+		// DX12_DescriptorHeapRepository::GetInstance().Initialize();
 
 		return true; // Return true if successful
 	}
 
+	ID3D12Device* GetDevice() const {
+		return mDevice.Get();
+	}
+
+private:
 	inline void InitDebugLayer()
 	{
 #if defined(DEBUG) || defined(_DEBUG) 
@@ -151,15 +157,7 @@ public:
 			LOG_WARN("4X MSAA is not supported.");
 		}
 	}
-	inline void InitParameters()
-	{
-		mRtvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		mDsvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-		mCbvSrvUavDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		LOG_INFO("RTV Descriptor Size: {}", mRtvDescriptorSize);
-		LOG_INFO("DSV Descriptor Size: {}", mDsvDescriptorSize);
-		LOG_INFO("CBV/SRV/UAV Descriptor Size: {}", mCbvSrvUavDescriptorSize);
-	}
+
 	inline void FlushCommandQueue()
 	{
 		//// Increment the fence value.
@@ -187,49 +185,53 @@ public:
 		mCommandList->Close();
 		LOG_INFO("DirectX 12 Command Objects Created Successfully");
 	}
-	inline void CreateRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numRTVST)
+	inline void CreateSwapChain()
 	{
-		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
-		{
-			/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-			/* UINT NumDescriptors				*/numRTV + numRTVST,
-			/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-			/* UINT NodeMask					*/0
-		};
-		ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
-		{
-			mhCPUSwapChainBuffer.resize(numRTV);
-			mhCPUSwapChainBuffer[0] = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-			for (UINT i = 1; i < numRTV; i++)
-			{
-				mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mParam.rtvDescriptorSize;
-			}
+	}
+	inline void InitRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numRTVST)
+	{
+		//D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
+		//{
+		//	/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		//	/* UINT NumDescriptors				*/numRTV + numRTVST,
+		//	/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		//	/* UINT NodeMask					*/0
+		//};
+		//ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
 
-			mhCPUDescHandleST.resize(numRTVST);
-			mhCPUDescHandleST[0].ptr = mhCPUSwapChainBuffer.back().ptr + mParam.rtvDescriptorSize;
-			for (UINT i = 1; i < numRTVST; i++)
-			{
-				mhCPUDescHandleST[i].ptr = mhCPUDescHandleST[i - 1].ptr + mParam.rtvDescriptorSize;
-			}
-		}
+		//{
+		//	mhCPUSwapChainBuffer.resize(numRTV);
+		//	mhCPUSwapChainBuffer[0] = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
+		//	for (UINT i = 1; i < numRTV; i++)
+		//	{
+		//		mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mParam.rtvDescriptorSize;
+		//	}
 
-		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
-		{
-			/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-			/* UINT NumDescriptors				*/numDSV,
-			/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-			/* UINT NodeMask					*/0
-		};
-		ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
-		{
-			mhCPUDSVBuffer.resize(dsvHeapDesc.NumDescriptors);
-			mhCPUDSVBuffer[0] = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
-			for (UINT i = 1; i < dsvHeapDesc.NumDescriptors; i++)
-			{
-				mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mParam.dsvDescriptorSize;
-			}
-		}
+		//	mhCPUDescHandleST.resize(numRTVST);
+		//	mhCPUDescHandleST[0].ptr = mhCPUSwapChainBuffer.back().ptr + mParam.rtvDescriptorSize;
+		//	for (UINT i = 1; i < numRTVST; i++)
+		//	{
+		//		mhCPUDescHandleST[i].ptr = mhCPUDescHandleST[i - 1].ptr + mParam.rtvDescriptorSize;
+		//	}
+		//}
+
+		//D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
+		//{
+		//	/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+		//	/* UINT NumDescriptors				*/numDSV,
+		//	/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		//	/* UINT NodeMask					*/0
+		//};
+		//ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
+		//{
+		//	mhCPUDSVBuffer.resize(dsvHeapDesc.NumDescriptors);
+		//	mhCPUDSVBuffer[0] = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+		//	for (UINT i = 1; i < dsvHeapDesc.NumDescriptors; i++)
+		//	{
+		//		mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mParam.dsvDescriptorSize;
+		//	}
+		//}
 	}
 
 	inline void LogAdapters()
@@ -304,19 +306,15 @@ public:
 		}
 	}
 
-private:
 	DX12_Core() = default;
 	virtual ~DX12_Core() = default;
 	DX12_Core(const DX12_Core&) = delete;
 	DX12_Core& operator=(const DX12_Core&) = delete;
 	DX12_Core(DX12_Core&&) = delete;
-	DX12_Core& operator=(DX12_Core&&) = delete;
+	DX12_Core& operator=(DX12_Core&&) = delete; 
 
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	UINT mRtvDescriptorSize = 0;
-	UINT mDsvDescriptorSize = 0;
-	UINT mCbvSrvUavDescriptorSize = 0;
 	UINT m4xMsaaQuality = 0;		// quality level of 4X MSAA
 	bool mEnable4xMsaa = false;	// 4X MSAA enabled
 	HANDLE mFenceEvent = nullptr;
@@ -335,12 +333,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mRtvHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mDsvHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvHeap;
-	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mRtvHandles;
-	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDsvHandles;
-	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mSrvHandles;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mReadbackBuffer;

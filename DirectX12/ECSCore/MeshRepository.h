@@ -76,18 +76,17 @@ public:
 		return instance;
 	}
 protected:
-	virtual std::unique_ptr<Mesh> LoadResourceInternal(const std::string& path)
+	virtual bool LoadResourceInternal(const std::string& path, Mesh* ptr)
 	{
-		std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
-		mesh->id = mNextHandle; // 임시로 핸들을 ID로 사용
-		mesh->path = path;
+		ptr->id = mNextHandle; // 임시로 핸들을 ID로 사용
+		ptr->path = path;
 		// TODO: 파일에서 메쉬 데이터를 로드하는 로직 구현
 		// TODO: GPU 업로드 로직 구현
 		// 예시로 임의의 데이터를 채워넣음
 		//mesh->vertex.Vertices.push_back(Vertex());
 		//mesh->index.Indices32.push_back(0);
 
-		return std::move(mesh);
+		return true;
 	}
 	virtual bool UnloadResource(ECS::RepoHandle handle)
 	{

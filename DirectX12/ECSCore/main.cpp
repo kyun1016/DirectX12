@@ -100,7 +100,7 @@ void InitMeshExample()
     coordinator.AddComponent(mesh1, MeshComponent{ handle });
     handle = MeshRepository::GetInstance().Load(path + "singing");
     coordinator.AddComponent(mesh2, MeshComponent{ handle });
-    handle = MeshRepository::GetInstance().Load(path + "swish");
+    handle = MeshRepository::GetInstance().Load();
     coordinator.AddComponent(mesh3, MeshComponent{ handle });
 }
 
@@ -128,6 +128,17 @@ void InitLightExample()
     coordinator.AddComponent(light3, LightComponent{ });
 }
 
+void InitDX12()
+{
+    DX12_Core::GetInstance().Initialize();
+    DX12_DescriptorHeapRepository::GetInstance().Initialize();
+
+    auto& coordinator = ECS::Coordinator::GetInstance();
+
+    // 1. Register Components
+    coordinator.RegisterComponent<RenderTargetComponent>();
+}
+
 void InitExample()
 {
     //================================
@@ -138,7 +149,7 @@ void InitExample()
 	LOG_ERROR("ECS Coordinator Init");
 	LOG_FATAL("ECS Coordinator Init");
 
-	DX12_Core::GetInstance().Initialize();
+	
 
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();

@@ -26,11 +26,33 @@ namespace ECS
 				return it->second;
 			}
 
-			auto resource = LoadResourceInternal(path);
+			auto resource = std::make_unique<T>();
+			if (!LoadResourceInternal(path, resource.get()))
+			{
+				LOG_ERROR("Failed to load resource from path: {}", path);
+				return 0; // Return an invalid handle if loading fails
+			}
 
 			RepoHandle handle = mNextHandle++;
 			mResourceStorage[handle] = { std::move(resource), 1 };
 			mPathToHandle[path] = handle;
+			return handle;
+		}
+
+		RepoHandle Load() {
+			auto resource = std::make_unique<T>();
+			if (!LoadResourceInternal(resource.get()))
+			{
+				LOG_ERROR("Failed to load resource without path");
+				return 0; // Return an invalid handle if loading fails
+			}
+			RepoHandle handle;
+			{
+				std::lock_guard<std::mutex> lock(mtx);
+				handle = mNextHandle++;
+				mResourceStorage[handle] = { std::move(resource), 1 };
+			}
+			
 			return handle;
 		}
 
@@ -62,7 +84,18 @@ namespace ECS
 		IRepository() = default;
 		virtual ~IRepository() = default;
 		// User-defined behavior
-		virtual std::unique_ptr<T> LoadResourceInternal(const std::string& path) = 0;
+		virtual bool LoadResourceInternal(const std::string& path, T* ptr)
+		{
+			// Default implementation does nothing, can be overridden by derived classes
+			LOG_ERROR("LoadResourceInternal not implemented for type {}", typeid(T).name());
+			return true;
+		};
+		virtual bool LoadResourceInternal(T* ptr)
+		{
+			// Default implementation does nothing, can be overridden by derived classes
+			LOG_ERROR("LoadResourceInternal not implemented for type {}", typeid(T).name());
+			return true;
+		};
 		virtual bool UnloadResource(RepoHandle handle)
 		{
 			auto it = mResourceStorage.find(handle);
