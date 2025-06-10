@@ -3,6 +3,11 @@
 #include "ECSSystem.h"
 class DX12_CommandSystem : public ECS::ISystem {
 public:
+	static DX12_CommandSystem& GetInstance() {
+		static DX12_CommandSystem instance;
+		return instance;
+	}
+
 	// Initialize DirectX 12 resources
 	inline void Initialize(ID3D12Device* device) {
 		mDevice = device;

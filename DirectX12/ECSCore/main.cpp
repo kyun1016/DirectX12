@@ -131,12 +131,11 @@ void InitLightExample()
 void InitDX12()
 {
     DX12_Core::GetInstance().Initialize();
-    DX12_DescriptorHeapRepository::GetInstance().Initialize();
 
     auto& coordinator = ECS::Coordinator::GetInstance();
 
     // 1. Register Components
-    coordinator.RegisterComponent<RenderTargetComponent>();
+    // coordinator.RegisterComponent<RenderTargetComponent>();
 }
 
 void InitExample()

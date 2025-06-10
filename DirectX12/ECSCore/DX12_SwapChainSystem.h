@@ -1,8 +1,14 @@
 #pragma once
 #include "DX12_Config.h"
 #include "ECSSystem.h"
+#include "DX12_RTVHeapRepository.h"
 class DX12_SwapChainSystem : public ECS::ISystem {
 public:
+	static DX12_SwapChainSystem& GetInstance() {
+		static DX12_SwapChainSystem instance;
+		return instance;
+	}
+
     void Initialize(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* command, HWND hwnd, UINT width, UINT height)
     {
 		mDevice = device;
@@ -50,7 +56,6 @@ private:
 	HWND mHwnd;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mhCPUBackBuffer;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	std::uint32_t mWidth = 0;
 	std::uint32_t mHeight = 0;
@@ -66,7 +71,6 @@ private:
 		// Release the previous swapchain we will be recreating.
 		mSwapChain.Reset();
 		mBackBuffers.resize(APP_NUM_BACK_BUFFERS);
-		mhCPUBackBuffer.resize(APP_NUM_BACK_BUFFERS);
 
 		DXGI_SWAP_CHAIN_DESC sd
 		{
@@ -104,7 +108,7 @@ private:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 		{
 			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mBackBuffers[i])));
-			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mhCPUBackBuffer[i]);
+			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, DX12_RTVHeapRepository::GetInstance().AllocateHandle());
 		}
 	}
 

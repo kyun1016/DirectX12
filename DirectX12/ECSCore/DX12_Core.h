@@ -2,6 +2,8 @@
 #include "DX12_Config.h"
 #include "DX12_DeviceSystem.h"
 #include "DX12_CommandSystem.h"
+#include "DX12_RTVHeapRepository.h"
+#include "DX12_DSVHeapRepository.h"
 #include "DX12_SwapChainSystem.h"
 #include "WindowSystem.h"
 
@@ -17,10 +19,15 @@ public:
 		// auto& coordinator = ECS::Coordinator::GetInstance();
 		// auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();
 		// mDevice = deviceSystem->GetDevice();
-		mDeviceSystem.Initialize();
-		mCommandSystem.Initialize(mDeviceSystem.GetDevice()); // 시스템 간 공유가 필요 없는 로직은 DX12_Core에서 처리하는 방식으로 구현
-		auto wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-		mSwapChainSystem.Initialize(mDeviceSystem.GetDevice(), mDeviceSystem.GetFactory(), mCommandSystem.GetCommandQueue(), wc.hwnd, wc.width, wc.height);
+		DX12_DeviceSystem& deviceSystem = DX12_DeviceSystem::GetInstance();
+		DX12_CommandSystem& commandSystem = DX12_CommandSystem::GetInstance();
+		DX12_SwapChainSystem& swapChainSystem = DX12_SwapChainSystem::GetInstance();
+		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+		
+		deviceSystem.Initialize();
+		commandSystem.Initialize(deviceSystem.GetDevice()); // 시스템 간 공유가 필요 없는 로직은 DX12_Core에서 처리하는 방식으로 구현
+		DX12_RTVHeapRepository::GetInstance().Initialize(deviceSystem.GetDevice());		
+		swapChainSystem.Initialize(deviceSystem.GetDevice(), deviceSystem.GetFactory(), commandSystem.GetCommandQueue(), wc.hwnd, wc.width, wc.height);
 
 		// DX12_DescriptorHeapRepository::GetInstance().Initialize();
 
@@ -28,14 +35,10 @@ public:
 	}
 
 	ID3D12Device* GetDevice() const {
-		return mDeviceSystem.GetDevice();
+		return DX12_DeviceSystem::GetInstance().GetDevice();
 	}
 
 private:
-	DX12_DeviceSystem mDeviceSystem;
-	DX12_CommandSystem mCommandSystem;
-	DX12_SwapChainSystem mSwapChainSystem;
-	
 
 	inline void CreateSwapChain()
 	{
