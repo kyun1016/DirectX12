@@ -23,4 +23,3 @@
 
 #include "DX12_RenderSystem.h"
 #include "DX12_Core.h"
-#include "DX12_RTVHeapRepository.h"

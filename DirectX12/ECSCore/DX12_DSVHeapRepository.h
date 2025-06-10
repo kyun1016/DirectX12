@@ -24,6 +24,14 @@ public:
 	{
 		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + (Load() - 1) * mDescriptorSize);
 	}
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandleByIndex(std::uint32_t index) const
+	{
+		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + index * mDescriptorSize);
+	}
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandle(ECS::RepoHandle handle) const
+	{
+		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + Get(handle)->handle * mDescriptorSize);
+	}
 protected:
 	constexpr static std::uint32_t DEFAULT_SIZE = 64;
 
@@ -37,7 +45,7 @@ protected:
 	inline void InitParameters()
 	{
 		mDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(mType);
-		LOG_INFO("RTV Descriptor Size: {}", mDescriptorSize);
+		LOG_INFO("DSV Descriptor Size: {}", mDescriptorSize);
 	}
 	inline void CreateHeap(uint32_t num)
 	{
@@ -55,7 +63,7 @@ protected:
 
 	virtual bool LoadResourceInternal(DX12_HeapComponent* ptr)
 	{
-		ptr->handle = mNextHandle;
+		ptr->handle = mNextHandle - 1;
 
 		return true;
 	}

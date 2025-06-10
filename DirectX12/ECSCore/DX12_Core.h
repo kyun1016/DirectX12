@@ -5,6 +5,7 @@
 #include "DX12_RTVHeapRepository.h"
 #include "DX12_DSVHeapRepository.h"
 #include "DX12_SwapChainSystem.h"
+#include "DX12_RootSignatureSystem.h"
 #include "WindowSystem.h"
 
 class DX12_Core {
@@ -15,7 +16,7 @@ public:
 	}
 
 	// Initialize DirectX 12 resources
-	inline bool Initialize() {
+	inline void Initialize() {
 		// auto& coordinator = ECS::Coordinator::GetInstance();
 		// auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();
 		// mDevice = deviceSystem->GetDevice();
@@ -26,12 +27,13 @@ public:
 		
 		deviceSystem.Initialize();
 		commandSystem.Initialize(deviceSystem.GetDevice()); // 시스템 간 공유가 필요 없는 로직은 DX12_Core에서 처리하는 방식으로 구현
-		DX12_RTVHeapRepository::GetInstance().Initialize(deviceSystem.GetDevice());		
+		DX12_RTVHeapRepository::GetInstance().Initialize(deviceSystem.GetDevice());
+		DX12_DSVHeapRepository::GetInstance().Initialize(deviceSystem.GetDevice());
 		swapChainSystem.Initialize(deviceSystem.GetDevice(), deviceSystem.GetFactory(), commandSystem.GetCommandQueue(), wc.hwnd, wc.width, wc.height);
-
-		// DX12_DescriptorHeapRepository::GetInstance().Initialize();
-
-		return true; // Return true if successful
+		DX12_RootSignatureSystem::GetInstance().Initialize(deviceSystem.GetDevice());
+		// Heap에 Texture 관련 데이터 업로드 공간 초기화
+		// Frame 관련 데이터 데이터 업로드 공간 초기화
+		// PSO 설정 초기화
 	}
 
 	ID3D12Device* GetDevice() const {
@@ -39,77 +41,6 @@ public:
 	}
 
 private:
-
-	inline void CreateSwapChain()
-	{
-		// mSwapChain.Reset();
-		DXGI_SWAP_CHAIN_DESC sd
-		{
-			///* DXGI_MODE_DESC BufferDesc					*/
-			///* 	UINT Width									*/mParam.backBufferWidth,
-			///* 	UINT Height									*/mParam.backBufferHeight,
-			///* 	DXGI_RATIONAL RefreshRate					*/
-			///*		UINT Numerator							*/60,
-			///*		UINT Denominator						*/1,
-			///* 	DXGI_FORMAT Format							*/mParam.swapChainFormat,
-			///* 	DXGI_MODE_SCANLINE_ORDER ScanlineOrdering	*/DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
-			///* 	DXGI_MODE_SCALING Scaling					*/DXGI_MODE_SCALING_UNSPECIFIED,
-			///* DXGI_SAMPLE_DESC SampleDesc					*/
-			///*	UINT Count									*/m4xMsaaState ? 4u : 1u,
-			///*	UINT Quality								*/m4xMsaaState ? (m4xMsaaQuality - 1) : 0u,
-			///* DXGI_USAGE BufferUsage						*/DXGI_USAGE_RENDER_TARGET_OUTPUT,
-			///* UINT BufferCount								*/APP_NUM_BACK_BUFFERS,
-			///* HWND OutputWindow							*/mHwndWindow,
-			///* BOOL Windowed								*/true,				// TBD
-			///* DXGI_SWAP_EFFECT SwapEffect					*/DXGI_SWAP_EFFECT_FLIP_DISCARD,
-			///* UINT Flags									*/DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
-		};
-	}
-	inline void InitRtvAndDsvDescriptorHeaps(UINT numRTV, UINT numDSV, UINT numRTVST)
-	{
-		//D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc
-		//{
-		//	/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		//	/* UINT NumDescriptors				*/numRTV + numRTVST,
-		//	/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-		//	/* UINT NodeMask					*/0
-		//};
-		//ThrowIfFailed(mDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(mRtvHeap.GetAddressOf())));
-
-		//{
-		//	mhCPUSwapChainBuffer.resize(numRTV);
-		//	mhCPUSwapChainBuffer[0] = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-		//	for (UINT i = 1; i < numRTV; i++)
-		//	{
-		//		mhCPUSwapChainBuffer[i].ptr = mhCPUSwapChainBuffer[i - 1].ptr + mParam.rtvDescriptorSize;
-		//	}
-
-		//	mhCPUDescHandleST.resize(numRTVST);
-		//	mhCPUDescHandleST[0].ptr = mhCPUSwapChainBuffer.back().ptr + mParam.rtvDescriptorSize;
-		//	for (UINT i = 1; i < numRTVST; i++)
-		//	{
-		//		mhCPUDescHandleST[i].ptr = mhCPUDescHandleST[i - 1].ptr + mParam.rtvDescriptorSize;
-		//	}
-		//}
-
-		//D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc
-		//{
-		//	/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-		//	/* UINT NumDescriptors				*/numDSV,
-		//	/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-		//	/* UINT NodeMask					*/0
-		//};
-		//ThrowIfFailed(mDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf())));
-		//{
-		//	mhCPUDSVBuffer.resize(dsvHeapDesc.NumDescriptors);
-		//	mhCPUDSVBuffer[0] = mDsvHeap->GetCPUDescriptorHandleForHeapStart();
-		//	for (UINT i = 1; i < dsvHeapDesc.NumDescriptors; i++)
-		//	{
-		//		mhCPUDSVBuffer[i].ptr = mhCPUDSVBuffer[i - 1].ptr + mParam.dsvDescriptorSize;
-		//	}
-		//}
-	}
-
 	DX12_Core() = default;
 	virtual ~DX12_Core() = default;
 	DX12_Core(const DX12_Core&) = delete;
@@ -121,7 +52,6 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
-	Microsoft::WRL::ComPtr<ID3D12Resource> mReadbackBuffer;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mGraphicsQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mComputeQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCopyQueue;
@@ -152,7 +82,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> mImGuiFontTextureDepthStencilResourceReadbackHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mImGuiFontTextureDepthStencilResourceUploadHeap;
 	// Root signature
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
+	
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mImGuiRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> mImGuiPipelineState;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> mGraphicsPipelineState;

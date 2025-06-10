@@ -2,6 +2,7 @@
 #include "DX12_Config.h"
 #include "ECSSystem.h"
 #include "DX12_RTVHeapRepository.h"
+#include "DX12_CommandSystem.h"
 class DX12_SwapChainSystem : public ECS::ISystem {
 public:
 	static DX12_SwapChainSystem& GetInstance() {
@@ -17,12 +18,27 @@ public:
 		mHwnd = hwnd;
 		mWidth = width;
 		mHeight = height;
+		mBackBuffers.resize(APP_NUM_BACK_BUFFERS);
+		mDescritorHandles.resize(APP_NUM_BACK_BUFFERS);
+
+		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+			mDescritorHandles[i] = DX12_RTVHeapRepository::GetInstance().AllocateHandle();
 
 		CreateSwapChain();
     }
     void Resize(UINT newWidth, UINT newHeight)
     {
+		if ((mWidth == newWidth) && (mHeight == newHeight))
+			return;
 
+		mWidth = newWidth;
+		mHeight = newHeight;
+		mBackBufferIndex = 0;
+		DX12_CommandSystem::GetInstance().FlushCommandQueue();
+
+		ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mWidth, mHeight, mSwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+		
+		CreateRenderTargerView();
     }
     void Present(bool vsync)
     {
@@ -35,16 +51,16 @@ public:
 
     ID3D12Resource* GetBackBuffer(UINT index) const
     {
-
+		return mBackBuffers[index].Get();
     }
-    IDXGISwapChain3* GetSwapChain() const
+	IDXGISwapChain* GetSwapChain() const
     {
-
+		return mSwapChain.Get();
     }
 
-    UINT GetCurrentBackBufferIndex() const
+	std::uint32_t GetCurrentBackBufferIndex() const
     {
-
+		return mBackBufferIndex;
     }
 
 private:
@@ -56,6 +72,7 @@ private:
 	HWND mHwnd;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	std::uint32_t mWidth = 0;
 	std::uint32_t mHeight = 0;
@@ -64,13 +81,10 @@ private:
 	std::uint32_t m4xMsaaQuality = 0;
 	bool mEnable4xMsaa = false;
 
-	
-
 	void CreateSwapChain()
 	{
 		// Release the previous swapchain we will be recreating.
 		mSwapChain.Reset();
-		mBackBuffers.resize(APP_NUM_BACK_BUFFERS);
 
 		DXGI_SWAP_CHAIN_DESC sd
 		{
@@ -105,10 +119,19 @@ private:
 			slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
 #endif
 
+		CreateRenderTargerView();
+	}
+
+	void CreateRenderTargerView()
+	{
+		for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
+			if(mBackBuffers[i])
+				mBackBuffers[i].Reset();
+
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 		{
 			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mBackBuffers[i])));
-			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, DX12_RTVHeapRepository::GetInstance().AllocateHandle());
+			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mDescritorHandles[i]);
 		}
 	}
 

@@ -15,20 +15,31 @@ public:
 		CreateFence();
 	}
 
-	void ExecuteAndSync() {
+	inline void ExecuteAndSync() {
 		ThrowIfFailed(mCommandList->Close());
 		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 		FlushCommandQueue();
 	}
 
-	ID3D12CommandQueue* GetCommandQueue() const
+	inline ID3D12CommandQueue* GetCommandQueue() const
 	{
 		return mCommandQueue.Get();
 	}
 
 	void Update() override {
 
+	}
+
+	inline void FlushCommandQueue() {
+		mFenceValue++;
+		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
+		if (mFence->GetCompletedValue() < mFenceValue) {
+			ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
+			WaitForSingleObject(mFenceEvent, INFINITE);
+		}
+		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+		LOG_INFO("Command Queue Flushed Successfully");
 	}
 
 	~DX12_CommandSystem() override {
@@ -65,15 +76,5 @@ private:
 			throw std::runtime_error("Fence event creation failed");
 		}
 		LOG_INFO("Fence created");
-	}
-
-	void FlushCommandQueue() {
-		mFenceValue++;
-		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
-		if (mFence->GetCompletedValue() < mFenceValue) {
-			ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
-			WaitForSingleObject(mFenceEvent, INFINITE);
-		}
-		LOG_INFO("Command Queue Flushed Successfully");
 	}
 };

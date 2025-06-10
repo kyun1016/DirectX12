@@ -8,6 +8,7 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include "LogCore.h"
+#include "../EngineCore/d3dx12.h"
 #include "../ImGuiCore/imgui.h"
 #include "../ImGuiCore/imgui_impl_dx12.h"
 #include "../ImGuiCore/imgui_impl_win32.h"
