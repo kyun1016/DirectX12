@@ -87,7 +87,8 @@ inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 class WindowSystem : public ECS::ISystem
 {
 public:
-    void BeginPlay() override {
+    WindowSystem()
+    {
         auto& coordinator = ECS::Coordinator::GetInstance();
         coordinator.RegisterSingletonComponent<WindowComponent>();
         coordinator.RegisterSingletonComponent<InputComponent>();

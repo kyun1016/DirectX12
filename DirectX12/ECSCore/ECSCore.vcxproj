@@ -140,6 +140,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DX12_CommandSystem.h" />
     <ClInclude Include="DX12_Config.h" />
     <ClInclude Include="DX12_Core.h" />
     <ClInclude Include="DX12_Component.h" />
@@ -147,6 +148,7 @@
     <ClInclude Include="DX12_Repository.h" />
     <ClInclude Include="DX12_RootSignatureRepository.h" />
     <ClInclude Include="DX12_RootSignatureSystem.h" />
+    <ClInclude Include="DX12_SwapChainSystem.h" />
     <ClInclude Include="ECSRepository.h" />
     <ClInclude Include="FMODAudioComponent.h" />
     <ClInclude Include="FMODAudioRepository.h" />

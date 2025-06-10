@@ -149,10 +149,9 @@ void InitExample()
 	LOG_ERROR("ECS Coordinator Init");
 	LOG_FATAL("ECS Coordinator Init");
 
-	
-    InitDX12();
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
+    InitDX12();
     InitPhysicsExample();
     InitSoundExample();
     InitMeshExample();

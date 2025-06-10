@@ -4,15 +4,13 @@
 class DX12_DeviceSystem : public ECS::ISystem {
 public:
 	// Initialize DirectX 12 resources
-	inline bool Initialize() {
+	inline void Initialize() {
 		InitDebugLayer();
 		CreateFactory();
 #if defined(DEBUG) || defined(_DEBUG) 
 		LogAdapters();
 #endif
 		CreateDevice();
-
-		return true; // Return true if successful
 	}
 
 	void Update() override {
@@ -22,8 +20,22 @@ public:
 	ID3D12Device* GetDevice() const {
 		return mDevice.Get();
 	}
-
+	IDXGIFactory4* GetFactory() const {
+		return mFactory.Get();
+	}
 private:
+#if defined(DEBUG) || defined(_DEBUG) 
+	Microsoft::WRL::ComPtr<ID3D12Debug> mDebugController;
+	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
+	Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> mDredSettings;
+#endif
+	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
+	Microsoft::WRL::ComPtr<IDXGIFactory4> mFactory;
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> mAdapter;
+	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	
+
 	inline void InitDebugLayer()
 	{
 #if defined(DEBUG) || defined(_DEBUG) 
@@ -70,7 +82,6 @@ private:
 			std::wstring text = L"***Adapter: ";
 			text += desc.Description;
 			LOG_INFO("{}", WStringToString(text));
-
 			adapterList.push_back(adapter);
 
 			++i;
@@ -93,7 +104,6 @@ private:
 
 			std::wstring text = L"***Output: ";
 			text += desc.DeviceName;
-			::OutputDebugString(text.c_str());
 			LOG_INFO("{}", WStringToString(text));
 
 			LogOutputDisplayModes(output, DXGI_FORMAT_R8G8B8A8_UNORM);
@@ -123,19 +133,7 @@ private:
 				L"Height = " + std::to_wstring(x.Height) + L" " +
 				L"Refresh = " + std::to_wstring(n) + L"/" + std::to_wstring(d);
 
-			::OutputDebugString(text.c_str());
-
 			LOG_INFO("{}", WStringToString(text));
 		}
 	}
-
-#if defined(DEBUG) || defined(_DEBUG) 
-	Microsoft::WRL::ComPtr<ID3D12Debug> mDebugController;
-	Microsoft::WRL::ComPtr<IDXGIDebug1> mDxgiDebug;
-	Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> mDredSettings;
-#endif
-	// DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	Microsoft::WRL::ComPtr<IDXGIFactory4> mFactory;
-	Microsoft::WRL::ComPtr<IDXGIAdapter1> mAdapter;
-	Microsoft::WRL::ComPtr<ID3D12Device> mDevice;
 };

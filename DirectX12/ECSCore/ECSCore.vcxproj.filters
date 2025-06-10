@@ -40,9 +40,6 @@
     <Filter Include="Header Files\Systems\ImGui">
       <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\DX12_Render">
-      <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Systems\Audio">
       <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
     </Filter>
@@ -54,6 +51,9 @@
     </Filter>
     <Filter Include="Header Files\Helper">
       <UniqueIdentifier>{60221525-0509-4e35-8a99-3c52674e79f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DX12_Core\DX12_Render">
+      <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -150,31 +150,37 @@
       <Filter>Header Files\Systems\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Component.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureSystem.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="ECSRepository.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RenderSystem.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Core.h">
       <Filter>Header Files\DX12_Core</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Repository.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureRepository.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_DeviceSystem.h">
-      <Filter>Header Files\Systems\DX12_Render</Filter>
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Config.h">
       <Filter>Header Files\DX12_Core</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_CommandSystem.h">
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_SwapChainSystem.h">
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
