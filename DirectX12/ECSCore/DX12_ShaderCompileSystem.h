@@ -3,7 +3,7 @@
 #include "ECSSystem.h"
 #include <d3dcompiler.h>
 
-class ShaderCompilationSystem : public ECS::ISystem
+class DX12_ShaderCompilationSystem : public ECS::ISystem
 {
 public:
 	inline void Initialize() 

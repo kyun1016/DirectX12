@@ -13,7 +13,7 @@ namespace ECS
 
 		virtual void Sync() {}
 		virtual void PreUpdate() {}
-		virtual void Update() = 0;
+		virtual void Update() {};
 		virtual void LateUpdate() {}
 		virtual void FixedUpdate() {}
 		virtual void FinalUpdate() {}

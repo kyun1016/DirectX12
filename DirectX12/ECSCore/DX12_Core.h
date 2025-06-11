@@ -6,6 +6,7 @@
 #include "DX12_DSVHeapRepository.h"
 #include "DX12_SwapChainSystem.h"
 #include "DX12_RootSignatureSystem.h"
+#include "DX12_InputLayoutSystem.h"
 #include "WindowSystem.h"
 
 class DX12_Core {
@@ -31,6 +32,8 @@ public:
 		DX12_DSVHeapRepository::GetInstance().Initialize(deviceSystem.GetDevice());
 		swapChainSystem.Initialize(deviceSystem.GetDevice(), deviceSystem.GetFactory(), commandSystem.GetCommandQueue(), wc.hwnd, wc.width, wc.height);
 		DX12_RootSignatureSystem::GetInstance().Initialize(deviceSystem.GetDevice());
+
+		DX12_InputLayoutSystem::GetInstance().Initialize();
 		// Heap에 Texture 관련 데이터 업로드 공간 초기화
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화

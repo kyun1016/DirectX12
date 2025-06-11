@@ -185,5 +185,14 @@
     <ClInclude Include="DX12_DSVHeapRepository.h">
       <Filter>Header Files\DX12_Core\DX12_Render</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_PSOSystem.h">
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_ShaderCompileSystem.h">
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InputLayoutSystem.h">
+      <Filter>Header Files\DX12_Core\DX12_Render</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

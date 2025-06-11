@@ -14,11 +14,6 @@ public:
 		mDevice = device;
 		BuildRootSignature();
 	}
-
-	void Update() override {
-
-	}
-
 	
 private:
 	ID3D12Device* mDevice;
@@ -149,7 +144,7 @@ private:
 		} 	D3D12_SHADER_VISIBILITY;*/
 
 		// Root parameter can be a table, root descriptor or root constants.
-		CD3DX12_ROOT_PARAMETER slotRootParameter[17];
+		CD3DX12_ROOT_PARAMETER slotRootParameter[6];
 		// Perfomance TIP: Order from most frequent to least frequent.
 		slotRootParameter[0].InitAsConstantBufferView(0);		// gBaseInstanceIndex b0
 		slotRootParameter[1].InitAsConstantBufferView(1);		// cbPass b1
@@ -264,6 +259,4 @@ private:
 			shadow
 		};
 	}
-};
-
 };

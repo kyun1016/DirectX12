@@ -146,10 +146,13 @@
     <ClInclude Include="DX12_Core.h" />
     <ClInclude Include="DX12_Component.h" />
     <ClInclude Include="DX12_DeviceSystem.h" />
+    <ClInclude Include="DX12_InputLayoutSystem.h" />
+    <ClInclude Include="DX12_PSOSystem.h" />
     <ClInclude Include="DX12_RTVHeapRepository.h" />
     <ClInclude Include="DX12_RootSignatureRepository.h" />
     <ClInclude Include="DX12_RootSignatureSystem.h" />
     <ClInclude Include="DX12_SwapChainSystem.h" />
+    <ClInclude Include="DX12_ShaderCompileSystem.h" />
     <ClInclude Include="ECSRepository.h" />
     <ClInclude Include="FMODAudioComponent.h" />
     <ClInclude Include="FMODAudioRepository.h" />
