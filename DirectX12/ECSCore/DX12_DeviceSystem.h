@@ -1,13 +1,9 @@
 #pragma once
 #include "DX12_Config.h"
-#include "ECSSystem.h"
-class DX12_DeviceSystem : public ECS::ISystem {
-public:
-	static DX12_DeviceSystem& GetInstance() {
-		static DX12_DeviceSystem instance;
-		return instance;
-	}
 
+class DX12_DeviceSystem {
+DEFAULT_SINGLETON(DX12_DeviceSystem)
+public:
 	// Initialize DirectX 12 resources
 	inline void Initialize() {
 		InitDebugLayer();
@@ -16,10 +12,6 @@ public:
 		LogAdapters();
 #endif
 		CreateDevice();
-	}
-
-	void Update() override {
-
 	}
 
 	ID3D12Device* GetDevice() const {

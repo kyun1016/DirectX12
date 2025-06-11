@@ -1,7 +1,6 @@
 #pragma once
 #include "DX12_Config.h"
-#include "ECSSystem.h"
-class DX12_CommandSystem : public ECS::ISystem {
+class DX12_CommandSystem {
 public:
 	static DX12_CommandSystem& GetInstance() {
 		static DX12_CommandSystem instance;
@@ -27,10 +26,6 @@ public:
 		return mCommandQueue.Get();
 	}
 
-	void Update() override {
-
-	}
-
 	inline void FlushCommandQueue() {
 		mFenceValue++;
 		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
@@ -42,14 +37,21 @@ public:
 		LOG_INFO("Command Queue Flushed Successfully");
 	}
 
-	~DX12_CommandSystem() override {
+
+
+private:
+	DX12_CommandSystem() = default;
+	~DX12_CommandSystem() {
 		if (mFenceEvent) {
 			CloseHandle(mFenceEvent);
 			mFenceEvent = nullptr;
 		}
 	}
+	DX12_CommandSystem(const DX12_CommandSystem&) = delete;
+	DX12_CommandSystem& operator=(const DX12_CommandSystem&) = delete;
+	DX12_CommandSystem(DX12_CommandSystem&&) = delete;
+	DX12_CommandSystem& operator=(DX12_CommandSystem&&) = delete;
 
-private:
 	ID3D12Device* mDevice = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;

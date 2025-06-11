@@ -3,12 +3,14 @@
 #include "ECSSystem.h"
 #include <d3dcompiler.h>
 
-class DX12_ShaderCompilationSystem : public ECS::ISystem
+class DX12_ShaderCompileSystem : public ECS::ISystem
 {
+DEFAULT_SINGLETON(DX12_ShaderCompileSystem)
 public:
 	inline void Initialize() 
 	{
-
+		CompileShader("vs_main", L"../Data/Shaders/Main.hlsl", nullptr, "VS", "vs_5_1");
+		CompileShader("ps_main", L"../Data/Shaders/Main.hlsl", nullptr, "PS", "ps_5_1");
 	}
 
 	inline void CompileShader(

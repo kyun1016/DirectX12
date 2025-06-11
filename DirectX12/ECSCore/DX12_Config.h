@@ -60,3 +60,17 @@ inline static void ThrowIfFailed(HRESULT hr) {
 		throw std::exception();
 	}
 }
+
+#define DEFAULT_SINGLETON(SystemClassName)                        \
+public:                                                           \
+    inline static SystemClassName& GetInstance() {                \
+        static SystemClassName instance;                          \
+        return instance;                                          \
+    }                                                             \
+private:                                                          \
+    SystemClassName() = default;                                  \
+    ~SystemClassName() = default;                                 \
+    SystemClassName(const SystemClassName&) = delete;             \
+    SystemClassName& operator=(const SystemClassName&) = delete;  \
+    SystemClassName(SystemClassName&&) = delete;                  \
+    SystemClassName& operator=(SystemClassName&&) = delete;       

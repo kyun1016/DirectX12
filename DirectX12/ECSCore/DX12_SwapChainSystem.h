@@ -4,12 +4,8 @@
 #include "DX12_RTVHeapRepository.h"
 #include "DX12_CommandSystem.h"
 class DX12_SwapChainSystem : public ECS::ISystem {
+DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
-	static DX12_SwapChainSystem& GetInstance() {
-		static DX12_SwapChainSystem instance;
-		return instance;
-	}
-
     void Initialize(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* command, HWND hwnd, UINT width, UINT height)
     {
 		mDevice = device;

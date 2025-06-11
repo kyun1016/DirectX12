@@ -4,11 +4,8 @@
 
 class DX12_InputLayoutSystem : public ECS::ISystem
 {
+DEFAULT_SINGLETON(DX12_InputLayoutSystem)
 public:
-	static DX12_InputLayoutSystem& GetInstance() {
-		static DX12_InputLayoutSystem instance;
-		return instance;
-	}
 
 	inline void Initialize()
 	{

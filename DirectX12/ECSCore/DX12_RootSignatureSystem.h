@@ -1,14 +1,9 @@
 #pragma once
 #include "DX12_Config.h"
-#include "ECSSystem.h"
 
-class DX12_RootSignatureSystem : public ECS::ISystem {
+class DX12_RootSignatureSystem {
+DEFAULT_SINGLETON(DX12_RootSignatureSystem)
 public:
-	static DX12_RootSignatureSystem& GetInstance() {
-		static DX12_RootSignatureSystem instance;
-		return instance;
-	}
-
 	// Initialize DirectX 12 resources
 	inline void Initialize(ID3D12Device* device) {
 		mDevice = device;
@@ -16,7 +11,7 @@ public:
 	}
 	
 private:
-	ID3D12Device* mDevice;
+	ID3D12Device* mDevice = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mGraphicsSignatures;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mComputeSignatures;

@@ -52,9 +52,9 @@
 #define TEX_CUBE_SIZE 1
 #endif
 
-#ifndef STREAMLINE
-#define STREAMLINE 1
-#endif
+//#ifndef STREAMLINE
+//#define STREAMLINE 1
+//#endif
 
 struct Light
 {
