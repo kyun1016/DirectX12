@@ -43,9 +43,9 @@ public:
 			{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		};
 
-		RegisterLayout("mainInput", mainInputLayout);
-		RegisterLayout("skinnedInput", skinnedInputLayout);
-		RegisterLayout("treeSpriteInput", treeSpriteInputLayout);
+		RegisterLayout("main", mainInputLayout);
+		RegisterLayout("skinned", skinnedInputLayout);
+		RegisterLayout("treeSprite", treeSpriteInputLayout);
 	}
 
 	void RegisterLayout(const std::string& name, const std::vector<D3D12_INPUT_ELEMENT_DESC>& layout)

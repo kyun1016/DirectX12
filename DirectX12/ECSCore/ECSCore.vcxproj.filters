@@ -300,5 +300,6 @@
     <None Include="..\Data\Shaders\ST_Core.hlsli">
       <Filter>Header Files\Shaders</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

@@ -31,8 +31,6 @@ private:
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> mAdapter;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	
-
 	inline void InitDebugLayer()
 	{
 #if defined(DEBUG) || defined(_DEBUG) 
