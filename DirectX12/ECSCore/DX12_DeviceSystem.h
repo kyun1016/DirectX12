@@ -31,13 +31,12 @@ private:
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> mAdapter;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	
-
 	inline void InitDebugLayer()
 	{
 #if defined(DEBUG) || defined(_DEBUG) 
 		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(mDebugController.GetAddressOf())));
 		ThrowIfFailed(DXGIGetDebugInterface1(0, IID_PPV_ARGS(mDxgiDebug.GetAddressOf())));
+		mDebugController->EnableDebugLayer();
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(mDredSettings.GetAddressOf()))))
 		{
 			mDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);

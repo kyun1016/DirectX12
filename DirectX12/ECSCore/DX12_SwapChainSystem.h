@@ -58,6 +58,15 @@ public:
     {
 		return mBackBufferIndex;
     }
+	bool GetMsaaState()
+	{
+		return mEnable4xMsaa;
+	}
+	std::uint32_t GetMsaaQuality()
+	{
+		return m4xMsaaQuality;
+	}
+
 
 private:
 	static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;

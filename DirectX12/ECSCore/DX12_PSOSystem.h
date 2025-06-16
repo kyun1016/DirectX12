@@ -1,8 +1,12 @@
 #pragma once
 #include "DX12_Config.h"
 #include "ECSSystem.h"
+#include "DX12_RootSignatureSystem.h"
+#include "DX12_ShaderCompileSystem.h"
+#include "DX12_InputLayoutSystem.h"
+#include "DX12_SwapChainSystem.h"
 
-enum class RenderLayer : std::uint32_t
+enum class eRenderLayer : std::uint32_t
 {
 	None = 0,
 	Opaque,
@@ -39,121 +43,122 @@ enum class RenderLayer : std::uint32_t
 };
 
 struct PSODescriptor {
-    std::string name;
-    std::string vsName, psName, gsName, hsName, dsName;
-    RenderLayer layer;
-    D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-    D3D12_INPUT_LAYOUT_DESC inputLayout;
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    DXGI_FORMAT rtvFormats[8] = {};
-    UINT numRenderTargets = 1;
-    DXGI_FORMAT dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    bool wireframe = false;
+	std::string sigName;
+	std::string vsName, psName, gsName, hsName, dsName;
+	std::string inputName;
+	eRenderLayer layer = eRenderLayer::Opaque;
+
+	D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	UINT numRenderTargets = 1;
+	DXGI_FORMAT rtvFormats[8] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN };
+	DXGI_FORMAT dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	bool wireframe = false;
 };
 
-class DX12_PSOSystem : public ECS::ISystem {
-DEFAULT_SINGLETON(DX12_PSOSystem)
+class DX12_PSOSystem {
 public:
-    void Initialize(ID3D12Device* device, ID3D12RootSignature* rootSig)
-    {
+	inline static DX12_PSOSystem& GetInstance() {
+		static DX12_PSOSystem instance;
+		return instance;
+	}
+	void Initialize(ID3D12Device* device)
+	{
+		mDevice = device;
 
-    }
-    void RegisterDescriptor(const PSODescriptor& desc)
-    {
+		BuildExamplePSO();
+	}
+	void RegisterDescriptor(const PSODescriptor& desc)
+	{
+		mDescriptors.push_back(desc);
+		CreatePSO(desc);
+	}
+	ID3D12PipelineState* Get(eRenderLayer layer) const
+	{
+		auto it = mPSOs.find(layer);
+		if (it != mPSOs.end()) return it->second.Get();
+		return nullptr;
+	}
+private:
+	DX12_PSOSystem()
+		: mRootSystem(DX12_RootSignatureSystem::GetInstance())
+		, mShaderSystem(DX12_ShaderCompileSystem::GetInstance())
+		, mInputSystem(DX12_InputLayoutSystem::GetInstance())
+		, mSwapChainSystem(DX12_SwapChainSystem::GetInstance())
+	{
+	};
+	~DX12_PSOSystem() = default;
+	DX12_PSOSystem(const DX12_PSOSystem&) = delete;
+	DX12_PSOSystem& operator=(const DX12_PSOSystem&) = delete;
+	DX12_PSOSystem(DX12_PSOSystem&&) = delete;
+	DX12_PSOSystem& operator=(DX12_PSOSystem&&) = delete;
+private:
+	void BuildExamplePSO()
+	{
+		PSODescriptor desc;
+		desc.sigName = "test";
+		desc.vsName = "vs_test";
+		desc.psName = "ps_test";
+		desc.inputName = "main";
 
-    }
-    ID3D12PipelineState* Get(RenderLayer layer) const
-    {
-
-    }
+		desc.blendDesc.IndependentBlendEnable = true;
+		RegisterDescriptor(desc);
+	}
 
 private:
-    std::unordered_map<RenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
-    std::vector<PSODescriptor> mDescriptors;
-    ID3D12Device* mDevice = nullptr;
-    ID3D12RootSignature* mRootSig = nullptr;
-	void CreatePSO(const PSODescriptor& desc)
-	{
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc
-		{
-			/* ID3D12RootSignature* pRootSignature								*/.pRootSignature = mRootSignature.Get(),
-			/* D3D12_SHADER_BYTECODE VS											*/.VS = {reinterpret_cast<BYTE*>(mShaders["MainVS"]->GetBufferPointer()), mShaders["MainVS"]->GetBufferSize()},
-			/* D3D12_SHADER_BYTECODE PS											*/.PS = {reinterpret_cast<BYTE*>(mShaders["MainPS"]->GetBufferPointer()), mShaders["MainPS"]->GetBufferSize()},
-			/* D3D12_SHADER_BYTECODE DS											*/.DS = {NULL, 0},
-			/* D3D12_SHADER_BYTECODE HS											*/.HS = {NULL, 0},
-			/* D3D12_SHADER_BYTECODE GS											*/.GS = {NULL, 0},
-			/* D3D12_STREAM_OUTPUT_DESC StreamOutput{							*/.StreamOutput = {
-			/*		const D3D12_SO_DECLARATION_ENTRY* pSODeclaration{			*/	NULL,
-			/*			UINT Stream;											*/
-			/*			LPCSTR SemanticName;									*/
-			/*			UINT SemanticIndex;										*/
-			/*			BYTE StartComponent;									*/
-			/*			BYTE ComponentCount;									*/
-			/*			BYTE OutputSlot;										*/
-			/*		}															*/
-			/*		UINT NumEntries;											*/	0,
-			/*		const UINT* pBufferStrides;									*/	0,
-			/*		UINT NumStrides;											*/	0,
-			/*		UINT RasterizedStream;										*/	0
-			/* }																*/},
-			/* D3D12_BLEND_DESC BlendState{										*/.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
-			/*		BOOL AlphaToCoverageEnable									*/
-			/*		BOOL IndependentBlendEnable									*/
-			/*		D3D12_RENDER_TARGET_BLEND_DESC RenderTarget[8]				*/
-			/* }																*/
-			/* UINT SampleMask													*/.SampleMask = UINT_MAX,
-			/* D3D12_RASTERIZER_DESC RasterizerState{							*/.RasterizerState = { // CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			/*		D3D12_FILL_MODE FillMode									*/		D3D12_FILL_MODE_SOLID, // D3D12_FILL_MODE_WIREFRAME,
-			/*		D3D12_CULL_MODE CullMode									*/		D3D12_CULL_MODE_BACK,
-			/*		BOOL FrontCounterClockwise									*/		false,
-			/*		INT DepthBias												*/		D3D12_DEFAULT_DEPTH_BIAS,
-			/*		FLOAT DepthBiasClamp										*/		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-			/*		FLOAT SlopeScaledDepthBias									*/		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-			/*		BOOL DepthClipEnable										*/		true,
-			/*		BOOL MultisampleEnable										*/		false,
-			/*		BOOL AntialiasedLineEnable									*/		false,
-			/*		UINT ForcedSampleCount										*/		0,
-			/*		D3D12_CONSERVATIVE_RASTERIZATION_MODE ConservativeRaster	*/		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
-			/* }																*/},
-			/* D3D12_DEPTH_STENCIL_DESC DepthStencilState {						*/.DepthStencilState = { // CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			/*		BOOL DepthEnable											*/		.DepthEnable = true,
-			/*		D3D12_DEPTH_WRITE_MASK DepthWriteMask						*/		.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
-			/*		D3D12_COMPARISON_FUNC DepthFunc								*/		.DepthFunc = D3D12_COMPARISON_FUNC_LESS,
-			/*		BOOL StencilEnable											*/		.StencilEnable = false,
-			/*		UINT8 StencilReadMask										*/		.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
-			/*		UINT8 StencilWriteMask										*/		.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
-			/*		D3D12_DEPTH_STENCILOP_DESC FrontFace {						*/		.FrontFace = {
-			/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
-			/*		}															*/		},
-			/*		D3D12_DEPTH_STENCILOP_DESC BackFace							*/		.BackFace = {
-			/*			D3D12_STENCIL_OP StencilFailOp							*/			.StencilFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilDepthFailOp						*/			.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_STENCIL_OP StencilPassOp							*/			.StencilPassOp = D3D12_STENCIL_OP_KEEP,
-			/*			D3D12_COMPARISON_FUNC StencilFunc						*/			.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
-			/*		}															*/		},
-			/* }																*/ },
-			/* D3D12_INPUT_LAYOUT_DESC InputLayout{								*/.InputLayout = {
-			/*		const D3D12_INPUT_ELEMENT_DESC* pInputElementDescs			*/		.pInputElementDescs = mMainInputLayout.data(),
-			/*		UINT NumElements											*/		.NumElements = (UINT)mMainInputLayout.size()
-			/*	}																*/ },
-			/* D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue				*/.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-			/* D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType				*/.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-			/* UINT NumRenderTargets											*/.NumRenderTargets = 2,
-			/* DXGI_FORMAT RTVFormats[8]										*/.RTVFormats = {mParam.swapChainFormat, mParam.swapChainFormat,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN,DXGI_FORMAT_UNKNOWN},	// 0
-			/* DXGI_FORMAT DSVFormat											*/.DSVFormat = mParam.depthStencilFormat,
-			/* DXGI_SAMPLE_DESC SampleDesc{										*/.SampleDesc = {
-			/*		UINT Count;													*/		.Count = m4xMsaaState ? 4u : 1u,
-			/*		UINT Quality;												*/		.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0
-			/*	}																*/},
-			/* UINT NodeMask													*/.NodeMask = 0,
-			/* D3D12_CACHED_PIPELINE_STATE CachedPSO							*/.CachedPSO = {NULL, 0},
-			/* D3D12_PIPELINE_STATE_FLAGS Flags									*/.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
-		};
-		ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs[RenderLayer::Opaque])));
+	void CreatePSO(const PSODescriptor& desc) {
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+		psoDesc.pRootSignature = mRootSystem.GetGraphicsSignature(desc.sigName);
+		if (!desc.vsName.empty()) {
+			auto shader = mShaderSystem.GetShader(desc.vsName);
+			psoDesc.VS = { reinterpret_cast<BYTE*>(shader->GetBufferPointer()), shader->GetBufferSize() };
+		}
+		if (!desc.psName.empty()) {
+			auto shader = mShaderSystem.GetShader(desc.psName);
+			psoDesc.PS = { reinterpret_cast<BYTE*>(shader->GetBufferPointer()), shader->GetBufferSize() };
+		}
+		if (!desc.gsName.empty()) {
+			auto shader = mShaderSystem.GetShader(desc.gsName);
+			psoDesc.GS = { shader->GetBufferPointer(), shader->GetBufferSize() };
+		}
+		if (!desc.hsName.empty()) {
+			auto shader = mShaderSystem.GetShader(desc.hsName);
+			psoDesc.HS = { shader->GetBufferPointer(), shader->GetBufferSize() };
+		}
+		if (!desc.dsName.empty()) {
+			auto shader = mShaderSystem.GetShader(desc.dsName);
+			psoDesc.DS = { shader->GetBufferPointer(), shader->GetBufferSize() };
+		}
+		auto inputlayout = mInputSystem.GetLayout(desc.inputName);
+		psoDesc.InputLayout = { inputlayout.data(), static_cast<UINT>(inputlayout.size()) };
+
+		psoDesc.BlendState = desc.blendDesc;
+		psoDesc.SampleMask = UINT_MAX;
+		psoDesc.RasterizerState = desc.rasterizerDesc;
+		psoDesc.DepthStencilState = desc.depthStencilDesc;
+		psoDesc.IBStripCutValue = desc.IBStripCutValue;
+		psoDesc.PrimitiveTopologyType = desc.topologyType;
+		psoDesc.NumRenderTargets = desc.numRenderTargets;
+		memcpy(psoDesc.RTVFormats, desc.rtvFormats, sizeof(DXGI_FORMAT) * 8);
+		psoDesc.DSVFormat = desc.dsvFormat;
+		psoDesc.SampleDesc.Count = mSwapChainSystem.GetMsaaState() ? 4u : 1u;
+		psoDesc.SampleDesc.Quality = mSwapChainSystem.GetMsaaState() ? (mSwapChainSystem.GetMsaaQuality() - 1) : 0;
+		psoDesc.NodeMask = 0;
+		psoDesc.CachedPSO = { NULL, 0 };
+		psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+		ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[desc.layer])));
 	}
+
+private:
+	DX12_RootSignatureSystem& mRootSystem;
+	DX12_ShaderCompileSystem& mShaderSystem;
+	DX12_InputLayoutSystem& mInputSystem;
+	DX12_SwapChainSystem& mSwapChainSystem;
+	std::unordered_map<eRenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
+	std::vector<PSODescriptor> mDescriptors;
+	ID3D12Device* mDevice = nullptr;
 };

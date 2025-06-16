@@ -1,0 +1,4 @@
+// Hint files help the Visual Studio IDE interpret Visual C++ identifiers
+// such as names of functions and macros.
+// For more information see https://go.microsoft.com/fwlink/?linkid=865984
+#define DEFAULT_SINGLETON(SystemClassName) public: inline static SystemClassName& GetInstance() { static SystemClassName instance; return instance; } private: SystemClassName() = default; ~SystemClassName() = default; SystemClassName(const SystemClassName&) = delete; SystemClassName& operator=(const SystemClassName&) = delete; SystemClassName(SystemClassName&&) = delete; SystemClassName& operator=(SystemClassName&&) = delete;

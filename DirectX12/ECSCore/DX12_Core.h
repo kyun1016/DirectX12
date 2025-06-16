@@ -8,16 +8,12 @@
 #include "DX12_RootSignatureSystem.h"
 #include "DX12_InputLayoutSystem.h"
 #include "DX12_ShaderCompileSystem.h"
+#include "DX12_PSOSystem.h"
 #include "WindowSystem.h"
 
 class DX12_Core {
-DEFAULT_SINGLETON(DX12_RootSignatureSystem)
+DEFAULT_SINGLETON(DX12_Core)
 public:
-	inline static DX12_Core& GetInstance() {
-		static DX12_Core instance;
-		return instance;
-	}
-
 	// Initialize DirectX 12 resources
 	inline void Initialize() {
 		// auto& coordinator = ECS::Coordinator::GetInstance();
@@ -37,6 +33,8 @@ public:
 
 		DX12_InputLayoutSystem::GetInstance().Initialize();
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
+
+		DX12_PSOSystem::GetInstance().Initialize(deviceSystem.GetDevice());
 		// Heap에 Texture 관련 데이터 업로드 공간 초기화
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화
@@ -47,13 +45,6 @@ public:
 	}
 
 private:
-	DX12_Core() = default;
-	virtual ~DX12_Core() = default;
-	DX12_Core(const DX12_Core&) = delete;
-	DX12_Core& operator=(const DX12_Core&) = delete;
-	DX12_Core(DX12_Core&&) = delete;
-	DX12_Core& operator=(DX12_Core&&) = delete; 
-
 	Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mGraphicsQueue;

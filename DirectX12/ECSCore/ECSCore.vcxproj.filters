@@ -292,6 +292,9 @@
     <FxCompile Include="..\Data\Shaders\ST_FireBall.hlsl">
       <Filter>Header Files\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="..\Data\Shaders\test.hlsl">
+      <Filter>Header Files\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Data\Shaders\Memory.hlsli">
@@ -300,5 +303,6 @@
     <None Include="..\Data\Shaders\ST_Core.hlsli">
       <Filter>Header Files\Shaders</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>
