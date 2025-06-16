@@ -60,7 +60,6 @@ private:
 		CD3DX12_ROOT_SIGNATURE_DESC desc(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		CreateSignature(desc, mGraphicsSignatures["test"]);
 	}
-
 	inline void CreateSignature(const CD3DX12_ROOT_SIGNATURE_DESC& desc, Microsoft::WRL::ComPtr<ID3D12RootSignature>& outSig) {
 		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
