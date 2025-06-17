@@ -4,7 +4,7 @@
 #include "DX12_InstanceData.h"
 #include "DX12_MaterialData.h"
 
-struct SubmeshGeometry
+struct DX12_MeshComponent
 {
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
@@ -36,7 +36,7 @@ struct MeshGeometry
 	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
 	// Use this container to define the Submesh geometries so we can draw
 	// the Submeshes individually.
-	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
+	std::unordered_map<std::string, DX12_MeshComponent> DrawArgs;
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
 	{
@@ -185,17 +185,6 @@ private:
 		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
 		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 	}
-};
-
-
-struct MeshComponent {
-	std::string MeshID;  // MeshGeometry 리소스 키
-};
-
-struct TransformComponent {
-	float3 Position;
-	float3 Scale;
-	float3 RotationEuler;
 };
 
 struct MaterialComponent {

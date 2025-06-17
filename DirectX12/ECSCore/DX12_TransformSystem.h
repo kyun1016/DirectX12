@@ -11,6 +11,7 @@ public:
 			transform.w_Position += {0.0f, 0.0f, 0.1f};
 			transform.w_Scale += {0.0f, 0.0f, 0.1f};
 			transform.w_RotationEuler += {0.0f, 0.0f, 0.1f};
+			LOG_VERBOSE("transform {}, {}, {}", transform.w_Position.x, transform.w_Position.y, transform.w_Position.z);
         }
     }
 

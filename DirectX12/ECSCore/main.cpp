@@ -128,6 +128,43 @@ void InitLightExample()
     coordinator.AddComponent(light3, LightComponent{ });
 }
 
+void InitDX12_TransformExample()
+{
+    auto& coordinator = ECS::Coordinator::GetInstance();
+
+    // 1. Register Components
+    coordinator.RegisterComponent<DX12_TransformComponent>();
+    coordinator.RegisterComponent<DX12_BoundingComponent>();
+    coordinator.RegisterComponent<DX12_MeshComponent>();
+
+    // 2. Register System
+    coordinator.RegisterSystem<DX12_TransformSystem>();
+    coordinator.RegisterSystem<DX12_BoundingSystem>();
+
+    ECS::Signature signature;
+    signature.set(coordinator.GetComponentType<DX12_TransformComponent>());
+    coordinator.SetSystemSignature<DX12_TransformSystem>(signature);
+
+    signature.set(coordinator.GetComponentType<DX12_MeshComponent>());
+    signature.set(coordinator.GetComponentType<DX12_BoundingComponent>());
+    coordinator.SetSystemSignature<DX12_BoundingSystem>(signature);
+
+    // 3. Create Entity
+    ECS::Entity entity1 = coordinator.CreateEntity();
+    ECS::Entity entity2 = coordinator.CreateEntity();
+    ECS::Entity entity3 = coordinator.CreateEntity();
+
+    coordinator.AddComponent(entity1, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity1, DX12_BoundingComponent{ });
+    coordinator.AddComponent(entity1, DX12_MeshComponent{ });
+    coordinator.AddComponent(entity2, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity2, DX12_BoundingComponent{ });
+    coordinator.AddComponent(entity2, DX12_MeshComponent{ });
+    coordinator.AddComponent(entity3, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity3, DX12_BoundingComponent{ });
+    coordinator.AddComponent(entity3, DX12_MeshComponent{ });
+}
+
 void InitExample()
 {
     //================================
@@ -145,6 +182,7 @@ void InitExample()
     InitSoundExample();
     InitMeshExample();
     InitLightExample();
+    InitDX12_TransformExample();
 
     //================================
     // Part 3. Mesh Example

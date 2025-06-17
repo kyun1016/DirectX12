@@ -2,14 +2,6 @@
 #include "DX12_Config.h"
 #include "DX12_InstanceData.h"
 
-struct DX12_BoundingComponent {
-	DirectX::BoundingBox Box;
-	DirectX::BoundingSphere Sphere;
-	bool FrustumCullingEnabled;
-	bool ShowBoundingBox;
-	bool ShowBoundingSphere;
-};
-
 struct DX12_RenderInstanceComponent {
 	InstanceData GPUData;
 	bool IsPickable;
