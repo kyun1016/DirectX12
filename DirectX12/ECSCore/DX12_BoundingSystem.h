@@ -25,7 +25,7 @@ public:
 
 			mesh.BoundingBox.Transform(bounding.Box, world);
 			mesh.BoundingSphere.Transform(bounding.Sphere, world);
-			LOG_INFO("box {}, {}, {}", bounding.Box.Center.x, bounding.Box.Center.y, bounding.Box.Center.z);
+			LOG_VERBOSE("box {}, {}, {}", bounding.Box.Center.x, bounding.Box.Center.y, bounding.Box.Center.z);
 		}
 	}
 

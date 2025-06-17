@@ -136,10 +136,12 @@ void InitDX12_TransformExample()
     coordinator.RegisterComponent<DX12_TransformComponent>();
     coordinator.RegisterComponent<DX12_BoundingComponent>();
     coordinator.RegisterComponent<DX12_MeshComponent>();
+    coordinator.RegisterComponent<InstanceData>();
 
     // 2. Register System
     coordinator.RegisterSystem<DX12_TransformSystem>();
     coordinator.RegisterSystem<DX12_BoundingSystem>();
+    coordinator.RegisterSystem<DX12_InstanceSystem>();
 
     ECS::Signature signature;
     signature.set(coordinator.GetComponentType<DX12_TransformComponent>());
@@ -149,6 +151,11 @@ void InitDX12_TransformExample()
     signature.set(coordinator.GetComponentType<DX12_BoundingComponent>());
     coordinator.SetSystemSignature<DX12_BoundingSystem>(signature);
 
+    ECS::Signature signatureInstance;
+	signatureInstance.set(coordinator.GetComponentType<DX12_TransformComponent>());
+	signatureInstance.set(coordinator.GetComponentType<InstanceData>());
+    coordinator.SetSystemSignature<DX12_InstanceSystem>(signatureInstance);
+
     // 3. Create Entity
     ECS::Entity entity1 = coordinator.CreateEntity();
     ECS::Entity entity2 = coordinator.CreateEntity();
@@ -157,12 +164,15 @@ void InitDX12_TransformExample()
     coordinator.AddComponent(entity1, DX12_TransformComponent{ });
     coordinator.AddComponent(entity1, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity1, DX12_MeshComponent{ });
+    coordinator.AddComponent(entity1, InstanceData{ });
     coordinator.AddComponent(entity2, DX12_TransformComponent{ });
     coordinator.AddComponent(entity2, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity2, DX12_MeshComponent{ });
+    coordinator.AddComponent(entity2, InstanceData{ });
     coordinator.AddComponent(entity3, DX12_TransformComponent{ });
     coordinator.AddComponent(entity3, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity3, DX12_MeshComponent{ });
+    coordinator.AddComponent(entity3, InstanceData{ });
 }
 
 void InitExample()

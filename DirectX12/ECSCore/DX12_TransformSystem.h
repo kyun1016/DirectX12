@@ -1,6 +1,8 @@
 #pragma once
 #include "ECSCoordinator.h"
+#include "DX12_BoundingComponent.h"
 #include "DX12_TransformComponent.h"
+#include "DX12_MeshComponent.h"
 
 class DX12_TransformSystem : public ECS::ISystem {
 public:
