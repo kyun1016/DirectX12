@@ -1,14 +1,17 @@
 #pragma once
+#include <string>
+#include <unordered_map>
 #include <d3d12.h>
 #include <wrl/client.h> // For ComPtr
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
-#include <string>
 #include <Windows.h>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
+#include <DirectXCollision.h>
 #include "LogCore.h"
 #include "../EngineCore/d3dx12.h"
+#include "../EngineCore/SimpleMath.h"
 #include "../ImGuiCore/imgui.h"
 #include "../ImGuiCore/imgui_impl_dx12.h"
 #include "../ImGuiCore/imgui_impl_win32.h"
@@ -16,6 +19,11 @@
 #pragma comment(lib, "dxguid")
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
+
+using float4x4 = DirectX::SimpleMath::Matrix;
+using float4 = DirectX::SimpleMath::Vector4;
+using float3 = DirectX::SimpleMath::Vector3;
+using float2 = DirectX::SimpleMath::Vector2;
 
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
