@@ -25,6 +25,14 @@ public:
 	{
 		return mCommandQueue.Get();
 	}
+	inline ID3D12CommandAllocator* GetCommandAllocator() const
+	{
+		return mCommandAllocator.Get();
+	}
+		inline ID3D12GraphicsCommandList6* GetCommandList() const
+	{
+		return mCommandList.Get();
+	}
 
 	inline void FlushCommandQueue() {
 		mFenceValue++;
@@ -36,8 +44,6 @@ public:
 		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 		LOG_INFO("Command Queue Flushed Successfully");
 	}
-
-
 
 private:
 	DX12_CommandSystem() = default;
@@ -55,7 +61,7 @@ private:
 	ID3D12Device* mDevice = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandAllocator;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	HANDLE mFenceEvent = nullptr;
 	UINT64 mFenceValue = 0;

@@ -1,9 +1,8 @@
 #pragma once
 #include "DX12_Config.h"
-#include "ECSSystem.h"
 #include "DX12_RTVHeapRepository.h"
 #include "DX12_CommandSystem.h"
-class DX12_SwapChainSystem : public ECS::ISystem {
+class DX12_SwapChainSystem {
 DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
     void Initialize(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* command, HWND hwnd, UINT width, UINT height)
@@ -14,6 +13,8 @@ public:
 		mHwnd = hwnd;
 		mWidth = width;
 		mHeight = height;
+		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
+		mScissorRect = { 0, 0, static_cast<LONG>(mWidth), static_cast<LONG>(mHeight) };
 		mBackBuffers.resize(APP_NUM_BACK_BUFFERS);
 		mDescritorHandles.resize(APP_NUM_BACK_BUFFERS);
 
@@ -29,6 +30,8 @@ public:
 
 		mWidth = newWidth;
 		mHeight = newHeight;
+		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
+		mScissorRect = { 0, 0, static_cast<LONG>(mWidth), static_cast<LONG>(mHeight) };
 		mBackBufferIndex = 0;
 		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 
@@ -41,10 +44,6 @@ public:
 
     }
 
-    void Update() override {
-
-    }
-
     ID3D12Resource* GetBackBuffer(UINT index) const
     {
 		return mBackBuffers[index].Get();
@@ -53,18 +52,29 @@ public:
     {
 		return mSwapChain.Get();
     }
-
 	std::uint32_t GetCurrentBackBufferIndex() const
     {
 		return mBackBufferIndex;
     }
-	bool GetMsaaState()
+	bool GetMsaaState() const
 	{
 		return mEnable4xMsaa;
 	}
-	std::uint32_t GetMsaaQuality()
+	std::uint32_t GetMsaaQuality() const
 	{
 		return m4xMsaaQuality;
+	}
+	inline const D3D12_VIEWPORT& GetViewport() const
+	{
+		return mScreenViewport;
+	}
+	inline const D3D12_RECT& GetScissorRect() const
+	{
+		return mScissorRect;
+	}
+	inline const D3D12_CPU_DESCRIPTOR_HANDLE& GetBackBufferDescriptorHandle() const
+	{
+		return mDescritorHandles[mBackBufferIndex];
 	}
 
 
@@ -75,6 +85,8 @@ private:
 	IDXGIFactory4* mDxgiFactory = nullptr;
 	ID3D12CommandQueue* mCommandQueue = nullptr;
 	HWND mHwnd;
+	D3D12_VIEWPORT mScreenViewport;
+	D3D12_RECT mScissorRect;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
@@ -85,6 +97,7 @@ private:
 
 	std::uint32_t m4xMsaaQuality = 0;
 	bool mEnable4xMsaa = false;
+	
 
 	void CreateSwapChain()
 	{

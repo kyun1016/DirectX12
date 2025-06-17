@@ -128,16 +128,6 @@ void InitLightExample()
     coordinator.AddComponent(light3, LightComponent{ });
 }
 
-void InitDX12()
-{
-    DX12_Core::GetInstance().Initialize();
-
-    auto& coordinator = ECS::Coordinator::GetInstance();
-
-    // 1. Register Components
-    // coordinator.RegisterComponent<RenderTargetComponent>();
-}
-
 void InitExample()
 {
     //================================
@@ -150,7 +140,7 @@ void InitExample()
 
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
-    InitDX12();
+    ECS::Coordinator::GetInstance().RegisterSystem<DX12_RenderSystem>();
     InitPhysicsExample();
     InitSoundExample();
     InitMeshExample();
