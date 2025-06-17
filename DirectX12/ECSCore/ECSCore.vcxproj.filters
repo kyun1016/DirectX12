@@ -58,6 +58,9 @@
     <Filter Include="Header Files\DX12_Core\Systems">
       <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\DX12_Core\Instance &amp; Mesh">
+      <UniqueIdentifier>{12dfc8df-6568-4335-a013-41e24f052dd1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -196,6 +199,24 @@
     </ClInclude>
     <ClInclude Include="DX12_InputLayoutSystem.h">
       <Filter>Header Files\DX12_Core\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_TransformSystem.h">
+      <Filter>Header Files\DX12_Core\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshComponent.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceComponent.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceData.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceSystem.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MaterialData.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

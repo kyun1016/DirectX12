@@ -2334,6 +2334,7 @@ void MyApp::DrawShaderToy(int idx)
 	// CopyRTV(2 + idx);
 }
 
+
 void MyApp::Pick()
 {
 	using DirectX::SimpleMath::Ray;

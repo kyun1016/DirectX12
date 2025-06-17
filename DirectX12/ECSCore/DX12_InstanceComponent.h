@@ -1,72 +1,28 @@
 #pragma once
 #include "DX12_Config.h"
-
 #include "DX12_InstanceData.h"
-#include "DX12_MaterialData.h"
 
-struct SubmeshGeometry
-{
+struct DX12_BoundingComponent {
+	DirectX::BoundingBox Box;
+	DirectX::BoundingSphere Sphere;
+	bool FrustumCullingEnabled;
+	bool ShowBoundingBox;
+	bool ShowBoundingSphere;
+};
+
+struct DX12_RenderInstanceComponent {
+	InstanceData GPUData;
+	bool IsPickable;
+};
+
+struct DX12_InstanceIndexComponent {
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
-	INT BaseVertexLocation = 0;
-
-	// Bounding box of the geometry defined by this submesh. 
-	// This is used in later chapters of the book.
-	DirectX::BoundingBox BoundingBox;
-	DirectX::BoundingSphere BoundingSphere;
+	int BaseVertexLocation = 0;
+	// mCommandList->DrawIndexedInstanced(ri->IndexCount, ri->InstanceCount, ri->StartIndexLocation, ri->BaseVertexLocation, 0);	
 };
 
-struct MeshGeometry
-{
-	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
-
-	// Data about the buffers.
-	UINT VertexByteStride = 0;
-	UINT VertexBufferByteSize = 0;
-	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
-	UINT IndexBufferByteSize = 0;
-
-	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
-	// Use this container to define the Submesh geometries so we can draw
-	// the Submeshes individually.
-	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
-
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
-	{
-		D3D12_VERTEX_BUFFER_VIEW vbv
-		{
-			/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/ .BufferLocation = VertexBufferGPU->GetGPUVirtualAddress(),
-			/* UINT SizeInBytes							*/ .SizeInBytes = VertexBufferByteSize,
-			/* UINT StrideInBytes						*/ .StrideInBytes = VertexByteStride
-		};
-		return vbv;
-	}
-
-	D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
-	{
-		D3D12_INDEX_BUFFER_VIEW ibv
-		{
-			/* D3D12_GPU_VIRTUAL_ADDRESS BufferLocation	*/ .BufferLocation = IndexBufferGPU->GetGPUVirtualAddress(),
-			/* UINT SizeInBytes							*/ .SizeInBytes = IndexBufferByteSize,
-			/* DXGI_FORMAT Format						*/ .Format = IndexFormat
-		};
-		return ibv;
-	}
-
-	// We can free this memory after we finish upload to the GPU.
-	void DisposeUploaders()
-	{
-		VertexBufferUploader = nullptr;
-		IndexBufferUploader = nullptr;
-	}
-};
 
 struct InstanceObject
 {
@@ -185,25 +141,4 @@ private:
 		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
 		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 	}
-};
-
-
-struct MeshComponent {
-	std::string MeshID;  // MeshGeometry 리소스 키
-};
-
-struct TransformComponent {
-	float3 Position;
-	float3 Scale;
-	float3 RotationEuler;
-};
-
-struct MaterialComponent {
-	uint32_t MaterialID;
-};
-
-struct BoundingComponent {
-	DirectX::BoundingBox AABB;
-	DirectX::BoundingSphere Sphere;
-	bool FrustumCullingEnabled;
 };
