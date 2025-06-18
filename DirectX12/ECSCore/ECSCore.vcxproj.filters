@@ -227,6 +227,15 @@
     <ClInclude Include="DX12_BoundingSystem.h">
       <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_MeshSystem.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshGenerator.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshData.h">
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\ST_FractalPyramid.hlsl">

@@ -21,9 +21,15 @@
 #pragma comment(lib, "dxgi")
 
 using float4x4 = DirectX::SimpleMath::Matrix;
-using float4 = DirectX::SimpleMath::Vector4;
-using float3 = DirectX::SimpleMath::Vector3;
 using float2 = DirectX::SimpleMath::Vector2;
+using float3 = DirectX::SimpleMath::Vector3;
+using float4 = DirectX::SimpleMath::Vector4;
+using uint2 = DirectX::XMUINT2;
+using uint3 = DirectX::XMUINT3;
+using uint4 = DirectX::XMUINT4;
+using int2 = DirectX::XMINT2;
+using int3 = DirectX::XMINT3;
+using int4 = DirectX::XMINT4;
 
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
