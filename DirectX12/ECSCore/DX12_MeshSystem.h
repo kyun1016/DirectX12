@@ -16,12 +16,21 @@ public:
 	inline void SetupMesh(uint32_t meshID, const std::string& rootSigName) {
 		auto mesh = DX12_MeshRepository::GetInstance().Get(meshID);
 		mCommandList->SetGraphicsRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(rootSigName));
-		mCommandList->IASetVertexBuffers(0, 1, &mesh->VertexBufferView());
-		mCommandList->IASetIndexBuffer(&mesh->IndexBufferView());
-		mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		mLastVertexBufferView = mesh->VertexBufferView();
+		mLastIndexBufferView = mesh->IndexBufferView();
+		mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+		mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
+		mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
+		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
 	}
 
 
 private:
 	ID3D12GraphicsCommandList6* mCommandList;
+
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
+	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 };

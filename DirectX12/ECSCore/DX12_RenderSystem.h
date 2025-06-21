@@ -49,7 +49,6 @@ public:
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
         DX12_MeshSystem::GetInstance().SetupMesh(1, "test");
-
         {
             //==========================================
             // Part 2. Render Target Setting
@@ -88,10 +87,6 @@ private:
     D3D12_VIEWPORT mScreenViewport;
     D3D12_RECT mScissorRect;
 
-    D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
-    D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
-    D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
     inline void Initialize() {
         // auto& coordinator = ECS::Coordinator::GetInstance();
         // auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();
@@ -114,7 +109,7 @@ private:
 
         DX12_PSOSystem::GetInstance().Initialize(mDevice);
 
-        DX12_MeshSystem::GetInstance().Initialize();
+        DX12_MeshSystem::GetInstance().Initialize(mCommandList);
         // Heap에 Texture 관련 데이터 업로드 공간 초기화
         // Frame 관련 데이터 데이터 업로드 공간 초기화
         // PSO 설정 초기화

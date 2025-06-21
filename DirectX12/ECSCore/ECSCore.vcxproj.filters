@@ -237,7 +237,7 @@
       <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
     <ClInclude Include="DX12_MeshSystem.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

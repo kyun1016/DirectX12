@@ -57,7 +57,7 @@ struct DX12_MeshGeometry
 	// the Submeshes individually.
 	std::unordered_map<size_t, DX12_MeshComponent> DrawArgs;
 
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv
 		{
@@ -68,7 +68,7 @@ struct DX12_MeshGeometry
 		return vbv;
 	}
 
-	D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
+	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
 	{
 		D3D12_INDEX_BUFFER_VIEW ibv
 		{
