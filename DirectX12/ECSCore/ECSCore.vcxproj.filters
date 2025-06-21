@@ -227,7 +227,7 @@
     <ClInclude Include="DX12_BoundingSystem.h">
       <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_MeshSystem.h">
+    <ClInclude Include="DX12_MeshRepository.h">
       <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
     <ClInclude Include="DX12_MeshGenerator.h">

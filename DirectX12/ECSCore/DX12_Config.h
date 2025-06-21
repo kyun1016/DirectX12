@@ -1,5 +1,6 @@
 #pragma once
 #define NOMINMAX 1
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <d3d12.h>
@@ -10,6 +11,7 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
+#include <d3dcompiler.h>
 #include <stdint.h>
 #include <algorithm>
 #include "LogCore.h"

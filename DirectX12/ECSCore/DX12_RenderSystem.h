@@ -11,7 +11,7 @@
 #include "DX12_InputLayoutSystem.h"
 #include "DX12_ShaderCompileSystem.h"
 #include "DX12_PSOSystem.h"
-#include "DX12_MeshGenerator.h"
+#include "DX12_MeshRepository.h"
 #include "WindowSystem.h"
 
 
@@ -90,7 +90,7 @@ private:
 
         DX12_PSOSystem::GetInstance().Initialize(mDevice);
 
-        DX12_MeshGenerator::CreateBox();
+        DX12_MeshRepository::GetInstance().Initialize();
         // Heap에 Texture 관련 데이터 업로드 공간 초기화
         // Frame 관련 데이터 데이터 업로드 공간 초기화
         // PSO 설정 초기화

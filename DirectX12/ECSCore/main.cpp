@@ -76,33 +76,33 @@ void InitSoundExample()
     coordinator.AddComponent(sound3, FMODAudioComponent{ handle, 0.5f, true });
 }
 
-void InitMeshExample()
-{
-    auto& coordinator = ECS::Coordinator::GetInstance();
-
-    // 1. Register Components
-    coordinator.RegisterComponent<MeshComponent>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<MeshSystem>();
-
-    ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<MeshComponent>());
-    coordinator.SetSystemSignature<MeshSystem>(signature);
-
-    // 3. Create Entity
-    ECS::Entity mesh1 = coordinator.CreateEntity();
-    ECS::Entity mesh2 = coordinator.CreateEntity();
-    ECS::Entity mesh3 = coordinator.CreateEntity();
-
-    std::string path = GetSoundLocation();
-    ECS::RepoHandle handle = MeshRepository::GetInstance().Load(path + "jaguar");
-    coordinator.AddComponent(mesh1, MeshComponent{ handle });
-    handle = MeshRepository::GetInstance().Load(path + "singing");
-    coordinator.AddComponent(mesh2, MeshComponent{ handle });
-    handle = MeshRepository::GetInstance().Load();
-    coordinator.AddComponent(mesh3, MeshComponent{ handle });
-}
+//void InitMeshExample()
+//{
+//    auto& coordinator = ECS::Coordinator::GetInstance();
+//
+//    // 1. Register Components
+//    coordinator.RegisterComponent<MeshComponent>();
+//
+//    // 2. Register System
+//    coordinator.RegisterSystem<MeshSystem>();
+//
+//    ECS::Signature signature;
+//    signature.set(coordinator.GetComponentType<MeshComponent>());
+//    coordinator.SetSystemSignature<MeshSystem>(signature);
+//
+//    // 3. Create Entity
+//    ECS::Entity mesh1 = coordinator.CreateEntity();
+//    ECS::Entity mesh2 = coordinator.CreateEntity();
+//    ECS::Entity mesh3 = coordinator.CreateEntity();
+//
+//    std::string path = GetSoundLocation();
+//    ECS::RepoHandle handle = MeshRepository::GetInstance().Load(path + "jaguar");
+//    coordinator.AddComponent(mesh1, MeshComponent{ handle });
+//    handle = MeshRepository::GetInstance().Load(path + "singing");
+//    coordinator.AddComponent(mesh2, MeshComponent{ handle });
+//    handle = MeshRepository::GetInstance().Load();
+//    coordinator.AddComponent(mesh3, MeshComponent{ handle });
+//}
 
 void InitLightExample()
 {
@@ -190,7 +190,7 @@ void InitExample()
     ECS::Coordinator::GetInstance().RegisterSystem<DX12_RenderSystem>();
     InitPhysicsExample();
     InitSoundExample();
-    InitMeshExample();
+    // InitMeshExample();
     InitLightExample();
     InitDX12_TransformExample();
 

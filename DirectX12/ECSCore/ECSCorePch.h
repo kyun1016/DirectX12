@@ -1,5 +1,5 @@
 #pragma once
-
+#define NOMINMAX 1
 #ifdef _DEBUG
 #pragma comment(lib, "..\\Libraries\\Libs\\EngineCore\\Debug\\EngineCore.lib")
 #pragma comment(lib, "..\\Libraries\\Libs\\ImGuiCore\\Debug\\ImGuiCore.lib")
@@ -27,4 +27,5 @@
 #include "DX12_TransformSystem.h"
 #include "DX12_BoundingSystem.h"
 #include "DX12_InstanceSystem.h"
+#include "DX12_RenderSystem.h"
 // #include "DX12_Core.h"

@@ -17,9 +17,10 @@ public:
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
 
+		LoadMesh("Box", meshes, false, false);
 	}
 
-	ECS::RepoHandle LoadMesh(const std::string& name, const std::vector<MeshData>& meshes, bool useIndex32 = false, bool useSkinnedMesh = false) {
+	ECS::RepoHandle LoadMesh(const std::string& name, std::vector<MeshData>& meshes, bool useIndex32 = false, bool useSkinnedMesh = false) {
 		std::lock_guard<std::mutex> lock(mtx);
 		auto it = mNameToHandle.find(name);
 		if (it != mNameToHandle.end()) {
@@ -112,7 +113,7 @@ public:
 						? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
 						: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 				}
-				geo->DrawArgs[std::to_string(i)] = submeshes[i];
+				geo->DrawArgs[i] = submeshes[i];
 			}
 		}
 
@@ -122,18 +123,6 @@ public:
 		return handle;
 	}
 protected:
-	virtual bool LoadResourceInternal(const std::string& name, DX12_MeshGeometry* ptr)
-	{
-		ptr->id = mNextHandle; // 임시로 핸들을 ID로 사용
-		ptr->name = name;
-		// TODO: 파일에서 메쉬 데이터를 로드하는 로직 구현
-		// TODO: GPU 업로드 로직 구현
-		// 예시로 임의의 데이터를 채워넣음
-		//mesh->vertex.Vertices.push_back(Vertex());
-		//mesh->index.Indices32.push_back(0);
-
-		return true;
-	}
 	virtual bool UnloadResource(ECS::RepoHandle handle)
 	{
 		if (IRepository<DX12_MeshGeometry>::UnloadResource(handle))

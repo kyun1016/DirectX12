@@ -1,8 +1,6 @@
 #pragma once
 #include "DX12_MeshComponent.h"
 
-#include <limits>
-
 class DX12_MeshGenerator
 {
 public:
@@ -147,7 +145,36 @@ public:
 			meshData.Indices32.push_back(i * 6 + 4);
 		}
 	}
-	//static Vertex MidPoint(const Vertex& v0, const Vertex& v1);
+	static Vertex MidPoint(const Vertex& v0, const Vertex& v1)
+	{
+		DirectX::XMVECTOR p0 = DirectX::XMLoadFloat3(&v0.Position);
+		DirectX::XMVECTOR p1 = DirectX::XMLoadFloat3(&v1.Position);
+
+		DirectX::XMVECTOR n0 = DirectX::XMLoadFloat3(&v0.Normal);
+		DirectX::XMVECTOR n1 = DirectX::XMLoadFloat3(&v1.Normal);
+
+		DirectX::XMVECTOR tan0 = DirectX::XMLoadFloat3(&v0.TangentU);
+		DirectX::XMVECTOR tan1 = DirectX::XMLoadFloat3(&v1.TangentU);
+
+		DirectX::XMVECTOR tex0 = DirectX::XMLoadFloat2(&v0.TexC);
+		DirectX::XMVECTOR tex1 = DirectX::XMLoadFloat2(&v1.TexC);
+
+		// Compute the midpoints of all the attributes.  Vectors need to be normalized
+		// since linear interpolating can make them not unit length.  
+		float3 pos = 0.5f * (v0.Position + v1.Position);
+		float3 normal = DirectX::XMVector3Normalize(0.5f * (v0.Normal + v1.Normal));
+		float3 tangent = DirectX::XMVector3Normalize(0.5f * (v0.TangentU + v1.TangentU));
+		float2 tex = 0.5f * (v0.TexC + v1.TexC);
+
+		Vertex v{
+			.Position = pos,
+			.Normal = normal,
+			.TexC = tex,
+			.TangentU = tangent
+		};
+
+		return v;
+	}
 	//static MeshData CreateGeosphere(float radius, std::uint32_t numSubdivisions);
 
 	//static MeshData CreateCylinder(float bottomRadius, float topRadius, float height, std::uint32_t sliceCount, std::uint32_t stackCount);
@@ -163,7 +190,7 @@ public:
 	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<Vertex>& vertex)
 	{
 		float3 vMin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-		float3 vMax(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+		float3 vMax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
 
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
@@ -188,7 +215,7 @@ public:
 	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<SkinnedVertex>& vertex)
 	{
 		float3 vMin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-		float3 vMax(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+		float3 vMax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
 
 		for (size_t i = 0; i < vertex.size(); ++i)
 		{
