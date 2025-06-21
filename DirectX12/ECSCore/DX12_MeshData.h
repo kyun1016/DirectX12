@@ -6,7 +6,7 @@
 #ifndef MESH_DATA_H
 #define MESH_DATA_H
 
-struct VertexInput
+struct Vertex
 {
     float3 Position;
     float3 Normal;
@@ -14,14 +14,14 @@ struct VertexInput
     float3 TangentU;
 };
 
-struct SkinnedVertexInput
+struct SkinnedVertex
 {
     float3 Position;
     float3 Normal;
     float2 TexC;
     float3 TangentU;
     float3 BoneWeights;
-    BYTE BoneIndices[4];
+    uint4 BoneIndices;
 };
 
 #endif // MESH_DATA_H

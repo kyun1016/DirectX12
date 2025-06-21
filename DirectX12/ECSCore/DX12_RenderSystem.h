@@ -11,6 +11,7 @@
 #include "DX12_InputLayoutSystem.h"
 #include "DX12_ShaderCompileSystem.h"
 #include "DX12_PSOSystem.h"
+#include "DX12_MeshGenerator.h"
 #include "WindowSystem.h"
 
 
@@ -54,7 +55,6 @@ public:
         // mCommandList->OMSetRenderTargets(1, &DX12_RTVHeapRepository::GetInstance().GetHandleByIndex(0), FALSE, &DX12_DSVHeapRepository::GetInstance().GetHandleByIndex(0));
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), FALSE, nullptr);
 
-
         auto& coordinator = ECS::Coordinator::GetInstance();
         for (ECS::Entity entity : mEntities) {
 
@@ -89,6 +89,8 @@ private:
         DX12_ShaderCompileSystem::GetInstance().Initialize();
 
         DX12_PSOSystem::GetInstance().Initialize(mDevice);
+
+        DX12_MeshGenerator::CreateBox();
         // Heap에 Texture 관련 데이터 업로드 공간 초기화
         // Frame 관련 데이터 데이터 업로드 공간 초기화
         // PSO 설정 초기화

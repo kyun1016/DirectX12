@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX 1
 #include <string>
 #include <unordered_map>
 #include <d3d12.h>
@@ -9,6 +10,8 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
+#include <stdint.h>
+#include <algorithm>
 #include "LogCore.h"
 #include "../EngineCore/d3dx12.h"
 #include "../EngineCore/SimpleMath.h"
@@ -166,3 +169,55 @@ private:
 	UINT mElementByteSize = 0;
 	bool mIsConstantBuffer = false;
 };
+
+static Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
+	ID3D12Device* device,
+	ID3D12GraphicsCommandList* cmdList,
+	const void* initData,
+	UINT64 byteSize,
+	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer)
+{
+	Microsoft::WRL::ComPtr<ID3D12Resource> defaultBuffer;
+
+	// 기본 버퍼 자원 생성
+	D3D12_HEAP_PROPERTIES defaultHeapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
+	ThrowIfFailed(device->CreateCommittedResource(
+		&defaultHeapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(defaultBuffer.GetAddressOf())));
+
+	// CPU 메모리의 자료를 기본 버퍼에 복사하기 위해 임시 업로드 힙 생성
+	D3D12_HEAP_PROPERTIES uploadHeapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	ThrowIfFailed(device->CreateCommittedResource(
+		&uploadHeapProperty,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(uploadBuffer.GetAddressOf())));
+
+
+	// Describe the data we want to copy into the default buffer.
+	D3D12_SUBRESOURCE_DATA subResourceData
+	{
+		/* const void* pData    */ initData,
+		/* LONG_PTR RowPitch    */ (__int64)byteSize,
+		/* LONG_PTR SlicePitch  */ (__int64)byteSize
+	};
+
+	// 기본 버퍼 자원으로 자료 복사 요청
+	// CPU 메모리를 임시 업로드 힙에 복사하고, ID3D12CommandList::CopySubresourceResion을 이용해서 임시 업로드 힙의 자료를 mBuffer에 복사
+	UpdateSubresources<1>(cmdList, defaultBuffer.Get(), uploadBuffer.Get(), 0, 0, 1, &subResourceData);
+
+	D3D12_RESOURCE_BARRIER barrier
+		= CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+	cmdList->ResourceBarrier(1, &barrier);
+
+	// 주의: 위의 함수 호출 이후에도 uploadBuffer를 계속 유지해야 함
+	// 복사가 완료된 이후 uploadBuffer 소멸
+	return defaultBuffer;
+}

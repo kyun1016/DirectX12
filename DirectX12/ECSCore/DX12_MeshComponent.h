@@ -1,17 +1,41 @@
 #pragma once
 #include "DX12_Config.h"
 
-#include "DX12_InstanceData.h"
-#include "DX12_MaterialData.h"
+#include "DX12_MeshData.h"
+
+struct MeshData
+{
+	std::vector<Vertex> Vertices;
+	std::vector<SkinnedVertex> SkinnedVertices;
+	std::vector<std::uint32_t> Indices32;
+
+	std::vector<std::uint16_t>& GetIndices16()
+	{
+		if (mIndices16.empty())
+		{
+			mIndices16.resize(Indices32.size());
+			for (size_t i = 0; i < Indices32.size(); ++i)
+				mIndices16[i] = static_cast<std::uint16_t>(Indices32[i]);
+		}
+
+		return mIndices16;
+	}
+
+private:
+	std::vector<std::uint16_t> mIndices16;
+};
 
 struct DX12_MeshComponent
 {
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;
+
+	DirectX::BoundingBox BoundingBox;
+	DirectX::BoundingSphere BoundingSphere;
 };
 
-struct MeshGeometry
+struct DX12_MeshGeometry
 {
 	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
@@ -65,10 +89,4 @@ struct MeshGeometry
 
 struct MaterialComponent {
 	uint32_t MaterialID;
-};
-
-struct BoundingComponent {
-	DirectX::BoundingBox AABB;
-	DirectX::BoundingSphere Sphere;
-	bool FrustumCullingEnabled;
 };

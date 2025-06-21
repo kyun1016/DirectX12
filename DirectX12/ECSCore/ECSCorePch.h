@@ -13,6 +13,8 @@
 #include "../ImGuiCore/ImGuiCorePch.h"
 #include "../FMODCore/FMODCorePch.h"
 
+#include "DX12_MeshRepository.h"
+
 #include <filesystem>
 #include "TimeSystem.h"
 #include "WindowSystem.h"
