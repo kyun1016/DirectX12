@@ -48,23 +48,21 @@ public:
     void Update() override {
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
-        DX12_MeshSystem::GetInstance().SetupMesh(1, "test");
+        // DX12_MeshSystem::GetInstance().SetMesh(1, "test");
+        DX12_CommandSystem::GetInstance().SetViewportAndScissor(
+            DX12_SwapChainSystem::GetInstance().GetViewport(),
+            DX12_SwapChainSystem::GetInstance().GetScissorRect());
+
+
+        DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
+        DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(1));
+
         {
             //==========================================
             // Part 2. Render Target Setting
             //==========================================
             D3D12_RESOURCE_BARRIER RenderBarrier =
                 CD3DX12_RESOURCE_BARRIER::Transition(DX12_SwapChainSystem::GetInstance().GetBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-        }
-
-
-        {
-			//==========================================
-			// Part 2. Set Viewport and Scissor Rect
-			//==========================================
-            mCommandList->RSSetViewports(1, &DX12_SwapChainSystem::GetInstance().GetViewport());
-            mCommandList->RSSetScissorRects(1, &DX12_SwapChainSystem::GetInstance().GetScissorRect());
-            // mCommandList->OMSetRenderTargets(1, &DX12_RTVHeapRepository::GetInstance().GetHandleByIndex(0), FALSE, &DX12_DSVHeapRepository::GetInstance().GetHandleByIndex(0));
         }
 
         {

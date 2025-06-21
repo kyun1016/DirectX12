@@ -1,5 +1,7 @@
 #pragma once
 #include "DX12_Config.h"
+#include "DX12_MeshComponent.h"
+
 class DX12_CommandSystem {
 public:
 	static DX12_CommandSystem& GetInstance() {
@@ -50,6 +52,25 @@ public:
 		mCommandList->Reset(mCommandAllocator.Get(), nullptr);
 	}
 
+	inline void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissorRect) {
+		mCommandList->RSSetViewports(1, &viewport);
+		mCommandList->RSSetScissorRects(1, &scissorRect);
+	}
+
+	inline void SetRootSignature(ID3D12RootSignature* rootSignature) {
+		mCommandList->SetGraphicsRootSignature(rootSignature);
+	}
+
+	inline void SetMesh(const DX12_MeshGeometry* mesh) {
+		mLastVertexBufferView = mesh->VertexBufferView();
+		mLastIndexBufferView = mesh->IndexBufferView();
+		mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+		mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
+		mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
+		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
+	}
+
 	inline void EndAndExecuteCommandList() {
 		// Close the command list to prepare for execution
 		ThrowIfFailed(mCommandList->Close());
@@ -78,6 +99,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	HANDLE mFenceEvent = nullptr;
 	UINT64 mFenceValue = 0;
+
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
+	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
 	void CreateCommandContext() {
 		D3D12_COMMAND_QUEUE_DESC desc = {};

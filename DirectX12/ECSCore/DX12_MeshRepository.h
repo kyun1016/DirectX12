@@ -113,15 +113,21 @@ public:
 		return handle;
 	}
 protected:
-	virtual bool UnloadResource(ECS::RepoHandle handle)
+	virtual bool UnloadResource(ECS::RepoHandle handle) override
 	{
-		if (IRepository<DX12_MeshGeometry>::UnloadResource(handle))
+		std::lock_guard<std::mutex> lock(mtx);
+		auto it = mResourceStorage.find(handle);
+		if (it != mResourceStorage.end() && it->second.refCount == 1)
 		{
-			// TODO: GPU 리소스 해제 (예: DestroyBuffer(mesh->vertexBuffer))
-
-			return true;
+			LOG_INFO("Mesh with handle {} released, refCount: {}", handle, it->second.refCount);
+			it->second.resource->VertexBufferCPU.Reset();
+			it->second.resource->IndexBufferCPU.Reset();
+			it->second.resource->VertexBufferGPU.Reset();
+			it->second.resource->IndexBufferGPU.Reset();
+			it->second.resource->VertexBufferUploader.Reset();
+			it->second.resource->IndexBufferUploader.Reset();
 		}
 
-		return false;
+		return true;
 	}
 };

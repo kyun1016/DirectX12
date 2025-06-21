@@ -24,11 +24,11 @@ public:
 	{
 		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + (Load() - 1) * mDescriptorSize);
 	}
-	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandleByIndex(std::uint32_t index) const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandleByIndex(std::uint32_t index)
 	{
 		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + index * mDescriptorSize);
 	}
-	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandle(ECS::RepoHandle handle) const
+	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandle(ECS::RepoHandle handle)
 	{
 		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + Get(handle)->handle * mDescriptorSize);
 	}

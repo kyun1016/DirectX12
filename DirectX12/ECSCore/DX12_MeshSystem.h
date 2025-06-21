@@ -13,24 +13,24 @@ public:
 		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, false, false);
 	}
 
-	inline void SetupMesh(uint32_t meshID, const std::string& rootSigName) {
-		auto mesh = DX12_MeshRepository::GetInstance().Get(meshID);
+	inline void SetRootSignature(const std::string& rootSigName) {
 		mCommandList->SetGraphicsRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(rootSigName));
-
-		mLastVertexBufferView = mesh->VertexBufferView();
-		mLastIndexBufferView = mesh->IndexBufferView();
-		mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-		mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
-		mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
-		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
 	}
+	//inline void SetMesh(ECS::RepoHandle meshID) {
+	//	auto mesh = DX12_MeshRepository::GetInstance().Get(meshID);
+	//	mLastVertexBufferView = mesh->VertexBufferView();
+	//	mLastIndexBufferView = mesh->IndexBufferView();
+	//	mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+	//	mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
+	//	mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
+	//	mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
+	//}
+
+	inline DX12_MeshGeometry* GetGeometry(ECS::RepoHandle handle) const {
+		return DX12_MeshRepository::GetInstance().Get(handle);
+	}
 
 private:
 	ID3D12GraphicsCommandList6* mCommandList;
-
-	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
-	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 };

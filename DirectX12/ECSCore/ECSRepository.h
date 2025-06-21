@@ -56,10 +56,17 @@ namespace ECS
 			return handle;
 		}
 
-		T* Get(RepoHandle handle) const {
+		T* Get(RepoHandle handle) {
 			std::lock_guard<std::mutex> lock(mtx);
 			auto it = mResourceStorage.find(handle);
-			return (it != mResourceStorage.end()) ? it->second.resource.get() : nullptr;
+			if (it == mResourceStorage.end()) {
+				LOG_ERROR("Resource with handle {} not found", handle);
+				return nullptr;
+			}
+
+			it->second.refCount++;
+			LOG_INFO("Resource with handle {} accessed, refCount: {}", handle, it->second.refCount);
+			return it->second.resource.get();
 		}
 
 		void Release(RepoHandle handle) {
@@ -67,9 +74,17 @@ namespace ECS
 			auto it = mResourceStorage.find(handle);
 			if (it == mResourceStorage.end()) return;
 
+			UnloadResource();
+			LOG_INFO("Resource with handle {} released, refCount: {}", handle, it->second.refCount);
 			if (--it->second.refCount <= 0) {
 				UnloadResource(handle, it->second.resource);
 				mResourceStorage.erase(it);
+				for (auto nameIt = mNameToHandle.begin(); nameIt != mNameToHandle.end(); ++nameIt) {
+					if (nameIt->second == handle) {
+						mNameToHandle.erase(nameIt);
+						break;
+					}
+				}
 			}
 		}
 
@@ -96,25 +111,12 @@ namespace ECS
 			LOG_ERROR("LoadResourceInternal not implemented for type {}", typeid(T).name());
 			return true;
 		};
-		virtual bool UnloadResource(RepoHandle handle)
+
+		virtual bool UnloadResource(ECS::RepoHandle handle)
 		{
-			auto it = mResourceStorage.find(handle);
-			if (it == mResourceStorage.end())
-				return false;
-
-			it->second.refCount--;
-			if (it->second.refCount <= 0) {
-				mResourceStorage.erase(it);
-				for (auto nameIt = mNameToHandle.begin(); nameIt != mNameToHandle.end(); ++nameIt) {
-					if (nameIt->second == handle) {
-						mNameToHandle.erase(nameIt);
-						break;
-					}
-				}
-				return true;
-			}
-
-			return false;
+			// Default implementation does nothing, can be overridden by derived classes
+			LOG_ERROR("UnloadResource not implemented for type {}", typeid(T).name());
+			return true;
 		}
 
 		struct RepoEntry {
