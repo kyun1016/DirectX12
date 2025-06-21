@@ -10,16 +10,6 @@ class DX12_MeshRepository : public ECS::IRepository<DX12_MeshGeometry> {
     DEFAULT_SINGLETON(DX12_MeshRepository)
 
 public:
-	void Initialize()
-	{
-		std::vector<MeshData> meshes;
-
-		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
-		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
-
-		LoadMesh("Box", meshes, false, false);
-	}
-
 	ECS::RepoHandle LoadMesh(const std::string& name, std::vector<MeshData>& meshes, bool useIndex32 = false, bool useSkinnedMesh = false) {
 		std::lock_guard<std::mutex> lock(mtx);
 		auto it = mNameToHandle.find(name);

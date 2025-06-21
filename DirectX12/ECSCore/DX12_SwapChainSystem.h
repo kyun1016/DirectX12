@@ -41,12 +41,21 @@ public:
     }
     void Present(bool vsync)
     {
+		// DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH 가 있으면 Alt+Enter 지원
+		// Present: 화면에 백버퍼를 출력
+		UINT syncInterval = vsync ? 1 : 0; // 1: VSync On (모니터 리프레시 동기화), 0: VSync Off (최대한 빠르게)
+		UINT presentFlags = 0;             // 특별한 Present 플래그 (예: DXGI_PRESENT_DO_NOT_WAIT 등)
 
+		ThrowIfFailed(mSwapChain->Present(syncInterval, presentFlags));
+
+		// 다음 프레임을 위한 백버퍼 인덱스 갱신
+		mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+		mCommandQueue->Signal(mFence.Get(), mFrameCount);
     }
 
-    ID3D12Resource* GetBackBuffer(UINT index) const
+    ID3D12Resource* GetBackBuffer() const
     {
-		return mBackBuffers[index].Get();
+		return mBackBuffers[mBackBufferIndex].Get();
     }
 	IDXGISwapChain* GetSwapChain() const
     {
@@ -89,6 +98,10 @@ private:
 	D3D12_RECT mScissorRect;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
+	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
+	UINT64 mFrameCount = 0;
+	int mCurrBackBuffer = 0;
+
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	std::uint32_t mWidth = 0;

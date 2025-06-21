@@ -45,6 +45,19 @@ public:
 		LOG_INFO("Command Queue Flushed Successfully");
 	}
 
+	inline void BeginCommandList() {
+		mCommandAllocator->Reset();
+		mCommandList->Reset(mCommandAllocator.Get(), nullptr);
+	}
+
+	inline void EndAndExecuteCommandList() {
+		// Close the command list to prepare for execution
+		ThrowIfFailed(mCommandList->Close());
+		// Execute the command list
+		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	}
+
 private:
 	DX12_CommandSystem() = default;
 	~DX12_CommandSystem() {
