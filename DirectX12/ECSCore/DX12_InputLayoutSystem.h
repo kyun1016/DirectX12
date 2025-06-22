@@ -2,7 +2,7 @@
 #include "DX12_Config.h"
 #include "ECSSystem.h"
 
-class DX12_InputLayoutSystem : public ECS::ISystem
+class DX12_InputLayoutSystem
 {
 DEFAULT_SINGLETON(DX12_InputLayoutSystem)
 public:

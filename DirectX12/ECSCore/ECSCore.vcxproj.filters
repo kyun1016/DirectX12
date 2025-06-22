@@ -55,10 +55,10 @@
     <Filter Include="Header Files\Shaders">
       <UniqueIdentifier>{af4cc31f-e036-4a0c-952e-a4ff24edf2d9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\DX12_Core\Systems">
+    <Filter Include="Header Files\DX12_Core\Singleton Systems">
       <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\DX12_Core\Instance &amp; Mesh">
+    <Filter Include="Header Files\DX12_Core\ECS Systems">
       <UniqueIdentifier>{12dfc8df-6568-4335-a013-41e24f052dd1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -156,91 +156,91 @@
       <Filter>Header Files\Systems\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Component.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="ECSRepository.h">
       <Filter>Header Files\ECSCore</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_RenderSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Core.h">
       <Filter>Header Files\DX12_Core</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RTVHeapRepository.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_RootSignatureRepository.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_DeviceSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Config.h">
       <Filter>Header Files\DX12_Core</Filter>
     </ClInclude>
     <ClInclude Include="DX12_CommandSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_SwapChainSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_DSVHeapRepository.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_PSOSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_ShaderCompileSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_InputLayoutSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshComponent.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_InstanceComponent.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_InstanceData.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_InstanceSystem.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MaterialData.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_TransformSystem.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_TransformComponent.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_BoundingComponent.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_BoundingSystem.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshRepository.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshGenerator.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshData.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshSystem.h">
-      <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_FrameResourceSystem.h">
-      <Filter>Header Files\DX12_Core\Systems</Filter>
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_BoundingComponent.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceComponent.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceData.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MaterialData.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshComponent.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshData.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshGenerator.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshRepository.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshSystem.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_TransformComponent.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_RenderSystem.h">
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_TransformSystem.h">
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceSystem.h">
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_BoundingSystem.h">
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InputLayoutSystem.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

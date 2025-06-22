@@ -46,7 +46,7 @@ public:
 	inline std::uint64_t SetSignalFence() {
 		mFenceValue++;
 		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
-		LOG_INFO("Fence Signaled: {}", mFenceValue);
+		LOG_VERBOSE("Fence Signaled: {}", mFenceValue);
 
 		return mFenceValue;
 	}

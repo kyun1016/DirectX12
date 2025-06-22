@@ -3,7 +3,7 @@
 #include "ECSSystem.h"
 #include <d3dcompiler.h>
 
-class DX12_ShaderCompileSystem : public ECS::ISystem
+class DX12_ShaderCompileSystem
 {
 DEFAULT_SINGLETON(DX12_ShaderCompileSystem)
 public:
