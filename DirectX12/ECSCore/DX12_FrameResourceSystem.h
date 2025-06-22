@@ -18,24 +18,30 @@ public:
 
 	void Initialize(ID3D12Device* device)
 	{
-		CreateFence(device);
+		// CreateFence(device);
 	}
-	void BeginFrame(ID3D12CommandQueue* queue, std::uint64_t frameIndex)
-	{
-		mCurrResourceIndex = frameIndex % APP_NUM_BACK_BUFFERS;
-		auto& frame = mFrameResources[mCurrResourceIndex];
-		ThrowIfFailed(queue->Signal(mFence.Get(), frameIndex));
-		if (mFence[mCurrResourceIndex]->GetCompletedValue() < frame.fenceValue) {
-			ThrowIfFailed(mFence[mCurrResourceIndex]->SetEventOnCompletion(frame.fenceValue, mFenceEvent[mCurrResourceIndex]));
-			WaitForSingleObject(mFenceEvent[mCurrResourceIndex], INFINITE);
-		}
-		LOG_INFO("Command Queue Flushed Successfully");
+
+	inline void FlushCommandQueue() {
+		//ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
+		//if (mFence->GetCompletedValue() < mFenceValue) {
+		//	ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
+		//	WaitForSingleObject(mFenceEvent, INFINITE);
+		//}
 	}
-	void EndFrame(ID3D12CommandQueue* queue, std::uint64_t frameIndex)
+	void BeginFrame()
 	{
-		mCurrResourceIndex = frameIndex % APP_NUM_BACK_BUFFERS;
-		auto& frame = mFrameResources[mCurrResourceIndex];
-		queue->Signal(mFence[mCurrResourceIndex].Get(), frameIndex);
+		//mCurrResourceIndex = frameIndex % APP_NUM_BACK_BUFFERS;
+		//auto& frame = mFrameResources[mCurrResourceIndex];
+		//ThrowIfFailed(mCommandQueue->Signal(mFence[mCurrResourceIndex].Get(), frameIndex));
+		//if (mFence[mCurrResourceIndex]->GetCompletedValue() < frame.fenceValue) {
+		//	ThrowIfFailed(mFence[mCurrResourceIndex]->SetEventOnCompletion(frame.fenceValue, mFenceEvent[mCurrResourceIndex]));
+		//	WaitForSingleObject(mFenceEvent[mCurrResourceIndex], INFINITE);
+		//}
+		//LOG_INFO("Command Queue Flushed Successfully");
+	}
+	void EndFrame()
+	{
+
 	}
 
 	// 내부에 Frame value 관리 자체를 제거함 (SwapChainSystem에서 통합 관리)
@@ -44,6 +50,7 @@ public:
 	}
 
 private:
+	ID3D12CommandQueue* mCommandQueue = nullptr;
 	std::vector<DX12_FrameResource> mFrameResources;
 	std::vector< Microsoft::WRL::ComPtr<ID3D12Fence>> mFence;
 	std::vector<HANDLE> mFenceEvent;
@@ -67,17 +74,4 @@ private:
 	DX12_FrameResourceSystem& operator=(const DX12_FrameResourceSystem&) = delete;
 	DX12_FrameResourceSystem(DX12_FrameResourceSystem&&) = delete;
 	DX12_FrameResourceSystem& operator=(DX12_FrameResourceSystem&&) = delete;
-
-private:
-	void CreateFence(ID3D12Device* device) {
-		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i) {
-			ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence[i])));
-			mFenceEvent[i] = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-			if (!mFenceEvent[i]) {
-				LOG_ERROR("Failed to create fence event.");
-				throw std::runtime_error("Fence event creation failed");
-			}
-		}
-		LOG_INFO("Fence created");
-	}
 };

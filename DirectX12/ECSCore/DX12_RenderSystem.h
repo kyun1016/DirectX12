@@ -65,12 +65,6 @@ private:
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 
-	~DX12_RenderSystem() = default;
-	DX12_RenderSystem(const DX12_RenderSystem&) = delete;
-	DX12_RenderSystem& operator=(const DX12_RenderSystem&) = delete;
-	DX12_RenderSystem(DX12_RenderSystem&&) = delete;
-	DX12_RenderSystem& operator=(DX12_RenderSystem&&) = delete;
-
 	inline void Initialize() {
 		// auto& coordinator = ECS::Coordinator::GetInstance();
 		// auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();

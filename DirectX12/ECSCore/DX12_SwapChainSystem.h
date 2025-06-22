@@ -17,7 +17,7 @@ public:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 			mDescritorHandles[i] = DX12_RTVHeapRepository::GetInstance().AllocateHandle();
 
-		CreateSwapChain(device, factory, commandQueue);
+		CreateSwapChain(device, factory, commandQueue, hwnd);
     }
     void Resize(ID3D12Device* device, UINT newWidth, UINT newHeight)
     {

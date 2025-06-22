@@ -31,7 +31,7 @@ public:
 	{
 		return mCommandAllocator.Get();
 	}
-	inline ID3D12GraphicsCommandList6* GetCommandList() const
+		inline ID3D12GraphicsCommandList6* GetCommandList() const
 	{
 		return mCommandList.Get();
 	}
@@ -43,12 +43,13 @@ public:
 			ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
 			WaitForSingleObject(mFenceEvent, INFINITE);
 		}
+		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 		LOG_INFO("Command Queue Flushed Successfully");
 	}
 
 	inline void BeginCommandList() {
-		ThrowIfFailed(mCommandAllocator->Reset());
-		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
+		mCommandAllocator->Reset();
+		mCommandList->Reset(mCommandAllocator.Get(), nullptr);
 	}
 
 	inline void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissorRect) {
@@ -97,8 +98,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	HANDLE mFenceEvent = nullptr;
+	std::uint64_t mFenceValue = 0;
 
-	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView = D3D12_VERTEX_BUFFER_VIEW{ 0, 0, 0 };
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView = { 0, 0, 0 };
 	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView = D3D12_INDEX_BUFFER_VIEW{ 0, 0, DXGI_FORMAT_R16_UINT };
 	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
