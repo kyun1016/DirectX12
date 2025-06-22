@@ -31,14 +31,31 @@ public:
 	{
 		return mCommandAllocator.Get();
 	}
-		inline ID3D12GraphicsCommandList6* GetCommandList() const
+	inline ID3D12GraphicsCommandList6* GetCommandList() const
 	{
 		return mCommandList.Get();
 	}
 
-	inline void FlushCommandQueue() {
+	inline void FlushCommandQueue(uint64_t fenceValue) {
+		if (mFence->GetCompletedValue() < fenceValue) {
+			ThrowIfFailed(mFence->SetEventOnCompletion(fenceValue, mFenceEvent));
+			WaitForSingleObject(mFenceEvent, INFINITE);
+		}
+	}
+
+	inline std::uint64_t SetSignalFence() {
 		mFenceValue++;
 		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
+		LOG_INFO("Fence Signaled: {}", mFenceValue);
+
+		return mFenceValue;
+	}
+	inline std::uint64_t GetFenceValue() const {
+		return mFenceValue;
+	}
+
+	inline void FlushCommandQueue() {
+		SetSignalFence();
 		if (mFence->GetCompletedValue() < mFenceValue) {
 			ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
 			WaitForSingleObject(mFenceEvent, INFINITE);

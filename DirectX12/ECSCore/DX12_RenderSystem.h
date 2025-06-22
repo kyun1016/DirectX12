@@ -57,7 +57,7 @@ public:
 		EndRenderPass();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		DX12_SwapChainSystem::GetInstance().Present(true);
-		DX12_FrameResourceSystem::GetInstance().EndFrame();
+		DX12_FrameResourceSystem::GetInstance().EndFrame(DX12_CommandSystem::GetInstance().SetSignalFence());
 	}
 private:
 	ID3D12Device* mDevice;
@@ -90,9 +90,7 @@ private:
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
-		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 	}
-
 
 	inline void BeginRenderPass() {
 		DX12_CommandSystem::GetInstance().BeginCommandList();
@@ -114,6 +112,6 @@ private:
 	inline void EndRenderPass() {
 		D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DX12_SwapChainSystem::GetInstance().GetBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
-		LOG_INFO("Render Pass Ended");
+		LOG_VERBOSE("Render Pass Ended");
 	}
 };
