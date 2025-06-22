@@ -64,8 +64,8 @@ namespace ECS
 				return nullptr;
 			}
 
-			it->second.refCount++;
-			LOG_INFO("Resource with handle {} accessed, refCount: {}", handle, it->second.refCount);
+			// it->second.refCount++;		// 현재는 Unique_ptr와 같이 활용 (혹여 Shared_ptr과 같이 활용하게 되는 시점에 다시 고민할 예정)
+			LOG_VERBOSE("Resource with handle {} accessed, refCount: {}", handle, it->second.refCount);
 			return it->second.resource.get();
 		}
 

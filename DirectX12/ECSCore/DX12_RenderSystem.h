@@ -57,7 +57,7 @@ public:
 		EndRenderPass();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		DX12_SwapChainSystem::GetInstance().Present(true);
-		DX12_FrameResourceSystem::GetInstance().EndFrame(DX12_CommandSystem::GetInstance().SetSignalFence());
+		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;
@@ -90,10 +90,10 @@ private:
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 	}
 
 	inline void BeginRenderPass() {
-		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_CommandSystem::GetInstance().SetViewportAndScissor(
 			DX12_SwapChainSystem::GetInstance().GetViewport(),
 			DX12_SwapChainSystem::GetInstance().GetScissorRect());

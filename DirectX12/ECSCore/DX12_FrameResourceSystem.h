@@ -18,24 +18,21 @@ public:
 
 	void Initialize(ID3D12Device* device)
 	{
-		// CreateFence(device);
-	}
-
-	inline void FlushCommandQueue() {
-		//ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mFenceValue));
-		//if (mFence->GetCompletedValue() < mFenceValue) {
-		//	ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
-		//	WaitForSingleObject(mFenceEvent, INFINITE);
-		//}
+		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
+		{
+			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mFrameResources[i].commandAllocator.GetAddressOf())));
+		}
 	}
 	void BeginFrame()
 	{
-		mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % APP_NUM_BACK_BUFFERS;
 		DX12_CommandSystem::GetInstance().FlushCommandQueue(mFrameResources[mCurrFrameResourceIndex].fenceValue);
+		mFrameResources[mCurrFrameResourceIndex].commandAllocator->Reset();
+		DX12_CommandSystem::GetInstance().ResetCommandList(mFrameResources[mCurrFrameResourceIndex].commandAllocator.Get());
 	}
-	void EndFrame(std::uint64_t fenceValue)
+	void EndFrame()
 	{
-		mFrameResources[mCurrFrameResourceIndex].fenceValue = fenceValue;
+		mFrameResources[mCurrFrameResourceIndex].fenceValue = DX12_CommandSystem::GetInstance().SetSignalFence();
+		mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % APP_NUM_BACK_BUFFERS;
 	}
 
 	// 내부에 Frame value 관리 자체를 제거함 (SwapChainSystem에서 통합 관리)
@@ -56,7 +53,6 @@ private:
 		{
 			mFrameResources[i].fenceValue = 0;
 			mFrameResources[i].rtvHandle.ptr = 0;
-			mFrameResources[i].commandAllocator.Reset();
 		}
 		LOG_INFO("Frame Resource System Initialized");
 	};
