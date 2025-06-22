@@ -5,10 +5,22 @@ class DX12_MeshSystem {
 	DEFAULT_SINGLETON(DX12_MeshSystem)
 public:
 	void Initialize() {
+		BuildSquereMeshes();
+	}
+
+	void BuildSquereMeshes()
+	{
+		std::vector<MeshData> meshes;
+		meshes.push_back(DX12_MeshGenerator::CreateSquare(1.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSquare(2.0f));
+		DX12_MeshRepository::GetInstance().LoadMesh("Square", meshes, false, false);
+	}
+
+	void BuildBoxMeshes()
+	{
 		std::vector<MeshData> meshes;
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
-
 		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, false, false);
 	}
 

@@ -81,6 +81,24 @@ public:
 
 		return meshData;
 	}
+
+	static MeshData CreateSquare(float scale)
+	{
+		MeshData meshData;
+		Vertex v[4] = {
+			{ { -scale, 0.0f, -scale }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+			{ { scale, 0.0f, -scale }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+			{ { scale, 0.0f, scale }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+			{ { -scale, 0.0f, scale }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } }
+		};
+		std::uint32_t i[6] = {
+			0,1,2,
+			0,2,3
+		};
+		meshData.Vertices.assign(&v[0], &v[4]);
+		meshData.Indices32.assign(&i[0], &i[6]);
+		return meshData;
+	}
 	// static MeshData CreateSphere(float radius, std::uint32_t sliceCount, std::uint32_t stackCount);
 
 	static void Subdivide(MeshData& meshData)

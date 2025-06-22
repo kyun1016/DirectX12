@@ -37,9 +37,6 @@
     <Filter Include="Header Files\Systems\Physics">
       <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\ImGui">
-      <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Systems\Audio">
       <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
     </Filter>
@@ -52,14 +49,20 @@
     <Filter Include="Header Files\Helper">
       <UniqueIdentifier>{60221525-0509-4e35-8a99-3c52674e79f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Shaders">
-      <UniqueIdentifier>{af4cc31f-e036-4a0c-952e-a4ff24edf2d9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\DX12_Core\Singleton Systems">
       <UniqueIdentifier>{3f475d69-1fb3-4d9c-8401-c0ff30a5ca8a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\DX12_Core\ECS Systems">
       <UniqueIdentifier>{12dfc8df-6568-4335-a013-41e24f052dd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\GameObject">
+      <UniqueIdentifier>{4a708b01-d716-4baa-82c5-f3e50faf5d11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\ImGui">
+      <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\HLSL_Shaders">
+      <UniqueIdentifier>{af4cc31f-e036-4a0c-952e-a4ff24edf2d9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -103,9 +106,6 @@
     </ClInclude>
     <ClInclude Include="FMODAudioSystem.h">
       <Filter>Header Files\Systems\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderComponent.h">
-      <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="LightSystem.h">
       <Filter>Header Files\Systems\Light</Filter>
@@ -242,111 +242,114 @@
     <ClInclude Include="DX12_InputLayoutSystem.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
+    <ClInclude Include="GameObjectSystem.h">
+      <Filter>Header Files\Systems\GameObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\ST_FractalPyramid.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Octagrams.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_RubiksCube_TBD.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Seascape.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_ShaderArtCodingIntroduction.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Silexars.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Singularity.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_SquareWave.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Starfield.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_VoxelrayBirdsEyeViewMountain.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Subdivision.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Tessellation.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\WaveCS.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\AddCS.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Basic.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Billboard.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\BlurCS.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\CubeMap.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Normal.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\OpticalFlow_HornSchunck.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\Shadow.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ShadowDebug.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\sl_MotionVector.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\SSAO.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\SSAOBlur.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Clouds_TBD.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_CubeWave3.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_Experiments.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_EyeOfPhi.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\ST_FireBall.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Data\Shaders\test.hlsl">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Data\Shaders\Memory.hlsli">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </None>
     <None Include="..\Data\Shaders\ST_Core.hlsli">
-      <Filter>Header Files\Shaders</Filter>
+      <Filter>Header Files\HLSL_Shaders</Filter>
     </None>
     <None Include="cpp.hint" />
   </ItemGroup>

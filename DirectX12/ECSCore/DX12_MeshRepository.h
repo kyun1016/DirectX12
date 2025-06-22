@@ -103,6 +103,7 @@ public:
 						? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
 						: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 				}
+				submeshes[i].InstanceCount = i;
 				geo->DrawArgs[i] = submeshes[i];
 			}
 		}

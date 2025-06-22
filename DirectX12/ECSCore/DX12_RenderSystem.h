@@ -14,7 +14,7 @@
 #include "DX12_MeshSystem.h"
 #include "DX12_FrameResourceSystem.h"
 #include "WindowSystem.h"
-
+#include "TimeSystem.h"
 
 class DX12_RenderSystem : public ECS::ISystem {
 public:
@@ -99,14 +99,32 @@ private:
 			DX12_SwapChainSystem::GetInstance().GetScissorRect());
 
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
-		DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(1));
+		
 
 		D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DX12_SwapChainSystem::GetInstance().GetBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
 
-		DirectX::XMFLOAT4 FogColor = { 0.7f, 0.7f, 0.7f, 1.0f };
+		const auto& time = ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>();
+		float r = 0.5f;
+		float g = 0.5f;
+		float b = 0.5f;
+		// float r = std::fmod(time.totalTime * time.fixedDeltaTime, 1.0f); // Example: Use time to create a dynamic color
+		// float g = std::fmod(time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
+		// float b = std::fmod(time.totalTime + time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
+		float4 FogColor = { r, g, b, 1.0f };
 		mCommandList->ClearRenderTargetView(DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), (float*)&FogColor, 0, nullptr);
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
+	}
+
+	inline void DrawRenderItems(const eRenderLayer flag)
+	{
+		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(1);
+		DX12_CommandSystem::GetInstance().SetMesh(geo);
+		for (const auto& [_, ri] : geo->DrawArgs)
+		{
+			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, ri.StartIndexLocation);
+		}
+		
 	}
 
 	inline void EndRenderPass() {
