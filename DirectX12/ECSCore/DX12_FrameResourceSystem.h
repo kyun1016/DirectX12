@@ -12,24 +12,53 @@ struct DX12_FrameResourceSystem
 {
 public:
 	inline static DX12_FrameResourceSystem& GetInstance() {
-		static DX12_FrameResourceSystem instance; return instance;
+		static DX12_FrameResourceSystem instance;
+		return instance;
 	}
 
-	void Initialize(UINT frameCount);
-	void BeginFrame();
-	void EndFrame(ID3D12CommandQueue* queue);
+	void Initialize(ID3D12Device* device)
+	{
+		CreateFence(device);
+	}
+	void BeginFrame(ID3D12CommandQueue* queue, std::uint64_t frameIndex)
+	{
+		mCurrResourceIndex = frameIndex % APP_NUM_BACK_BUFFERS;
+		auto& frame = mFrameResources[mCurrResourceIndex];
+		ThrowIfFailed(queue->Signal(mFence.Get(), frameIndex));
+		if (mFence[mCurrResourceIndex]->GetCompletedValue() < frame.fenceValue) {
+			ThrowIfFailed(mFence[mCurrResourceIndex]->SetEventOnCompletion(frame.fenceValue, mFenceEvent[mCurrResourceIndex]));
+			WaitForSingleObject(mFenceEvent[mCurrResourceIndex], INFINITE);
+		}
+		LOG_INFO("Command Queue Flushed Successfully");
+	}
+	void EndFrame(ID3D12CommandQueue* queue, std::uint64_t frameIndex)
+	{
+		mCurrResourceIndex = frameIndex % APP_NUM_BACK_BUFFERS;
+		auto& frame = mFrameResources[mCurrResourceIndex];
+		queue->Signal(mFence[mCurrResourceIndex].Get(), frameIndex);
+	}
+
+	// 내부에 Frame value 관리 자체를 제거함 (SwapChainSystem에서 통합 관리)
+	inline DX12_FrameResource& GetFrameResource(std::uint64_t frameIndex) {
+		return mFrameResources[frameIndex];
+	}
 
 private:
-	std::vector<DX12_FrameResource> mResources;
-	UINT64 mFence = 0;
+	std::vector<DX12_FrameResource> mFrameResources;
+	std::vector< Microsoft::WRL::ComPtr<ID3D12Fence>> mFence;
+	std::vector<HANDLE> mFenceEvent;
+	std::uint64_t mCurrResourceIndex = 0;
+
 	DX12_FrameResourceSystem()
 	{
-		mResources.resize(APP_NUM_BACK_BUFFERS);
+		mFrameResources.resize(APP_NUM_BACK_BUFFERS);
+		mFence.resize(APP_NUM_BACK_BUFFERS);
+		mFenceEvent.resize(APP_NUM_BACK_BUFFERS);
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 		{
-			mResources[i].fenceValue = 0;
-			mResources[i].rtvHandle.ptr = 0;
-			mResources[i].commandAllocator.Reset();
+			mFrameResources[i].fenceValue = 0;
+			mFrameResources[i].rtvHandle.ptr = 0;
+			mFrameResources[i].commandAllocator.Reset();
 		}
 		LOG_INFO("Frame Resource System Initialized");
 	};
@@ -38,4 +67,17 @@ private:
 	DX12_FrameResourceSystem& operator=(const DX12_FrameResourceSystem&) = delete;
 	DX12_FrameResourceSystem(DX12_FrameResourceSystem&&) = delete;
 	DX12_FrameResourceSystem& operator=(DX12_FrameResourceSystem&&) = delete;
+
+private:
+	void CreateFence(ID3D12Device* device) {
+		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i) {
+			ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence[i])));
+			mFenceEvent[i] = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+			if (!mFenceEvent[i]) {
+				LOG_ERROR("Failed to create fence event.");
+				throw std::runtime_error("Fence event creation failed");
+			}
+		}
+		LOG_INFO("Fence created");
+	}
 };

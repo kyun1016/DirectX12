@@ -5,12 +5,8 @@
 class DX12_SwapChainSystem {
 DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
-    void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, HWND hwnd, UINT width, UINT height)
+    void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, const HWND& hwnd, UINT width, UINT height)
     {
-		mDevice = device;
-		mDxgiFactory = factory;
-		mCommandQueue = commandQueue;
-		mHwnd = hwnd;
 		mWidth = width;
 		mHeight = height;
 		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
@@ -21,9 +17,9 @@ public:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 			mDescritorHandles[i] = DX12_RTVHeapRepository::GetInstance().AllocateHandle();
 
-		CreateSwapChain();
+		CreateSwapChain(device, factory, commandQueue);
     }
-    void Resize(UINT newWidth, UINT newHeight)
+    void Resize(ID3D12Device* device, UINT newWidth, UINT newHeight)
     {
 		if ((mWidth == newWidth) && (mHeight == newHeight))
 			return;
@@ -37,7 +33,7 @@ public:
 
 		ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mWidth, mHeight, mSwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 		
-		CreateRenderTargerView();
+		CreateRenderTargerView(device);
     }
     void Present(bool vsync)
     {
@@ -91,15 +87,10 @@ public:
 
 
 private:
-	ID3D12Device* mDevice = nullptr;
-	IDXGIFactory4* mDxgiFactory = nullptr;
-	HWND mHwnd = HWND{};
 	D3D12_VIEWPORT mScreenViewport = D3D12_VIEWPORT{};
 	D3D12_RECT mScissorRect = D3D12_RECT{};
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-
-	ID3D12CommandQueue* mCommandQueue = nullptr;
 
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -111,7 +102,7 @@ private:
 	bool mEnable4xMsaa = false;
 	
 
-	void CreateSwapChain()
+	void CreateSwapChain(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* commandQueue, const HWND& hwnd)
 	{
 		// Release the previous swapchain we will be recreating.
 		mSwapChain.Reset();
@@ -132,7 +123,7 @@ private:
 			/*	UINT Quality								*/mEnable4xMsaa ? (m4xMsaaQuality - 1) : 0u,
 			/* DXGI_USAGE BufferUsage						*/DXGI_USAGE_RENDER_TARGET_OUTPUT,
 			/* UINT BufferCount								*/APP_NUM_BACK_BUFFERS,
-			/* HWND OutputWindow							*/mHwnd,
+			/* HWND OutputWindow							*/hwnd,
 			/* BOOL Windowed								*/true,				// TBD
 			/* DXGI_SWAP_EFFECT SwapEffect					*/DXGI_SWAP_EFFECT_FLIP_DISCARD,
 			/* UINT Flags									*/DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
@@ -143,16 +134,16 @@ private:
 		if (mPref.renderAPI == sl::RenderAPI::eD3D12)
 			slSetFeatureLoaded(sl::kFeatureDLSS_G, true);
 #endif
-		ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue, &sd, mSwapChain.GetAddressOf()));
+		ThrowIfFailed(factory->CreateSwapChain(commandQueue, &sd, mSwapChain.GetAddressOf()));
 #ifdef _ST
 		if (mPref.renderAPI == sl::RenderAPI::eD3D12)
 			slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
 #endif
 
-		CreateRenderTargerView();
+		CreateRenderTargerView(device);
 	}
 
-	void CreateRenderTargerView()
+	void CreateRenderTargerView(ID3D12Device* device)
 	{
 		for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 			if(mBackBuffers[i])
@@ -161,11 +152,11 @@ private:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 		{
 			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mBackBuffers[i])));
-			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mDescritorHandles[i]);
+			device->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mDescritorHandles[i]);
 		}
 	}
 
-	inline void CheckFeatureSupport()
+	inline void CheckFeatureSupport(ID3D12Device* device)
 	{
 		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
 		{
@@ -174,7 +165,7 @@ private:
 			/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
 			/*_Out_  UINT NumQualityLevels						*/.NumQualityLevels = 0
 		};
-		ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+		ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 		if (m4xMsaaQuality > 0) {
 			mEnable4xMsaa = true; // Enable 4X MSAA if supported

@@ -12,6 +12,7 @@
 #include "DX12_ShaderCompileSystem.h"
 #include "DX12_PSOSystem.h"
 #include "DX12_MeshSystem.h"
+#include "DX12_FrameResourceSystem.h"
 #include "WindowSystem.h"
 
 
@@ -45,20 +46,30 @@ public:
 		// // 또는
 		// // cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
 	}
-	void Update() override {
+
+	virtual void Sync() override {
+		DX12_FrameResourceSystem::GetInstance().BeginFrame();
+	}
+
+	virtual void Update() override {
 		BeginRenderPass();
 		// TODO: Additional rendering logic here
 		EndRenderPass();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		DX12_SwapChainSystem::GetInstance().Present(true);
-		
-		// DX12_CommandSystem::GetInstance().FlushCommandQueue(); // Sync를 맞추는 동작 시 적용 필요
+		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;
 	ID3D12GraphicsCommandList6* mCommandList;
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
+
+	~DX12_RenderSystem() = default;
+	DX12_RenderSystem(const DX12_RenderSystem&) = delete;
+	DX12_RenderSystem& operator=(const DX12_RenderSystem&) = delete;
+	DX12_RenderSystem(DX12_RenderSystem&&) = delete;
+	DX12_RenderSystem& operator=(DX12_RenderSystem&&) = delete;
 
 	inline void Initialize() {
 		// auto& coordinator = ECS::Coordinator::GetInstance();
@@ -77,7 +88,7 @@ private:
 		DX12_InputLayoutSystem::GetInstance().Initialize();
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
-
+		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();

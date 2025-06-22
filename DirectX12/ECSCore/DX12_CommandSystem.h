@@ -97,7 +97,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList6> mCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	HANDLE mFenceEvent = nullptr;
-	UINT64 mFenceValue = 0;
 
 	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView = D3D12_VERTEX_BUFFER_VIEW{ 0, 0, 0 };
 	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView = D3D12_INDEX_BUFFER_VIEW{ 0, 0, DXGI_FORMAT_R16_UINT };

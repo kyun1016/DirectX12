@@ -239,6 +239,9 @@
     <ClInclude Include="DX12_MeshSystem.h">
       <Filter>Header Files\DX12_Core\Instance &amp; Mesh</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_FrameResourceSystem.h">
+      <Filter>Header Files\DX12_Core\Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\ST_FractalPyramid.hlsl">
