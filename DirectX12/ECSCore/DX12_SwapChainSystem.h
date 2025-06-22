@@ -41,6 +41,10 @@ public:
     }
     void Present(bool vsync)
     {
+		//D3D12_CPU_DESCRIPTOR_HANDLE rtvs[1];
+		//rtvs[0] = mDescritorHandles[mCurrBackBuffer];
+		//mCommandList->OMSetRenderTargets(1, rtvs, false, &mDescritorHandles[0]);
+
 		// DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH 가 있으면 Alt+Enter 지원
 		// Present: 화면에 백버퍼를 출력
 		UINT syncInterval = vsync ? 1 : 0; // 1: VSync On (모니터 리프레시 동기화), 0: VSync Off (최대한 빠르게)
@@ -49,7 +53,7 @@ public:
 		ThrowIfFailed(mSwapChain->Present(syncInterval, presentFlags));
 
 		// 다음 프레임을 위한 백버퍼 인덱스 갱신
-		mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+		mBackBufferIndex = (mBackBufferIndex + 1) % APP_NUM_BACK_BUFFERS;
     }
 
     ID3D12Resource* GetBackBuffer() const
@@ -87,8 +91,6 @@ public:
 
 
 private:
-	static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;
-
 	ID3D12Device* mDevice = nullptr;
 	IDXGIFactory4* mDxgiFactory = nullptr;
 	HWND mHwnd = HWND{};
@@ -96,7 +98,6 @@ private:
 	D3D12_RECT mScissorRect = D3D12_RECT{};
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-	int mCurrBackBuffer = 0;
 
 	ID3D12CommandQueue* mCommandQueue = nullptr;
 

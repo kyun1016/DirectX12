@@ -36,6 +36,8 @@ using int2 = DirectX::XMINT2;
 using int3 = DirectX::XMINT3;
 using int4 = DirectX::XMINT4;
 
+static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;
+
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif

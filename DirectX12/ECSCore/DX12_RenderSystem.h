@@ -47,13 +47,12 @@ public:
 	}
 	void Update() override {
 		BeginRenderPass();
-		EndRenderPass();
-
 		// TODO: Additional rendering logic here
-
-		DX12_SwapChainSystem::GetInstance().Present(true);
+		EndRenderPass();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
-		DX12_CommandSystem::GetInstance().FlushCommandQueue();
+		DX12_SwapChainSystem::GetInstance().Present(true);
+		
+		// DX12_CommandSystem::GetInstance().FlushCommandQueue(); // Sync를 맞추는 동작 시 적용 필요
 	}
 private:
 	ID3D12Device* mDevice;
@@ -75,16 +74,18 @@ private:
 		DX12_DSVHeapRepository::GetInstance().Initialize(mDevice);
 		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height);
 		DX12_RootSignatureSystem::GetInstance().Initialize(mDevice);
-
 		DX12_InputLayoutSystem::GetInstance().Initialize();
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
-
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 
+		
+		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
 		// Heap에 Texture 관련 데이터 업로드 공간 초기화
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화
+		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 	}
 
 
@@ -102,7 +103,7 @@ private:
 
 		DirectX::XMFLOAT4 FogColor = { 0.7f, 0.7f, 0.7f, 1.0f };
 		mCommandList->ClearRenderTargetView(DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), (float*)&FogColor, 0, nullptr);
-		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), FALSE, nullptr);
+		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
 	}
 
 	inline void EndRenderPass() {

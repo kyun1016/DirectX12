@@ -116,8 +116,18 @@ namespace ECS
 			std::vector<std::future<void>> futures;
 			for (auto& [_, task] : mSystemUpdateTasks)
 				futures.emplace_back(std::async(std::launch::async, task));
-			for (auto& fut : futures)
-				fut.get();
+			// get은 순차적으로 처리
+			for (auto& fut : futures) {
+				try {
+					fut.get();
+				}
+				catch (const std::exception& e) {
+					LOG_ERROR("Exception in system task: {}", e.what());
+				}
+				catch (...) {
+					LOG_ERROR("Unknown exception in system task");
+				}
+			}
 		}
 		inline void LateUpdateAllSystems() {
 			std::vector<std::future<void>> futures;

@@ -31,7 +31,7 @@ public:
 	{
 		return mCommandAllocator.Get();
 	}
-		inline ID3D12GraphicsCommandList6* GetCommandList() const
+	inline ID3D12GraphicsCommandList6* GetCommandList() const
 	{
 		return mCommandList.Get();
 	}
@@ -43,13 +43,12 @@ public:
 			ThrowIfFailed(mFence->SetEventOnCompletion(mFenceValue, mFenceEvent));
 			WaitForSingleObject(mFenceEvent, INFINITE);
 		}
-		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 		LOG_INFO("Command Queue Flushed Successfully");
 	}
 
 	inline void BeginCommandList() {
-		mCommandAllocator->Reset();
-		mCommandList->Reset(mCommandAllocator.Get(), nullptr);
+		ThrowIfFailed(mCommandAllocator->Reset());
+		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 	}
 
 	inline void SetViewportAndScissor(const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissorRect) {
