@@ -72,13 +72,19 @@ inline std::wstring StringToWString(const std::string& str)
 	return result;
 }
 
-inline static void ThrowIfFailed(HRESULT hr) {
-	if (FAILED(hr)) {
-		// 디버깅할 때 여기에 breakpoint 설정
-		LOG_ERROR("DirectX 12 Error: {}", std::to_string(hr));
-		throw std::exception();
+#define ThrowIfFailed(hr) \
+	if (FAILED(hr)) { \
+		LogCore::GetInstance().Log(eLogLevel::Error, eConsoleForeground::RED, __FILE__, __LINE__, __func__, "DirectX 12 Error: {}", std::to_string(hr)); \
+		throw std::exception();\
 	}
-}
+
+//inline static void ThrowIfFailed(HRESULT hr) {
+//	if (FAILED(hr)) {
+//		// 디버깅할 때 여기에 breakpoint 설정
+//		LOG_ERROR("DirectX 12 Error: {}", std::to_string(hr));
+//		throw std::exception();
+//	}
+//}
 
 #define DEFAULT_SINGLETON(SystemClassName)                        \
 public:                                                           \

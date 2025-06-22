@@ -100,8 +100,8 @@ private:
 	HANDLE mFenceEvent = nullptr;
 	UINT64 mFenceValue = 0;
 
-	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView;
-	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView;
+	D3D12_VERTEX_BUFFER_VIEW mLastVertexBufferView = D3D12_VERTEX_BUFFER_VIEW{ 0, 0, 0 };
+	D3D12_INDEX_BUFFER_VIEW mLastIndexBufferView = D3D12_INDEX_BUFFER_VIEW{ 0, 0, DXGI_FORMAT_R16_UINT };
 	D3D12_PRIMITIVE_TOPOLOGY mLastPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
 	void CreateCommandContext() {

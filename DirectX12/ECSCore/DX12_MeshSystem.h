@@ -4,8 +4,7 @@
 class DX12_MeshSystem {
 	DEFAULT_SINGLETON(DX12_MeshSystem)
 public:
-	void Initialize(ID3D12GraphicsCommandList6* commandList) {
-		mCommandList = commandList;
+	void Initialize() {
 		std::vector<MeshData> meshes;
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
@@ -13,9 +12,6 @@ public:
 		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, false, false);
 	}
 
-	inline void SetRootSignature(const std::string& rootSigName) {
-		mCommandList->SetGraphicsRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(rootSigName));
-	}
 	//inline void SetMesh(ECS::RepoHandle meshID) {
 	//	auto mesh = DX12_MeshRepository::GetInstance().Get(meshID);
 	//	mLastVertexBufferView = mesh->VertexBufferView();
@@ -30,7 +26,4 @@ public:
 	inline DX12_MeshGeometry* GetGeometry(ECS::RepoHandle handle) const {
 		return DX12_MeshRepository::GetInstance().Get(handle);
 	}
-
-private:
-	ID3D12GraphicsCommandList6* mCommandList;
 };

@@ -5,11 +5,11 @@
 class DX12_SwapChainSystem {
 DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
-    void Initialize(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* command, HWND hwnd, UINT width, UINT height)
+    void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, HWND hwnd, UINT width, UINT height)
     {
 		mDevice = device;
 		mDxgiFactory = factory;
-		mCommandQueue = command;
+		mCommandQueue = commandQueue;
 		mHwnd = hwnd;
 		mWidth = width;
 		mHeight = height;
@@ -50,7 +50,6 @@ public:
 
 		// 다음 프레임을 위한 백버퍼 인덱스 갱신
 		mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
-		mCommandQueue->Signal(mFence.Get(), mFrameCount);
     }
 
     ID3D12Resource* GetBackBuffer() const
@@ -92,15 +91,14 @@ private:
 
 	ID3D12Device* mDevice = nullptr;
 	IDXGIFactory4* mDxgiFactory = nullptr;
-	ID3D12CommandQueue* mCommandQueue = nullptr;
-	HWND mHwnd;
-	D3D12_VIEWPORT mScreenViewport;
-	D3D12_RECT mScissorRect;
+	HWND mHwnd = HWND{};
+	D3D12_VIEWPORT mScreenViewport = D3D12_VIEWPORT{};
+	D3D12_RECT mScissorRect = D3D12_RECT{};
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
-	UINT64 mFrameCount = 0;
 	int mCurrBackBuffer = 0;
+
+	ID3D12CommandQueue* mCommandQueue = nullptr;
 
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
