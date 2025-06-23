@@ -56,8 +56,10 @@ public:
 		BeginRenderPass();
 		// TODO: Additional rendering logic here
 		EndRenderPass();
+		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		DX12_SwapChainSystem::GetInstance().Present(true);
+		ImGuiSystem::GetInstance().RenderMultiViewport();
 		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
@@ -87,7 +89,7 @@ private:
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
-		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue());
+		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
 
 		// Heap에 Texture 관련 데이터 업로드 공간 초기화
 		// Frame 관련 데이터 데이터 업로드 공간 초기화

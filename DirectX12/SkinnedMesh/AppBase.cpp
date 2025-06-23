@@ -123,16 +123,16 @@ int AppBase::Run()
 				ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 				mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
+				// Swap the back and front buffers
+				ThrowIfFailed(mSwapChain->Present(1, 0));
+				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
+
 				// Update and Render additional Platform Windows
 				if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 				{
 					ImGui::UpdatePlatformWindows();
 					ImGui::RenderPlatformWindowsDefault();
 				}
-
-				// Swap the back and front buffers
-				ThrowIfFailed(mSwapChain->Present(1, 0));
-				mCurrBackBuffer = (mCurrBackBuffer + 1) % APP_NUM_BACK_BUFFERS;
 
 				// Advance the fence value to mark commands up to this fence point.
 				mCurrFrameResource->Fence = ++mCurrentFence;

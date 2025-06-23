@@ -1,7 +1,7 @@
 #pragma once
 #include "ECSCoordinator.h"
 #include "DX12_Config.h"
-
+#include "DX12_SwapChainSystem.h"
 
 #include "../ImGuiCore/imgui.h"
 #include "../ImGuiCore/imgui_impl_win32.h"
@@ -61,9 +61,10 @@ public:
 		static ImGuiSystem instance; return instance;
 	}
 
-	void Initialize(const HWND& hwnd, ID3D12Device* device, ID3D12CommandQueue* commandQueue)
+	void Initialize(const HWND& hwnd, ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12GraphicsCommandList6* commandList)
 	{
 		CreateDescriptorHeap(device);
+		mCommandList = commandList;
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -96,12 +97,44 @@ public:
 		ImGui_ImplDX12_Init(&init_info);
 	}
 
+	void Render()
+	{
+		Update();
+		ImGui::Render();
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = DX12_SwapChainSystem::GetInstance().GetBackBuffer();
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		mCommandList->ResourceBarrier(1, &barrier);
+
+		ID3D12DescriptorHeap* descriptorHeaps[] = { mHeap.Get() };
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList);
+
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		mCommandList->ResourceBarrier(1, &barrier);
+	}
+
+	void RenderMultiViewport()
+	{
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
+	}
+
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 private:
 	static constexpr int SRV_IMGUI_SIZE = 64;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
-	ID3D12DescriptorHeap* mSrvDescHeap;
-	
+	ID3D12GraphicsCommandList6* mCommandList = nullptr;
+
 
 	void CreateDescriptorHeap(ID3D12Device* device)
 	{
@@ -113,6 +146,26 @@ private:
 			/* UINT NodeMask					*/.NodeMask = 0
 		};
 		ThrowIfFailed(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mHeap)));
+	}
+
+	void Update()
+	{
+		ImGui_ImplDX12_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+
+		ShowMainWindow();
+
+		static bool showDemoWindow = true;
+		if (showDemoWindow)
+			ImGui::ShowDemoWindow(&showDemoWindow);
+	}
+
+	void ShowMainWindow()
+	{
+		ImGui::Begin("Main Window");
+		ImGui::Text("Hello, ImGui!");
+		ImGui::End();
 	}
 
 	ImGuiSystem() = default;
