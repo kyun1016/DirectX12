@@ -175,11 +175,22 @@ void InitDX12_TransformExample()
     coordinator.AddComponent(entity3, InstanceData{ });
 }
 
-void InitExample()
+void LoadScene() {
+    // 팩토리를 통해 게임 오브젝트를 간단하게 생성
+    auto ball1 = GameObjectFactory::GetInstance().CreateGameObject("BouncingBall");
+    auto ball2 = GameObjectFactory::GetInstance().CreateGameObject("BouncingBall");
+
+    auto& ball1Transform = ECS::Coordinator::GetInstance().GetComponent<DX12_TransformComponent>(ball1);
+    ball1Transform.w_Position = { -5.f, 10.f, 0.f };
+}
+
+void RunExample()
 {
     //================================
 	// Load Coordinator Instance
     //================================
+    ECS::Coordinator::GetInstance().Init();
+
     LOG_INFO("ECS Coordinator Init {} {} {} {}", 1,2,3,4);
     LOG_WARN("ECS Coordinator Init");
 	LOG_ERROR("ECS Coordinator Init");
@@ -197,6 +208,7 @@ void InitExample()
     //================================
     // Part 3. Mesh Example
     //================================
+    LoadScene();
 
     //================================
     // Simulation loop
@@ -206,9 +218,7 @@ void InitExample()
 
 int main()
 {
-	ECS::Coordinator::GetInstance().Init();
-
-    InitExample();
+    RunExample();
 
 	return 0;
 }

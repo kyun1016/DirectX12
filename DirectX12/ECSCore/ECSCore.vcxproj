@@ -176,7 +176,7 @@
     <ClInclude Include="ECSSystem.h" />
     <ClInclude Include="DX12_TransformSystem.h" />
     <ClInclude Include="DX12_BoundingComponent.h" />
-    <ClInclude Include="GameObjectSystem.h" />
+    <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="ImGuiComponent.h" />
     <ClInclude Include="ImGuiSystem.h" />
     <ClInclude Include="InputComponent.h" />

@@ -239,7 +239,7 @@
     <ClInclude Include="DX12_InputLayoutSystem.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
-    <ClInclude Include="GameObjectSystem.h">
+    <ClInclude Include="GameObjectFactory.h">
       <Filter>Header Files\Systems\GameObject</Filter>
     </ClInclude>
   </ItemGroup>
