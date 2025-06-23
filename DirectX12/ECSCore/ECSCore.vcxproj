@@ -145,7 +145,6 @@
     <ClInclude Include="DX12_DSVHeapRepository.h" />
     <ClInclude Include="DX12_CommandSystem.h" />
     <ClInclude Include="DX12_Config.h" />
-    <ClInclude Include="DX12_Core.h" />
     <ClInclude Include="DX12_Component.h" />
     <ClInclude Include="DX12_DeviceSystem.h" />
     <ClInclude Include="DX12_FrameResourceSystem.h" />

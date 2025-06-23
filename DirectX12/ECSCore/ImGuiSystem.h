@@ -1,96 +1,129 @@
-//#pragma once
-//#include "ECSCoordinator.h"
-//#include "WindowComponent.h"
-//#include "ImGuiComponent.h"
-//
-//#include "../ImGuiCore/imgui.h"
-//#include "../ImGuiCore/imgui_impl_dx12.h"
-//
-//
-//class ImGuiSystem : public ECS::ISystem
-//{
-//public:
-//    void BeginPlay() override {
-//		IMGUI_CHECKVERSION();
-//		ImGui::CreateContext();
-//		ImGuiIO& imGuiIO = ImGui::GetIO();
-//		imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-//		imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-//		imGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-//		imGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-//
-//		// Setup Dear ImGui style
-//		ImGui::StyleColorsDark();
-//		//ImGui::StyleColorsLight();
-//
-//		// Setup Platform/Renderer backends
-//		ImGui_ImplWin32_Init(mHwndWindow);
-//
-//		ImGui_ImplDX12_InitInfo init_info = {};
-//		init_info.Device = mDevice.Get();
-//		init_info.CommandQueue = mCommandQueue.Get();
-//		init_info.NumFramesInFlight = APP_NUM_FRAME_RESOURCES;
-//		init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-//		init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-//		// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-//		// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-//		//mSrvDescHeapAlloc.Create(mDevice.Get(), mSrvDescriptorHeap.Get());
-//		//init_info.SrvDescriptorHeap = mSrvDescriptorHeap.Get();
-//		//init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
-//		//init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_appBase->mSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
-//		ImGui_ImplDX12_Init(&init_info);
-//
-//		// Load Fonts
-//		// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-//		// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-//		// - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-//		// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-//		// - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-//		// - Read 'docs/FONTS.md' for more instructions and details.
-//		// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-//		//io.Fonts->AddFontDefault();
-//		//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-//		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-//		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-//		//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-//		//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-//		//IM_ASSERT(font != nullptr);
-//
-//		return true;
-//    }
-//
-//    void Sync() override {
-//        // 윈도우 상태 갱신
-//        auto& windowComponent = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-//        //RECT rect;
-//        //GetClientRect(mHwnd, &rect);
-//  //      windowComponent.left = rect.left;
-//  //      windowComponent.top = rect.top;
-//  //      windowComponent.right = rect.right;
-//  //      windowComponent.bottom = rect.bottom;
-//
-//        // 메시지 처리 루프
-//        MSG msg = {};
-//        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-//            TranslateMessage(&msg);
-//            DispatchMessage(&msg);
-//        }
-//        // 필요시 윈도우 상태 갱신
-//    }
-//    void Update() override {
-//
-//    }
-//
-//    void EndPlay() override {
-//        auto& windowComponent = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-//        if (mHwnd) {
-//            DestroyWindow(mHwnd);
-//            mHwnd = nullptr;
-//        }
-//    }
-//
-//private:
-//    WNDCLASSEXW mWindowClass;
-//    HWND mHwnd = nullptr;
-//    std::wstring mCaption = L"App";
-//};
+#pragma once
+#include "ECSCoordinator.h"
+#include "DX12_Config.h"
+
+
+#include "../ImGuiCore/imgui.h"
+#include "../ImGuiCore/imgui_impl_win32.h"
+#include "../ImGuiCore/imgui_impl_dx12.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+struct ExampleDescriptorHeapAllocator
+{
+	ID3D12DescriptorHeap* Heap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_TYPE  HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+	D3D12_CPU_DESCRIPTOR_HANDLE HeapStartCpu;
+	D3D12_GPU_DESCRIPTOR_HANDLE HeapStartGpu;
+	UINT                        HeapHandleIncrement;
+	ImVector<int>               FreeIndices;
+
+	void Create(ID3D12Device* device, ID3D12DescriptorHeap* heap)
+	{
+		IM_ASSERT(Heap == nullptr && FreeIndices.empty());
+		Heap = heap;
+		D3D12_DESCRIPTOR_HEAP_DESC desc = heap->GetDesc();
+		HeapType = desc.Type;
+		HeapStartCpu = Heap->GetCPUDescriptorHandleForHeapStart();
+		HeapStartGpu = Heap->GetGPUDescriptorHandleForHeapStart();
+		HeapHandleIncrement = device->GetDescriptorHandleIncrementSize(HeapType);
+		FreeIndices.reserve((int)desc.NumDescriptors);
+		for (int n = desc.NumDescriptors; n > 0; n--)
+			FreeIndices.push_back(n);
+	}
+	void Destroy()
+	{
+		Heap = nullptr;
+		FreeIndices.clear();
+	}
+	void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
+	{
+		IM_ASSERT(FreeIndices.Size > 0);
+		int idx = FreeIndices.back();
+		FreeIndices.pop_back();
+		out_cpu_desc_handle->ptr = HeapStartCpu.ptr + (idx * HeapHandleIncrement);
+		out_gpu_desc_handle->ptr = HeapStartGpu.ptr + (idx * HeapHandleIncrement);
+	}
+	void Free(D3D12_CPU_DESCRIPTOR_HANDLE out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE out_gpu_desc_handle)
+	{
+		int cpu_idx = (int)((out_cpu_desc_handle.ptr - HeapStartCpu.ptr) / HeapHandleIncrement);
+		int gpu_idx = (int)((out_gpu_desc_handle.ptr - HeapStartGpu.ptr) / HeapHandleIncrement);
+		IM_ASSERT(cpu_idx == gpu_idx);
+		FreeIndices.push_back(cpu_idx);
+	}
+};
+
+
+class ImGuiSystem
+{
+public:
+	inline static ImGuiSystem& GetInstance() {
+		static ImGuiSystem instance; return instance;
+	}
+
+	void Initialize(const HWND& hwnd, ID3D12Device* device, ID3D12CommandQueue* commandQueue)
+	{
+		CreateDescriptorHeap(device);
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& imGuiIO = ImGui::GetIO();
+		imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		imGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+		imGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsLight();
+
+		// Setup Platform/Renderer backends
+		ImGui_ImplWin32_Init(hwnd);
+
+
+		ImGui_ImplDX12_InitInfo init_info = {};
+		init_info.Device = device;
+		init_info.CommandQueue = commandQueue;
+		init_info.NumFramesInFlight = APP_NUM_BACK_BUFFERS;
+		init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+		// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+		// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+		mSrvDescHeapAlloc.Create(device, mHeap.Get());
+		init_info.SrvDescriptorHeap = mHeap.Get();
+		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return ImGuiSystem::GetInstance().mSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+		init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return ImGuiSystem::GetInstance().mSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+		ImGui_ImplDX12_Init(&init_info);
+	}
+
+	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
+private:
+	static constexpr int SRV_IMGUI_SIZE = 64;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
+	ID3D12DescriptorHeap* mSrvDescHeap;
+	
+
+	void CreateDescriptorHeap(ID3D12Device* device)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc
+		{
+			/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+			/* UINT NumDescriptors				*/.NumDescriptors = SRV_IMGUI_SIZE,
+			/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+			/* UINT NodeMask					*/.NodeMask = 0
+		};
+		ThrowIfFailed(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mHeap)));
+	}
+
+	ImGuiSystem() = default;
+	~ImGuiSystem()
+	{
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
+	};
+	ImGuiSystem(const ImGuiSystem&) = delete;
+	ImGuiSystem& operator=(const ImGuiSystem&) = delete;
+	ImGuiSystem(ImGuiSystem&&) = delete;
+	ImGuiSystem& operator=(ImGuiSystem&&) = delete;
+};

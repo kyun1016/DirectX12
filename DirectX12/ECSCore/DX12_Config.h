@@ -88,20 +88,6 @@ inline std::wstring StringToWString(const std::string& str)
 //	}
 //}
 
-#define DEFAULT_SINGLETON(SystemClassName)                        \
-public:                                                           \
-    inline static SystemClassName& GetInstance() {                \
-        static SystemClassName instance;                          \
-        return instance;                                          \
-    }                                                             \
-private:                                                          \
-    SystemClassName() = default;                                  \
-    ~SystemClassName() = default;                                 \
-    SystemClassName(const SystemClassName&) = delete;             \
-    SystemClassName& operator=(const SystemClassName&) = delete;  \
-    SystemClassName(SystemClassName&&) = delete;                  \
-    SystemClassName& operator=(SystemClassName&&) = delete;       
-
 UINT CalcConstantBufferByteSize(UINT byteSize)
 {
 	// Constant buffers must be a multiple of the minimum hardware

@@ -164,9 +164,6 @@
     <ClInclude Include="ECSRepository.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_Core.h">
-      <Filter>Header Files\DX12_Core</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_RTVHeapRepository.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>

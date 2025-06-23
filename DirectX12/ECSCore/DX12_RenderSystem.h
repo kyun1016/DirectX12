@@ -15,6 +15,7 @@
 #include "DX12_FrameResourceSystem.h"
 #include "WindowSystem.h"
 #include "TimeSystem.h"
+#include "ImGuiSystem.h"
 
 class DX12_RenderSystem : public ECS::ISystem {
 public:
@@ -86,6 +87,8 @@ private:
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
+		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue());
+
 		// Heap에 Texture 관련 데이터 업로드 공간 초기화
 		// Frame 관련 데이터 데이터 업로드 공간 초기화
 		// PSO 설정 초기화
@@ -105,12 +108,12 @@ private:
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
 
 		const auto& time = ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>();
-		float r = 0.5f;
-		float g = 0.5f;
-		float b = 0.5f;
-		// float r = std::fmod(time.totalTime * time.fixedDeltaTime, 1.0f); // Example: Use time to create a dynamic color
-		// float g = std::fmod(time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
-		// float b = std::fmod(time.totalTime + time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
+		// float r = 0.5f;
+		// float g = 0.5f;
+		// float b = 0.5f;
+		float r = std::fmod(time.totalTime * time.fixedDeltaTime, 1.0f); // Example: Use time to create a dynamic color
+		float g = std::fmod(time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
+		float b = std::fmod(time.totalTime + time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
 		float4 FogColor = { r, g, b, 1.0f };
 		mCommandList->ClearRenderTargetView(DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), (float*)&FogColor, 0, nullptr);
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
