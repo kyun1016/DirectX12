@@ -6,14 +6,15 @@ class DX12_MeshSystem {
 public:
 	void Initialize() {
 		BuildSquereMeshes();
+		BuildSpriteMesh();
 	}
 
 	void BuildSquereMeshes()
 	{
 		std::vector<MeshData> meshes;
-		meshes.push_back(DX12_MeshGenerator::CreateSquare(1.0f));
-		meshes.push_back(DX12_MeshGenerator::CreateSquare(2.0f));
-		DX12_MeshRepository::GetInstance().LoadMesh("Square", meshes, false, false);
+		meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSquare(2000.0f));
+		DX12_MeshRepository::GetInstance().LoadMesh("Square", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
 	}
 
 	void BuildBoxMeshes()
@@ -21,7 +22,14 @@ public:
 		std::vector<MeshData> meshes;
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
-		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, false, false);
+		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
+	}
+
+	void BuildSpriteMesh()
+	{
+		std::vector<MeshData> meshes;
+		meshes.push_back(DX12_MeshGenerator::CreateSprite(10.0f, 10.0f));
+		DX12_MeshRepository::GetInstance().LoadMesh("Sprite", meshes, DX12_MeshRepository::eMeshType::SPRITE, false);
 	}
 
 	//inline void SetMesh(ECS::RepoHandle meshID) {

@@ -14,6 +14,10 @@ public:
 
 		CompileShader("vs_test", L"../Data/Shaders/test.hlsl", nullptr, "VS", "vs_5_1");
 		CompileShader("ps_test", L"../Data/Shaders/test.hlsl", nullptr, "PS", "ps_5_1");
+
+		CompileShader("vs_sprite", L"../Data/Shaders/Sprite.hlsl", nullptr, "VS", "vs_5_1");
+		CompileShader("gs_sprite", L"../Data/Shaders/Sprite.hlsl", nullptr, "GS", "gs_5_1");
+		CompileShader("ps_sprite", L"../Data/Shaders/Sprite.hlsl", nullptr, "PS", "ps_5_1");
 	}
 
 	inline void CompileShader(

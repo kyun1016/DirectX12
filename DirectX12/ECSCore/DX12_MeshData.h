@@ -24,4 +24,19 @@ struct SkinnedVertex
     uint4 BoneIndices;
 };
 
+#ifdef __cplusplus
+struct SpriteVertex
+{
+	float3 Position;
+	float2 Size;
+};
+#else
+struct SpriteVertex
+{
+    float3 Position : POSITION;
+    float2 Size : SIZE;
+};
+#endif
+
+
 #endif // MESH_DATA_H

@@ -687,12 +687,7 @@ bool AppBase::InitImgui()
 	imGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 	imGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsLight();
-
-	// Setup Platform/Renderer backends
-	ImGui_ImplWin32_Init(mHwndWindow);
+	
 
 	ImGui_ImplDX12_InitInfo init_info = {};
 	init_info.Device = mDevice.Get();

@@ -10,6 +10,7 @@ enum class eRenderLayer : std::uint32_t
 {
 	None = 0,
 	Opaque,
+	Sprite,
 	SkinnedOpaque,
 	Mirror,
 	Reflected,
@@ -55,7 +56,7 @@ struct PSODescriptor {
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	UINT numRenderTargets = 1;
 	DXGI_FORMAT rtvFormats[8] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN };
-	DXGI_FORMAT dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	DXGI_FORMAT dsvFormat = DXGI_FORMAT_UNKNOWN; // DXGI_FORMAT_D24_UNORM_S8_UINT;
 	bool wireframe = false;
 };
 
@@ -70,6 +71,7 @@ public:
 		mDevice = device;
 
 		BuildExamplePSO();
+		BuildSpritePSO();
 	}
 	void RegisterDescriptor(const PSODescriptor& desc)
 	{
@@ -99,6 +101,7 @@ private:
 	void BuildExamplePSO()
 	{
 		PSODescriptor desc;
+		desc.layer = eRenderLayer::Opaque;
 		desc.sigName = "test";
 		desc.vsName = "vs_test";
 		desc.psName = "ps_test";
@@ -108,8 +111,43 @@ private:
 		RegisterDescriptor(desc);
 	}
 
+	void BuildSpritePSO()
+	{
+		PSODescriptor desc;
+		desc.layer = eRenderLayer::Sprite;
+		desc.sigName = "sprite";
+		desc.vsName = "vs_sprite";
+		desc.gsName = "gs_sprite";
+		desc.psName = "ps_sprite";
+		desc.inputName = "sprite";
+		desc.topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+
+		// Alpha blending
+		D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
+		transparencyBlendDesc.BlendEnable = true;
+		transparencyBlendDesc.LogicOpEnable = false;
+		transparencyBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		transparencyBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+		transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+		transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+		transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+		transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		desc.blendDesc.RenderTarget[0] = transparencyBlendDesc;
+
+		desc.rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+		desc.depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // Don't write to depth buffer for transparent objects
+
+		RegisterDescriptor(desc);
+	}
+
 private:
 	void CreatePSO(const PSODescriptor& desc) {
+		if (mPSOs.find(desc.layer) != mPSOs.end()) {
+			LOG_ERROR("PSO for layer {} already exists.", static_cast<std::uint32_t>(desc.layer));
+			return;
+		}
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 		psoDesc.pRootSignature = mRootSystem.GetGraphicsSignature(desc.sigName);
 		if (!desc.vsName.empty()) {
@@ -153,6 +191,7 @@ private:
 		ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSOs[desc.layer])));
 	}
 
+	
 private:
 	DX12_RootSignatureSystem& mRootSystem;
 	DX12_ShaderCompileSystem& mShaderSystem;

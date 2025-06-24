@@ -27,7 +27,7 @@ public:
 		mWidth = newWidth;
 		mHeight = newHeight;
 		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
-		mScissorRect = { 0, 0, static_cast<LONG>(mWidth), static_cast<LONG>(mHeight) };
+		mScissorRect = { 0, 0, static_cast<LONG>(mWidth)/2, static_cast<LONG>(mHeight) };
 		mBackBufferIndex = 0;
 		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 

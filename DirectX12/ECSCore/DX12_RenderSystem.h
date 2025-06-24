@@ -22,30 +22,6 @@ public:
 	DX12_RenderSystem()
 	{
 		Initialize();
-		// cmdList->SetPipelineState(pipelineState.Get());
-		// 
-		// D3D12_VIEWPORT viewport = { 0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f };
-		// D3D12_RECT scissorRect = { 0, 0, width, height };
-		// cmdList->RSSetViewports(1, &viewport);
-		// cmdList->RSSetScissorRects(1, &scissorRect);
-		// 
-		// cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-		// cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-		// cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		// 
-		// cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		// cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-		// // Index Buffer 사용 시
-		// // cmdList->IASetIndexBuffer(&indexBufferView);
-		// 
-		// cmdList->SetGraphicsRootConstantBufferView(0, cbGpuAddress);
-		// // 또는
-		// // cmdList->SetDescriptorHeaps(...);
-		// // cmdList->SetGraphicsRootDescriptorTable(...);
-		// 
-		// cmdList->DrawInstanced(vertexCount, 1, 0, 0);
-		// // 또는
-		// // cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
 	}
 
 	virtual void Sync() override {
@@ -54,7 +30,8 @@ public:
 
 	virtual void Update() override {
 		BeginRenderPass();
-		// TODO: Additional rendering logic here
+		DrawRenderItems(1, eRenderLayer::Opaque);
+		DrawSprites();
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
@@ -69,9 +46,6 @@ private:
 	D3D12_RECT mScissorRect;
 
 	inline void Initialize() {
-		// auto& coordinator = ECS::Coordinator::GetInstance();
-		// auto deviceSystem = coordinator.RegisterSystem<DX12_DeviceSystem>();
-		// mDevice = deviceSystem->GetDevice();
 		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
 		DX12_DeviceSystem::GetInstance().Initialize();
@@ -91,9 +65,6 @@ private:
 		DX12_MeshSystem::GetInstance().Initialize();
 		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
 
-		// Heap에 Texture 관련 데이터 업로드 공간 초기화
-		// Frame 관련 데이터 데이터 업로드 공간 초기화
-		// PSO 설정 초기화
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 	}
@@ -102,10 +73,6 @@ private:
 		DX12_CommandSystem::GetInstance().SetViewportAndScissor(
 			DX12_SwapChainSystem::GetInstance().GetViewport(),
 			DX12_SwapChainSystem::GetInstance().GetScissorRect());
-
-		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
-		
-
 		D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DX12_SwapChainSystem::GetInstance().GetBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
 
@@ -121,15 +88,37 @@ private:
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
 	}
 
-	inline void DrawRenderItems(const eRenderLayer flag)
+	inline void DrawRenderItems(const ECS::RepoHandle handle, const eRenderLayer flag)
 	{
-		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(1);
+		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
+		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
+
+		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(handle);
 		DX12_CommandSystem::GetInstance().SetMesh(geo);
+		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 		for (const auto& [_, ri] : geo->DrawArgs)
 		{
-			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, ri.StartIndexLocation);
+			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);//ri.StartIndexLocation);
 		}
-		
+	}
+
+	inline void DrawSprites()
+	{
+		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(eRenderLayer::Sprite));
+		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("sprite"));
+
+		// mCommandList->SetGraphicsRootConstantBufferView(0, passCBAddress);
+		// mCommandList->SetGraphicsRootShaderResourceView(1, instanceBufferAddress);
+
+		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(DX12_MeshRepository::GetInstance().Load("Sprite"));
+		DX12_CommandSystem::GetInstance().SetMesh(geo);
+		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+		for (const auto& [_, ri] : geo->DrawArgs)
+		{
+			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
+		}
 	}
 
 	inline void EndRenderPass() {

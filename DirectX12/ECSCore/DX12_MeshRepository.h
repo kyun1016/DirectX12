@@ -10,7 +10,9 @@ class DX12_MeshRepository : public ECS::IRepository<DX12_MeshGeometry> {
     DEFAULT_SINGLETON(DX12_MeshRepository)
 
 public:
-	ECS::RepoHandle LoadMesh(const std::string& name, std::vector<MeshData>& meshes, bool useIndex32 = false, bool useSkinnedMesh = false) {
+	enum class eMeshType { STANDARD, SKINNED, SPRITE };
+
+	ECS::RepoHandle LoadMesh(const std::string& name, std::vector<MeshData>& meshes, eMeshType meshType = eMeshType::STANDARD, bool useIndex32 = false) {
 		std::lock_guard<std::mutex> lock(mtx);
 		auto it = mNameToHandle.find(name);
 		if (it != mNameToHandle.end()) {
@@ -24,6 +26,7 @@ public:
 			// Part 1. vertices & indices 병합
 			//=========================================================
 			std::vector<Vertex> vertices;
+			std::vector<SpriteVertex> spriteVertices;
 			std::vector<SkinnedVertex> skinnedVertices;
 			std::vector<std::uint16_t> indices16;
 			std::vector<std::uint32_t> indices32;
@@ -33,51 +36,57 @@ public:
 				indices16.insert(indices16.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
 				indices32.insert(indices32.end(), meshes[i].Indices32.begin(), meshes[i].Indices32.end());
 				vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
+				spriteVertices.insert(spriteVertices.end(), meshes[i].SpriteVertices.begin(), meshes[i].SpriteVertices.end());
 				skinnedVertices.insert(skinnedVertices.end(), meshes[i].SkinnedVertices.begin(), meshes[i].SkinnedVertices.end());
 			}
 
 			//=========================================================
-			// Part 2. GPU 할당 (16/32 bit)
+			// Part 2-1. Vertex GPU 할당
 			//=========================================================
-			const UINT vbByteSize = useSkinnedMesh
-				? (UINT)skinnedVertices.size() * sizeof(SkinnedVertex)
-				: (UINT)vertices.size() * sizeof(Vertex);
-			const UINT ibByteSize = useIndex32
-				? (UINT)indices32.size() * sizeof(std::uint32_t)
-				: (UINT)indices16.size() * sizeof(std::uint16_t);
-
-			geo->VertexByteStride = useSkinnedMesh ? sizeof(SkinnedVertex) : sizeof(Vertex);
-			geo->VertexBufferByteSize = vbByteSize;
-			geo->IndexFormat = useIndex32 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
-			geo->IndexBufferByteSize = ibByteSize;
-
-			ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-			ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-			if (useSkinnedMesh)
+			const void* vertexData = nullptr;
+			switch (meshType)
 			{
-				CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), skinnedVertices.data(), vbByteSize);
-				geo->VertexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
-					skinnedVertices.data(), vbByteSize, geo->VertexBufferUploader);
+			case eMeshType::STANDARD:
+				geo->VertexBufferByteSize = (UINT)vertices.size() * sizeof(Vertex);
+				geo->VertexByteStride = sizeof(Vertex);
+				vertexData = vertices.data();
+				break;
+			case eMeshType::SKINNED:
+				geo->VertexBufferByteSize = (UINT)skinnedVertices.size() * sizeof(SkinnedVertex);
+				geo->VertexByteStride = sizeof(SkinnedVertex);
+				vertexData = skinnedVertices.data();
+				break;
+			case eMeshType::SPRITE:
+				geo->VertexBufferByteSize = (UINT)spriteVertices.size() * sizeof(SpriteVertex);
+				geo->VertexByteStride = sizeof(SpriteVertex);
+				vertexData = spriteVertices.data();
+				break;
+			}
+			geo->VertexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
+			 vertexData, geo->VertexBufferByteSize, geo->VertexBufferUploader);
+			ThrowIfFailed(D3DCreateBlob(geo->VertexBufferByteSize, &geo->VertexBufferCPU));
+			CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertexData, geo->VertexBufferByteSize);
+
+			//=========================================================
+			// Part 2-2. Index GPU 할당 (16/32 bit)
+			//=========================================================
+			const void* indexData = nullptr;
+			if(useIndex32)
+			{
+				geo->IndexBufferByteSize = (UINT)indices32.size() * sizeof(std::uint32_t);
+				geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+				indexData = indices32.data();
 			}
 			else
 			{
-				CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-				geo->VertexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
-					vertices.data(), vbByteSize, geo->VertexBufferUploader);
+				geo->IndexBufferByteSize = (UINT)indices16.size() * sizeof(std::uint16_t);
+				geo->IndexFormat =  DXGI_FORMAT_R16_UINT;
+				indexData = indices16.data();
 			}
-
-			if (useIndex32)
-			{
-				CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices32.data(), ibByteSize);
-				geo->IndexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
-					indices32.data(), ibByteSize, geo->IndexBufferUploader);
-			}
-			else
-			{
-				CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices16.data(), ibByteSize);
-				geo->IndexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
-					indices16.data(), ibByteSize, geo->IndexBufferUploader);
-			}
+			geo->IndexBufferGPU = CreateDefaultBuffer(DX12_DeviceSystem::GetInstance().GetDevice(), DX12_CommandSystem::GetInstance().GetCommandList(),
+			 indexData, geo->IndexBufferByteSize, geo->IndexBufferUploader);
+			ThrowIfFailed(D3DCreateBlob(geo->IndexBufferByteSize, &geo->IndexBufferCPU));
+			CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indexData, geo->IndexBufferByteSize);
 
 			//=========================================================
 			// Part 3. SubmeshGeometry 생성
@@ -85,10 +94,18 @@ public:
 			std::vector<DX12_MeshComponent> submeshes(meshes.size());
 			for (size_t i = 0; i < meshes.size(); ++i)
 			{
-				if (useSkinnedMesh)
-					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
-				else
+				switch (meshType)
+				{
+				case eMeshType::STANDARD:
 					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
+					break;
+				case eMeshType::SKINNED:
+					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
+					break;
+				case eMeshType::SPRITE:
+					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SpriteVertices);
+					break;
+				}
 				if (i == 0)
 				{
 					submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
@@ -99,11 +116,20 @@ public:
 				{
 					submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
 					submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
-					submeshes[i].BaseVertexLocation = useSkinnedMesh
-						? submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size()
-						: submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+					switch (meshType)
+					{
+					case eMeshType::STANDARD:
+						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+						break;
+					case eMeshType::SKINNED:
+						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size();
+						break;
+					case eMeshType::SPRITE:
+						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SpriteVertices.size();
+						break;
+					}
 				}
-				submeshes[i].InstanceCount = i;
+				submeshes[i].InstanceCount = 1;
 				geo->DrawArgs[i] = submeshes[i];
 			}
 		}

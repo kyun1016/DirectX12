@@ -6,6 +6,19 @@ class DX12_MeshGenerator
 public:
 	DX12_MeshGenerator() = delete;
 
+	static MeshData CreateSprite(float width = 1.0f, float height = 1.0f)
+	{
+		MeshData meshData;
+		SpriteVertex v;
+		v.Position = { 0.0f, 0.0f, 0.0f }; // Center position, will be transformed by instance world matrix
+		v.Size = { width, height };
+
+		meshData.SpriteVertices.push_back(v);
+		meshData.Indices32.push_back(0); // One index for the one point
+
+		return meshData;
+	}
+
 	static MeshData CreateBox(float width = 1.0f, float height = 1.0f, float depth = 1.0f, std::uint32_t numSubdivisions = 3)
 	{
 		float max_w = 0.5f * width;
@@ -231,6 +244,31 @@ public:
 	}
 
 	static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<SkinnedVertex>& vertex)
+	{
+		float3 vMin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+		float3 vMax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+
+		for (size_t i = 0; i < vertex.size(); ++i)
+		{
+			auto& p = vertex[i].Position;
+			vMin.x = vMin.x < p.x ? vMin.x : p.x;
+			vMin.y = vMin.y < p.y ? vMin.y : p.y;
+			vMin.z = vMin.z < p.z ? vMin.z : p.z;
+			vMax.x = vMax.x > p.x ? vMax.x : p.x;
+			vMax.y = vMax.y > p.y ? vMax.y : p.y;
+			vMax.z = vMax.z > p.z ? vMax.z : p.z;
+		}
+		outBoundingBox.Center = (vMin + vMax) * 0.5f;
+		outBoundingBox.Extents = (vMax - vMin) * 0.5f;
+		outBoundingSphere.Center = outBoundingBox.Center;
+
+		outBoundingSphere.Radius = 0.0f;
+		for (size_t i = 0; i < vertex.size(); ++i)
+			outBoundingSphere.Radius = std::max(outBoundingSphere.Radius, (outBoundingSphere.Center - vertex[i].Position).Length());
+		outBoundingSphere.Radius += 1e-2f;
+	}
+
+		static void FindBounding(DirectX::BoundingBox& outBoundingBox, DirectX::BoundingSphere& outBoundingSphere, const std::vector<SpriteVertex>& vertex)
 	{
 		float3 vMin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 		float3 vMax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());

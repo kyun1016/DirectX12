@@ -7,6 +7,7 @@ public:
 	void Initialize(ID3D12Device* device) {
 		mDevice = device;
 		BuildExampleRootSignature();	// Example
+		BuildSpriteRootSignature();
 		BuildTestRootSignature();
 	}
 
@@ -50,6 +51,16 @@ private:
 		tmp.InitAsShaderResourceView(1, 0); param.push_back(tmp);	// SRV, MaterialData t1 (Space0)
 
 		RegisterGraphicsSignature("main", param);
+	}
+
+	void BuildSpriteRootSignature()
+	{
+		std::vector<CD3DX12_ROOT_PARAMETER> param;
+		CD3DX12_ROOT_PARAMETER tmp;
+		tmp.InitAsConstantBufferView(0); param.push_back(tmp);		// CBV, cbPass b0
+		tmp.InitAsShaderResourceView(0, 0); param.push_back(tmp);	// SRV, InstanceData t0 (Space0)
+
+		RegisterGraphicsSignature("sprite", param);
 	}
 
 	void BuildTestRootSignature()

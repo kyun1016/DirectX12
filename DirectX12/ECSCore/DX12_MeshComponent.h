@@ -7,6 +7,7 @@ struct MeshData
 {
 	std::vector<Vertex> Vertices;
 	std::vector<SkinnedVertex> SkinnedVertices;
+	std::vector<SpriteVertex> SpriteVertices;
 	std::vector<std::uint32_t> Indices32;
 
 	std::vector<std::uint16_t>& GetIndices16()
@@ -27,6 +28,7 @@ private:
 
 struct DX12_MeshComponent
 {
+	ECS::RepoHandle GpuGeoHandle = 0;
 	UINT IndexCount = 0;
 	UINT InstanceCount = 0;
 	UINT StartIndexLocation = 0;
