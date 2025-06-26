@@ -88,7 +88,7 @@ inline std::wstring StringToWString(const std::string& str)
 //	}
 //}
 
-UINT CalcConstantBufferByteSize(UINT byteSize)
+inline UINT CalcConstantBufferByteSize(UINT byteSize)
 {
 	// Constant buffers must be a multiple of the minimum hardware
 	// allocation size (usually 256 bytes).  So round up to nearest

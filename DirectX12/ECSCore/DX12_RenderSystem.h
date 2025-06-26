@@ -17,6 +17,10 @@
 #include "TimeSystem.h"
 #include "ImGuiSystem.h"
 
+struct ObjectConstants {
+	float4x4 WorldViewProj;
+};
+
 class DX12_RenderSystem : public ECS::ISystem {
 public:
 	DX12_RenderSystem()
@@ -45,6 +49,8 @@ private:
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 
+	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
+
 	inline void Initialize() {
 		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
@@ -60,6 +66,8 @@ private:
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
+
+		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 1, true);
 		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
@@ -90,16 +98,37 @@ private:
 
 	inline void DrawRenderItems(const ECS::RepoHandle handle, const eRenderLayer flag)
 	{
+		// 테스트를 위한 WVP 행렬 업데이트
+		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+		float4x4 world;
+		float4x4 view = DirectX::SimpleMath::Matrix::CreateLookAt(
+			float3(0.0f, 50.0f, -150.0f), // 카메라 위치
+			float3(0.0f, 0.0f, 0.0f),     // 바라보는 지점
+			float3(0.0f, 1.0f, 0.0f)      // Up 벡터
+		);
+		float4x4 proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+			DirectX::XM_PIDIV4,
+			static_cast<float>(wc.width) / static_cast<float>(wc.height),
+			1.0f,
+			1000.0f
+		);
+		float4x4 wvp = world * view * proj;
+
+		ObjectConstants objConstants;
+		objConstants.WorldViewProj = wvp.Transpose(); // HLSL은 Column-Major 행렬을 기대합니다.
+		mObjectCB->CopyData(0, objConstants);
+
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
+		mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress());
 		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
 
 		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(handle);
 		DX12_CommandSystem::GetInstance().SetMesh(geo);
 		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		for (const auto& [_, ri] : geo->DrawArgs)
+		for (const auto& [key, ri] : geo->DrawArgs)
 		{
-			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);//ri.StartIndexLocation);
+			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
 		}
 	}
 
