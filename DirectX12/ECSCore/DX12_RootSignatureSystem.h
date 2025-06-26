@@ -65,11 +65,10 @@ private:
 
 	void BuildTestRootSignature()
 	{
-		/*std::vector<CD3DX12_ROOT_PARAMETER> param;
-		RegisterGraphicsSignature("test", param);*/
-
-		CD3DX12_ROOT_SIGNATURE_DESC desc(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-		CreateSignature(desc, mGraphicsSignatures["test"]);
+		std::vector<CD3DX12_ROOT_PARAMETER> param(1);
+		// Per-object constants (WVP matrix)
+		param[0].InitAsConstantBufferView(0); // b0
+		RegisterGraphicsSignature("test", param);
 	}
 	inline void CreateSignature(const CD3DX12_ROOT_SIGNATURE_DESC& desc, Microsoft::WRL::ComPtr<ID3D12RootSignature>& outSig) {
 		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;

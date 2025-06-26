@@ -16,7 +16,7 @@
 #include "WindowSystem.h"
 #include "TimeSystem.h"
 #include "ImGuiSystem.h"
-
+#include "DX12_InstanceSystem.h" // Required for InstanceData access
 struct ObjectConstants {
 	float4x4 WorldViewProj;
 };
@@ -66,6 +66,7 @@ private:
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
+		DX12_InstanceSystem::GetInstance().Initialize();
 
 		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 1, true);
 		
@@ -137,8 +138,8 @@ private:
 		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(eRenderLayer::Sprite));
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("sprite"));
 
-		// mCommandList->SetGraphicsRootConstantBufferView(0, passCBAddress);
-		// mCommandList->SetGraphicsRootShaderResourceView(1, instanceBufferAddress);
+		mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress()); // cbPass (gViewProj)
+		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress()); // gInstanceData
 
 		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(DX12_MeshRepository::GetInstance().Load("Sprite"));
 		DX12_CommandSystem::GetInstance().SetMesh(geo);

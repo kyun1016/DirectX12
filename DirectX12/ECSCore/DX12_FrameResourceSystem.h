@@ -6,6 +6,7 @@ struct DX12_FrameResource {
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
 	UINT64 fenceValue = 0;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	std::unique_ptr<UploadBuffer<InstanceData>> InstanceBuffer;
 };
 
 struct DX12_FrameResourceSystem
@@ -16,11 +17,12 @@ public:
 		return instance;
 	}
 
-	void Initialize(ID3D12Device* device)
+	void Initialize(ID3D12Device* device, const std::uint32_t instanceCount = 1000)
 	{
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 		{
 			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mFrameResources[i].commandAllocator.GetAddressOf())));
+			mFrameResources[i].InstanceBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, instanceCount, false);
 		}
 	}
 	void BeginFrame()
@@ -40,6 +42,10 @@ public:
 		return mFrameResources[frameIndex];
 	}
 
+	D3D12_GPU_VIRTUAL_ADDRESS GetInstanceDataGPUVirtualAddress() const {
+		return mFrameResources[mCurrFrameResourceIndex].InstanceBuffer->Resource()->GetGPUVirtualAddress();
+	}
+
 private:
 	ID3D12CommandQueue* mCommandQueue = nullptr;
 	std::vector<DX12_FrameResource> mFrameResources;
@@ -54,7 +60,7 @@ private:
 			mFrameResources[i].fenceValue = 0;
 			mFrameResources[i].rtvHandle.ptr = 0;
 		}
-		LOG_INFO("Frame Resource System Initialized");
+		LOG_INFO("DX12 Frame Resource System Initialized");
 	};
 	~DX12_FrameResourceSystem() = default;
 	DX12_FrameResourceSystem(const DX12_FrameResourceSystem&) = delete;

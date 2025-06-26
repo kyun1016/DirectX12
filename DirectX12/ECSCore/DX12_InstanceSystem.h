@@ -4,30 +4,50 @@
 
 class DX12_InstanceSystem : public ECS::ISystem {
 public:
-    void Update() override {
-        auto& coordinator = ECS::Coordinator::GetInstance();
-        for (ECS::Entity entity : mEntities) {
-            auto& transform = coordinator.GetComponent<DX12_TransformComponent>(entity);
-            if (!transform.Dirty) continue;
-			auto& instance = coordinator.GetComponent<InstanceData>(entity);
-            
-            DirectX::XMMATRIX S = DirectX::XMMatrixScaling(transform.r_Scale.x, transform.r_Scale.y, transform.r_Scale.z);
-            DirectX::XMMATRIX R = DirectX::XMMatrixRotationRollPitchYaw(
-                DirectX::XMConvertToRadians(transform.r_RotationEuler.x),
-                DirectX::XMConvertToRadians(transform.r_RotationEuler.y),
-                DirectX::XMConvertToRadians(transform.r_RotationEuler.z));
-            DirectX::XMMATRIX Tm = DirectX::XMMatrixTranslation(transform.r_Position.x, transform.r_Position.y, transform.r_Position.z);
-
-            instance.World = S * R * Tm;
-            DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(instance.World);
-			instance.WorldInvTranspose = DirectX::XMMatrixInverse(&det, instance.World);
-            // instance.TexTransform;
-            LOG_VERBOSE("Instance World[0]: {}, {}, {}, {}", instance.World._11, instance.World._12, instance.World._13, instance.World._14);
-            LOG_VERBOSE("Instance World[1]: {}, {}, {}, {}", instance.World._21, instance.World._22, instance.World._23, instance.World._24);
-            LOG_VERBOSE("Instance World[2]: {}, {}, {}, {}", instance.World._31, instance.World._32, instance.World._33, instance.World._34);
-            LOG_VERBOSE("Instance World[3]: {}, {}, {}, {}", instance.World._41, instance.World._42, instance.World._43, instance.World._44);
-        }
+    inline static DX12_InstanceSystem& GetInstance() {
+        static DX12_InstanceSystem instance;
+        return instance;
     }
+    virtual ~DX12_InstanceSystem() = default; 
+
+public:
+    void Initialize() {
+		// Assuming a max number of instances for simplicity.
+		// In a real engine, this would be dynamic or based on scene data.
+		const UINT maxInstances = 1000;
+		mInstanceBuffer = std::make_unique<UploadBuffer<InstanceData>>(DX12_DeviceSystem::GetInstance().GetDevice(), maxInstances, false); // <- 해당 로직은 FrameSystem으로 이관
+	}
+
+    virtual void Update() override {
+        // 추후에 컬링 시 오브젝트 판단 시 해당 시스템 사용을 고려해보자.
+		// // Collect and update instance data
+		// std::vector<InstanceData> instancesToUpload;
+		// UINT instanceCount = 0;
+		// for (auto const& entity : mEntities) {
+		// 	auto& transform = ECS::Coordinator::GetInstance().GetComponent<DX12_TransformComponent>(entity);
+		// 	InstanceData data;
+			
+		// 	DirectX::SimpleMath::Matrix worldMatrix = DirectX::SimpleMath::Matrix::CreateTranslation(transform.r_Position);
+		// 	data.World = worldMatrix.Transpose();
+		// 	instancesToUpload.push_back(data);
+		// 	instanceCount++;
+		// }
+
+		// // Copy data to the upload buffer
+		// if (!instancesToUpload.empty()) {
+		// 	mInstanceBuffer->CopyData(0, instancesToUpload.data(), instancesToUpload.size());
+		// }
+	}
+
+    D3D12_GPU_VIRTUAL_ADDRESS GetInstanceDataGPUVirtualAddress() const {
+		return mInstanceBuffer->Resource()->GetGPUVirtualAddress();
+	}
 private:
-    std::unique_ptr<UploadBuffer<InstanceData>> InstanceBuffer = nullptr;
+    std::unique_ptr<UploadBuffer<InstanceData>> mInstanceBuffer;
+private:
+	DX12_InstanceSystem() = default; 
+	DX12_InstanceSystem(const DX12_InstanceSystem&) = delete;
+	DX12_InstanceSystem& operator=(const DX12_InstanceSystem&) = delete;
+	DX12_InstanceSystem(DX12_InstanceSystem&&) = delete;
+	DX12_InstanceSystem& operator=(DX12_InstanceSystem&&) = delete;
 };
