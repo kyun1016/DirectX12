@@ -67,6 +67,9 @@
     <Filter Include="Header Files\DX12_Core\Struct">
       <UniqueIdentifier>{9652965d-ba29-40ae-ade3-61d77cb7d5d5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Systems\Input">
+      <UniqueIdentifier>{685a9bf4-0e89-44f5-adfd-e17513fd6ea1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -145,9 +148,6 @@
     </ClInclude>
     <ClInclude Include="WindowSystem.h">
       <Filter>Header Files\Systems\Window</Filter>
-    </ClInclude>
-    <ClInclude Include="InputComponent.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LogCore.h">
       <Filter>Header Files\LogCore</Filter>
@@ -244,6 +244,12 @@
     </ClInclude>
     <ClInclude Include="DX12_MeshData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
+    </ClInclude>
+    <ClInclude Include="InputComponent.h">
+      <Filter>Header Files\Systems\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>Header Files\Systems\Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

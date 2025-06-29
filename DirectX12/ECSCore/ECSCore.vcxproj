@@ -181,6 +181,7 @@
     <ClInclude Include="ImGuiSystem.h" />
     <ClInclude Include="InputComponent.h" />
     <ClInclude Include="DX12_InstanceData.h" />
+    <ClInclude Include="InputSystem.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="LightSystem.h" />
     <ClInclude Include="LogCore.h" />

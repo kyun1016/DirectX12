@@ -2,10 +2,16 @@
 #include "ECSCoordinator.h"
 #include "WindowComponent.h"
 #include <WinUser.h>
-#include "InputComponent.h"
+#include "InputSystem.h"
+#include "ImGuiSystem.h" // ImGui WndProc 핸들러를 위해 추가
 
 inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    // ImGui가 입력을 처리하도록 먼저 전달
+    if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
+        return true;
+
     auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+    auto& inputSystem = ECS::InputSystem::GetInstance();
     LOG_VERBOSE("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
     switch (msg)
     {
@@ -68,18 +74,27 @@ inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     case WM_MENUCHAR:
         // Don't beep when we alt-enter.
         return MAKELRESULT(0, MNC_CLOSE);
+    // --- 키보드 입력 ---
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        inputSystem.OnKeyDown(wParam);
+        return 0;
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        inputSystem.OnKeyUp(wParam);
+        return 0;
+
+    // --- 마우스 입력 ---
+    case WM_MOUSEMOVE:      inputSystem.OnMouseMove(lParam); return 0;
+    case WM_LBUTTONDOWN:    inputSystem.OnMouseDown(0); return 0;
+    case WM_LBUTTONUP:      inputSystem.OnMouseUp(0); return 0;
+    case WM_RBUTTONDOWN:    inputSystem.OnMouseDown(1); return 0;
+    case WM_RBUTTONUP:      inputSystem.OnMouseUp(1); return 0;
+    case WM_MBUTTONDOWN:    inputSystem.OnMouseDown(2); return 0;
+    case WM_MBUTTONUP:      inputSystem.OnMouseUp(2); return 0;
+    case WM_XBUTTONDOWN:    inputSystem.OnMouseDown(HIWORD(wParam) == XBUTTON1 ? 3 : 4); return 0;
+    case WM_XBUTTONUP:      inputSystem.OnMouseUp(HIWORD(wParam) == XBUTTON1 ? 3 : 4); return 0;
     }
-            
-    //if (msg == WM_KEYDOWN) {
-    //    auto& input = ECS::Coordinator::GetInstance().GetSingletonComponent<InputComponent>();
-    //    input.keyDown[wParam] = true;
-    //    return 0;
-    //}
-    //else if (msg == WM_KEYUP) {
-    //    auto& input = ECS::Coordinator::GetInstance().GetSingletonComponent<InputComponent>();
-    //    input.keyUp[wParam] = true;
-    //    return 0;
-    //}
 
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
@@ -91,7 +106,6 @@ public:
     {
         auto& coordinator = ECS::Coordinator::GetInstance();
         coordinator.RegisterSingletonComponent<WindowComponent>();
-        coordinator.RegisterSingletonComponent<InputComponent>();
         auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
         RegisterWindowClass();
