@@ -29,6 +29,7 @@ public:
 	{
 		std::vector<MeshData> meshes;
 		meshes.push_back(DX12_MeshGenerator::CreateSprite(10.0f, 10.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSprite(20.0f, 20.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Sprite", meshes, DX12_MeshRepository::eMeshType::SPRITE, false);
 	}
 

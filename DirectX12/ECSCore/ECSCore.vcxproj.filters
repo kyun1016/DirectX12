@@ -260,6 +260,9 @@
     <ClInclude Include="PlayerControlSystem.h">
       <Filter>Header Files\Systems\Player</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_LightData.h">
+      <Filter>Header Files\DX12_Core\Struct</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">
