@@ -70,6 +70,9 @@
     <Filter Include="Header Files\Systems\Input">
       <UniqueIdentifier>{685a9bf4-0e89-44f5-adfd-e17513fd6ea1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Systems\Player">
+      <UniqueIdentifier>{d5e7b6a2-527c-4caa-907e-824fdfb53990}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -250,6 +253,12 @@
     </ClInclude>
     <ClInclude Include="InputSystem.h">
       <Filter>Header Files\Systems\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerControlComponent.h">
+      <Filter>Header Files\Systems\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerControlSystem.h">
+      <Filter>Header Files\Systems\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@ class DX12_MeshSystem {
 	DEFAULT_SINGLETON(DX12_MeshSystem)
 public:
 	void Initialize() {
-		BuildSquereMeshes();
+		// BuildSquereMeshes();
 		BuildSpriteMesh();
 	}
 

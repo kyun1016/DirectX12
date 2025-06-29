@@ -194,6 +194,8 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="DX12_RenderSystem.h" />
+    <ClInclude Include="PlayerControlComponent.h" />
+    <ClInclude Include="PlayerControlSystem.h" />
     <ClInclude Include="TimeComponent.h" />
     <ClInclude Include="TimeSystem.h" />
     <ClInclude Include="WindowComponent.h" />

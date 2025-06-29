@@ -89,9 +89,9 @@ private:
 		// float r = 0.5f;
 		// float g = 0.5f;
 		// float b = 0.5f;
-		float r = std::fmod(time.totalTime * time.fixedDeltaTime, 1.0f); // Example: Use time to create a dynamic color
-		float g = std::fmod(time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
-		float b = std::fmod(time.totalTime + time.totalTime + time.totalTime, 1.0f); // Example: Use time to create a dynamic color
+		float r = std::fmod(time.totalTime * 0.1, 1.0f); // Example: Use time to create a dynamic color
+		float g = std::fmod(time.totalTime * 0.2, 1.0f); // Example: Use time to create a dynamic color
+		float b = std::fmod(time.totalTime * 0.05, 1.0f); // Example: Use time to create a dynamic color
 		float4 FogColor = { r, g, b, 1.0f };
 		mCommandList->ClearRenderTargetView(DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), (float*)&FogColor, 0, nullptr);
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
