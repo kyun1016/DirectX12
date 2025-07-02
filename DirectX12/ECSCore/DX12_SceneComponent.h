@@ -4,106 +4,152 @@
 #include "DX12_MeshComponent.h"
 #include "DX12_PSOSystem.h"
 
-#ifndef SKINNEDDATA_H
-#define SKINNEDDATA_H
-struct Keyframe
-{
-	Keyframe();
-	~Keyframe();
+// #ifndef SKINNEDDATA_H
+// #define SKINNEDDATA_H
+// struct Keyframe
+// {
+// 	Keyframe();
+// 	~Keyframe();
 
-	float TimePos;
-	DirectX::XMFLOAT3 Translation;
-	DirectX::XMFLOAT3 Scale;
-	DirectX::XMFLOAT4 RotationQuat;
+// 	float TimePos;
+// 	DirectX::XMFLOAT3 Translation;
+// 	DirectX::XMFLOAT3 Scale;
+// 	DirectX::XMFLOAT4 RotationQuat;
+// };
+
+// struct BoneAnimation
+// {
+// 	float GetStartTime()const;
+// 	float GetEndTime()const;
+
+// 	void Interpolate(float t, DirectX::XMFLOAT4X4& M)const;
+
+// 	std::vector<Keyframe> Keyframes;
+// };
+
+// struct AnimationClip
+// {
+// 	float GetClipStartTime()const;
+// 	float GetClipEndTime()const;
+
+// 	void Interpolate(float t, std::vector<DirectX::XMFLOAT4X4>& boneTransforms)const;
+
+// 	std::vector<BoneAnimation> BoneAnimations;
+// };
+
+// class SkinnedData
+// {
+// public:
+
+// 	UINT BoneCount()const;
+
+// 	float GetClipStartTime(const std::string& clipName)const;
+// 	float GetClipEndTime(const std::string& clipName)const;
+
+// 	void Set(
+// 		std::vector<int>& boneHierarchy,
+// 		std::vector<DirectX::XMFLOAT4X4>& boneOffsets,
+// 		std::unordered_map<std::string, AnimationClip>& animations);
+
+// 	void GetFinalTransforms(const std::string& clipName, float timePos,
+// 		std::vector<DirectX::XMFLOAT4X4>& finalTransforms)const;
+
+// private:
+// 	std::vector<int> mBoneHierarchy;
+// 	std::vector<DirectX::XMFLOAT4X4> mBoneOffsets;
+// 	std::unordered_map<std::string, AnimationClip> mAnimations;
+// };
+
+// #endif // SKINNEDDATA_H
+
+
+// struct SkinnedModelInstance
+// {
+// 	SkinnedData SkinnedInfo;
+// 	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
+// 	std::string ClipName;
+// 	float TimePos = 0.0f;
+
+// 	// Called every frame and increments the time position, interpolates the 
+// 	// animations for each bone based on the current animation clip, and 
+// 	// generates the final transforms which are ultimately set to the effect
+// 	// for processing in the vertex shader.
+// 	void UpdateSkinnedAnimation(float dt)
+// 	{
+// 		TimePos += dt;
+
+// 		// Loop animation
+// 		if (TimePos > SkinnedInfo.GetClipEndTime(ClipName))
+// 			TimePos = 0.0f;
+
+// 		// Compute the final transforms for this time position.
+// 		SkinnedInfo.GetFinalTransforms(ClipName, TimePos, FinalTransforms);
+// 	}
+// };
+
+
+
+// enum class eRenderLayer : std::uint32_t
+// {
+// 	None = 0,
+// 	Opaque = 1 << 0,
+// 	Sprite = 1 << 1,
+// 	SkinnedOpaque = 1 << 2,
+// 	Mirror = 1 << 3,
+// 	Reflected = 1 << 4,
+// 	AlphaTested = 1 << 5,
+// 	Transparent = 1 << 6,
+// 	Subdivision = 1 << 7,
+// 	Normal = 1 << 8,
+// 	SkinnedNormal = 1 << 9,
+// 	TreeSprites = 1 << 10,
+// 	Tessellation = 1 << 11,
+// 	BoundingBox = 1 << 12,
+// 	BoundingSphere = 1 << 13,
+// 	CubeMap = 1 << 14,
+// 	DebugShadowMap = 1 << 15,
+// 	OpaqueWireframe = 1 << 16,
+// 	MirrorWireframe = 1 << 17,
+// 	ReflectedWireframe = 1 << 18,
+// 	AlphaTestedWireframe = 1 << 19,
+// 	TransparentWireframe = 1 << 20,
+// 	SubdivisionWireframe = 1 << 21,
+// 	NormalWireframe = 1 << 22,
+// 	TreeSpritesWireframe = 1 << 23,
+// 	TessellationWireframe = 1 << 24,
+// 	ShadowMap = 1 << 25,
+// 	SkinnedShadowMap = 1 << 26,
+// 	AddCS = 1 << 27,
+// 	BlurCS = 1 << 28,
+// 	WaveCS = 1 << 29,
+// 	ShaderToy = 1 << 30
+// };
+// ENUM_OPERATORS_32(eRenderLayer)
+
+enum class eConfigInstanceComponent : std::uint32_t
+{
+	None = 0,
+	UseCulling = 1 << 0,
+	ShowBoundingBox = 1 << 1,
+	ShowBoundingSphere = 1 << 2,
+	Pickable = 1 << 2,
+	UseQuat = 1 << 3
 };
+ENUM_OPERATORS_32(eConfigInstanceComponent)
 
-struct BoneAnimation
+struct InstanceComponent
 {
-	float GetStartTime()const;
-	float GetEndTime()const;
-
-	void Interpolate(float t, DirectX::XMFLOAT4X4& M)const;
-
-	std::vector<Keyframe> Keyframes;
-};
-
-struct AnimationClip
-{
-	float GetClipStartTime()const;
-	float GetClipEndTime()const;
-
-	void Interpolate(float t, std::vector<DirectX::XMFLOAT4X4>& boneTransforms)const;
-
-	std::vector<BoneAnimation> BoneAnimations;
-};
-
-class SkinnedData
-{
-public:
-
-	UINT BoneCount()const;
-
-	float GetClipStartTime(const std::string& clipName)const;
-	float GetClipEndTime(const std::string& clipName)const;
-
-	void Set(
-		std::vector<int>& boneHierarchy,
-		std::vector<DirectX::XMFLOAT4X4>& boneOffsets,
-		std::unordered_map<std::string, AnimationClip>& animations);
-
-	void GetFinalTransforms(const std::string& clipName, float timePos,
-		std::vector<DirectX::XMFLOAT4X4>& finalTransforms)const;
-
-private:
-	std::vector<int> mBoneHierarchy;
-	std::vector<DirectX::XMFLOAT4X4> mBoneOffsets;
-	std::unordered_map<std::string, AnimationClip> mAnimations;
-};
-
-#endif // SKINNEDDATA_H
-
-
-struct SkinnedModelInstance
-{
-	SkinnedData SkinnedInfo;
-	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
-	std::string ClipName;
-	float TimePos = 0.0f;
-
-	// Called every frame and increments the time position, interpolates the 
-	// animations for each bone based on the current animation clip, and 
-	// generates the final transforms which are ultimately set to the effect
-	// for processing in the vertex shader.
-	void UpdateSkinnedAnimation(float dt)
-	{
-		TimePos += dt;
-
-		// Loop animation
-		if (TimePos > SkinnedInfo.GetClipEndTime(ClipName))
-			TimePos = 0.0f;
-
-		// Compute the final transforms for this time position.
-		SkinnedInfo.GetFinalTransforms(ClipName, TimePos, FinalTransforms);
-	}
-};
-
-struct SceneInstance
-{
-	SceneInstance() = delete;
-	SceneInstance(float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+	InstanceComponent() = delete;
+	InstanceComponent(float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
 		: Translation(translation)
 		, Scale(scale)
 		, RotationQuat(rot)
 		, TexScale(texScale)
 		, BoundingCount(boundingCount)
-		, FrustumCullingEnabled(cull)
-		, ShowBoundingBox(false)
-		, ShowBoundingSphere(false)
-		, IsPickable(true)
 	{
 		Update();
 	}
-	SceneInstance(DirectX::BoundingBox* baseBoundingBox, DirectX::BoundingSphere* baseBoundingSphere, float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+	InstanceComponent(DirectX::BoundingBox* baseBoundingBox, DirectX::BoundingSphere* baseBoundingSphere, float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
 		: BaseBoundingBox(baseBoundingBox)
 		, BaseBoundingSphere(baseBoundingSphere)
 		, Translation(translation)
@@ -111,30 +157,26 @@ struct SceneInstance
 		, TexScale(texScale)
 		, RotationQuat(rot)
 		, BoundingCount(boundingCount)
-		, FrustumCullingEnabled(cull)
-		, ShowBoundingBox(false)
-		, ShowBoundingSphere(false)
-		, IsPickable(true)
 	{
 		InstanceData.MaterialIndex = matIdx;
 		Update();
 	}
-	void UpdateTranslation(DirectX::SimpleMath::Vector3 translation)
+	void UpdateTranslation(float3 translation)
 	{
 		Translation = translation;
 		Update();
 	}
-	void UpdateScale(DirectX::SimpleMath::Vector3 scale)
+	void UpdateScale(float3 scale)
 	{
 		Scale = scale;
 		Update();
 	}
-	void UpdateRotate(DirectX::SimpleMath::Vector3 rotate)
+	void UpdateRotate(float3 rotate)
 	{
 		Rotate = rotate;
 		Update();
 	}
-	void UpdateTexScale(DirectX::SimpleMath::Vector3 scale)
+	void UpdateTexScale(float3 scale)
 	{
 		TexScale = scale;
 		Update();
@@ -147,18 +189,9 @@ struct SceneInstance
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 
-	float3 Translation;
-	float3 Scale;
-	float3 Rotate;
+	DX12_TransformComponent Transform;
 	float3 TexScale;
-	DirectX::SimpleMath::Quaternion RotationQuat;
-	
-	UINT BoundingCount;	// 추후 BoundingBox, BoundingSphere 표현을 위한 구조에서 연동하여 활용
-	bool FrustumCullingEnabled;
-	bool ShowBoundingBox;
-	bool ShowBoundingSphere;
-	bool IsPickable;
-	bool useQuat;
+	eConfigInstanceComponent Config = eConfigInstanceComponent::UseCulling;
 
 private:
 	void Update()
@@ -217,13 +250,13 @@ struct RenderItem
 	{
 	}
 
-	void Push(DirectX::SimpleMath::Vector3 translation, DirectX::SimpleMath::Vector3 scale,
-		DirectX::SimpleMath::Quaternion rot, DirectX::SimpleMath::Vector3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+	void Push(float3 translation, float3 scale,
+		DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 	{
-		Datas.push_back(SceneInstance(&Component.BoundingBox, &Component.BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
+		Datas.push_back(InstanceComponent(&Component.BoundingBox, &Component.BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 	}
 
-	void Push(SceneInstance data)
+	void Push(InstanceComponent data)
 	{
 		Datas.push_back(data);
 	}
@@ -231,19 +264,17 @@ struct RenderItem
 	int NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	DX12_MeshGeometry* Geo = nullptr;
 	DX12_MeshComponent Component;
-	std::vector<SceneInstance> Datas;
+	std::vector<InstanceComponent> Datas;
 	bool FrustumCullingEnabled = false;
 
-	eRenderLayer RenderLayer
-		= eRenderLayer::Opaque
-		| eRenderLayer::Reflected
-		| eRenderLayer::Normal
-		| eRenderLayer::OpaqueWireframe
-		| eRenderLayer::ReflectedWireframe
-		| eRenderLayer::NormalWireframe;
-
-	// TODO: 
-	// Skinned Mesh
-	UINT SkinnedCBIndex = -1;
-	SkinnedModelInstance* SkinnedModelInst = nullptr;
+	UINT StartIndexLocation = 0;
+	UINT IndexCount = 0;
+	int BaseVertexLocation = 0;
+	UINT StartInstanceLocation = 0;
+	UINT InstanceCount = 0;
+	
+	// // TODO: 
+	// // Skinned Mesh
+	// UINT SkinnedCBIndex = -1;
+	// SkinnedModelInstance* SkinnedModelInst = nullptr;
 };

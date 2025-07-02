@@ -39,6 +39,21 @@ using int4 = DirectX::XMINT4;
 
 static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;
 
+//static const float4x4 Identity(
+//	1.0f, 0.0f, 0.0f, 0.0f,
+//	0.0f, 1.0f, 0.0f, 0.0f,
+//	0.0f, 0.0f, 1.0f, 0.0f,
+//	0.0f, 0.0f, 0.0f, 1.0f);
+////static float4x4 Identity()
+////{
+////	static float4x4 I(
+////		1.0f, 0.0f, 0.0f, 0.0f,
+////		0.0f, 1.0f, 0.0f, 0.0f,
+////		0.0f, 0.0f, 1.0f, 0.0f,
+////		0.0f, 0.0f, 0.0f, 1.0f);
+////	return I;
+////}
+
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif

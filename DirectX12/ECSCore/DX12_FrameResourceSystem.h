@@ -74,8 +74,8 @@ public:
 			// InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
 			// InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 
-			InstanceData instanceData;
-			instanceData.World = float4x4::Identity;
+			// InstanceData instanceData;
+			// instanceData.World = float4x4::Identity;
 		}
 		
 		
@@ -90,6 +90,9 @@ public:
 	// 내부에 Frame value 관리 자체를 제거함 (SwapChainSystem에서 통합 관리)
 	inline DX12_FrameResource& GetFrameResource(std::uint64_t frameIndex) {
 		return mFrameResources[frameIndex];
+	}
+	inline DX12_FrameResource& GetCurrentFrameResource() {
+		return mFrameResources[mCurrFrameResourceIndex];
 	}
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetInstanceDataGPUVirtualAddress() const {
