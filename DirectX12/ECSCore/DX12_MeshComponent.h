@@ -28,7 +28,6 @@ private:
 
 struct DX12_MeshComponent
 {
-	ECS::RepoHandle GpuGeoHandle = 0;
 	UINT IndexCount = 0;
 	UINT InstanceCount = 0;
 	UINT StartIndexLocation = 0;
@@ -36,6 +35,12 @@ struct DX12_MeshComponent
 
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
+};
+
+struct DX12_MeshHandle
+{
+	ECS::RepoHandle GeometryHandle = 0;
+	size_t MeshHandle = 0;
 };
 
 struct DX12_MeshGeometry
@@ -49,16 +54,12 @@ struct DX12_MeshGeometry
 	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
-	// Data about the buffers.
 	UINT VertexByteStride = 0;
 	UINT VertexBufferByteSize = 0;
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
-	// Use this container to define the Submesh geometries so we can draw
-	// the Submeshes individually.
-	std::unordered_map<size_t, DX12_MeshComponent> DrawArgs;
+	std::vector<DX12_MeshComponent> DrawArgs;
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 	{

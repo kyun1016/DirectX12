@@ -1,7 +1,7 @@
 #pragma once
 #include "DX12_Config.h"
 #include "DX12_InstanceData.h"
-#include "DX12_MeshComponent.h"
+#include "DX12_MeshSystem.h"
 #include "DX12_PSOSystem.h"
 
 // #ifndef SKINNEDDATA_H
@@ -140,7 +140,7 @@ ENUM_OPERATORS_32(eConfigInstanceComponent)
 struct InstanceComponent
 {
 	InstanceComponent() = delete;
-	InstanceComponent(const float3& translation, const float3& scale, const DirectX::SimpleMath::Quaternion& rot, const float3& texScale)
+	InstanceComponent(const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f })
 		: TexScale(texScale)
 	{
 		Transform.r_Position = translation;
@@ -148,8 +148,8 @@ struct InstanceComponent
 		Transform.r_RotationQuat = rot;
 		UpdateTransform();
 	}
-	InstanceComponent(DX12_MeshComponent* mesh, float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
-		: Mesh(mesh)
+	InstanceComponent(const DX12_MeshHandle& meshHandle, const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = {0.0f, 0.0f, 0.0f, 1.0f}, const float3& texScale = {1.0f, 1.0f, 1.0f}, UINT matIdx = 0)
+		: MeshHandle(meshHandle)
 		, TexScale(texScale)
 	{
 		Transform.r_Position = translation;
@@ -158,15 +158,15 @@ struct InstanceComponent
 		InstanceData.MaterialIndex = matIdx;
 		UpdateTransform();
 	}
-	void UpdateTexScale(float3 scale)
+
+	void UpdateTexScale(const float3& scale)
 	{
 		TexScale = scale;
 		UpdateTransform();
 	}
 
 	InstanceData InstanceData; // GPU 전송 전용 데이터
-	DX12_MeshComponent* Mesh = nullptr;
-	DX12_MeshGeometry* Geo = nullptr;
+	DX12_MeshHandle MeshHandle;
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 	DX12_TransformComponent Transform;
@@ -179,22 +179,31 @@ private:
 	{
 		if(!Transform.Dirty)
 			return;
-		if (Mesh)
+		if (MeshHandle.GeometryHandle != 0)
 		{
-			BoundingBox.Center.x = Mesh->BoundingBox.Center.x * Transform.r_Scale.x + Transform.r_Position.x;
-			BoundingBox.Center.y = Mesh->BoundingBox.Center.y * Transform.r_Scale.y + Transform.r_Position.y;
-			BoundingBox.Center.z = Mesh->BoundingBox.Center.z * Transform.r_Scale.z + Transform.r_Position.z;
+			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle).BoundingBox;
+			BoundingBox.Center.x *= Transform.r_Scale.x;
+			BoundingBox.Center.y *= Transform.r_Scale.y;
+			BoundingBox.Center.z *= Transform.r_Scale.z;
+			BoundingBox.Center.x += Transform.r_Position.x;
+			BoundingBox.Center.y += Transform.r_Position.y;
+			BoundingBox.Center.z += Transform.r_Position.z;
 
-			BoundingBox.Extents.x = Mesh->BoundingBox.Extents.x * Transform.r_Scale.x;
-			BoundingBox.Extents.y = Mesh->BoundingBox.Extents.y * Transform.r_Scale.y;
-			BoundingBox.Extents.z = Mesh->BoundingBox.Extents.z * Transform.r_Scale.z;
+			BoundingBox.Extents.x *= Transform.r_Scale.x;
+			BoundingBox.Extents.y *= Transform.r_Scale.y;
+			BoundingBox.Extents.z *= Transform.r_Scale.z;
 		}
-		if (Mesh)
+		if (MeshHandle.GeometryHandle != 0)
 		{
-			BoundingSphere.Center.x = Mesh->BoundingSphere.Center.x * Transform.r_Scale.x + Transform.r_Position.x;
-			BoundingSphere.Center.y = Mesh->BoundingSphere.Center.y * Transform.r_Scale.y + Transform.r_Position.y;
-			BoundingSphere.Center.z = Mesh->BoundingSphere.Center.z * Transform.r_Scale.z + Transform.r_Position.z;
-			BoundingSphere.Radius = Mesh->BoundingSphere.Radius * Transform.r_Scale.Length();
+			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle).BoundingSphere;
+			BoundingSphere.Center.x *= Transform.r_Scale.x;
+			BoundingSphere.Center.y *= Transform.r_Scale.y;
+			BoundingSphere.Center.z *= Transform.r_Scale.z;
+			BoundingSphere.Center.x += Transform.r_Position.x;
+			BoundingSphere.Center.y += Transform.r_Position.y;
+			BoundingSphere.Center.z += Transform.r_Position.z;
+
+			BoundingSphere.Radius *= Transform.r_Scale.Length();
 		}
 
 		float rx = DirectX::XMConvertToRadians(Transform.r_RotationEuler.x);
@@ -226,17 +235,14 @@ struct RenderItem
 {
 	RenderItem() = default;
 	RenderItem(const RenderItem& rhs) = delete;
-	RenderItem(DX12_MeshGeometry* geo, const DX12_MeshComponent* component, bool culling = true)
-		: Geo(geo)
-		, Component(component)
-		, FrustumCullingEnabled(culling)
+	RenderItem(bool culling = true)
+		: FrustumCullingEnabled(culling)
 	{
 	}
 
-	void Push(float3 translation, float3 scale,
-		DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
+	void Push(const DX12_MeshHandle& meshHandle, const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f }, UINT matIdx = 0)
 	{
-		Datas.push_back(InstanceComponent(&Component.MeshComponent.BoundingBox, &Component.BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
+		Datas.push_back(InstanceComponent(meshHandle, translation, scale, rot, texScale, matIdx));
 	}
 
 	void Push(InstanceComponent data)
@@ -245,16 +251,8 @@ struct RenderItem
 	}
 
 	int NumFramesDirty = APP_NUM_BACK_BUFFERS;
-	DX12_MeshGeometry* Geo = nullptr;
-	DX12_MeshComponent MeshComponent;
 	std::vector<InstanceComponent> Datas;
 	bool FrustumCullingEnabled = false;
-
-	UINT StartIndexLocation = 0;
-	UINT IndexCount = 0;
-	int BaseVertexLocation = 0;
-	UINT StartInstanceLocation = 0;
-	UINT InstanceCount = 0;
 	
 	// // TODO: 
 	// // Skinned Mesh

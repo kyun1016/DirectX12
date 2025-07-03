@@ -47,4 +47,11 @@ public:
 	inline DX12_MeshGeometry* GetGeometry(ECS::RepoHandle handle) const {
 		return DX12_MeshRepository::GetInstance().Get(handle);
 	}
+	inline DX12_MeshGeometry* GetGeometry(DX12_MeshHandle handle) const {
+		return DX12_MeshRepository::GetInstance().Get(handle.GeometryHandle);
+	}
+	inline DX12_MeshComponent& GetMeshComponent(DX12_MeshHandle handle) const {
+		return DX12_MeshRepository::GetInstance().Get(handle.GeometryHandle)->DrawArgs[handle.MeshHandle];
+	}
+	
 };

@@ -91,46 +91,45 @@ public:
 			//=========================================================
 			// Part 3. SubmeshGeometry 생성
 			//=========================================================
-			std::vector<DX12_MeshComponent> submeshes(meshes.size());
+			geo->DrawArgs.resize(meshes.size());
 			for (size_t i = 0; i < meshes.size(); ++i)
 			{
 				switch (meshType)
 				{
 				case eMeshType::STANDARD:
-					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].Vertices);
+					DX12_MeshGenerator::FindBounding(geo->DrawArgs[i].BoundingBox, geo->DrawArgs[i].BoundingSphere, meshes[i].Vertices);
 					break;
 				case eMeshType::SKINNED:
-					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SkinnedVertices);
+					DX12_MeshGenerator::FindBounding(geo->DrawArgs[i].BoundingBox, geo->DrawArgs[i].BoundingSphere, meshes[i].SkinnedVertices);
 					break;
 				case eMeshType::SPRITE:
-					DX12_MeshGenerator::FindBounding(submeshes[i].BoundingBox, submeshes[i].BoundingSphere, meshes[i].SpriteVertices);
+					DX12_MeshGenerator::FindBounding(geo->DrawArgs[i].BoundingBox, geo->DrawArgs[i].BoundingSphere, meshes[i].SpriteVertices);
 					break;
 				}
 				if (i == 0)
 				{
-					submeshes[0].IndexCount = (UINT)meshes[0].Indices32.size();
-					submeshes[0].StartIndexLocation = 0;
-					submeshes[0].BaseVertexLocation = 0;
+					geo->DrawArgs[0].IndexCount = (UINT)meshes[0].Indices32.size();
+					geo->DrawArgs[0].StartIndexLocation = 0;
+					geo->DrawArgs[0].BaseVertexLocation = 0;
 				}
 				else
 				{
-					submeshes[i].IndexCount = (UINT)meshes[i].Indices32.size();
-					submeshes[i].StartIndexLocation = submeshes[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
+					geo->DrawArgs[i].IndexCount = (UINT)meshes[i].Indices32.size();
+					geo->DrawArgs[i].StartIndexLocation = geo->DrawArgs[i - 1].StartIndexLocation + (UINT)meshes[i - 1].Indices32.size();
 					switch (meshType)
 					{
 					case eMeshType::STANDARD:
-						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
+						geo->DrawArgs[i].BaseVertexLocation = geo->DrawArgs[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].Vertices.size();
 						break;
 					case eMeshType::SKINNED:
-						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size();
+						geo->DrawArgs[i].BaseVertexLocation = geo->DrawArgs[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SkinnedVertices.size();
 						break;
 					case eMeshType::SPRITE:
-						submeshes[i].BaseVertexLocation = submeshes[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SpriteVertices.size();
+						geo->DrawArgs[i].BaseVertexLocation = geo->DrawArgs[i - 1].BaseVertexLocation + (UINT)meshes[i - 1].SpriteVertices.size();
 						break;
 					}
 				}
-				submeshes[i].InstanceCount = 1;
-				geo->DrawArgs[i] = submeshes[i];
+				geo->DrawArgs[i].InstanceCount = 1;
 			}
 		}
 

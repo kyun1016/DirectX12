@@ -128,7 +128,7 @@ private:
 		DX12_CommandSystem::GetInstance().SetMesh(geo);
 		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		for (const auto& [key, ri] : geo->DrawArgs)
+		for (const auto& ri : geo->DrawArgs)
 		{
 			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
 		}
@@ -155,7 +155,7 @@ private:
 		DX12_CommandSystem::GetInstance().SetMesh(geo);
 		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
-		for (const auto& [_, ri] : geo->DrawArgs)
+		for (const auto& ri : geo->DrawArgs)
 		{
 			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
 		}
