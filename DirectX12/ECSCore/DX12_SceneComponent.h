@@ -140,97 +140,80 @@ ENUM_OPERATORS_32(eConfigInstanceComponent)
 struct InstanceComponent
 {
 	InstanceComponent() = delete;
-	InstanceComponent(float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
-		: Translation(translation)
-		, Scale(scale)
-		, RotationQuat(rot)
-		, TexScale(texScale)
-		, BoundingCount(boundingCount)
+	InstanceComponent(const float3& translation, const float3& scale, const DirectX::SimpleMath::Quaternion& rot, const float3& texScale)
+		: TexScale(texScale)
 	{
-		Update();
+		Transform.r_Position = translation;
+		Transform.r_Scale = scale;
+		Transform.r_RotationQuat = rot;
+		UpdateTransform();
 	}
-	InstanceComponent(DirectX::BoundingBox* baseBoundingBox, DirectX::BoundingSphere* baseBoundingSphere, float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
-		: BaseBoundingBox(baseBoundingBox)
-		, BaseBoundingSphere(baseBoundingSphere)
-		, Translation(translation)
-		, Scale(scale)
+	InstanceComponent(DX12_MeshComponent* mesh, float3 translation, float3 scale, DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0)
+		: Mesh(mesh)
 		, TexScale(texScale)
-		, RotationQuat(rot)
-		, BoundingCount(boundingCount)
 	{
+		Transform.r_Position = translation;
+		Transform.r_Scale = scale;
+		Transform.r_RotationQuat = rot;
 		InstanceData.MaterialIndex = matIdx;
-		Update();
-	}
-	void UpdateTranslation(float3 translation)
-	{
-		Translation = translation;
-		Update();
-	}
-	void UpdateScale(float3 scale)
-	{
-		Scale = scale;
-		Update();
-	}
-	void UpdateRotate(float3 rotate)
-	{
-		Rotate = rotate;
-		Update();
+		UpdateTransform();
 	}
 	void UpdateTexScale(float3 scale)
 	{
 		TexScale = scale;
-		Update();
+		UpdateTransform();
 	}
 
 	InstanceData InstanceData; // GPU 전송 전용 데이터
-
-	DirectX::BoundingBox* BaseBoundingBox;
-	DirectX::BoundingSphere* BaseBoundingSphere;
+	DX12_MeshComponent* Mesh = nullptr;
+	DX12_MeshGeometry* Geo = nullptr;
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
-
 	DX12_TransformComponent Transform;
 	float3 TexScale;
+	// Metarial 속성 추가
 	eConfigInstanceComponent Config = eConfigInstanceComponent::UseCulling;
 
 private:
-	void Update()
+	void UpdateTransform()
 	{
-		if (BaseBoundingBox)
+		if(!Transform.Dirty)
+			return;
+		if (Mesh)
 		{
-			BoundingBox.Center.x = BaseBoundingBox->Center.x * Scale.x + Translation.x;
-			BoundingBox.Center.y = BaseBoundingBox->Center.y * Scale.y + Translation.y;
-			BoundingBox.Center.z = BaseBoundingBox->Center.z * Scale.z + Translation.z;
+			BoundingBox.Center.x = Mesh->BoundingBox.Center.x * Transform.r_Scale.x + Transform.r_Position.x;
+			BoundingBox.Center.y = Mesh->BoundingBox.Center.y * Transform.r_Scale.y + Transform.r_Position.y;
+			BoundingBox.Center.z = Mesh->BoundingBox.Center.z * Transform.r_Scale.z + Transform.r_Position.z;
 
-			BoundingBox.Extents.x = BaseBoundingBox->Extents.x * Scale.x;
-			BoundingBox.Extents.y = BaseBoundingBox->Extents.y * Scale.y;
-			BoundingBox.Extents.z = BaseBoundingBox->Extents.z * Scale.z;
+			BoundingBox.Extents.x = Mesh->BoundingBox.Extents.x * Transform.r_Scale.x;
+			BoundingBox.Extents.y = Mesh->BoundingBox.Extents.y * Transform.r_Scale.y;
+			BoundingBox.Extents.z = Mesh->BoundingBox.Extents.z * Transform.r_Scale.z;
 		}
-		if (BaseBoundingSphere)
+		if (Mesh)
 		{
-			BoundingSphere.Center.x = BaseBoundingSphere->Center.x * Scale.x + Translation.x;
-			BoundingSphere.Center.y = BaseBoundingSphere->Center.y * Scale.y + Translation.y;
-			BoundingSphere.Center.z = BaseBoundingSphere->Center.z * Scale.z + Translation.z;
-			BoundingSphere.Radius = BaseBoundingSphere->Radius * Scale.Length();
+			BoundingSphere.Center.x = Mesh->BoundingSphere.Center.x * Transform.r_Scale.x + Transform.r_Position.x;
+			BoundingSphere.Center.y = Mesh->BoundingSphere.Center.y * Transform.r_Scale.y + Transform.r_Position.y;
+			BoundingSphere.Center.z = Mesh->BoundingSphere.Center.z * Transform.r_Scale.z + Transform.r_Position.z;
+			BoundingSphere.Radius = Mesh->BoundingSphere.Radius * Transform.r_Scale.Length();
 		}
 
-		float rx = DirectX::XMConvertToRadians(Rotate.x);
-		float ry = DirectX::XMConvertToRadians(Rotate.y);
-		float rz = DirectX::XMConvertToRadians(Rotate.z);
-		RotationQuat = DirectX::XMQuaternionRotationRollPitchYaw(rx, ry, rz);
+		float rx = DirectX::XMConvertToRadians(Transform.r_RotationEuler.x);
+		float ry = DirectX::XMConvertToRadians(Transform.r_RotationEuler.y);
+		float rz = DirectX::XMConvertToRadians(Transform.r_RotationEuler.z);
+		Transform.r_RotationQuat = DirectX::XMQuaternionRotationRollPitchYaw(rx, ry, rz);
 
 		DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(rx);
 		DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(ry);
 		DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(rz);
 
 		DirectX::XMMATRIX rot = rotX * rotY * rotZ;
-		if (useQuat)
-			rot = DirectX::XMMatrixRotationQuaternion(RotationQuat);
+		if (Config & eConfigInstanceComponent::UseQuat)
+			rot = DirectX::XMMatrixRotationQuaternion(Transform.r_RotationQuat);
 
 		DirectX::XMMATRIX world
-			= DirectX::XMMatrixScaling(Scale.x, Scale.y, Scale.z)
+			= DirectX::XMMatrixScaling(Transform.r_Scale.x, Transform.r_Scale.y, Transform.r_Scale.z)
 			* rot
-			* DirectX::XMMatrixTranslation(Translation.x, Translation.y, Translation.z);
+			* DirectX::XMMatrixTranslation(Transform.r_Position.x, Transform.r_Position.y, Transform.r_Position.z);
 		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(TexScale.x, TexScale.y, TexScale.z);
 		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
 
@@ -243,7 +226,7 @@ struct RenderItem
 {
 	RenderItem() = default;
 	RenderItem(const RenderItem& rhs) = delete;
-	RenderItem(DX12_MeshGeometry* geo, const DX12_MeshComponent& component, bool culling = true)
+	RenderItem(DX12_MeshGeometry* geo, const DX12_MeshComponent* component, bool culling = true)
 		: Geo(geo)
 		, Component(component)
 		, FrustumCullingEnabled(culling)
@@ -253,7 +236,7 @@ struct RenderItem
 	void Push(float3 translation, float3 scale,
 		DirectX::SimpleMath::Quaternion rot, float3 texScale, UINT boundingCount = 0, UINT matIdx = 0, bool cull = true)
 	{
-		Datas.push_back(InstanceComponent(&Component.BoundingBox, &Component.BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
+		Datas.push_back(InstanceComponent(&Component.MeshComponent.BoundingBox, &Component.BoundingSphere, translation, scale, rot, texScale, boundingCount, matIdx, cull));
 	}
 
 	void Push(InstanceComponent data)
@@ -263,7 +246,7 @@ struct RenderItem
 
 	int NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	DX12_MeshGeometry* Geo = nullptr;
-	DX12_MeshComponent Component;
+	DX12_MeshComponent MeshComponent;
 	std::vector<InstanceComponent> Datas;
 	bool FrustumCullingEnabled = false;
 
