@@ -157,6 +157,7 @@
     <ClInclude Include="DX12_MeshGenerator.h" />
     <ClInclude Include="DX12_MeshRepository.h" />
     <ClInclude Include="DX12_MeshSystem.h" />
+    <ClInclude Include="DX12_PassData.h" />
     <ClInclude Include="DX12_PSOSystem.h" />
     <ClInclude Include="DX12_RenderComponent.h" />
     <ClInclude Include="DX12_RTVHeapRepository.h" />

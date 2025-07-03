@@ -203,9 +203,6 @@
     <ClInclude Include="DX12_BoundingComponent.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_InstanceComponent.h">
-      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_MeshComponent.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
@@ -267,10 +264,16 @@
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_SceneComponent.h">
-      <Filter>Header Files\DX12_Core</Filter>
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_SceneSystem.h">
-      <Filter>Header Files\DX12_Core</Filter>
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_InstanceComponent.h">
+      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_PassData.h">
+      <Filter>Header Files\DX12_Core\Struct</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

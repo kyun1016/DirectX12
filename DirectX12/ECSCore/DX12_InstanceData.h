@@ -22,5 +22,9 @@ struct InstanceData
     int dummy1;
     int dummy2;
 };
+struct InstanceIDData
+{
+    uint BaseInstanceIndex;
+};
 
 #endif // INSTANCE_DATA_H

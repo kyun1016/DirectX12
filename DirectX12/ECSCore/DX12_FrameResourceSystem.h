@@ -1,12 +1,16 @@
 #pragma once
 
 #include "DX12_Config.h"
+#include "DX12_InstanceData.h"
+#include "DX12_PassData.h"
 
 struct DX12_FrameResource {
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
 	UINT64 fenceValue = 0;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	std::unique_ptr<UploadBuffer<InstanceData>> InstanceBuffer;
+	std::unique_ptr<UploadBuffer<InstanceData>> InstanceDataBuffer;
+	std::unique_ptr<UploadBuffer<InstanceIDData>> InstanceIDCB;
+	std::unique_ptr<UploadBuffer<PassData>> PassCB;
 };
 
 struct DX12_FrameResourceSystem
@@ -22,7 +26,7 @@ public:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
 		{
 			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mFrameResources[i].commandAllocator.GetAddressOf())));
-			mFrameResources[i].InstanceBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, instanceCount, false);
+			mFrameResources[i].InstanceDataBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, instanceCount, false);
 		}
 	}
 	void BeginFrame()
@@ -79,7 +83,7 @@ public:
 		}
 		
 		
-		mFrameResources[mCurrFrameResourceIndex].InstanceBuffer->CopyData(0, InstanceData{});
+		mFrameResources[mCurrFrameResourceIndex].InstanceDataBuffer->CopyData(0, InstanceData{});
 	}
 	void EndFrame()
 	{
@@ -96,7 +100,7 @@ public:
 	}
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetInstanceDataGPUVirtualAddress() const {
-		return mFrameResources[mCurrFrameResourceIndex].InstanceBuffer->Resource()->GetGPUVirtualAddress();
+		return mFrameResources[mCurrFrameResourceIndex].InstanceDataBuffer->Resource()->GetGPUVirtualAddress();
 	}
 
 private:

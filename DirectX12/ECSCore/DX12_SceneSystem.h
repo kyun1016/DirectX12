@@ -3,6 +3,7 @@
 #include "DX12_PSOSystem.h"
 #include "DX12_TransformSystem.h"
 #include "DX12_InstanceSystem.h"
+#include "DX12_MeshSystem.h"
 #include "DX12_SceneComponent.h"
 #include "DX12_FrameResourceSystem.h"
 
@@ -23,55 +24,46 @@ public:
 private:
     void SyncData()
     {
-		//auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceBuffer.get();
-		//// auto currInstanceCB = mCurrFrameResource->InstanceCB.get();
-		//uint32_t visibleInstanceCount = 0;
-		//for (auto& [_, ri]: mAllRenderItems)
-		//{
-		//	if (ri->FrustumCullingEnabled)
-		//	{
-		//		// InstanceConstants insCB;
-		//		// insCB.BaseInstanceIndex = visibleInstanceCount;
-		//		ri->StartInstanceLocation = visibleInstanceCount;
-		//		// currInstanceCB->CopyData(i, insCB);
+		auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get();
+		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
+		uint32_t visibleInstanceCount = 0;
+		InstanceIDData instanceID;
+		for (size_t i = 0; i < mAllRenderItems.size(); ++i)
+		{
+			auto& ri = mAllRenderItems[i];
+			if (ri->Option & eCFGRenderItem::FrustumCullingEnabled)
+			{
+				instanceID.BaseInstanceIndex = visibleInstanceCount;
+				currInstanceCB->CopyData(i, instanceID);
+				for (auto& instance : ri->Instances) {
+					auto& meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(instance.MeshHandle);
+					meshComponent.StartInstanceLocation = visibleInstanceCount;
+					if (!(instance.Option & eCFGInstanceComponent::UseCulling) || (mCamFrustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
+					{
+						currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
+					}
+					meshComponent.InstanceCount = visibleInstanceCount - meshComponent.StartInstanceLocation;
+				}
+			}
+			else
+			{
+				//// Dirty Flag가 존재하는 경우 업데이트 (이동 등 instance 변경 발생 시 NumFramesDirty = APP_NUM_FRAME_RESOURCES)
+				//if (ri->NumFramesDirty > 0)
+				//{
+				//	instanceID.BaseInstanceIndex = visibleInstanceCount;
+				//	currInstanceCB->CopyData(i, instanceID);
+				//	// Instance 전체 복사
+				//	for (const auto& instance : ri->Instances)
+				//	{
+				//		currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
+				//	}
+				//	ri->InstanceCount = visibleInstanceCount - ri->StartInstanceLocation;
 
-		//		// 컬링을 활용하며, 매 Frame 간 데이터를 복사하는 로직으로 구현
-		//		for (const auto& d : ri->Datas)
-		//		{
-		//			// Cam Frustum에 포함되는 Instance만 복사
-		//			// if ((mCamFrustum.Contains(d.BoundingBox) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
-		//			if ((mCamFrustum.Contains(d.BoundingSphere) != DirectX::DISJOINT) || (d.FrustumCullingEnabled == false))
-		//			{
-		//				// 추후 Frustum을 관리하는 Camera System 구현 필요
-		//				currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
-		//			}
-		//		}
-
-		//		// Instance 개수 업데이트
-		//		ri->InstanceCount = visibleInstanceCount - ri->StartInstanceLocation;
-		//	}
-		//	else
-		//	{
-		//		// Dirty Flag가 존재하는 경우 업데이트 (이동 등 instance 변경 발생 시 NumFramesDirty = APP_NUM_FRAME_RESOURCES)
-		//		if (ri->NumFramesDirty > 0)
-		//		{
-		//			// InstanceConstants insCB;
-		//			// insCB.BaseInstanceIndex = visibleInstanceCount;
-		//			ri->StartInstanceLocation = visibleInstanceCount;
-		//			// currInstanceCB->CopyData(i, insCB);
-
-		//			// Instance 전체 복사
-		//			for (const auto& d : ri->Datas)
-		//			{
-		//				currInstanceBuffer->CopyData(visibleInstanceCount++, d.InstanceData);
-		//			}
-		//			ri->InstanceCount = visibleInstanceCount - ri->StartInstanceLocation;
-
-		//			ri->NumFramesDirty--;
-		//		}
-		//	}
-		//	
-		//}
+				//	ri->NumFramesDirty--;
+				//}
+			}
+			
+		}
     }
 
 	DirectX::BoundingFrustum mCamFrustum;

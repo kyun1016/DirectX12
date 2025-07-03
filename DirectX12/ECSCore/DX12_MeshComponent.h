@@ -28,9 +28,10 @@ private:
 
 struct DX12_MeshComponent
 {
-	UINT IndexCount = 0;
-	UINT InstanceCount = 0;
 	UINT StartIndexLocation = 0;
+	UINT IndexCount = 0;
+	UINT StartInstanceLocation = 0;
+	UINT InstanceCount = 0;
 	INT BaseVertexLocation = 0;
 
 	DirectX::BoundingBox BoundingBox;

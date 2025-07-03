@@ -7,7 +7,7 @@ cbuffer cbPass : register(b0)
     float4x4 gViewProj;
 };
 
-// cbuffer cbInstance : register(b0) { uint gBaseInstanceIndex; }
+cbuffer cbInstanceID : register(b1) { uint gBaseInstanceIndex; }
 // cbuffer cbPass : register(b1)
 // {
 //     float4x4 gView;
