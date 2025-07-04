@@ -141,7 +141,7 @@ private:
 			return;
 		if (MeshHandle.GeometryHandle != 0)
 		{
-			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle).BoundingBox;
+			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingBox;
 			BoundingBox.Center.x *= Transform.r_Scale.x;
 			BoundingBox.Center.y *= Transform.r_Scale.y;
 			BoundingBox.Center.z *= Transform.r_Scale.z;
@@ -155,7 +155,7 @@ private:
 		}
 		if (MeshHandle.GeometryHandle != 0)
 		{
-			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle).BoundingSphere;
+			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingSphere;
 			BoundingSphere.Center.x *= Transform.r_Scale.x;
 			BoundingSphere.Center.y *= Transform.r_Scale.y;
 			BoundingSphere.Center.z *= Transform.r_Scale.z;

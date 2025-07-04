@@ -50,7 +50,7 @@ inline T& operator |= (T& lhs, T rhs)         \
 inline T operator~(T a)                       \
 {                                             \
     return (T)~((uint64_t)a);                 \
-}
+}                                             
 
 #define ENUM_OPERATORS_32(T)                 \
 inline bool operator&(T a, T b)              \

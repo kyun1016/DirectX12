@@ -28,41 +28,34 @@ private:
 		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
 		uint32_t visibleInstanceCount = 0;
 		InstanceIDData instanceID;
-		for (size_t i = 0; i < mAllRenderItems.size(); ++i)
+		for (auto& ri : mAllRenderItems)
 		{
-			auto& ri = mAllRenderItems[i];
-			if (ri->Option & eCFGRenderItem::FrustumCullingEnabled)
+			if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled) && ri->NumFramesDirty == 0)
+				continue;
+			ri->NumFramesDirty--;
+			for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
 			{
-				instanceID.BaseInstanceIndex = visibleInstanceCount;
-				currInstanceCB->CopyData(i, instanceID);
-				for (auto& instance : ri->Instances) {
-					auto& meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(instance.MeshHandle);
-					meshComponent.StartInstanceLocation = visibleInstanceCount;
-					if (!(instance.Option & eCFGInstanceComponent::UseCulling) || (mCamFrustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
+				for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
+				{
+					DX12_MeshHandle meshHandle = {geoIdx, meshIdx};
+					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
+					meshComponent->StartInstanceLocation = visibleInstanceCount;
+					instanceID.BaseInstanceIndex = visibleInstanceCount;
+					currInstanceCB->CopyData(meshIdx, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
+																	// Geometry의 Mesh 별로 관리 적용
+					for(const auto& instanceIdx : ri->MeshIndex[geoIdx][meshIdx])
 					{
-						currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
+						auto& instance = ri->Instances[instanceIdx];
+						if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled)
+						|| !(instance.Option & eCFGInstanceComponent::UseCulling)
+						|| (mCamFrustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
+						{
+							currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
+						}
 					}
-					meshComponent.InstanceCount = visibleInstanceCount - meshComponent.StartInstanceLocation;
+					meshComponent->InstanceCount = visibleInstanceCount - meshComponent->StartInstanceLocation;
 				}
 			}
-			else
-			{
-				//// Dirty Flag가 존재하는 경우 업데이트 (이동 등 instance 변경 발생 시 NumFramesDirty = APP_NUM_FRAME_RESOURCES)
-				//if (ri->NumFramesDirty > 0)
-				//{
-				//	instanceID.BaseInstanceIndex = visibleInstanceCount;
-				//	currInstanceCB->CopyData(i, instanceID);
-				//	// Instance 전체 복사
-				//	for (const auto& instance : ri->Instances)
-				//	{
-				//		currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
-				//	}
-				//	ri->InstanceCount = visibleInstanceCount - ri->StartInstanceLocation;
-
-				//	ri->NumFramesDirty--;
-				//}
-			}
-			
 		}
     }
 
