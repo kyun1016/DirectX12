@@ -48,10 +48,12 @@ public:
 		return DX12_MeshRepository::GetInstance().Get(handle);
 	}
 	inline DX12_MeshGeometry* GetGeometry(DX12_MeshHandle handle) const {
-		return DX12_MeshRepository::GetInstance().Get(handle.GeometryHandle);
+		return GetGeometry(handle.GeometryHandle);
 	}
-	inline DX12_MeshComponent& GetMeshComponent(DX12_MeshHandle handle) const {
-		return DX12_MeshRepository::GetInstance().Get(handle.GeometryHandle)->DrawArgs[handle.MeshHandle];
+	inline DX12_MeshComponent* GetMeshComponent(DX12_MeshHandle handle) const {
+		auto* geo = GetGeometry(handle);
+		if (geo->DrawArgs.size() > handle.MeshHandle)
+			return &geo->DrawArgs[handle.MeshHandle];
+		return nullptr;
 	}
-	
 };
