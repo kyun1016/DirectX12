@@ -16,7 +16,7 @@
 #include "WindowSystem.h"
 #include "TimeSystem.h"
 #include "ImGuiSystem.h"
-#include "DX12_InstanceSystem.h" // Required for InstanceData access
+#include "DX12_InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
 struct ObjectConstants {
 	float4x4 WorldViewProj;
@@ -31,6 +31,7 @@ public:
 
 	virtual void Sync() override {
 		DX12_FrameResourceSystem::GetInstance().BeginFrame();
+		DX12_SceneSystem::GetInstance().Update();
 	}
 
 	virtual void Update() override {
@@ -50,8 +51,6 @@ private:
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 
-	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-
 	inline void Initialize() {
 		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
@@ -67,12 +66,10 @@ private:
 		DX12_ShaderCompileSystem::GetInstance().Initialize();
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
-		DX12_InstanceSystem::GetInstance().Initialize();
 
-		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mDevice, 1, true);
-		
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
+		DX12_SceneSystem::GetInstance().Initialize();
 		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
 
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
@@ -100,28 +97,28 @@ private:
 
 	inline void DrawRenderItems(const ECS::RepoHandle handle, const eRenderLayer flag)
 	{
-		// 테스트를 위한 WVP 행렬 업데이트
-		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-		float4x4 world;
-		float4x4 view = DirectX::SimpleMath::Matrix::CreateLookAt(
-			float3(0.0f, 50.0f, -150.0f), // 카메라 위치
-			float3(0.0f, 0.0f, 0.0f),     // 바라보는 지점
-			float3(0.0f, 1.0f, 0.0f)      // Up 벡터
-		);
-		float4x4 proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-			DirectX::XM_PIDIV4,
-			static_cast<float>(wc.width) / static_cast<float>(wc.height),
-			1.0f,
-			1000.0f
-		);
-		float4x4 wvp = world * view * proj;
-
-		ObjectConstants objConstants;
-		objConstants.WorldViewProj = wvp.Transpose(); // HLSL은 Column-Major 행렬을 기대합니다.
-		mObjectCB->CopyData(0, objConstants);
+		// // 테스트를 위한 WVP 행렬 업데이트
+		// WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+		// float4x4 world;
+		// float4x4 view = DirectX::SimpleMath::Matrix::CreateLookAt(
+		// 	float3(0.0f, 50.0f, -150.0f), // 카메라 위치
+		// 	float3(0.0f, 0.0f, 0.0f),     // 바라보는 지점
+		// 	float3(0.0f, 1.0f, 0.0f)      // Up 벡터
+		// );
+		// float4x4 proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+		// 	DirectX::XM_PIDIV4,
+		// 	static_cast<float>(wc.width) / static_cast<float>(wc.height),
+		// 	1.0f,
+		// 	1000.0f
+		// );
+		// float4x4 wvp = world * view * proj;
+		// 
+		// ObjectConstants objConstants;
+		// objConstants.WorldViewProj = wvp.Transpose(); // HLSL은 Column-Major 행렬을 기대합니다.
+		// mObjectCB->CopyData(0, objConstants);
 
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
-		mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress());
+		// mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress());
 		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
 
 		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(handle);
@@ -136,7 +133,7 @@ private:
 
 	inline void DrawRenderItems(const eRenderLayer flag)
 	{
-		auto& ri = DX12_SceneSystem::GetInstance().GetRenderItems(flag);
+		auto& ri = DX12_SceneSystem::GetInstance().GetRenderItems();
 		for(const auto& item : ri)
 		{
 			// TODO: Make handling logic
@@ -148,7 +145,7 @@ private:
 		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(eRenderLayer::Sprite));
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("sprite"));
 
-		mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress()); // cbPass (gViewProj)
+		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetPassDataGPUVirtualAddress()); // cbPass (gViewProj)
 		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress()); // gInstanceData
 
 		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(DX12_MeshRepository::GetInstance().Load("Sprite"));

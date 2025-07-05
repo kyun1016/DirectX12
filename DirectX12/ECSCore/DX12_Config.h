@@ -25,6 +25,15 @@
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 
+// DirectXMath constants
+// DirectX::XM_PIDIV4
+constexpr float XM_PI = 3.141592654f;
+constexpr float XM_2PI = 6.283185307f;
+constexpr float XM_1DIVPI = 0.318309886f;
+constexpr float XM_1DIV2PI = 0.159154943f;
+constexpr float XM_PIDIV2 = 1.570796327f;
+constexpr float XM_PIDIV4 = 0.785398163f;
+
 using float4x4 = DirectX::SimpleMath::Matrix;
 using float2 = DirectX::SimpleMath::Vector2;
 using float3 = DirectX::SimpleMath::Vector3;

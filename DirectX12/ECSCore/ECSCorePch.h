@@ -25,7 +25,6 @@
 
 #include "DX12_TransformSystem.h"
 #include "DX12_BoundingSystem.h"
-#include "DX12_InstanceSystem.h"
 #include "DX12_RenderSystem.h"
 
 #include "GameObjectFactory.h"

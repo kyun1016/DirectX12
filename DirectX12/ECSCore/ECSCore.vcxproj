@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DX12_BoundingSystem.h" />
+    <ClInclude Include="DX12_CameraData.h" />
     <ClInclude Include="DX12_DSVHeapRepository.h" />
     <ClInclude Include="DX12_CommandSystem.h" />
     <ClInclude Include="DX12_Config.h" />
@@ -149,7 +150,6 @@
     <ClInclude Include="DX12_DeviceSystem.h" />
     <ClInclude Include="DX12_FrameResourceSystem.h" />
     <ClInclude Include="DX12_InputLayoutSystem.h" />
-    <ClInclude Include="DX12_InstanceSystem.h" />
     <ClInclude Include="DX12_LightData.h" />
     <ClInclude Include="DX12_MaterialData.h" />
     <ClInclude Include="DX12_MeshComponent.h" />

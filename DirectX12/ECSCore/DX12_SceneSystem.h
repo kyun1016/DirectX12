@@ -2,7 +2,6 @@
 #include "ECSCoordinator.h"
 #include "DX12_PSOSystem.h"
 #include "DX12_TransformSystem.h"
-#include "DX12_InstanceSystem.h"
 #include "DX12_MeshSystem.h"
 #include "DX12_SceneComponent.h"
 #include "DX12_FrameResourceSystem.h"
@@ -15,11 +14,22 @@ public:
         SyncData();	// View 
     }
 
-    // DX12_RenderSystem이 렌더링할 아이템 목록을 가져갈 수 있도록 getter 제공
-    const std::vector<RenderItem*>& GetRenderItems(eRenderLayer layer) const
-    {
-        return mRenderItemLayers[static_cast<int>(layer)];
-    }
+	void Initialize()
+	{
+		RenderItem renderItem;
+		renderItem.Option = eCFGRenderItem::FrustumCullingEnabled;
+		renderItem.Push({ 1,0 });
+		renderItem.Push({ 1,0 });
+		renderItem.Push({ 1,0 });
+		renderItem.Push({ 1,0 });
+		renderItem.Push({ 1,0 });
+		renderItem.Push({ 1,0 });
+	}
+
+	const std::vector<std::unique_ptr<RenderItem>>& GetRenderItems() const
+	{
+		return mAllRenderItems;
+	}
 
 private:
     void SyncData()
@@ -61,5 +71,4 @@ private:
 
 	DirectX::BoundingFrustum mCamFrustum;
 	std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
-    std::vector<RenderItem*> mRenderItemLayers[static_cast<int>(eRenderLayer::Count)];
 };

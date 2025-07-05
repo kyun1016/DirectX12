@@ -224,9 +224,6 @@
     <ClInclude Include="DX12_TransformSystem.h">
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_InstanceSystem.h">
-      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_BoundingSystem.h">
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
@@ -273,6 +270,9 @@
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_PassData.h">
+      <Filter>Header Files\DX12_Core\Struct</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_CameraData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
     </ClInclude>
   </ItemGroup>

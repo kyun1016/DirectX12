@@ -24,6 +24,7 @@ struct RenderItem
 	std::vector<InstanceComponent> Instances;
 	std::vector<std::vector<std::vector<uint32_t>>> MeshIndex;
 	eCFGRenderItem Option = eCFGRenderItem::FrustumCullingEnabled;
+	eRenderLayer TargetLayer = eRenderLayer::None;
 	
 	// // TODO: 
 	// // Skinned Mesh
