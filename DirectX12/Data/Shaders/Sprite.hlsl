@@ -3,21 +3,16 @@
 #include "../../ECSCore/LightData.h"
 #include "../../ECSCore/CameraData.h"
 
-cbuffer cbPass : register(b0)
-{
-    float4x4 gViewProj;
-};
-
-cbuffer cbInstanceID : register(b1) { uint gBaseInstanceIndex; }
+cbuffer cbInstanceID : register(b0) { uint gBaseInstanceIndex; }
 // cbuffer cbPass : register(b1)
 // {
-//     float gTotalTime;
-//     float gDeltaTime;
 //     float4 gFogColor;
 //     float gFogStart;
 //     float gFogRange;
-//     float2 cbPerObjectPad2;
+//     float gTotalTime;
+//     float gDeltaTime;
 //     uint gCubeMapIndex;
+//     unit3 dummy;
 // };
 StructuredBuffer<InstanceData> gInstanceData : register(t0);
 StructuredBuffer<CameraData> gCameraData : register(t1);

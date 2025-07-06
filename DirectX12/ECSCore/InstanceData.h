@@ -15,12 +15,14 @@ struct InstanceData
 
     float2 DisplacementMapTexelSize;
     float GridSpatialStep;
-    int useDisplacementMap;
+    uint useDisplacementMap;
 
-    int DisplacementIndex;
-    int MaterialIndex;
-    int dummy1;
-    int dummy2;
+    uint DisplacementIndex;
+    uint MaterialIndex;
+    uint CameraIndex;
+    uint LightIndex;
+
+    // TODO: 그 외 다양한 속성을 Structured Buffer에서 관리하는 경우, Index 성분 추가
 };
 struct InstanceIDData
 {
