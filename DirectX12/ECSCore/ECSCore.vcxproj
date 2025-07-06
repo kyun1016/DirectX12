@@ -141,8 +141,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CameraSystem.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="DX12_BoundingSystem.h" />
-    <ClInclude Include="DX12_CameraData.h" />
+    <ClInclude Include="CameraData.h" />
     <ClInclude Include="DX12_DSVHeapRepository.h" />
     <ClInclude Include="DX12_CommandSystem.h" />
     <ClInclude Include="DX12_Config.h" />
@@ -150,14 +152,14 @@
     <ClInclude Include="DX12_DeviceSystem.h" />
     <ClInclude Include="DX12_FrameResourceSystem.h" />
     <ClInclude Include="DX12_InputLayoutSystem.h" />
-    <ClInclude Include="DX12_LightData.h" />
-    <ClInclude Include="DX12_MaterialData.h" />
+    <ClInclude Include="LightData.h" />
+    <ClInclude Include="MaterialData.h" />
     <ClInclude Include="DX12_MeshComponent.h" />
-    <ClInclude Include="DX12_MeshData.h" />
+    <ClInclude Include="MeshData.h" />
     <ClInclude Include="DX12_MeshGenerator.h" />
     <ClInclude Include="DX12_MeshRepository.h" />
     <ClInclude Include="DX12_MeshSystem.h" />
-    <ClInclude Include="DX12_PassData.h" />
+    <ClInclude Include="PassData.h" />
     <ClInclude Include="DX12_PSOSystem.h" />
     <ClInclude Include="DX12_RenderComponent.h" />
     <ClInclude Include="DX12_RTVHeapRepository.h" />
@@ -185,7 +187,7 @@
     <ClInclude Include="ImGuiComponent.h" />
     <ClInclude Include="ImGuiSystem.h" />
     <ClInclude Include="InputComponent.h" />
-    <ClInclude Include="DX12_InstanceData.h" />
+    <ClInclude Include="InstanceData.h" />
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="LightSystem.h" />

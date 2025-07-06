@@ -1,6 +1,6 @@
 #ifdef __cplusplus
 #pragma once
-#include "DX12_Config.h"
+#include "ECSConfig.h"
 #endif
 
 #ifndef LIGHT_DATA_H

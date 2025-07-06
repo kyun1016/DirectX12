@@ -1,7 +1,7 @@
 #pragma once
 #include "DX12_Config.h"
 
-#include "DX12_MeshData.h"
+#include "MeshData.h"
 
 struct MeshData
 {

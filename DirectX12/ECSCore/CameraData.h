@@ -1,6 +1,6 @@
 #ifdef __cplusplus
 #pragma once
-#include "DX12_Config.h"
+#include "ECSConfig.h"
 #endif
 
 #ifndef CAMERA_DATA_H
@@ -15,6 +15,6 @@ struct CameraData
     float4x4 ViewProj;
     float4x4 InvViewProj;
     float3   EyePosW;
-    float FieldOfView = XM_PIDIV4; // 45도 시야각
+    float    dummy1;
 };
 #endif // CAMERA_DATA_H

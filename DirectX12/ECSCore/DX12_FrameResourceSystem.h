@@ -2,7 +2,7 @@
 
 #include "DX12_Config.h"
 #include "InstanceData.h"
-#include "DX12_PassData.h"
+#include "PassData.h"
 
 struct DX12_FrameResource {
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;

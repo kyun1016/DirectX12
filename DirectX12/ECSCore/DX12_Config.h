@@ -49,21 +49,6 @@ using quat = DirectX::SimpleMath::Quaternion;
 
 static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;
 
-//static const float4x4 Identity(
-//	1.0f, 0.0f, 0.0f, 0.0f,
-//	0.0f, 1.0f, 0.0f, 0.0f,
-//	0.0f, 0.0f, 1.0f, 0.0f,
-//	0.0f, 0.0f, 0.0f, 1.0f);
-////static float4x4 Identity()
-////{
-////	static float4x4 I(
-////		1.0f, 0.0f, 0.0f, 0.0f,
-////		0.0f, 1.0f, 0.0f, 0.0f,
-////		0.0f, 0.0f, 1.0f, 0.0f,
-////		0.0f, 0.0f, 0.0f, 1.0f);
-////	return I;
-////}
-
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif
@@ -105,14 +90,6 @@ inline std::wstring StringToWString(const std::string& str)
 		LogCore::GetInstance().Log(eLogLevel::Error, eConsoleForeground::RED, __FILE__, __LINE__, __func__, "DirectX 12 Error: {}", std::to_string(hr)); \
 		throw std::exception();\
 	}
-
-//inline static void ThrowIfFailed(HRESULT hr) {
-//	if (FAILED(hr)) {
-//		// 디버깅할 때 여기에 breakpoint 설정
-//		LOG_ERROR("DirectX 12 Error: {}", std::to_string(hr));
-//		throw std::exception();
-//	}
-//}
 
 inline UINT CalcConstantBufferByteSize(UINT byteSize)
 {

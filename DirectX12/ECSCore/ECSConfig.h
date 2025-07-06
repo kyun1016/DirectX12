@@ -17,6 +17,14 @@
 #include <typeinfo>
 #include "LogCore.h"
 
+// DX12
+#include "DX12_Config.h"
+// DX11
+// TODO #include "DX11_Config.h"
+// Vulkan
+// TODO #include "Vulkan_Config.h"
+
+
 namespace ECS
 {
 	// namespace Entity

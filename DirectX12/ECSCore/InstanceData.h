@@ -1,6 +1,6 @@
 #ifdef __cplusplus
 #pragma once
-#include "DX12_Config.h"
+#include "ECSConfig.h"
 #endif
 
 #ifndef INSTANCE_DATA_H

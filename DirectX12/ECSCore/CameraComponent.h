@@ -3,6 +3,8 @@
 
 struct CameraComponent
 {
+	float FieldOfView = XM_PIDIV4;
+
 	float3 mPosition = { 0.0f, 0.0f, 0.0f };
 	float3 mRight = { 1.0f, 0.0f, 0.0f };
 	float3 mUp = { 0.0f, 1.0f, 0.0f };
@@ -18,7 +20,4 @@ struct CameraComponent
 	bool mViewDirty = true;
 
 	float mSpeed = 3.0f;
-
-	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 };
