@@ -1,6 +1,7 @@
-#include "../../ECSCore/DX12_InstanceData.h"
+#include "../../ECSCore/InstanceData.h"
 #include "../../ECSCore/DX12_MeshData.h"
-#include "../../ECSCore/DX12_LightData.h"
+#include "../../ECSCore/LightData.h"
+#include "../../ECSCore/CameraData.h"
 
 cbuffer cbPass : register(b0)
 {
@@ -38,6 +39,8 @@ cbuffer cbInstanceID : register(b1) { uint gBaseInstanceIndex; }
 //     uint gCubeMapIndex;
 // };
 StructuredBuffer<InstanceData> gInstanceData : register(t0);
+StructuredBuffer<CameraData> gCameraData : register(t1);
+StructuredBuffer<LightData> gCameraData : register(t2);
 
 struct VertexOut
 {

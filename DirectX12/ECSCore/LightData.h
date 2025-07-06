@@ -8,8 +8,10 @@
 
 #define MAX_LIGHTS 16
 
-struct Light
+struct LightData
 {
+    float4 AmbientLight;
+
     float3 Strength;
     float FalloffStart; // point/spot light only
     float3 Direction; // directional/spot light only

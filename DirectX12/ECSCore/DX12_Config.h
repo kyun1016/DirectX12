@@ -45,6 +45,7 @@ using uint4 = DirectX::XMUINT4;
 using int2 = DirectX::XMINT2;
 using int3 = DirectX::XMINT3;
 using int4 = DirectX::XMINT4;
+using quat = DirectX::SimpleMath::Quaternion;
 
 static constexpr std::uint32_t APP_NUM_BACK_BUFFERS = 3;
 

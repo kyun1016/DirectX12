@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DX12_Config.h"
-#include "DX12_InstanceData.h"
+#include "InstanceData.h"
 #include "DX12_PassData.h"
 
 struct DX12_FrameResource {

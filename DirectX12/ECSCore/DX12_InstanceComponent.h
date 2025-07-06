@@ -1,6 +1,6 @@
 #pragma once
 #include "DX12_Config.h"
-#include "DX12_InstanceData.h"
+#include "InstanceData.h"
 #include "DX12_MeshSystem.h"
 
 // #ifndef SKINNEDDATA_H
