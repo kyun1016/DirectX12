@@ -39,7 +39,7 @@ namespace ECS
 
 			mSystemSyncTasks[type] = [system]() { system->Sync(); };
 			mSystemPreUpdateTasks[type] = [system]() { system->PreUpdate(); };
-			mSystemUpdateTasks[type] = [system]() { system->Update(); };
+			mSystecomponent.r_UpdateTasks[type] = [system]() { system->Update(); };
 			mSystemLateUpdateTasks[type] = [system]() { system->LateUpdate(); };
 			mSystemFixedUpdateTasks[type] = [system]() { system->FixedUpdate(); };
 			mSystemFinalUpdateTasks[type] = [system]() { system->FinalUpdate(); };
@@ -114,7 +114,7 @@ namespace ECS
 		}
 		inline void UpdateAllSystems() {
 			std::vector<std::future<void>> futures;
-			for (auto& [_, task] : mSystemUpdateTasks)
+			for (auto& [_, task] : mSystecomponent.r_UpdateTasks)
 				futures.emplace_back(std::async(std::launch::async, task));
 			// get은 순차적으로 처리
 			for (auto& fut : futures)
@@ -168,7 +168,7 @@ namespace ECS
 		std::unordered_map<std::type_index, std::function<void()>> mSystemBeginPlayTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemSyncTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemPreUpdateTasks;
-		std::unordered_map<std::type_index, std::function<void()>> mSystemUpdateTasks;
+		std::unordered_map<std::type_index, std::function<void()>> mSystecomponent.r_UpdateTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemLateUpdateTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemFixedUpdateTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemFinalUpdateTasks;
