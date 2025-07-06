@@ -30,20 +30,20 @@ public:
 	}
 
 	virtual void Sync() override {
-		DX12_FrameResourceSystem::GetInstance().BeginFrame();
-		DX12_SceneSystem::GetInstance().Update();
+		//DX12_FrameResourceSystem::GetInstance().BeginFrame();
+		//DX12_SceneSystem::GetInstance().Update();
 	}
 
 	virtual void Update() override {
-		BeginRenderPass();
-		DrawRenderItems(1, eRenderLayer::Opaque);
-		DrawSprites();
-		EndRenderPass();
-		ImGuiSystem::GetInstance().Render();
-		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
-		DX12_SwapChainSystem::GetInstance().Present(true);
-		ImGuiSystem::GetInstance().RenderMultiViewport();
-		DX12_FrameResourceSystem::GetInstance().EndFrame();
+		//BeginRenderPass();
+		//DrawRenderItems(1, eRenderLayer::Opaque);
+		//DrawSprites();
+		//EndRenderPass();
+		//ImGuiSystem::GetInstance().Render();
+		//DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		//DX12_SwapChainSystem::GetInstance().Present(true);
+		//ImGuiSystem::GetInstance().RenderMultiViewport();
+		//DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;

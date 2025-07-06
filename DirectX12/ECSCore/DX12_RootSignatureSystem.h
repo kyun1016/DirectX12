@@ -57,9 +57,10 @@ private:
 	{
 		std::vector<CD3DX12_ROOT_PARAMETER> param;
 		CD3DX12_ROOT_PARAMETER tmp;
-		tmp.InitAsConstantBufferView(0); param.push_back(tmp);		// CBV, cbPass b0
-		tmp.InitAsConstantBufferView(1); param.push_back(tmp);		// CBV, cbInstanceID b1
+		tmp.InitAsConstantBufferView(0); param.push_back(tmp);		// CBV, cbInstanceID b1
 		tmp.InitAsShaderResourceView(0, 0); param.push_back(tmp);	// SRV, InstanceData t0 (Space0)
+		tmp.InitAsShaderResourceView(1, 0); param.push_back(tmp);	// SRV, CameraData t1 (Space0)
+		tmp.InitAsShaderResourceView(2, 0); param.push_back(tmp);	// SRV, LightData t2 (Space0)
 
 		RegisterGraphicsSignature("sprite", param);
 	}

@@ -6,13 +6,14 @@
 #include "ImGuiSystem.h" // ImGui WndProc 핸들러를 위해 추가
 
 inline static LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    LOG_INFO("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
     // ImGui가 입력을 처리하도록 먼저 전달
     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
         return true;
 
     auto& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
     auto& inputSystem = ECS::InputSystem::GetInstance();
-    LOG_VERBOSE("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
+    
     switch (msg)
     {
     case WM_CREATE:
@@ -123,6 +124,9 @@ public:
   //      windowComponent.top = rect.top;
   //      windowComponent.right = rect.right;
   //      windowComponent.bottom = rect.bottom;
+   //     auto& inputSystem = ECS::InputSystem::GetInstance();
+   //     if(inputSystem.IsKeyDown('w') || inputSystem.IsKeyDown('W'))
+			//LOG_INFO("W key is pressed");
 
         // 메시지 처리 루프
         MSG msg = {};

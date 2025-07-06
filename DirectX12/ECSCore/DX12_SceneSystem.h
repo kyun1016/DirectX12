@@ -5,6 +5,7 @@
 #include "DX12_MeshSystem.h"
 #include "DX12_SceneComponent.h"
 #include "DX12_FrameResourceSystem.h"
+#include "CameraSystem.h"
 
 class DX12_SceneSystem {
 	DEFAULT_SINGLETON(DX12_SceneSystem)
@@ -69,6 +70,7 @@ private:
 		}
     }
 
+	CameraSystem mCamera;
 	DirectX::BoundingFrustum mCamFrustum;
 	std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
 };

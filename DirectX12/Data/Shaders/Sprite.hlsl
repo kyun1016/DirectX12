@@ -14,9 +14,9 @@ cbuffer cbInstanceID : register(b0) { uint gBaseInstanceIndex; }
 //     uint gCubeMapIndex;
 //     unit3 dummy;
 // };
-StructuredBuffer<InstanceData> gInstanceData : register(t0);
-StructuredBuffer<CameraData> gCameraData : register(t1);
-StructuredBuffer<LightData> gLightData : register(t2);
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
+StructuredBuffer<CameraData> gCameraData : register(t1, space0);
+StructuredBuffer<LightData> gLightData : register(t2, space0);
 
 struct VertexOut
 {
@@ -65,19 +65,19 @@ void GS(point VertexOut gin[1], inout TriangleStream<GeoOut> triStream)
     GeoOut gout;
 
     // Transform to clip space and output vertices
-    gout.PosH = mul(v[1], gViewProj); // Upper-left
+    gout.PosH = mul(v[1], gCameraData[0].ViewProj); // Upper-left
     gout.TexC = float2(0.0f, 0.0f);
     triStream.Append(gout);
 
-    gout.PosH = mul(v[0], gViewProj); // Lower-left
+    gout.PosH = mul(v[0], gCameraData[0].ViewProj); // Lower-left
     gout.TexC = float2(0.0f, 1.0f);
     triStream.Append(gout);
 
-    gout.PosH = mul(v[3], gViewProj); // Upper-right
+    gout.PosH = mul(v[3], gCameraData[0].ViewProj); // Upper-right
     gout.TexC = float2(1.0f, 0.0f);
     triStream.Append(gout);
 
-    gout.PosH = mul(v[2], gViewProj); // Lower-right
+    gout.PosH = mul(v[2], gCameraData[0].ViewProj); // Lower-right
     gout.TexC = float2(1.0f, 1.0f);
     triStream.Append(gout);
 }
