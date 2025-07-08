@@ -44,9 +44,20 @@ public:
 		// DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH 가 있으면 Alt+Enter 지원
 		// Present: 화면에 백버퍼를 출력
 		UINT syncInterval = vsync ? 1 : 0; // 1: VSync On (모니터 리프레시 동기화), 0: VSync Off (최대한 빠르게)
-		UINT presentFlags = 0;             // 특별한 Present 플래그 (예: DXGI_PRESENT_DO_NOT_WAIT 등)
+		UINT presentFlags = 0; //DXGI_PRESENT_DO_NOT_WAIT;// 0;             // 특별한 Present 플래그 (예: DXGI_PRESENT_DO_NOT_WAIT 등)
 
-		ThrowIfFailed(mSwapChain->Present(syncInterval, presentFlags));
+		HRESULT hr = mSwapChain->Present(syncInterval, presentFlags);
+		if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+		{
+			// GPU가 아직 이전 프레임을 그리고 있는 정상적인 상황입니다.
+			// 이 경우에는 아무것도 하지 않고 다음 프레임으로 넘어갑니다.
+			LOG_INFO("GPU was still drawing..."); // 필요 시 로그 추가
+		}
+		else
+		{
+			// 그 외 다른 오류가 발생한 경우 예외 처리를 합니다.
+			ThrowIfFailed(hr);
+		}
 
 		// 다음 프레임을 위한 백버퍼 인덱스 갱신
 		mBackBufferIndex = (mBackBufferIndex + 1) % APP_NUM_BACK_BUFFERS;

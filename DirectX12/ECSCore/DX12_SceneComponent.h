@@ -19,11 +19,15 @@ struct RenderItem
 		: Option(option)
 	{
 	}
+	~RenderItem() = default;
+	RenderItem& operator=(const RenderItem&) = delete;
+	RenderItem(RenderItem&&) = delete;
+	RenderItem& operator=(RenderItem&&) = delete;
 
-	int NumFramesDirty = APP_NUM_BACK_BUFFERS;
+	uint32_t NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	std::vector<InstanceComponent> Instances;
 	std::vector<std::vector<std::vector<uint32_t>>> MeshIndex;
-	eCFGRenderItem Option = eCFGRenderItem::FrustumCullingEnabled;
+	eCFGRenderItem Option = eCFGRenderItem::None;
 	eRenderLayer TargetLayer = eRenderLayer::None;
 	
 	// // TODO: 

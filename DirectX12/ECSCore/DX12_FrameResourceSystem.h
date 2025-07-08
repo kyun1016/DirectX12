@@ -3,14 +3,15 @@
 #include "DX12_Config.h"
 #include "InstanceData.h"
 #include "PassData.h"
+#include "CameraData.h"
 
 struct DX12_FrameResource {
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
 	UINT64 fenceValue = 0;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	std::unique_ptr<UploadBuffer<InstanceData>> InstanceDataBuffer;
 	std::unique_ptr<UploadBuffer<InstanceIDData>> InstanceIDCB;
-	std::unique_ptr<UploadBuffer<PassData>> PassCB;
+	std::unique_ptr<UploadBuffer<InstanceData>> InstanceDataBuffer;
+	std::unique_ptr<UploadBuffer<CameraData>> CameraDataBuffer;
 };
 
 class DX12_FrameResourceSystem
@@ -28,7 +29,7 @@ public:
 			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mFrameResources[i].commandAllocator.GetAddressOf())));
 			mFrameResources[i].InstanceDataBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, instanceCount, false);
 			mFrameResources[i].InstanceIDCB = std::make_unique<UploadBuffer<InstanceIDData>>(device, 1, false);
-			mFrameResources[i].PassCB = std::make_unique<UploadBuffer<PassData>>(device, 1, false);
+			mFrameResources[i].CameraDataBuffer = std::make_unique<UploadBuffer<CameraData>>(device, 1, false);
 		}
 	}
 	void BeginFrame()
@@ -57,8 +58,8 @@ public:
 	D3D12_GPU_VIRTUAL_ADDRESS GetInstanceIDDataGPUVirtualAddress() const {
 		return mFrameResources[mCurrFrameResourceIndex].InstanceIDCB->Resource()->GetGPUVirtualAddress();
 	}
-	D3D12_GPU_VIRTUAL_ADDRESS GetPassDataGPUVirtualAddress() const {
-		return mFrameResources[mCurrFrameResourceIndex].PassCB->Resource()->GetGPUVirtualAddress();
+	D3D12_GPU_VIRTUAL_ADDRESS GetCameraDataGPUVirtualAddress() const {
+		return mFrameResources[mCurrFrameResourceIndex].CameraDataBuffer->Resource()->GetGPUVirtualAddress();
 	}
 
 private:

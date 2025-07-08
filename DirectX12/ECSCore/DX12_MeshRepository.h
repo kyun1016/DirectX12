@@ -49,16 +49,19 @@ public:
 			case eMeshType::STANDARD:
 				geo->VertexBufferByteSize = (UINT)vertices.size() * sizeof(Vertex);
 				geo->VertexByteStride = sizeof(Vertex);
+				geo->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 				vertexData = vertices.data();
 				break;
 			case eMeshType::SKINNED:
 				geo->VertexBufferByteSize = (UINT)skinnedVertices.size() * sizeof(SkinnedVertex);
 				geo->VertexByteStride = sizeof(SkinnedVertex);
+				geo->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 				vertexData = skinnedVertices.data();
 				break;
 			case eMeshType::SPRITE:
 				geo->VertexBufferByteSize = (UINT)spriteVertices.size() * sizeof(SpriteVertex);
 				geo->VertexByteStride = sizeof(SpriteVertex);
+				geo->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
 				vertexData = spriteVertices.data();
 				break;
 			}

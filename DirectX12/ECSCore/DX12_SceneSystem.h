@@ -17,14 +17,14 @@ public:
 
 	void Initialize()
 	{
-		RenderItem renderItem;
-		renderItem.Option = eCFGRenderItem::FrustumCullingEnabled;
-		renderItem.Push({ 1,0 });
-		renderItem.Push({ 1,0 });
-		renderItem.Push({ 1,0 });
-		renderItem.Push({ 1,0 });
-		renderItem.Push({ 1,0 });
-		renderItem.Push({ 1,0 });
+		mAllRenderItems.emplace_back(std::make_unique<RenderItem>());
+		mAllRenderItems.back()->Option = eCFGRenderItem::None;
+		mAllRenderItems.back()->TargetLayer = eRenderLayer::Sprite;
+		mAllRenderItems.back()->Push({ 1, 0 });
+		mAllRenderItems.emplace_back(std::make_unique<RenderItem>());
+		mAllRenderItems.back()->Option = eCFGRenderItem::None;
+		mAllRenderItems.back()->TargetLayer = eRenderLayer::Opaque;
+		mAllRenderItems.back()->Push({ 2, 0 });
 	}
 
 	const std::vector<std::unique_ptr<RenderItem>>& GetRenderItems() const
@@ -48,18 +48,18 @@ private:
 			{
 				for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
 				{
-					DX12_MeshHandle meshHandle = {geoIdx, meshIdx};
+					DX12_MeshHandle meshHandle = {static_cast<ECS::RepoHandle>(geoIdx), meshIdx};
 					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
 					meshComponent->StartInstanceLocation = visibleInstanceCount;
 					instanceID.BaseInstanceIndex = visibleInstanceCount;
-					currInstanceCB->CopyData(meshIdx, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
+					currInstanceCB->CopyData(static_cast<int>(meshIdx), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
 																	// Geometry의 Mesh 별로 관리 적용
 					for(const auto& instanceIdx : ri->MeshIndex[geoIdx][meshIdx])
 					{
 						auto& instance = ri->Instances[instanceIdx];
 						if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled)
 						|| !(instance.Option & eCFGInstanceComponent::UseCulling)
-						|| (mCamFrustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
+						|| (CameraSystem::GetInstance().GetCamera(0)->Frustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
 						{
 							currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
 						}
@@ -69,8 +69,6 @@ private:
 			}
 		}
     }
-
-	CameraSystem mCamera;
-	DirectX::BoundingFrustum mCamFrustum;
+private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
 };

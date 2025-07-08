@@ -4,16 +4,6 @@
 #include "../../ECSCore/CameraData.h"
 
 cbuffer cbInstanceID : register(b0) { uint gBaseInstanceIndex; }
-// cbuffer cbPass : register(b1)
-// {
-//     float4 gFogColor;
-//     float gFogStart;
-//     float gFogRange;
-//     float gTotalTime;
-//     float gDeltaTime;
-//     uint gCubeMapIndex;
-//     unit3 dummy;
-// };
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
 StructuredBuffer<CameraData> gCameraData : register(t1, space0);
 StructuredBuffer<LightData> gLightData : register(t2, space0);
@@ -86,5 +76,5 @@ float4 PS(GeoOut pin) : SV_Target
 {
     // For now, just return a solid color.
     // Later, you can sample a texture using pin.TexC.
-    return float4(1.0f, 1.0f, 0.0f, 0.5f); // Semi-transparent yellow
+    return float4(1.0f, 0.0f, 1.0f, 0.5f); // Semi-transparent yellow
 }

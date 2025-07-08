@@ -18,6 +18,7 @@
 #include "ImGuiSystem.h"
 #include "DX12_InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
+#include "CameraSystem.h"
 struct ObjectConstants {
 	float4x4 WorldViewProj;
 };
@@ -30,20 +31,21 @@ public:
 	}
 
 	virtual void Sync() override {
-		//DX12_FrameResourceSystem::GetInstance().BeginFrame();
-		//DX12_SceneSystem::GetInstance().Update();
+		DX12_FrameResourceSystem::GetInstance().BeginFrame();
+		DX12_SceneSystem::GetInstance().Update();
+		CameraSystem::GetInstance().Sync();
 	}
 
 	virtual void Update() override {
-		//BeginRenderPass();
-		//DrawRenderItems(1, eRenderLayer::Opaque);
-		//DrawSprites();
-		//EndRenderPass();
-		//ImGuiSystem::GetInstance().Render();
-		//DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
-		//DX12_SwapChainSystem::GetInstance().Present(true);
-		//ImGuiSystem::GetInstance().RenderMultiViewport();
-		//DX12_FrameResourceSystem::GetInstance().EndFrame();
+		BeginRenderPass();
+		DrawRenderItems(eRenderLayer::Opaque);
+		// DrawRenderItems(eRenderLayer::Opaque);
+		EndRenderPass();
+		ImGuiSystem::GetInstance().Render();
+		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		ImGuiSystem::GetInstance().RenderMultiViewport();
+		DX12_SwapChainSystem::GetInstance().Present(true);
+		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;
@@ -52,6 +54,7 @@ private:
 	D3D12_RECT mScissorRect;
 
 	inline void Initialize() {
+		ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
 		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
 
 		DX12_DeviceSystem::GetInstance().Initialize();
@@ -70,6 +73,7 @@ private:
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
 		DX12_SceneSystem::GetInstance().Initialize();
+		CameraSystem::GetInstance().Initialize();
 		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
 
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
@@ -95,66 +99,29 @@ private:
 		mCommandList->OMSetRenderTargets(1, &DX12_SwapChainSystem::GetInstance().GetBackBufferDescriptorHandle(), false, nullptr);
 	}
 
-	inline void DrawRenderItems(const ECS::RepoHandle handle, const eRenderLayer flag)
-	{
-		// // 테스트를 위한 WVP 행렬 업데이트
-		// WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-		// float4x4 world;
-		// float4x4 view = DirectX::SimpleMath::Matrix::CreateLookAt(
-		// 	float3(0.0f, 50.0f, -150.0f), // 카메라 위치
-		// 	float3(0.0f, 0.0f, 0.0f),     // 바라보는 지점
-		// 	float3(0.0f, 1.0f, 0.0f)      // Up 벡터
-		// );
-		// float4x4 proj = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-		// 	DirectX::XM_PIDIV4,
-		// 	static_cast<float>(wc.width) / static_cast<float>(wc.height),
-		// 	1.0f,
-		// 	1000.0f
-		// );
-		// float4x4 wvp = world * view * proj;
-		// 
-		// ObjectConstants objConstants;
-		// objConstants.WorldViewProj = wvp.Transpose(); // HLSL은 Column-Major 행렬을 기대합니다.
-		// mObjectCB->CopyData(0, objConstants);
-
-		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("test"));
-		// mCommandList->SetGraphicsRootConstantBufferView(0, mObjectCB->Resource()->GetGPUVirtualAddress());
-		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
-
-		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(handle);
-		DX12_CommandSystem::GetInstance().SetMesh(geo);
-		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		for (const auto& ri : geo->DrawArgs)
-		{
-			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
-		}
-	}
-
 	inline void DrawRenderItems(const eRenderLayer flag)
 	{
-		auto& ri = DX12_SceneSystem::GetInstance().GetRenderItems();
-		for(const auto& item : ri)
+		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
+		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
+
+		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
+		
+		for (auto& ri : allRenderItems)
 		{
-			// TODO: Make handling logic
-		}
-	}
+			if (!(ri->TargetLayer & flag))
+				continue;
+			for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
+			{
+				for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
+				{
+					DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
+					DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
+					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
 
-	inline void DrawSprites()
-	{
-		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(eRenderLayer::Sprite));
-		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature("sprite"));
-
-		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetPassDataGPUVirtualAddress()); // cbPass (gViewProj)
-		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress()); // gInstanceData
-
-		DX12_MeshGeometry* geo = DX12_MeshSystem::GetInstance().GetGeometry(DX12_MeshRepository::GetInstance().Load("Sprite"));
-		DX12_CommandSystem::GetInstance().SetMesh(geo);
-		mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-
-		for (const auto& ri : geo->DrawArgs)
-		{
-			mCommandList->DrawIndexedInstanced(ri.IndexCount, ri.InstanceCount, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
+					mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, 0);
+				}
+			}
 		}
 	}
 

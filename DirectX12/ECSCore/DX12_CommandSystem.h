@@ -84,7 +84,7 @@ public:
 	inline void SetMesh(const DX12_MeshGeometry* mesh) {
 		mLastVertexBufferView = mesh->VertexBufferView();
 		mLastIndexBufferView = mesh->IndexBufferView();
-		mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mLastPrimitiveType = mesh->PrimitiveType;
 
 		mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
 		mCommandList->IASetIndexBuffer(&mLastIndexBufferView);

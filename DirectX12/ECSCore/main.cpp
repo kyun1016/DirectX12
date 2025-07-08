@@ -188,7 +188,6 @@ void RunExample()
 	LOG_FATAL("ECS Coordinator Init");
 
     ECS::Coordinator::GetInstance().RegisterSystem<TimeSystem>();
-    ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
     ECS::Coordinator::GetInstance().RegisterSystem<DX12_RenderSystem>();
     InitPhysicsExample();
     InitSoundExample();

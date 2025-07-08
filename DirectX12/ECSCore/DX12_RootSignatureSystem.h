@@ -1,5 +1,6 @@
 #pragma once
 #include "DX12_Config.h"
+// #include "DX12_PSOSystem.h"
 
 class DX12_RootSignatureSystem {
 	DEFAULT_SINGLETON(DX12_RootSignatureSystem)
@@ -11,32 +12,32 @@ public:
 		BuildTestRootSignature();
 	}
 
-	inline ID3D12RootSignature* GetGraphicsSignature(const std::string& name) {
-		auto it = mGraphicsSignatures.find(name);
+	inline ID3D12RootSignature* GetGraphicsSignature(const eRenderLayer& layer) {
+		auto it = mGraphicsSignatures.find(layer);
 		return (it != mGraphicsSignatures.end()) ? it->second.Get() : nullptr;
 	}
 
-	inline ID3D12RootSignature* GetComputeSignature(const std::string& name) {
-		auto it = mComputeSignatures.find(name);
+	inline ID3D12RootSignature* GetComputeSignature(const eRenderLayer& layer) {
+		auto it = mComputeSignatures.find(layer);
 		return (it != mComputeSignatures.end()) ? it->second.Get() : nullptr;
 	}
 
-	inline void RegisterGraphicsSignature(const std::string& name, const std::vector<CD3DX12_ROOT_PARAMETER>& params, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT) {
+	inline void RegisterGraphicsSignature(const eRenderLayer& layer, const std::vector<CD3DX12_ROOT_PARAMETER>& params, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT) {
 		auto samplers = GetStaticSamplers();
 		CD3DX12_ROOT_SIGNATURE_DESC desc((UINT)params.size(), params.data(), (UINT)samplers.size(), samplers.data(), flags);
-		CreateSignature(desc, mGraphicsSignatures[name]);
+		CreateSignature(desc, mGraphicsSignatures[layer]);
 	}
 
-	inline void RegisterComputeSignature(const std::string& name, const std::vector<CD3DX12_ROOT_PARAMETER>& params, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE) {
+	inline void RegisterComputeSignature(const eRenderLayer& layer, const std::vector<CD3DX12_ROOT_PARAMETER>& params, D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_NONE) {
 		auto samplers = GetStaticSamplers();
 		CD3DX12_ROOT_SIGNATURE_DESC desc((UINT)params.size(), params.data(), (UINT)samplers.size(), samplers.data(), flags);
-		CreateSignature(desc, mComputeSignatures[name]);
+		CreateSignature(desc, mComputeSignatures[layer]);
 	}
 
 private:
 	ID3D12Device* mDevice = nullptr;
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mGraphicsSignatures;
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mComputeSignatures;
+	std::unordered_map<eRenderLayer, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mGraphicsSignatures;
+	std::unordered_map<eRenderLayer, Microsoft::WRL::ComPtr<ID3D12RootSignature>> mComputeSignatures;
 
 	void BuildExampleRootSignature()
 	{
@@ -50,7 +51,7 @@ private:
 		tmp.InitAsShaderResourceView(0, 0); param.push_back(tmp);	// SRV, InstanceData t0 (Space0)
 		tmp.InitAsShaderResourceView(1, 0); param.push_back(tmp);	// SRV, MaterialData t1 (Space0)
 
-		RegisterGraphicsSignature("main", param);
+		RegisterGraphicsSignature(eRenderLayer::Opaque, param);
 	}
 
 	void BuildSpriteRootSignature()
@@ -62,7 +63,7 @@ private:
 		tmp.InitAsShaderResourceView(1, 0); param.push_back(tmp);	// SRV, CameraData t1 (Space0)
 		tmp.InitAsShaderResourceView(2, 0); param.push_back(tmp);	// SRV, LightData t2 (Space0)
 
-		RegisterGraphicsSignature("sprite", param);
+		RegisterGraphicsSignature(eRenderLayer::Sprite, param);
 	}
 
 	void BuildTestRootSignature()
@@ -70,7 +71,7 @@ private:
 		std::vector<CD3DX12_ROOT_PARAMETER> param(1);
 		// Per-object constants (WVP matrix)
 		param[0].InitAsConstantBufferView(0); // b0
-		RegisterGraphicsSignature("test", param);
+		RegisterGraphicsSignature(eRenderLayer::Test, param);
 	}
 	inline void CreateSignature(const CD3DX12_ROOT_SIGNATURE_DESC& desc, Microsoft::WRL::ComPtr<ID3D12RootSignature>& outSig) {
 		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;

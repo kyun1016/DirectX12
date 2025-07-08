@@ -116,17 +116,9 @@ public:
     }
 
 	void Sync() override {
+		LOG_INFO("WindowSystem::Sync() called");
 		// 윈도우 상태 갱신
 		auto& windowComponent = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
-        //RECT rect;
-        //GetClientRect(mHwnd, &rect);
-  //      windowComponent.left = rect.left;
-  //      windowComponent.top = rect.top;
-  //      windowComponent.right = rect.right;
-  //      windowComponent.bottom = rect.bottom;
-   //     auto& inputSystem = ECS::InputSystem::GetInstance();
-   //     if(inputSystem.IsKeyDown('w') || inputSystem.IsKeyDown('W'))
-			//LOG_INFO("W key is pressed");
 
         // 메시지 처리 루프
         MSG msg = {};
