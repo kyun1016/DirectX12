@@ -19,9 +19,6 @@
 #include "DX12_InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
 #include "CameraSystem.h"
-struct ObjectConstants {
-	float4x4 WorldViewProj;
-};
 
 class DX12_RenderSystem : public ECS::ISystem {
 public:
@@ -31,7 +28,7 @@ public:
 	}
 
 	virtual void Sync() override {
-		WindowSystem::GetInstance().Sync();
+		
 		CameraSystem::GetInstance().Sync();
 		DX12_SceneSystem::GetInstance().Update();
 		DX12_FrameResourceSystem::GetInstance().BeginFrame();
@@ -39,7 +36,7 @@ public:
 
 	virtual void Update() override {
 		BeginRenderPass();
-		DrawRenderItems(eRenderLayer::Opaque);
+		// DrawRenderItems(eRenderLayer::Opaque);
 		// DrawRenderItems(eRenderLayer::Opaque);
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();

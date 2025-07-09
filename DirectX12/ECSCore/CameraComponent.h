@@ -58,6 +58,7 @@ public:
 		if (!Dirty)
 			return;
 
+		Dirty = false;
 		NumFramesDirty = APP_NUM_BACK_BUFFERS;
 		// Step 1. Update rotation
 		DirectX::XMVECTOR look = DirectX::XMLoadFloat3(&w_Look);

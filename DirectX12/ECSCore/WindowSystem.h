@@ -1,5 +1,4 @@
 #pragma once
-#include "ECSCoordinator.h"
 #include "WindowComponent.h"
 #include <WinUser.h>
 #include "InputSystem.h"
@@ -18,8 +17,6 @@ public:
 public:
     void Initialize()
     {
-        auto& coordinator = ECS::Coordinator::GetInstance();
-
         RegisterWindowClass();
         MakeWindowHandle();
         ShowWindow(mWindowComponent.hwnd, SW_SHOWDEFAULT);
@@ -27,7 +24,7 @@ public:
     }
 
 	void Sync() {
-		LOG_INFO("WindowSystem::Sync() called");
+		// LOG_INFO("WindowSystem::Sync() called");
         // 메시지 처리 루프
         MSG msg = {};
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
