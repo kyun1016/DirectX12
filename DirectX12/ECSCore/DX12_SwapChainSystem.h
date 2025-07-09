@@ -44,7 +44,7 @@ public:
 		// DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH 가 있으면 Alt+Enter 지원
 		// Present: 화면에 백버퍼를 출력
 		UINT syncInterval = vsync ? 1 : 0; // 1: VSync On (모니터 리프레시 동기화), 0: VSync Off (최대한 빠르게)
-		UINT presentFlags = 0; //DXGI_PRESENT_DO_NOT_WAIT;// 0;             // 특별한 Present 플래그 (예: DXGI_PRESENT_DO_NOT_WAIT 등)
+		UINT presentFlags = DXGI_PRESENT_DO_NOT_WAIT;// 0;             // 특별한 Present 플래그 (예: DXGI_PRESENT_DO_NOT_WAIT 등)
 
 		HRESULT hr = mSwapChain->Present(syncInterval, presentFlags);
 		if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
@@ -57,10 +57,9 @@ public:
 		{
 			// 그 외 다른 오류가 발생한 경우 예외 처리를 합니다.
 			ThrowIfFailed(hr);
+			// 다음 프레임을 위한 백버퍼 인덱스 갱신
+			mBackBufferIndex = (mBackBufferIndex + 1) % APP_NUM_BACK_BUFFERS;
 		}
-
-		// 다음 프레임을 위한 백버퍼 인덱스 갱신
-		mBackBufferIndex = (mBackBufferIndex + 1) % APP_NUM_BACK_BUFFERS;
     }
 
     ID3D12Resource* GetBackBuffer() const

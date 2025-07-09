@@ -31,9 +31,10 @@ public:
 	}
 
 	virtual void Sync() override {
-		DX12_FrameResourceSystem::GetInstance().BeginFrame();
-		DX12_SceneSystem::GetInstance().Update();
+		WindowSystem::GetInstance().Sync();
 		CameraSystem::GetInstance().Sync();
+		DX12_SceneSystem::GetInstance().Update();
+		DX12_FrameResourceSystem::GetInstance().BeginFrame();
 	}
 
 	virtual void Update() override {
@@ -44,7 +45,7 @@ public:
 		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
 		ImGuiSystem::GetInstance().RenderMultiViewport();
-		DX12_SwapChainSystem::GetInstance().Present(true);
+		DX12_SwapChainSystem::GetInstance().Present(false);
 		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
@@ -54,8 +55,8 @@ private:
 	D3D12_RECT mScissorRect;
 
 	inline void Initialize() {
-		ECS::Coordinator::GetInstance().RegisterSystem<WindowSystem>();
-		WindowComponent& wc = ECS::Coordinator::GetInstance().GetSingletonComponent<WindowComponent>();
+		WindowSystem::GetInstance().Initialize();
+		WindowComponent& wc = WindowSystem::GetInstance().GetWindowComponent();
 
 		DX12_DeviceSystem::GetInstance().Initialize();
 		mDevice = DX12_DeviceSystem::GetInstance().GetDevice();

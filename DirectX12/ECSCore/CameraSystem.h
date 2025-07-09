@@ -10,6 +10,8 @@ public:
 		NewCamera();
 	}
 	void Sync() {
+
+
 		auto currCameraBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().CameraDataBuffer.get();
 
 		auto& coordinator = ECS::Coordinator::GetInstance();
@@ -22,6 +24,7 @@ public:
 			}
 		}
 	}
+
 	size_t NewCamera() {
 		mAllCameras.emplace_back(std::make_unique<CameraComponent>());
 
