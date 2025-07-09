@@ -41,7 +41,6 @@ public:
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
-		ImGuiSystem::GetInstance().RenderMultiViewport();
 		DX12_SwapChainSystem::GetInstance().Present(false);
 		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}

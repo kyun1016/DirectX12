@@ -146,6 +146,7 @@ namespace ECS
 				mSystemManager->SyncAllSystems();
 				mSystemManager->PreUpdateAllSystems();
 				mSystemManager->UpdateAllSystems();
+				ImGuiSystem::GetInstance().RenderMultiViewport();
 				mSystemManager->LateUpdateAllSystems();
 				mSystemManager->FixedUpdateAllSystems();
 				mSystemManager->FinalUpdateAllSystems();

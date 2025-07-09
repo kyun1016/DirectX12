@@ -31,7 +31,8 @@ public:
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        // 필요시 윈도우 상태 갱신
+        //// 필요시 윈도우 상태 갱신
+        //LOG_INFO("msg: {}", msg.message);
 	}
 
     WindowComponent& GetWindowComponent()
