@@ -1,4 +1,5 @@
 #pragma once
+#include "ECSConfig.h"
 #include "DX12_Config.h"
 #include "DX12_RTVHeapRepository.h"
 #include "DX12_CommandSystem.h"
@@ -7,6 +8,7 @@ DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
     void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, const HWND& hwnd, UINT width, UINT height)
     {
+		mDevice = device;
 		mWidth = width;
 		mHeight = height;
 		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
@@ -17,23 +19,38 @@ public:
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 			mDescritorHandles[i] = DX12_RTVHeapRepository::GetInstance().AllocateHandle();
 
-		CreateSwapChain(device, factory, commandQueue, hwnd);
+		CreateSwapChain(factory, commandQueue, hwnd);
     }
-    void Resize(ID3D12Device* device, UINT newWidth, UINT newHeight)
+
+    void Resize(UINT newWidth, UINT newHeight)
     {
+		if (!mDevice)
+			return;
+		if (!mSwapChain)
+			return;
 		if ((mWidth == newWidth) && (mHeight == newHeight))
 			return;
+		DX12_CommandSystem::GetInstance().FlushCommandQueue();
+		DX12_CommandSystem::GetInstance().BeginCommandList();
 
+		// 초기값 설정
 		mWidth = newWidth;
 		mHeight = newHeight;
 		mScreenViewport = { 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight), 0.0f, 1.0f };
 		mScissorRect = { 0, 0, static_cast<LONG>(mWidth)/2, static_cast<LONG>(mHeight) };
-		mBackBufferIndex = 0;
-		DX12_CommandSystem::GetInstance().FlushCommandQueue();
-
-		ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mWidth, mHeight, mSwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 		
-		CreateRenderTargerView(device);
+		// 1. 백버퍼 핸들 초기화
+		ReleaseBackBufferReferences();
+
+		// 1. 백버퍼 리사이즈
+		ThrowIfFailed(mSwapChain->ResizeBuffers(APP_NUM_BACK_BUFFERS, mWidth, mHeight, mSwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+		SyncBackBufferReferences();
+
+		// 2. RTV Texture 업데이트
+
+		// 3. DSV 업데이트
+		DX12_CommandSystem::GetInstance().ExecuteCommandList();
+		DX12_CommandSystem::GetInstance().FlushCommandQueue();
     }
     void Present(bool vsync)
     {
@@ -101,6 +118,7 @@ private:
 	D3D12_RECT mScissorRect = D3D12_RECT{};
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
+	ID3D12Device* mDevice;
 
 	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -112,11 +130,9 @@ private:
 	bool mEnable4xMsaa = false;
 	
 
-	void CreateSwapChain(ID3D12Device* device, IDXGIFactory4* factory, ID3D12CommandQueue* commandQueue, const HWND& hwnd)
+	void CreateSwapChain(IDXGIFactory4* factory, ID3D12CommandQueue* commandQueue, const HWND& hwnd)
 	{
 		// Release the previous swapchain we will be recreating.
-		mSwapChain.Reset();
-
 		DXGI_SWAP_CHAIN_DESC sd
 		{
 			/* DXGI_MODE_DESC BufferDesc					*/
@@ -144,29 +160,34 @@ private:
 		if (mPref.renderAPI == sl::RenderAPI::eD3D12)
 			slSetFeatureLoaded(sl::kFeatureDLSS_G, true);
 #endif
+		mSwapChain.Reset();
 		ThrowIfFailed(factory->CreateSwapChain(commandQueue, &sd, mSwapChain.GetAddressOf()));
 #ifdef _ST
 		if (mPref.renderAPI == sl::RenderAPI::eD3D12)
 			slSetFeatureLoaded(sl::kFeatureDLSS_G, false);
 #endif
 
-		CreateRenderTargerView(device);
+		SyncBackBufferReferences();
 	}
 
-	void CreateRenderTargerView(ID3D12Device* device)
+	void ReleaseBackBufferReferences()
 	{
-		for (int i = 0; i < APP_NUM_BACK_BUFFERS; ++i)
-			if(mBackBuffers[i])
+		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
+			if (mBackBuffers[i])
 				mBackBuffers[i].Reset();
+	}
 
+	void SyncBackBufferReferences()
+	{
+		mBackBufferIndex = 0;
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
 		{
 			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mBackBuffers[i])));
-			device->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mDescritorHandles[i]);
+			mDevice->CreateRenderTargetView(mBackBuffers[i].Get(), nullptr, mDescritorHandles[i]);
 		}
 	}
 
-	inline void CheckFeatureSupport(ID3D12Device* device)
+	inline void CheckFeatureSupport()
 	{
 		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels
 		{
@@ -175,7 +196,7 @@ private:
 			/*_In_  D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags	*/.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE,
 			/*_Out_  UINT NumQualityLevels						*/.NumQualityLevels = 0
 		};
-		ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
+		ThrowIfFailed(mDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &msQualityLevels, sizeof(msQualityLevels)));
 		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 		if (m4xMsaaQuality > 0) {
 			mEnable4xMsaa = true; // Enable 4X MSAA if supported

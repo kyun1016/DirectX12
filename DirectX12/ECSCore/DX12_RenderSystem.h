@@ -40,7 +40,7 @@ public:
 		// DrawRenderItems(eRenderLayer::Opaque);
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();
-		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		DX12_CommandSystem::GetInstance().ExecuteCommandList();
 		DX12_SwapChainSystem::GetInstance().Present(false);
 		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
@@ -73,7 +73,7 @@ private:
 		CameraSystem::GetInstance().Initialize();
 		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
 
-		DX12_CommandSystem::GetInstance().EndAndExecuteCommandList();
+		DX12_CommandSystem::GetInstance().ExecuteCommandList();
 		DX12_CommandSystem::GetInstance().FlushCommandQueue();
 	}
 

@@ -23,16 +23,15 @@ public:
         UpdateWindow(mWindowComponent.hwnd);
     }
 
-	void Sync() {
+	bool Sync() {
 		// LOG_INFO("WindowSystem::Sync() called");
         // 메시지 처리 루프
         MSG msg = {};
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        //// 필요시 윈도우 상태 갱신
-        //LOG_INFO("msg: {}", msg.message);
+        return msg.message != WM_QUIT;
 	}
 
     WindowComponent& GetWindowComponent()
@@ -90,20 +89,18 @@ public:
                         mWindowComponent.flags &= ~eWindowFlags::WINDOW_FLAG_MINIMIZED;
                     else if (mWindowComponent.flags & eWindowFlags::WINDOW_FLAG_FULLSCREEN)
                         mWindowComponent.flags &= ~eWindowFlags::WINDOW_FLAG_FULLSCREEN;
-
-                    // OnResize로 Render Target의 크기를 제조정 해줘야 한다. 이를 Component Update를 통해 관련 System으로 flag 전달
-                    // OnResize();
                 }
+                DX12_SwapChainSystem::GetInstance().Resize(mWindowComponent.width, mWindowComponent.height);
             }
             return 0;
         case WM_ENTERSIZEMOVE:
             mWindowComponent.flags |= eWindowFlags::WINDOW_FLAG_RESIZING;
-            // mTimer.Stop();
+            DX12_SwapChainSystem::GetInstance().Resize(mWindowComponent.width, mWindowComponent.height);
             return 0;
         case WM_EXITSIZEMOVE:
             mWindowComponent.flags &= ~eWindowFlags::WINDOW_FLAG_RESIZING;
             // mTimer.Start();
-            // OnResize();
+            DX12_SwapChainSystem::GetInstance().Resize(mWindowComponent.width, mWindowComponent.height);
             return 0;
         case WM_DESTROY:
             PostQuitMessage(0);

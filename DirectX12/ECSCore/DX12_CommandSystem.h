@@ -64,7 +64,7 @@ public:
 	}
 
 	inline void BeginCommandList() {
-		ThrowIfFailed(mCommandAllocator->Reset());
+		// ThrowIfFailed(mCommandAllocator->Reset());
 		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), nullptr));
 	}
 
@@ -91,7 +91,7 @@ public:
 		mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
 	}
 
-	inline void EndAndExecuteCommandList() {
+	inline void ExecuteCommandList() {
 		// Close the command list to prepare for execution
 		ThrowIfFailed(mCommandList->Close());
 		// Execute the command list

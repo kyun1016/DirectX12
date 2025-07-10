@@ -142,7 +142,8 @@ namespace ECS
 				// WinProc의 경우 병렬처리를 통해 쓰레드를 가져가는 순간 오류 발생
 				// 메인 쓰레드에서 처리가 이뤄지도록 예외적으로 핸들링을 진행
 				//#########################
-				WindowSystem::GetInstance().Sync();
+				if (!WindowSystem::GetInstance().Sync())
+					break;
 				mSystemManager->SyncAllSystems();
 				mSystemManager->PreUpdateAllSystems();
 				mSystemManager->UpdateAllSystems();
