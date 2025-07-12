@@ -3,7 +3,6 @@
 #include "InputComponent.h"
 #include <windowsx.h>
 
-namespace ECS {
 class InputSystem
 {
     DEFAULT_SINGLETON(InputSystem)
@@ -195,4 +194,3 @@ private:
     // 게임패드 상태
     std::array<GamepadState, XUSER_MAX_COUNT> m_GamepadStates;
 };
-}

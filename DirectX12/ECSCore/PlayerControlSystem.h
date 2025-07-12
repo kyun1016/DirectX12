@@ -10,7 +10,7 @@ class PlayerControlSystem : public ECS::ISystem {
 public:
     void Update() override {
         auto& coordinator = ECS::Coordinator::GetInstance();
-        auto& input = ECS::InputSystem::GetInstance();
+        auto& input = InputSystem::GetInstance();
         const auto& time = coordinator.GetSingletonComponent<TimeComponent>();
 
         for (auto const& entity : mEntities) {

@@ -65,7 +65,7 @@ private:
 	void BuildExamplePSO()
 	{
 		PSODescriptor desc;
-		desc.layer = eRenderLayer::Opaque;
+		desc.layer = eRenderLayer::Test;
 		desc.sigName = "test";
 		desc.vsName = "vs_test";
 		desc.psName = "ps_test";

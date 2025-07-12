@@ -31,18 +31,19 @@ public:
 		
 		CameraSystem::GetInstance().Sync();
 		DX12_SceneSystem::GetInstance().Update();
-		DX12_FrameResourceSystem::GetInstance().BeginFrame();
+		// DX12_FrameResourceSystem::GetInstance().BeginFrame();
 	}
 
 	virtual void Update() override {
 		BeginRenderPass();
 		// DrawRenderItems(eRenderLayer::Opaque);
-		// DrawRenderItems(eRenderLayer::Opaque);
+		// DrawRenderItems(eRenderLayer::Test);
+		DrawRenderItems(eRenderLayer::Sprite);
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().ExecuteCommandList();
-		DX12_SwapChainSystem::GetInstance().Present(false);
-		DX12_FrameResourceSystem::GetInstance().EndFrame();
+		// DX12_SwapChainSystem::GetInstance().Present(false);
+		// DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;
@@ -98,7 +99,13 @@ private:
 
 	inline void DrawRenderItems(const eRenderLayer flag)
 	{
-		mCommandList->SetPipelineState(DX12_PSOSystem::GetInstance().Get(flag));
+		ID3D12PipelineState* pso = DX12_PSOSystem::GetInstance().Get(flag);
+		if (!pso)
+		{
+			LOG_ERROR("Pipeline State Object not found for layer: {}", static_cast<int>(flag));
+			return;
+		}
+		mCommandList->SetPipelineState(pso);
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
 
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();

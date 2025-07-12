@@ -90,6 +90,10 @@ public:
 		position = DirectX::XMVectorMultiplyAdd(DirectX::XMVectorReplicate(MovementDelta.y * MovementSpeed), DirectX::XMLoadFloat3(&r_Up), position);
 		DirectX::XMStoreFloat3(&r_Position, position);
 
+		PitchDelta = 0.0f;
+		YawDelta = 0.0f;
+		MovementDelta = { 0.0f, 0.0f, 0.0f };
+
 		// Step 3. Update Write Buffer
 		w_Position = r_Position;
 		w_Look = r_Look;

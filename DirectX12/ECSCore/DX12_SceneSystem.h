@@ -19,12 +19,14 @@ public:
 	{
 		mAllRenderItems.emplace_back(std::make_unique<RenderItem>());
 		mAllRenderItems.back()->Option = eCFGRenderItem::None;
-		mAllRenderItems.back()->TargetLayer = eRenderLayer::Sprite;
-		mAllRenderItems.back()->Push({ 1, 0 });
+		mAllRenderItems.back()->TargetLayer = eRenderLayer::Test;
+		mAllRenderItems.back()->Push({ 2, 0 });
 		mAllRenderItems.emplace_back(std::make_unique<RenderItem>());
 		mAllRenderItems.back()->Option = eCFGRenderItem::None;
-		mAllRenderItems.back()->TargetLayer = eRenderLayer::Opaque;
-		mAllRenderItems.back()->Push({ 2, 0 });
+		mAllRenderItems.back()->TargetLayer = eRenderLayer::Sprite;
+		mAllRenderItems.back()->Push({ 1, 0 });
+		// mAllRenderItems.back()->Push({ 1, 1 });
+		// mAllRenderItems.back()->Push({ 1, 2 });
 	}
 
 	const std::vector<std::unique_ptr<RenderItem>>& GetRenderItems() const

@@ -3,6 +3,7 @@
 #include "ECSComponent.h"
 #include "ECSSystem.h"
 #include "WindowSystem.h"
+#include "DX12_FrameResourceSystem.h"
 
 namespace ECS
 {
@@ -144,9 +145,13 @@ namespace ECS
 				//#########################
 				if (!WindowSystem::GetInstance().Sync())
 					break;
+				InputSystem::GetInstance().PreUpdate();
 				mSystemManager->SyncAllSystems();
+				DX12_FrameResourceSystem::GetInstance().BeginFrame();
 				mSystemManager->PreUpdateAllSystems();
 				mSystemManager->UpdateAllSystems();
+				DX12_SwapChainSystem::GetInstance().Present(false);
+				DX12_FrameResourceSystem::GetInstance().EndFrame();
 				ImGuiSystem::GetInstance().RenderMultiViewport();
 				mSystemManager->LateUpdateAllSystems();
 				mSystemManager->FixedUpdateAllSystems();

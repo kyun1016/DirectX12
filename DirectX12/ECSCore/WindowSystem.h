@@ -46,7 +46,7 @@ public:
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return true;
 
-        auto& inputSystem = ECS::InputSystem::GetInstance();
+        auto& inputSystem = InputSystem::GetInstance();
 
         switch (msg)
         {

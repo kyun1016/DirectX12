@@ -37,7 +37,8 @@ struct GeoOut
 void GS(point VertexOut gin[1], inout TriangleStream<GeoOut> triStream)
 {
     // Get world space data from vertex and instance buffers.
-    float3 centerW = mul(float4(gin[0].CenterW, 1.0f), gInstanceData[gin[0].InstanceID].World).xyz;
+    // float3 centerW = mul(float4(gin[0].CenterW, 1.0f), gInstanceData[gin[0].InstanceID].World).xyz;
+    float3 centerW = float4(gin[0].CenterW, 1.0f);
     float2 sizeW = gin[0].SizeW;
 
     // Compute the vertices of the quad facing the camera.
@@ -46,30 +47,33 @@ void GS(point VertexOut gin[1], inout TriangleStream<GeoOut> triStream)
     float halfWidth = 0.5f * sizeW.x;
     float halfHeight = 0.5f * sizeW.y;
 
-    float4 v[4];
-    v[0] = float4(centerW + float3(-halfWidth, -halfHeight, 0.0f), 1.0f);
-    v[1] = float4(centerW + float3(-halfWidth, +halfHeight, 0.0f), 1.0f);
-    v[2] = float4(centerW + float3(+halfWidth, -halfHeight, 0.0f), 1.0f);
-    v[3] = float4(centerW + float3(+halfWidth, +halfHeight, 0.0f), 1.0f);
+    float4 pos[4] =
+    {
+        float4(centerW + float3(+halfWidth, -halfHeight, 0.0f), 1.0f),
+        float4(centerW + float3(+halfWidth, +halfHeight, 0.0f), 1.0f),
+        float4(centerW + float3(-halfWidth, -halfHeight, 0.0f), 1.0f),
+        float4(centerW + float3(-halfWidth, +halfHeight, 0.0f), 1.0f)
+    };
     
+    // Triangle 1: v[0], v[1], v[2] (CCW)
+    // Triangle 2: v[1], v[3], v[2] (CCW)
+    float2 tex[4] =
+    {
+        float2(0.0f, 1.0f),
+        float2(0.0f, 0.0f),
+        float2(1.0f, 1.0f),
+        float2(1.0f, 0.0f)
+    };
+
     GeoOut gout;
-
-    // Transform to clip space and output vertices
-    gout.PosH = mul(v[1], gCameraData[0].ViewProj); // Upper-left
-    gout.TexC = float2(0.0f, 0.0f);
-    triStream.Append(gout);
-
-    gout.PosH = mul(v[0], gCameraData[0].ViewProj); // Lower-left
-    gout.TexC = float2(0.0f, 1.0f);
-    triStream.Append(gout);
-
-    gout.PosH = mul(v[3], gCameraData[0].ViewProj); // Upper-right
-    gout.TexC = float2(1.0f, 0.0f);
-    triStream.Append(gout);
-
-    gout.PosH = mul(v[2], gCameraData[0].ViewProj); // Lower-right
-    gout.TexC = float2(1.0f, 1.0f);
-    triStream.Append(gout);
+    [unroll]
+    for (int i = 0; i < 4; ++i)
+    {
+        // gout.PosH = mul(pos[i], gCameraData[0].ViewProj);
+        gout.PosH = pos[i];
+        gout.TexC = tex[i];
+        triStream.Append(gout);
+    }
 }
 
 float4 PS(GeoOut pin) : SV_Target

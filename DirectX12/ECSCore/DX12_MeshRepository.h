@@ -61,7 +61,7 @@ public:
 			case eMeshType::SPRITE:
 				geo->VertexBufferByteSize = (UINT)spriteVertices.size() * sizeof(SpriteVertex);
 				geo->VertexByteStride = sizeof(SpriteVertex);
-				geo->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+				geo->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
 				vertexData = spriteVertices.data();
 				break;
 			}

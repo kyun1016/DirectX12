@@ -16,7 +16,7 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
     VertexOut vout;
 	
-    vout.PosL = float4(vin.PosL, 1.0f);
+    vout.PosL = float4(vin.PosL * 0.5, 1.0f);
     
     return vout;
 }

@@ -88,8 +88,9 @@ inline std::wstring StringToWString(const std::string& str)
 #define ThrowIfFailed(hr) \
 	if (FAILED(hr)) { \
 		LogCore::GetInstance().Log(eLogLevel::Error, eConsoleForeground::RED, __FILE__, __LINE__, __func__, "DirectX 12 Error: {}", std::to_string(hr)); \
-		throw std::exception();\
-	}
+    }
+// 		throw std::exception();\
+// 	}
 
 inline UINT CalcConstantBufferByteSize(UINT byteSize)
 {
