@@ -105,13 +105,40 @@ private:
 			LOG_ERROR("Pipeline State Object not found for layer: {}", static_cast<int>(flag));
 			return;
 		}
+		//mCommandList->SetPipelineState(pso);
+		//DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
+		//mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress());
+		//mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
+		//mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
+		//
+		//auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		//for (auto& ri : allRenderItems)
+		//{
+		//	if (!(ri->TargetLayer & flag))
+		//		continue;
+		//	for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
+		//	{
+		//		for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
+		//		{
+		//			DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
+		//			DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
+		//			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
+
+		//			// mCommandList->DrawInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->InstanceCount);
+		//			mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
+		//		}
+		//	}
+		//}
+
+		const D3D12_GPU_VIRTUAL_ADDRESS baseInstanceIDAddress = DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress();
+		const UINT objCBByteSize = CalcConstantBufferByteSize(sizeof(InstanceIDData));
 		mCommandList->SetPipelineState(pso);
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
-		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
-		
+
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		size_t totalMeshIdx = 0;
 		for (auto& ri : allRenderItems)
 		{
 			if (!(ri->TargetLayer & flag))
@@ -124,7 +151,10 @@ private:
 					DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
 					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
 
-					mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, 0);
+					// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
+					D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + totalMeshIdx++ * objCBByteSize;
+					mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+					mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
 				}
 			}
 		}

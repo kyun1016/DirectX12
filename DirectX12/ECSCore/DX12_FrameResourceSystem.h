@@ -29,7 +29,7 @@ public:
 		{
 			ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mFrameResources[i].commandAllocator.GetAddressOf())));
 			mFrameResources[i].InstanceDataBuffer = std::make_unique<UploadBuffer<InstanceData>>(device, instanceCount, false);
-			mFrameResources[i].InstanceIDCB = std::make_unique<UploadBuffer<InstanceIDData>>(device, 1, false);
+			mFrameResources[i].InstanceIDCB = std::make_unique<UploadBuffer<InstanceIDData>>(device, instanceCount, false);
 			mFrameResources[i].CameraDataBuffer = std::make_unique<UploadBuffer<CameraData>>(device, 1, false);
 		}
 	}

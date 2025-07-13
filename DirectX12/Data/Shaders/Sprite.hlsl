@@ -20,7 +20,7 @@ VertexOut VS(SpriteVertex vin, uint instanceID : SV_InstanceID)
     VertexOut vout;
 
     // Pass data to the geometry shader.
-    vout.InstanceID = gBaseInstanceIndex + instanceID;
+    vout.InstanceID = instanceID + gBaseInstanceIndex;
     vout.CenterW = mul(float4(vin.Position, 1.0f), gInstanceData[vout.InstanceID].World).xyz;
     vout.SizeW = vin.Size * gInstanceData[vout.InstanceID].World._11_22;
 

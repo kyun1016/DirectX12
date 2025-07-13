@@ -13,7 +13,7 @@ public:
     void Update()
     {
 		UpdateInstance();
-        SyncData();	// View 
+        SyncData();	// View
     }
 
 	void Initialize()
@@ -28,6 +28,15 @@ public:
 		mAllRenderItems.back()->Push({ 1, 0 });
 		mAllRenderItems.back()->Push({ 1, 0 });
 		mAllRenderItems.back()->Push({ 1, 0 });
+
+		mAllRenderItems.emplace_back(std::make_unique<RenderItem>());
+		mAllRenderItems.back()->Option = eCFGRenderItem::None;
+		mAllRenderItems.back()->TargetLayer = eRenderLayer::Sprite;
+		mAllRenderItems.back()->Push({ 1, 0 });
+		mAllRenderItems.back()->Push({ 1, 1 });
+		mAllRenderItems.back()->Push({ 1, 2 });
+
+		SyncBaseInstanceLocation();
 	}
 
 	const std::vector<std::unique_ptr<RenderItem>>& GetRenderItems() const
@@ -38,10 +47,9 @@ public:
 private:
     void SyncData()
     {
+		// SyncBaseInstanceLocation();
 		auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get();
-		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
 		uint32_t visibleInstanceCount = 0;
-		InstanceIDData instanceID;
 		for (auto& ri : mAllRenderItems)
 		{
 			if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled) && ri->NumFramesDirty == 0)
@@ -53,10 +61,7 @@ private:
 				{
 					DX12_MeshHandle meshHandle = {static_cast<ECS::RepoHandle>(geoIdx), meshIdx};
 					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-					meshComponent->StartInstanceLocation = visibleInstanceCount;
-					instanceID.BaseInstanceIndex = visibleInstanceCount;
-					currInstanceCB->CopyData(static_cast<int>(meshIdx), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
-																						 // Geometry의 Mesh 별로 관리 적용
+					visibleInstanceCount = meshComponent->StartInstanceLocation;
 					for(const auto& instanceIdx : ri->MeshIndex[geoIdx][meshIdx])
 					{
 						auto& instance = ri->Instances[instanceIdx];
@@ -73,12 +78,36 @@ private:
 		}
     }
 
+	void SyncBaseInstanceLocation()
+	{
+		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
+		InstanceIDData instanceID;
+		uint32_t instanceCount = 0;
+		size_t totalMeshIdx = 0;
+		for (auto& ri : mAllRenderItems)
+		{
+			for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
+			{
+				for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
+				{
+					DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
+					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
+					meshComponent->StartInstanceLocation = instanceCount;
+					instanceID.BaseInstanceIndex = instanceCount;
+					currInstanceCB->CopyData(static_cast<int>(totalMeshIdx++), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
+					instanceCount += ri->MeshIndex[geoIdx][meshIdx].size();
+				}
+			}
+		}
+	}
+
 	void UpdateInstance()
 	{
 		for (auto& ri : mAllRenderItems)
 			for (auto& instance : ri->Instances)
-				if(instance.UpdateTransform())
-					ri->NumFramesDirty = APP_NUM_BACK_BUFFERS; // Update dirty flag for the render item
+				if (instance.UpdateTransform())
+					ri->NumFramesDirty = APP_NUM_BACK_BUFFERS;
+					
 	}
 private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
