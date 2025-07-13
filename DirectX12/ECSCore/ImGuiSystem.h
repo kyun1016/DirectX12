@@ -53,6 +53,16 @@ struct ExampleDescriptorHeapAllocator
 	}
 };
 
+enum class eImguiWindows : std::uint64_t
+{
+	None = 0,
+	MainWindow = 1 << 0,
+	DemoWindow = 1 << 1,
+	AnotherWindow = 1 << 2,
+	Viewport1 = 1 << 2,
+	Viewport2 = 1 << 3
+};
+ENUM_OPERATORS_64(eImguiWindows)
 
 class ImGuiSystem
 {
@@ -134,6 +144,9 @@ private:
 	static constexpr int SRV_IMGUI_SIZE = 64;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
 	ID3D12GraphicsCommandList6* mCommandList = nullptr;
+	bool showMainWindow = true;
+	bool showDemoWindow = true;
+	bool showInstanceWindow = true;
 
 
 	void CreateDescriptorHeap(ID3D12Device* device)
@@ -154,17 +167,61 @@ private:
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		ShowMainWindow();
-
-		static bool showDemoWindow = true;
-		if (showDemoWindow)
-			ImGui::ShowDemoWindow(&showDemoWindow);
+		if (showMainWindow)     ShowMainWindow(&showMainWindow);
+		if (showDemoWindow)     ImGui::ShowDemoWindow(&showDemoWindow);
+		if (showInstanceWindow) ShowInstanceWindow(&showInstanceWindow);
 	}
 
-	void ShowMainWindow()
+	void ShowMainWindow(bool* p_open)
 	{
-		ImGui::Begin("Main Window");
+		ImGuiWindowFlags window_flags = 0;
+		// if (no_titlebar)        window_flags |= ImGuiWindowFlags_NoTitleBar;
+		// if (no_scrollbar)       window_flags |= ImGuiWindowFlags_NoScrollbar;
+		// if (!no_menu)           window_flags |= ImGuiWindowFlags_MenuBar;
+		// if (no_move)            window_flags |= ImGuiWindowFlags_NoMove;
+		// if (no_resize)          window_flags |= ImGuiWindowFlags_NoResize;
+		// if (no_collapse)        window_flags |= ImGuiWindowFlags_NoCollapse;
+		// if (no_nav)             window_flags |= ImGuiWindowFlags_NoNav;
+		// if (no_background)      window_flags |= ImGuiWindowFlags_NoBackground;
+		// if (no_bring_to_front)  window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+		// if (no_docking)         window_flags |= ImGuiWindowFlags_NoDocking;
+		// if (unsaved_document)   window_flags |= ImGuiWindowFlags_UnsavedDocument;
+		// if (no_close)           p_open = NULL; // Don't pass our bool* to Begin
+
+		// Main body of the Demo window starts here.
+		if (!ImGui::Begin("Main Window", p_open, window_flags))
+		{
+			// Early out if the window is collapsed, as an optimization.
+			ImGui::End();
+			return;
+		}
 		ImGui::Text("Hello, ImGui!");
+		ImGui::Checkbox("Demo Window", &showDemoWindow);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Instance Window", &showInstanceWindow);      // Edit bools storing our window open/close state
+		ImGui::End();
+	}
+
+	void ShowInstanceWindow(bool* p_open)
+	{
+		ImGuiWindowFlags window_flags = 0;
+		if (!ImGui::Begin("Instance Window", p_open, window_flags))
+		{
+			ImGui::End();
+			return;
+		}
+		ImGui::Text("Hello, Instance!");
+		auto& renderItem = DX12_SceneSystem::GetInstance().GetRenderItems();
+		float3 w_Position;
+		float3 w_Scale;
+		float3 w_RotationEuler;
+		float4 w_RotationQuat;
+
+		float3 r_Position;
+		float3 r_Scale;
+		float3 r_RotationEuler;
+		float4 r_RotationQuat;
+
+
 		ImGui::End();
 	}
 

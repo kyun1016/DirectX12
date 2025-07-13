@@ -88,12 +88,12 @@
 
 enum class eCFGInstanceComponent : std::uint32_t
 {
-	None = 0,
-	UseCulling = 1 << 0,
-	ShowBoundingBox = 1 << 1,
-	ShowBoundingSphere = 1 << 2,
-	Pickable = 1 << 2,
-	UseQuat = 1 << 3
+None = 0,
+UseCulling = 1 << 0,
+ShowBoundingBox = 1 << 1,
+ShowBoundingSphere = 1 << 2,
+Pickable = 1 << 2,
+UseQuat = 1 << 3
 };
 ENUM_OPERATORS_32(eCFGInstanceComponent)
 
