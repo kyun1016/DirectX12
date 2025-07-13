@@ -2,8 +2,12 @@
 #include "WindowComponent.h"
 #include <WinUser.h>
 #include "InputSystem.h"
-#include "ImGuiSystem.h" // ImGui WndProc 핸들러를 위해 추가
+#include "DX12_SwapChainSystem.h"
+#include "../ImGuiCore/imgui.h"
+#include "../ImGuiCore/imgui_impl_win32.h"
+#include "../ImGuiCore/imgui_impl_dx12.h"
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern LRESULT WINAPI WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 class WindowSystem
@@ -41,7 +45,7 @@ public:
 
     LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        LOG_INFO("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
+        LOG_VERBOSE("msg: {} |  LPARAM: {} {} |  WPARAM: {} {}", msg, (int)HIWORD(lParam), (int)LOWORD(lParam), (int)HIWORD(wParam), (int)LOWORD(wParam));
         // ImGui가 입력을 처리하도록 먼저 전달
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return true;

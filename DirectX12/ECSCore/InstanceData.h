@@ -10,7 +10,6 @@ struct InstanceData
 {
     float4x4 World;
     float4x4 TexTransform;
-    // Geometery Shader 법선 벡터 직교 성질 유지를 위함
     float4x4 WorldInvTranspose;
 
     float2 DisplacementMapTexelSize;

@@ -7,12 +7,6 @@ namespace ECS
 	template<typename T>
 	class IRepository {
 	public:
-		// static IRepository& GetInstance()
-		// {
-		// 	static IRepository instance;
-		// 	return instance;
-		// }
-
 		bool IsLoaded(RepoHandle handle) const {
 			std::lock_guard<std::mutex> lock(mtx);
 			return mResourceStorage.find(handle) != mResourceStorage.end();

@@ -12,6 +12,7 @@ class DX12_SceneSystem {
 public:
     void Update()
     {
+		UpdateInstance();
         SyncData();	// View 
     }
 
@@ -25,8 +26,8 @@ public:
 		mAllRenderItems.back()->Option = eCFGRenderItem::None;
 		mAllRenderItems.back()->TargetLayer = eRenderLayer::Sprite;
 		mAllRenderItems.back()->Push({ 1, 0 });
-		mAllRenderItems.back()->Push({ 1, 1 });
-		mAllRenderItems.back()->Push({ 1, 2 });
+		mAllRenderItems.back()->Push({ 1, 0 });
+		mAllRenderItems.back()->Push({ 1, 0 });
 	}
 
 	const std::vector<std::unique_ptr<RenderItem>>& GetRenderItems() const
@@ -55,7 +56,7 @@ private:
 					meshComponent->StartInstanceLocation = visibleInstanceCount;
 					instanceID.BaseInstanceIndex = visibleInstanceCount;
 					currInstanceCB->CopyData(static_cast<int>(meshIdx), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
-																	// Geometry의 Mesh 별로 관리 적용
+																						 // Geometry의 Mesh 별로 관리 적용
 					for(const auto& instanceIdx : ri->MeshIndex[geoIdx][meshIdx])
 					{
 						auto& instance = ri->Instances[instanceIdx];
@@ -71,6 +72,14 @@ private:
 			}
 		}
     }
+
+	void UpdateInstance()
+	{
+		for (auto& ri : mAllRenderItems)
+			for (auto& instance : ri->Instances)
+				if(instance.UpdateTransform())
+					ri->NumFramesDirty = APP_NUM_BACK_BUFFERS; // Update dirty flag for the render item
+	}
 private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRenderItems;
 };

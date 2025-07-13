@@ -68,7 +68,7 @@ public:
 		{
 			// GPU가 아직 이전 프레임을 그리고 있는 정상적인 상황입니다.
 			// 이 경우에는 아무것도 하지 않고 다음 프레임으로 넘어갑니다.
-			LOG_INFO("GPU was still drawing..."); // 필요 시 로그 추가
+			LOG_VERBOSE("[{} Frame] GPU was still drawing...", mBackBufferIndex); // 필요 시 로그 추가
 		}
 		else
 		{

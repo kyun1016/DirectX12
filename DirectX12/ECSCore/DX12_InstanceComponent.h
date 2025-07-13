@@ -2,6 +2,7 @@
 #include "DX12_Config.h"
 #include "InstanceData.h"
 #include "DX12_MeshSystem.h"
+#include "DX12_TransformComponent.h"
 
 // #ifndef SKINNEDDATA_H
 // #define SKINNEDDATA_H
@@ -88,12 +89,12 @@
 
 enum class eCFGInstanceComponent : std::uint32_t
 {
-None = 0,
-UseCulling = 1 << 0,
-ShowBoundingBox = 1 << 1,
-ShowBoundingSphere = 1 << 2,
-Pickable = 1 << 2,
-UseQuat = 1 << 3
+	None = 0,
+	UseCulling = 1 << 0,
+	ShowBoundingBox = 1 << 1,
+	ShowBoundingSphere = 1 << 2,
+	Pickable = 1 << 2,
+	UseQuat = 1 << 3
 };
 ENUM_OPERATORS_32(eCFGInstanceComponent)
 
@@ -103,19 +104,26 @@ struct InstanceComponent
 	InstanceComponent(const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f })
 		: TexScale(texScale)
 	{
-		Transform.r_Position = translation;
-		Transform.r_Scale = scale;
-		Transform.r_RotationQuat = rot;
+		Transform.w_Position = translation;
+		Transform.w_Scale = scale;
+		Transform.w_RotationQuat = rot;
+		InstanceData.MaterialIndex = 0;
+		InstanceData.DisplacementIndex = 0;
+		InstanceData.CameraIndex = 0;
+		InstanceData.LightIndex = 0;
 		UpdateTransform();
 	}
 	InstanceComponent(const DX12_MeshHandle& meshHandle, const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f }, UINT matIdx = 0)
 		: MeshHandle(meshHandle)
 		, TexScale(texScale)
 	{
-		Transform.r_Position = translation;
-		Transform.r_Scale = scale;
-		Transform.r_RotationQuat = rot;
+		Transform.w_Position = translation;
+		Transform.w_Scale = scale;
+		Transform.w_RotationQuat = rot;
 		InstanceData.MaterialIndex = matIdx;
+		InstanceData.DisplacementIndex = 0;
+		InstanceData.CameraIndex = 0;
+		InstanceData.LightIndex = 0;
 		UpdateTransform();
 	}
 
@@ -124,21 +132,17 @@ struct InstanceComponent
 		TexScale = scale;
 		UpdateTransform();
 	}
-
-	InstanceData InstanceData; // GPU 전송 전용 데이터
-	DX12_MeshHandle MeshHandle;
-	DirectX::BoundingBox BoundingBox;
-	DirectX::BoundingSphere BoundingSphere;
-	DX12_TransformComponent Transform;
-	float3 TexScale;
-	// Metarial 속성 추가
-	eCFGInstanceComponent Option = eCFGInstanceComponent::UseCulling;
-
-private:
-	void UpdateTransform()
+	bool UpdateTransform()
 	{
 		if (!Transform.Dirty)
-			return;
+			return false;
+
+		Transform.Dirty = false;
+		Transform.r_Position = Transform.w_Position;
+		Transform.r_Scale = Transform.w_Scale;
+		Transform.r_RotationEuler = Transform.w_RotationEuler;
+		Transform.r_RotationQuat = Transform.w_RotationQuat;
+
 		if (MeshHandle.GeometryHandle != 0)
 		{
 			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingBox;
@@ -189,5 +193,16 @@ private:
 		InstanceData.World = DirectX::XMMatrixTranspose(world);
 		InstanceData.TexTransform = DirectX::XMMatrixTranspose(texTransform);
 		InstanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
+
+		return true;
 	}
+
+	InstanceData InstanceData; // GPU 전송 전용 데이터
+	DX12_MeshHandle MeshHandle;
+	DirectX::BoundingBox BoundingBox;
+	DirectX::BoundingSphere BoundingSphere;
+	DX12_TransformComponent Transform;
+	float3 TexScale;
+	// Metarial 속성 추가
+	eCFGInstanceComponent Option = eCFGInstanceComponent::UseCulling;
 };

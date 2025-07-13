@@ -1,13 +1,11 @@
 #pragma once
 #include "ECSCoordinator.h"
-#include "DX12_Config.h"
-#include "DX12_SwapChainSystem.h"
-
 #include "../ImGuiCore/imgui.h"
 #include "../ImGuiCore/imgui_impl_win32.h"
 #include "../ImGuiCore/imgui_impl_dx12.h"
-
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#include "DX12_Config.h"
+#include "DX12_SwapChainSystem.h"
+#include "DX12_SceneSystem.h"
 
 struct ExampleDescriptorHeapAllocator
 {
@@ -209,19 +207,92 @@ private:
 			ImGui::End();
 			return;
 		}
+		auto& renderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		if (renderItems.size() == 0)
+		{
+			ImGui::End();
+			return;
+		}
+
+		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
+		static int selectedRenderItem = 0;
+		static int selectedInstanceItem = 0;
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Select Render Item")) {
+			if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(renderItems.size() - 1) + "]").c_str(), &selectedRenderItem, 0, renderItems.size() - 1, "%d", flags))
+				selectedInstanceItem = 0;
+			ImGui::TreePop();
+		}
+		auto& instances = renderItems[selectedRenderItem]->Instances;
+		if (instances.size() == 0)
+		{
+			ImGui::End();
+			return;
+		}
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Select instances")) {
+			ImGui::SliderInt((std::string("Instance Items [0, ") + std::to_string(instances.size() - 1) + "]").c_str(), &selectedInstanceItem, 0, instances.size() - 1, "%d", flags);
+			ImGui::TreePop();
+		}
+		auto& instance = instances[selectedInstanceItem];
+		static int flag;
+		flag = 0;
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Transform")) {
+			instance.Transform.Dirty |= ImGui::DragFloat3("position", &instance.Transform.w_Position.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			instance.Transform.Dirty |= ImGui::DragFloat3("scale", &instance.Transform.w_Scale.x, 0.01f, 0.001f, 10.0f);
+			instance.Transform.Dirty |= ImGui::DragFloat3("rotation (Euler)", &instance.Transform.w_RotationEuler.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			instance.Transform.Dirty |= ImGui::DragFloat4("rotation (Quat)", &instance.Transform.w_RotationQuat.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+
+			ImGui::TreePop();
+		}
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Instance Data")) {
+			ImGui::Text("World: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.World._11, instance.InstanceData.World._12, instance.InstanceData.World._13, instance.InstanceData.World._14);
+			ImGui::Text("World: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.World._21, instance.InstanceData.World._22, instance.InstanceData.World._23, instance.InstanceData.World._24);
+			ImGui::Text("World: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.World._31, instance.InstanceData.World._32, instance.InstanceData.World._33, instance.InstanceData.World._34);
+			ImGui::Text("World: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.World._41, instance.InstanceData.World._42, instance.InstanceData.World._43, instance.InstanceData.World._44);
+
+			ImGui::Text("TexTransform: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.TexTransform._11, instance.InstanceData.TexTransform._12, instance.InstanceData.TexTransform._13, instance.InstanceData.TexTransform._14);
+			ImGui::Text("TexTransform: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.TexTransform._21, instance.InstanceData.TexTransform._22, instance.InstanceData.TexTransform._23, instance.InstanceData.TexTransform._24);
+			ImGui::Text("TexTransform: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.TexTransform._31, instance.InstanceData.TexTransform._32, instance.InstanceData.TexTransform._33, instance.InstanceData.TexTransform._34);
+			ImGui::Text("TexTransform: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.TexTransform._41, instance.InstanceData.TexTransform._42, instance.InstanceData.TexTransform._43, instance.InstanceData.TexTransform._44);
+
+			ImGui::Text("WorldInvTranspose: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.WorldInvTranspose._11, instance.InstanceData.WorldInvTranspose._12, instance.InstanceData.WorldInvTranspose._13, instance.InstanceData.WorldInvTranspose._14);
+			ImGui::Text("WorldInvTranspose: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.WorldInvTranspose._21, instance.InstanceData.WorldInvTranspose._22, instance.InstanceData.WorldInvTranspose._23, instance.InstanceData.WorldInvTranspose._24);
+			ImGui::Text("WorldInvTranspose: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.WorldInvTranspose._31, instance.InstanceData.WorldInvTranspose._32, instance.InstanceData.WorldInvTranspose._33, instance.InstanceData.WorldInvTranspose._34);
+			ImGui::Text("WorldInvTranspose: %.2f, %.2f, %.2f, %.2f", instance.InstanceData.WorldInvTranspose._41, instance.InstanceData.WorldInvTranspose._42, instance.InstanceData.WorldInvTranspose._43, instance.InstanceData.WorldInvTranspose._44);
+
+			ImGui::Text("Displacement Index: %d", instance.InstanceData.DisplacementIndex);
+			ImGui::Text("Material Index: %d", instance.InstanceData.MaterialIndex);
+			ImGui::Text("Camera Index: %d", instance.InstanceData.CameraIndex);
+			ImGui::Text("Light Index: %d", instance.InstanceData.LightIndex);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(instance.MeshHandle);
+		if (ImGui::TreeNode("Mesh")) {
+			ImGui::Text("Start Index Location: %d", meshComponent->StartIndexLocation);
+			ImGui::Text("Index Count: %d", meshComponent->IndexCount);
+			ImGui::Text("Start Instance Location: %d", meshComponent->StartInstanceLocation);
+			ImGui::Text("Instance Count: %d", meshComponent->InstanceCount);
+			ImGui::Text("Base Vertex Location: %d", meshComponent->BaseVertexLocation);
+
+			ImGui::Text("BoundingBox Center: %.2f, %.2f, %.2f", meshComponent->BoundingBox.Center.x, meshComponent->BoundingBox.Center.y, meshComponent->BoundingBox.Center.z);
+			ImGui::Text("BoundingBox Extents: %.2f, %.2f, %.2f", meshComponent->BoundingBox.Extents.x, meshComponent->BoundingBox.Extents.y, meshComponent->BoundingBox.Extents.z);
+			ImGui::Text("BoundingSphere Center: %.2f, %.2f, %.2f", meshComponent->BoundingSphere.Center.x, meshComponent->BoundingSphere.Center.y, meshComponent->BoundingSphere.Center.z);
+			ImGui::Text("BoundingSphere Radius: %.2f", meshComponent->BoundingSphere.Radius);
+			
+			ImGui::Text("Material Index: %d", instance.InstanceData.MaterialIndex);
+
+			ImGui::TreePop();
+		}
+
+
+
 		ImGui::Text("Hello, Instance!");
-		auto& renderItem = DX12_SceneSystem::GetInstance().GetRenderItems();
-		float3 w_Position;
-		float3 w_Scale;
-		float3 w_RotationEuler;
-		float4 w_RotationQuat;
-
-		float3 r_Position;
-		float3 r_Scale;
-		float3 r_RotationEuler;
-		float4 r_RotationQuat;
-
-
 		ImGui::End();
 	}
 

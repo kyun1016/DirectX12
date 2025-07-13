@@ -1,5 +1,5 @@
 #pragma once
-#include "ECSCoordinator.h"
+#include "DX12_TransformSystem.h"
 #include "CameraComponent.h"
 #include "InputSystem.h"
 
@@ -26,7 +26,7 @@ public:
 		if (input.IsKeyDown('S')) moveDir.z -= 1.0f;
 		if (input.IsKeyDown('s')) moveDir.z -= 1.0f;
 		moveDir *= ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>().deltaTime;
-		LOG_INFO("delta: {} || called with moveDir: {}, {}, {}", ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>().deltaTime, moveDir.x, moveDir.y, moveDir.z);
+		LOG_VERBOSE("delta: {} || called with moveDir: {}, {}, {}", ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>().deltaTime, moveDir.x, moveDir.y, moveDir.z);
 		
 
 		auto currCameraBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().CameraDataBuffer.get();
@@ -35,9 +35,9 @@ public:
 			camera->Up(moveDir.y);
 			camera->Walk(moveDir.z);
 			camera->SyncData();
-			LOG_INFO("Camera Position: {}, {}, {}", camera->r_Position.x, camera->r_Position.y, camera->r_Position.z);
 			if (camera->NumFramesDirty)
 			{
+				LOG_INFO("Camera Position: {}, {}, {}", camera->r_Position.x, camera->r_Position.y, camera->r_Position.z);
 				camera->NumFramesDirty--;
 				currCameraBuffer->CopyData(0, camera->CameraData); // Copy camera data to the current frame resource
 			}

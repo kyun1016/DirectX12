@@ -107,10 +107,11 @@ private:
 		}
 		mCommandList->SetPipelineState(pso);
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
-
-		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
-		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
+		mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
+		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
 		
+		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
 		for (auto& ri : allRenderItems)
 		{
 			if (!(ri->TargetLayer & flag))

@@ -2,8 +2,6 @@
 #include "ECSEntity.h"
 #include "ECSComponent.h"
 #include "ECSSystem.h"
-#include "WindowSystem.h"
-#include "DX12_FrameResourceSystem.h"
 
 namespace ECS
 {
@@ -21,28 +19,10 @@ namespace ECS
 			return instance;
 		}
 
-		void Init()
-		{
-			// Create pointers to each manager
-			mComponentManager = std::make_unique<ComponentManager>();
-			mEntityManager = std::make_unique<EntityManager>();
-			mSystemManager = std::make_unique<SystemManager>();
-		}
-
-
-		// Entity methods
-		Entity CreateEntity()
-		{
-			return mEntityManager->CreateEntity();
-		}
-
-		void DestroyEntity(Entity entity)
-		{
-			std::lock_guard<std::mutex> lock(mtx);
-			mEntityManager->DestroyEntity(entity);
-			mComponentManager->EntityDestroyed(entity);
-			mSystemManager->EntityDestroyed(entity);
-		}
+		void Init();
+		Entity CreateEntity();
+		void DestroyEntity(Entity entity);
+		void Run();
 
 		// Component methods
 		template<typename T>
@@ -51,15 +31,12 @@ namespace ECS
 			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->RegisterComponent<T>();
 		}
-
-
 		template<typename T>
 		void RegisterSingletonComponent()
 		{
 			std::lock_guard<std::mutex> lock(mtx);
 			mComponentManager->RegisterSingletonComponent<T>();
 		}
-
 		template<typename T>
 		void AddComponent(Entity entity, T component)
 		{
@@ -128,38 +105,6 @@ namespace ECS
 		{
 			mSystemManager->SetSignature<T>(signature);
 		}
-
-		void UpdateAllSystem()
-		{
-			mSystemManager->UpdateAllSystems();
-		}
-
-		void Run()
-		{
-			mSystemManager->BeginPlayAllSystems();
-			while (true) // Replace with actual game loop condition
-			{
-				//#########################
-				// WinProc의 경우 병렬처리를 통해 쓰레드를 가져가는 순간 오류 발생
-				// 메인 쓰레드에서 처리가 이뤄지도록 예외적으로 핸들링을 진행
-				//#########################
-				if (!WindowSystem::GetInstance().Sync())
-					break;
-				InputSystem::GetInstance().PreUpdate();
-				mSystemManager->SyncAllSystems();
-				// DX12_FrameResourceSystem::GetInstance().BeginFrame();
-				mSystemManager->PreUpdateAllSystems();
-				mSystemManager->UpdateAllSystems();
-				// DX12_SwapChainSystem::GetInstance().Present(false);
-				// DX12_FrameResourceSystem::GetInstance().EndFrame();
-				ImGuiSystem::GetInstance().RenderMultiViewport();
-				mSystemManager->LateUpdateAllSystems();
-				mSystemManager->FixedUpdateAllSystems();
-				mSystemManager->FinalUpdateAllSystems();
-			}
-			mSystemManager->EndPlayAllSystems();
-		}
-
 	private:
 		Coordinator() = default;
 		std::mutex mtx;

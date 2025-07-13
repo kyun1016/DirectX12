@@ -4,6 +4,7 @@
 #include "InstanceData.h"
 #include "PassData.h"
 #include "CameraData.h"
+#include "DX12_CommandSystem.h"
 
 struct DX12_FrameResource {
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
@@ -42,6 +43,12 @@ public:
 	{
 		mFrameResources[mCurrFrameResourceIndex].fenceValue = DX12_CommandSystem::GetInstance().SetSignalFence();
 		mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % APP_NUM_BACK_BUFFERS;
+	}
+
+	void SetGPUMemory()
+	{
+		// auto* commandList = DX12_CommandSystem::GetInstance().GetCommandList();
+		// commandList->SetGraphicsRootSignature();
 	}
 
 	// 내부에 Frame value 관리 자체를 제거함 (SwapChainSystem에서 통합 관리)
