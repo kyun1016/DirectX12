@@ -28,10 +28,10 @@ public:
 	void BuildSpriteMesh()
 	{
 		std::vector<MeshData> meshes;
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(10.0f, 10.0f));
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(20.0f, 20.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSprite(1.0f, 1.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.5f, 0.5f));
 
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(5.0f, 30.0f));
+		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.3f, 0.3f));
 		// meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Sprite", meshes, DX12_MeshRepository::eMeshType::SPRITE, false);
 	}

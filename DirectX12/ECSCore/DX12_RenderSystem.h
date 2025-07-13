@@ -31,7 +31,7 @@ public:
 		
 		CameraSystem::GetInstance().Sync();
 		DX12_SceneSystem::GetInstance().Update();
-		// DX12_FrameResourceSystem::GetInstance().BeginFrame();
+		DX12_FrameResourceSystem::GetInstance().BeginFrame();
 	}
 
 	virtual void Update() override {
@@ -42,8 +42,8 @@ public:
 		EndRenderPass();
 		ImGuiSystem::GetInstance().Render();
 		DX12_CommandSystem::GetInstance().ExecuteCommandList();
-		// DX12_SwapChainSystem::GetInstance().Present(false);
-		// DX12_FrameResourceSystem::GetInstance().EndFrame();
+		DX12_SwapChainSystem::GetInstance().Present(false);
+		DX12_FrameResourceSystem::GetInstance().EndFrame();
 	}
 private:
 	ID3D12Device* mDevice;

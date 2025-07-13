@@ -147,11 +147,11 @@ namespace ECS
 					break;
 				InputSystem::GetInstance().PreUpdate();
 				mSystemManager->SyncAllSystems();
-				DX12_FrameResourceSystem::GetInstance().BeginFrame();
+				// DX12_FrameResourceSystem::GetInstance().BeginFrame();
 				mSystemManager->PreUpdateAllSystems();
 				mSystemManager->UpdateAllSystems();
-				DX12_SwapChainSystem::GetInstance().Present(false);
-				DX12_FrameResourceSystem::GetInstance().EndFrame();
+				// DX12_SwapChainSystem::GetInstance().Present(false);
+				// DX12_FrameResourceSystem::GetInstance().EndFrame();
 				ImGuiSystem::GetInstance().RenderMultiViewport();
 				mSystemManager->LateUpdateAllSystems();
 				mSystemManager->FixedUpdateAllSystems();
