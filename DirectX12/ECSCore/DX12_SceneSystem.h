@@ -28,14 +28,14 @@ public:
 		Push(ri);
 
 		ri.TargetLayer = eRenderLayer::Sprite;
-		ri.Instance.MeshHandle = { 1, 0 };
-		Push(ri);
-		Push(ri);
-		Push(ri);
+		ri.Instance.MeshHandle = { 1, 2 };
 		Push(ri);
 		ri.Instance.MeshHandle = { 1, 1 };
 		Push(ri);
-		ri.Instance.MeshHandle = { 1, 2 };
+		Push(ri);
+		ri.Instance.MeshHandle = { 1, 0 };
+		Push(ri);
+		Push(ri);
 		Push(ri);
 	}
 
@@ -57,44 +57,11 @@ public:
 private:
     void SyncData()
     {
-		// SyncBaseInstanceLocation();
-		//auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get();
-		//uint32_t visibleInstanceCount = 0;
-		//for (auto& ri : mAllRenderItems)
-		//{
-		//	if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled) && ri->NumFramesDirty == 0)
-		//		continue;
-		//	ri->NumFramesDirty--;
-		//	for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
-		//	{
-		//		for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
-		//		{
-		//			DX12_MeshHandle meshHandle = {static_cast<ECS::RepoHandle>(geoIdx), meshIdx};
-		//			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-		//			visibleInstanceCount = meshComponent->StartInstanceLocation;
-		//			for(const auto& instanceIdx : ri->MeshIndex[geoIdx][meshIdx])
-		//			{
-		//				auto& instance = ri->Instances[instanceIdx];
-		//				if (!(ri->Option & eCFGRenderItem::FrustumCullingEnabled)
-		//				|| !(instance.Option & eCFGInstanceComponent::UseCulling)
-		//				|| (CameraSystem::GetInstance().GetCamera(0)->Frustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
-		//				{
-		//					currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
-		//				}
-		//			}
-		//			meshComponent->InstanceCount = visibleInstanceCount - meshComponent->StartInstanceLocation;
-		//		}
-		//	}
-		//}
-    }
-
-	void SyncBaseInstanceLocation()
-	{
+		auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get();
 		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
 		InstanceIDData instanceID;
-		uint32_t instanceCount = 0;
+		uint32_t visibleInstanceCount = 0;
 		size_t totalMeshIdx = 0;
-
 		for (size_t geoIdx = 1; geoIdx < MeshIndexMap.size(); ++geoIdx)
 		{
 			if (MeshIndexMap[geoIdx].empty())
@@ -103,13 +70,25 @@ private:
 			{
 				DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
 				auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-				meshComponent->StartInstanceLocation = instanceCount;
-				instanceID.BaseInstanceIndex = instanceCount;
+				meshComponent->StartInstanceLocation = visibleInstanceCount;
+				instanceID.BaseInstanceIndex = visibleInstanceCount;
 				currInstanceCB->CopyData(static_cast<int>(totalMeshIdx++), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
-				instanceCount += MeshIndexMap[geoIdx][meshIdx].size();
+				for (const auto& instanceIdx : MeshIndexMap[geoIdx][meshIdx])
+				{
+					auto& ri = mAllRenderItems[instanceIdx];
+					if(--ri.NumFramesDirty == 0)
+						continue;
+					if (!(ri.Option & eCFGRenderItem::FrustumCullingEnabled)
+						|| !(ri.Instance.Option & eCFGInstanceComponent::UseCulling)
+						|| (CameraSystem::GetInstance().GetCamera(0)->Frustum.Contains(ri.Instance.BoundingSphere) != DirectX::DISJOINT))
+					{
+						currInstanceBuffer->CopyData(visibleInstanceCount++, ri.Instance.InstanceData);
+					}
+				}
+				meshComponent->InstanceCount = visibleInstanceCount - meshComponent->StartInstanceLocation;
 			}
 		}
-	}
+    }
 
 	void UpdateInstance()
 	{

@@ -138,25 +138,31 @@ private:
 		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
 
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
-		auto& meshIndexMap = DX12_SceneSystem::GetInstance().GetMeshIndexMap();
+		auto& MeshIndexMap = DX12_SceneSystem::GetInstance().GetMeshIndexMap();
 		size_t totalMeshIdx = 0;
-		for (size_t geoIdx = 1; geoIdx < meshIndexMap.size(); ++geoIdx)
+		for (size_t geoIdx = 1; geoIdx < MeshIndexMap.size(); ++geoIdx)
 		{
-			if (meshIndexMap[geoIdx].empty())
+			if (MeshIndexMap[geoIdx].empty())
 				continue;
-			for (size_t meshIdx = 0; meshIdx < meshIndexMap[geoIdx].size(); ++meshIdx)
+			for (size_t meshIdx = 0; meshIdx < MeshIndexMap[geoIdx].size(); ++meshIdx)
 			{
-				auto& ri = allRenderItems[meshIndexMap[geoIdx][meshIdx][0]];
+				auto& ri = allRenderItems[MeshIndexMap[geoIdx][meshIdx][0]];
 				if (!(ri.TargetLayer & flag))
+				{
+					++totalMeshIdx;
 					break;
+				}
+					
 				DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
 				DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
 				auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
 				// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
-				D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + totalMeshIdx++ * objCBByteSize;
+				D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + ++totalMeshIdx * objCBByteSize;
 				mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 				mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
+
 			}
+			
 		}
 	}
 
