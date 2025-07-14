@@ -223,7 +223,19 @@ private:
 				selectedInstanceItem = 0;
 			ImGui::TreePop();
 		}
-		auto& instance = renderItems[selectedRenderItem].Instance;
+
+		auto& instances = renderItems[selectedRenderItem].Instances;
+		if (instances.size() == 0)
+		{
+			ImGui::End();
+			return;
+		}
+		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+		if (ImGui::TreeNode("Select instances")) {
+			ImGui::SliderInt((std::string("Instance Items [0, ") + std::to_string(instances.size() - 1) + "]").c_str(), &selectedInstanceItem, 0, instances.size() - 1, "%d", flags);
+			ImGui::TreePop();
+		}
+		auto& instance = instances[selectedInstanceItem];
 
 		static int flag;
 		flag = 0;
@@ -262,7 +274,7 @@ private:
 		}
 
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(instance.MeshHandle);
+		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(renderItems[selectedRenderItem].MeshHandle);
 		if (ImGui::TreeNode("Mesh")) {
 			ImGui::Text("Start Index Location: %d", meshComponent->StartIndexLocation);
 			ImGui::Text("Index Count: %d", meshComponent->IndexCount);

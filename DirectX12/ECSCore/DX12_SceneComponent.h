@@ -13,7 +13,8 @@ ENUM_OPERATORS_32(eCFGRenderItem)
 
 struct RenderItem
 {
-	InstanceComponent Instance;
+	std::vector<InstanceComponent> Instances;
+	DX12_MeshHandle MeshHandle;
 	uint32_t NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	eCFGRenderItem Option = eCFGRenderItem::None;
 	eRenderLayer TargetLayer = eRenderLayer::None;

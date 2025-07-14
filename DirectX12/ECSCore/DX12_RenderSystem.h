@@ -146,7 +146,7 @@ private:
 				continue;
 			for (size_t meshIdx = 0; meshIdx < MeshIndexMap[geoIdx].size(); ++meshIdx)
 			{
-				auto& ri = allRenderItems[MeshIndexMap[geoIdx][meshIdx][0]];
+				auto& ri = allRenderItems[MeshIndexMap[geoIdx][meshIdx][0].first];
 				if (!(ri.TargetLayer & flag))
 				{
 					++totalMeshIdx;
