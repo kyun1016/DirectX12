@@ -5,6 +5,7 @@ class DX12_MeshSystem {
 	DEFAULT_SINGLETON(DX12_MeshSystem)
 public:
 	void Initialize() {
+		mGeoCount.emplace_back(0);
 		BuildSpriteMesh();
 		BuildSquereMeshes();
 	}
@@ -15,6 +16,7 @@ public:
 		meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
 		meshes.push_back(DX12_MeshGenerator::CreateSquare(2000.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Square", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
+		mGeoCount.emplace_back(meshes.size());
 	}
 
 	void BuildBoxMeshes()
@@ -23,6 +25,7 @@ public:
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
 		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
 		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
+		mGeoCount.emplace_back(meshes.size());
 	}
 
 	void BuildSpriteMesh()
@@ -34,18 +37,8 @@ public:
 		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.3f, 0.3f));
 		// meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Sprite", meshes, DX12_MeshRepository::eMeshType::SPRITE, false);
+		mGeoCount.emplace_back(meshes.size());
 	}
-
-	//inline void SetMesh(ECS::RepoHandle meshID) {
-	//	auto mesh = DX12_MeshRepository::GetInstance().Get(meshID);
-	//	mLastVertexBufferView = mesh->VertexBufferView();
-	//	mLastIndexBufferView = mesh->IndexBufferView();
-	//	mLastPrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-	//	mCommandList->IASetVertexBuffers(0, 1, &mLastVertexBufferView);
-	//	mCommandList->IASetIndexBuffer(&mLastIndexBufferView);
-	//	mCommandList->IASetPrimitiveTopology(mLastPrimitiveType);
-	//}
 
 	inline DX12_MeshGeometry* GetGeometry(ECS::RepoHandle handle) const {
 		return DX12_MeshRepository::GetInstance().Get(handle);
@@ -59,4 +52,10 @@ public:
 			return &geo->DrawArgs[handle.MeshHandle];
 		return nullptr;
 	}
+
+	const std::vector<uint32_t>& GetMeshCount() const {
+		return mGeoCount;
+	}
+private:
+	std::vector<uint32_t> mGeoCount;
 };

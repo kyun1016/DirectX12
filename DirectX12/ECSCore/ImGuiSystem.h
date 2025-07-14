@@ -207,7 +207,7 @@ private:
 			ImGui::End();
 			return;
 		}
-		auto& renderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		auto& renderItems = const_cast<std::vector<RenderItem>&>(DX12_SceneSystem::GetInstance().GetRenderItems());
 		if (renderItems.size() == 0)
 		{
 			ImGui::End();
@@ -223,18 +223,8 @@ private:
 				selectedInstanceItem = 0;
 			ImGui::TreePop();
 		}
-		auto& instances = renderItems[selectedRenderItem]->Instances;
-		if (instances.size() == 0)
-		{
-			ImGui::End();
-			return;
-		}
-		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-		if (ImGui::TreeNode("Select instances")) {
-			ImGui::SliderInt((std::string("Instance Items [0, ") + std::to_string(instances.size() - 1) + "]").c_str(), &selectedInstanceItem, 0, instances.size() - 1, "%d", flags);
-			ImGui::TreePop();
-		}
-		auto& instance = instances[selectedInstanceItem];
+		auto& instance = renderItems[selectedRenderItem].Instance;
+
 		static int flag;
 		flag = 0;
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);

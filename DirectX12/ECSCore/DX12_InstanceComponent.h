@@ -100,38 +100,14 @@ ENUM_OPERATORS_32(eCFGInstanceComponent)
 
 struct InstanceComponent
 {
-	InstanceComponent() = delete;
-	InstanceComponent(const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f })
-		: TexScale(texScale)
+	InstanceComponent()
 	{
-		Transform.w_Position = translation;
-		Transform.w_Scale = scale;
-		Transform.w_RotationQuat = rot;
-		InstanceData.MaterialIndex = 0;
-		InstanceData.DisplacementIndex = 0;
-		InstanceData.CameraIndex = 0;
-		InstanceData.LightIndex = 0;
+		Transform.w_Position = {};
+		Transform.w_Scale = { 1.0f, 1.0f, 1.0f };
+		Transform.w_RotationQuat = { 0.0f, 0.0f, 0.0f, 1.0f };
 		UpdateTransform();
-	}
-	InstanceComponent(const DX12_MeshHandle& meshHandle, const float3& translation = {}, const float3& scale = { 1.0f, 1.0f, 1.0f }, const DirectX::SimpleMath::Quaternion& rot = { 0.0f, 0.0f, 0.0f, 1.0f }, const float3& texScale = { 1.0f, 1.0f, 1.0f }, UINT matIdx = 0)
-		: MeshHandle(meshHandle)
-		, TexScale(texScale)
-	{
-		Transform.w_Position = translation;
-		Transform.w_Scale = scale;
-		Transform.w_RotationQuat = rot;
-		InstanceData.MaterialIndex = matIdx;
-		InstanceData.DisplacementIndex = 0;
-		InstanceData.CameraIndex = 0;
-		InstanceData.LightIndex = 0;
-		UpdateTransform();
-	}
+	};
 
-	void UpdateTexScale(const float3& scale)
-	{
-		TexScale = scale;
-		UpdateTransform();
-	}
 	bool UpdateTransform()
 	{
 		if (!Transform.Dirty)

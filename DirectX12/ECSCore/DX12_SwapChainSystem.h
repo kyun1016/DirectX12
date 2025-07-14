@@ -3,6 +3,7 @@
 #include "DX12_Config.h"
 #include "DX12_RTVHeapRepository.h"
 #include "DX12_CommandSystem.h"
+
 class DX12_SwapChainSystem {
 DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:

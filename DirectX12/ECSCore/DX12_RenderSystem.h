@@ -138,24 +138,24 @@ private:
 		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
 
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
+		auto& meshIndexMap = DX12_SceneSystem::GetInstance().GetMeshIndexMap();
 		size_t totalMeshIdx = 0;
-		for (auto& ri : allRenderItems)
+		for (size_t geoIdx = 1; geoIdx < meshIndexMap.size(); ++geoIdx)
 		{
-			if (!(ri->TargetLayer & flag))
+			if (meshIndexMap[geoIdx].empty())
 				continue;
-			for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
+			for (size_t meshIdx = 0; meshIdx < meshIndexMap[geoIdx].size(); ++meshIdx)
 			{
-				for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
-				{
-					DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
-					DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
-					auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-
-					// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
-					D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + totalMeshIdx++ * objCBByteSize;
-					mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-					mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
-				}
+				auto& ri = allRenderItems[meshIndexMap[geoIdx][meshIdx][0]];
+				if (!(ri.TargetLayer & flag))
+					break;
+				DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
+				DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
+				auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
+				// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
+				D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + totalMeshIdx++ * objCBByteSize;
+				mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+				mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
 			}
 		}
 	}
