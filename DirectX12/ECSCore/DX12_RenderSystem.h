@@ -132,6 +132,7 @@ private:
 
 		const D3D12_GPU_VIRTUAL_ADDRESS baseInstanceIDAddress = DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress();
 		const UINT objCBByteSize = CalcConstantBufferByteSize(sizeof(InstanceIDData));
+		// const UINT objCBByteSize = sizeof(InstanceIDData);
 		mCommandList->SetPipelineState(pso);
 		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
 		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
@@ -146,6 +147,8 @@ private:
 				continue;
 			for (size_t meshIdx = 0; meshIdx < MeshIndexMap[geoIdx].size(); ++meshIdx)
 			{
+				if (MeshIndexMap[geoIdx][meshIdx].empty())
+					continue;
 				auto& ri = allRenderItems[MeshIndexMap[geoIdx][meshIdx][0].first];
 				if (!(ri.TargetLayer & flag))
 				{
@@ -156,7 +159,6 @@ private:
 				DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
 				DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
 				auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-				// StartInstanceLocation 적용 불가 버그를 해결하기 위해 Constant buffer를 활용함
 				D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + ++totalMeshIdx * objCBByteSize;
 				mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 				mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);

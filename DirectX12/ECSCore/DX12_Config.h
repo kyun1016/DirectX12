@@ -105,7 +105,7 @@ inline UINT CalcConstantBufferByteSize(UINT byteSize)
 	// 0x022B & 0xff00
 	// 0x0200
 	// 512
-	return (byteSize + 255) & ~255;
+	return (byteSize + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
 };
 
 template<typename T>

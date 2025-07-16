@@ -13,6 +13,7 @@ public:
     void Update()
     {
 		UpdateInstance();
+		SyncInstanceIDData();
         SyncData();	// View
     }
 
@@ -42,6 +43,24 @@ public:
 
 		ri.MeshHandle = { 1, 2 };
 		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+
+		ri.MeshHandle = { 1, 3 };
+		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+
+		ri.MeshHandle = { 1, 4 };
+		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+
+		ri.MeshHandle = { 1, 5 };
+		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 
 		SyncInstanceIDData();
