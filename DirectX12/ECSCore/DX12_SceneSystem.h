@@ -20,9 +20,7 @@ public:
 	void Initialize()
 	{
 		const auto& meshCount = DX12_MeshSystem::GetInstance().GetMeshCount();
-		MeshIndexMap.resize(meshCount.size());
-		for (size_t i = 0; i < MeshIndexMap.size(); ++i)
-			MeshIndexMap[i].resize(meshCount[i]);
+
 		RenderItem ri;
 		ri.TargetLayer = eRenderLayer::Opaque;
 		ri.MeshHandle = { 2, 0 };
@@ -62,8 +60,6 @@ public:
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
-
-		SyncInstanceIDData();
 	}
 
 	void Push(const RenderItem& renderItem)
@@ -73,19 +69,15 @@ public:
 
 	void Push(const size_t& idx, const InstanceComponent& data)
 	{
+		mNumFramesDirty = APP_NUM_BACK_BUFFERS;
 		auto& ri = mAllRenderItems[idx];
 		ri.Instances.emplace_back(data);
 		ri.Instances.back().MeshHandle = ri.MeshHandle;
-		MeshIndexMap[ri.MeshHandle.GeometryHandle][ri.MeshHandle.MeshHandle].push_back(std::make_pair(idx, ri.Instances.size() - 1));
 	}
 
 	const std::vector<RenderItem>& GetRenderItems() const
 	{
 		return mAllRenderItems;
-	}
-	const std::vector<std::vector<std::vector<std::pair<uint32_t, uint32_t>>>>& GetMeshIndexMap() const
-	{
-		return MeshIndexMap;
 	}
 
 private:
@@ -97,7 +89,7 @@ private:
 		{
 			if (!(ri.Option & eCFGRenderItem::FrustumCullingEnabled) && ri.NumFramesDirty == 0)
 				continue;
-			ri.NumFramesDirty--;
+			--ri.NumFramesDirty;
 			
 			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle);
 			visibleInstanceCount = meshComponent->StartInstanceLocation;
@@ -116,21 +108,19 @@ private:
 
 	void SyncInstanceIDData()
 	{
+		if (mNumFramesDirty == 0)
+			return;
+
+		--mNumFramesDirty;
 		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
 		InstanceIDData instanceID;
-		uint32_t visibleInstanceCount = 0;
-		size_t totalMeshIdx = 0;
-		for (size_t geoIdx = 1; geoIdx < MeshIndexMap.size(); ++geoIdx)
+		instanceID.BaseInstanceIndex = 0;
+		for (int i = 0; i < mAllRenderItems.size(); ++i)
 		{
-			for (size_t meshIdx = 0; meshIdx < MeshIndexMap[geoIdx].size(); ++meshIdx)
-			{
-				DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
-				auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-				meshComponent->StartInstanceLocation = visibleInstanceCount;
-				instanceID.BaseInstanceIndex = visibleInstanceCount;
-				currInstanceCB->CopyData(static_cast<int>(totalMeshIdx++), instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
-				visibleInstanceCount += static_cast<uint32_t>(MeshIndexMap[geoIdx][meshIdx].size());
-			}
+			auto& ri = mAllRenderItems[i];
+			DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle)->StartInstanceLocation = instanceID.BaseInstanceIndex;
+			currInstanceCB->CopyData(i, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
+			instanceID.BaseInstanceIndex += ri.Instances.size();
 		}
 	}
 
@@ -140,9 +130,8 @@ private:
 			for (auto& instance : ri.Instances)
 				if(instance.UpdateTransform())
 					ri.NumFramesDirty = APP_NUM_BACK_BUFFERS;
-					
 	}
 private:
+	uint32_t mNumFramesDirty = APP_NUM_BACK_BUFFERS;
 	std::vector<RenderItem> mAllRenderItems;
-	std::vector<std::vector<std::vector<std::pair<uint32_t, uint32_t>>>> MeshIndexMap;	// [GeometryHandle][MeshHandle] = [RenderItemIndex][InstanceIndex]
 };
