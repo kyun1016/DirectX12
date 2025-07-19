@@ -19,3 +19,9 @@ struct RenderItem
 	eCFGRenderItem Option = eCFGRenderItem::None;
 	eRenderLayer TargetLayer = eRenderLayer::None;
 };
+
+struct InstanceKey
+{
+	int32_t RenderItemIndex;
+	int32_t InstanceIndex;
+};

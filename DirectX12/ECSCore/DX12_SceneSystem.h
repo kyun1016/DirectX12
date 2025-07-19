@@ -80,6 +80,48 @@ public:
 		return mAllRenderItems;
 	}
 
+	InstanceComponent* GetInstance(const InstanceKey& key)
+	{
+		if (key.RenderItemIndex >= mAllRenderItems.size())
+			return nullptr;
+		if (key.InstanceIndex >= mAllRenderItems[key.RenderItemIndex].Instances.size())
+			return nullptr;
+		
+		return &mAllRenderItems[key.RenderItemIndex].Instances[key.InstanceIndex];
+	}
+
+	void UpdateInstance(const InstanceKey& key, InputSystem& input)
+	{
+		if (key.RenderItemIndex >= mAllRenderItems.size())
+			return;
+		if (key.InstanceIndex >= mAllRenderItems[key.RenderItemIndex].Instances.size())
+			return;
+		auto& transform = mAllRenderItems[key.RenderItemIndex].Instances[key.InstanceIndex].Transform;
+
+		float3 moveDir = { 0.0f, 0.0f, 0.0f };
+
+		if (input.IsKeyDown('A')) moveDir.x -= 1.0f;
+		if (input.IsKeyDown('a')) moveDir.x -= 1.0f;
+		if (input.IsKeyDown('D')) moveDir.x += 1.0f;
+		if (input.IsKeyDown('d')) moveDir.x += 1.0f;
+		if (input.IsKeyDown('Q')) moveDir.y -= 1.0f;
+		if (input.IsKeyDown('q')) moveDir.y -= 1.0f;
+		if (input.IsKeyDown('E')) moveDir.y += 1.0f;
+		if (input.IsKeyDown('e')) moveDir.y += 1.0f;
+		if (input.IsKeyDown('W')) moveDir.z += 1.0f;
+		if (input.IsKeyDown('w')) moveDir.z += 1.0f;
+		if (input.IsKeyDown('S')) moveDir.z -= 1.0f;
+		if (input.IsKeyDown('s')) moveDir.z -= 1.0f;
+
+		if(moveDir.x != 0.0f || moveDir.y != 0.0f || moveDir.z != 0.0f){
+			transform.Dirty = true;
+			transform.w_Position += moveDir * 0.01f;
+			LOG_INFO("{}, {}, {}", transform.w_Position.x, transform.w_Position.y, transform.w_Position.z);
+		}
+			
+		
+	}
+
 private:
     void SyncData(UploadBuffer<InstanceData>* instanceDataBuffer)
     {

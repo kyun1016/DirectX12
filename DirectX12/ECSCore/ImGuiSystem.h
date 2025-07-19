@@ -137,6 +137,8 @@ public:
 		}
 	}
 
+	InstanceKey& GetSelectInstance() { return mSelectInstance; }
+
 	ExampleDescriptorHeapAllocator mSrvDescHeapAlloc;
 private:
 	static constexpr int SRV_IMGUI_SIZE = 64;
@@ -145,7 +147,7 @@ private:
 	bool showMainWindow = true;
 	bool showDemoWindow = true;
 	bool showInstanceWindow = true;
-
+	InstanceKey mSelectInstance = {0,0};
 
 	void CreateDescriptorHeap(ID3D12Device* device)
 	{
@@ -215,16 +217,14 @@ private:
 		}
 
 		ImGuiSliderFlags flags = ImGuiSliderFlags_None & ~ImGuiSliderFlags_WrapAround;
-		static int selectedRenderItem = 0;
-		static int selectedInstanceItem = 0;
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Select Render Item")) {
-			if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(renderItems.size() - 1) + "]").c_str(), &selectedRenderItem, 0, renderItems.size() - 1, "%d", flags))
-				selectedInstanceItem = 0;
+			if (ImGui::SliderInt((std::string("Render Items [0, ") + std::to_string(renderItems.size() - 1) + "]").c_str(), &mSelectInstance.RenderItemIndex, 0, renderItems.size() - 1, "%d", flags))
+				mSelectInstance.InstanceIndex = 0;
 			ImGui::TreePop();
 		}
 
-		auto& instances = renderItems[selectedRenderItem].Instances;
+		auto& instances = renderItems[mSelectInstance.RenderItemIndex].Instances;
 		if (instances.size() == 0)
 		{
 			ImGui::End();
@@ -232,10 +232,10 @@ private:
 		}
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Select instances")) {
-			ImGui::SliderInt((std::string("Instance Items [0, ") + std::to_string(instances.size() - 1) + "]").c_str(), &selectedInstanceItem, 0, instances.size() - 1, "%d", flags);
+			ImGui::SliderInt((std::string("Instance Items [0, ") + std::to_string(instances.size() - 1) + "]").c_str(), &mSelectInstance.InstanceIndex, 0, instances.size() - 1, "%d", flags);
 			ImGui::TreePop();
 		}
-		auto& instance = instances[selectedInstanceItem];
+		auto& instance = instances[mSelectInstance.InstanceIndex];
 
 		static int flag;
 		flag = 0;
@@ -274,7 +274,7 @@ private:
 		}
 
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(renderItems[selectedRenderItem].MeshHandle);
+		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(renderItems[mSelectInstance.RenderItemIndex].MeshHandle);
 		if (ImGui::TreeNode("Mesh")) {
 			ImGui::Text("Start Index Location: %d", meshComponent->StartIndexLocation);
 			ImGui::Text("Index Count: %d", meshComponent->IndexCount);

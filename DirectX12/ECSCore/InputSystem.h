@@ -118,6 +118,7 @@ public:
     void OnMouseDown(int button) { m_CurrentMouseRawState[button] = true; }
     void OnMouseUp(int button) { m_CurrentMouseRawState[button] = false; }
 
+    std::unordered_map<int, KeyState>& GetKeyStates() { return m_KeyStates; }
 private:
     void UpdateKeyboardState()
     {

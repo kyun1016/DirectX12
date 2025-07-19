@@ -30,6 +30,7 @@ public:
 	virtual void Sync() override {
 		
 		CameraSystem::GetInstance().Sync();
+		DX12_SceneSystem::GetInstance().UpdateInstance(ImGuiSystem::GetInstance().GetSelectInstance(), InputSystem::GetInstance());
 		DX12_SceneSystem::GetInstance().Update(DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get(), DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get());
 		DX12_FrameResourceSystem::GetInstance().BeginFrame();
 	}
