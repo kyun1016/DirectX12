@@ -30,7 +30,7 @@ public:
 	virtual void Sync() override {
 		
 		CameraSystem::GetInstance().Sync();
-		DX12_SceneSystem::GetInstance().Update();
+		DX12_SceneSystem::GetInstance().Update(DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get(), DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get());
 		DX12_FrameResourceSystem::GetInstance().BeginFrame();
 	}
 
@@ -86,9 +86,6 @@ private:
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
 
 		const auto& time = ECS::Coordinator::GetInstance().GetSingletonComponent<TimeComponent>();
-		// float r = 0.5f;
-		// float g = 0.5f;
-		// float b = 0.5f;
 		float r = std::fmod(time.totalTime * 0.1f, 1.0f); // Example: Use time to create a dynamic color
 		float g = std::fmod(time.totalTime * 0.2f, 1.0f); // Example: Use time to create a dynamic color
 		float b = std::fmod(time.totalTime * 0.05f, 1.0f); // Example: Use time to create a dynamic color
@@ -105,30 +102,6 @@ private:
 			LOG_ERROR("Pipeline State Object not found for layer: {}", static_cast<int>(flag));
 			return;
 		}
-		//mCommandList->SetPipelineState(pso);
-		//DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
-		//mCommandList->SetGraphicsRootConstantBufferView(0, DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress());
-		//mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
-		//mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
-		//
-		//auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
-		//for (auto& ri : allRenderItems)
-		//{
-		//	if (!(ri->TargetLayer & flag))
-		//		continue;
-		//	for (size_t geoIdx = 1; geoIdx < ri->MeshIndex.size(); ++geoIdx)
-		//	{
-		//		for (size_t meshIdx = 0; meshIdx < ri->MeshIndex[geoIdx].size(); ++meshIdx)
-		//		{
-		//			DX12_MeshHandle meshHandle = { static_cast<ECS::RepoHandle>(geoIdx), meshIdx };
-		//			DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(meshHandle));
-		//			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(meshHandle);
-
-		//			// mCommandList->DrawInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->InstanceCount);
-		//			mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
-		//		}
-		//	}
-		//}
 
 		const D3D12_GPU_VIRTUAL_ADDRESS baseInstanceIDAddress = DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress();
 		const UINT objCBByteSize = CalcConstantBufferByteSize(sizeof(InstanceIDData));

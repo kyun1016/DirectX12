@@ -10,11 +10,11 @@
 class DX12_SceneSystem {
 	DEFAULT_SINGLETON(DX12_SceneSystem)
 public:
-    void Update()
+    void Update(UploadBuffer<InstanceData>* instanceDataBuffer, UploadBuffer<InstanceIDData>* instanceIDBuffer)
     {
 		UpdateInstance();
-		SyncInstanceIDData();
-        SyncData();	// View
+		SyncInstanceIDData(instanceIDBuffer);
+        SyncData(instanceDataBuffer);	// View
     }
 
 	void Initialize()
@@ -81,13 +81,12 @@ public:
 	}
 
 private:
-    void SyncData()
+    void SyncData(UploadBuffer<InstanceData>* instanceDataBuffer)
     {
-		auto currInstanceBuffer = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceDataBuffer.get();
 		uint32_t visibleInstanceCount = 0;
 		for (auto& ri : mAllRenderItems)
 		{
-			if (!(ri.Option & eCFGRenderItem::FrustumCullingEnabled) && ri.NumFramesDirty == 0)
+			if (!(ri.Option & eCFGRenderItem::FrustumCullingEnabled) && ri.NumFramesDirty == 0)	// 현재 for문 내부에서 Frame Dirty를 바탕으로 Render Item 별로 업데이트를 관리하는데, 어떤 방식이 CPU 성능에 적합할지는 고민해보고 개선할 여지가 있다.
 				continue;
 			--ri.NumFramesDirty;
 			
@@ -99,27 +98,26 @@ private:
 					|| !(instance.Option & eCFGInstanceComponent::UseCulling)
 					|| (CameraSystem::GetInstance().GetCamera(0)->Frustum.Contains(instance.BoundingSphere) != DirectX::DISJOINT))
 				{
-					currInstanceBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
+					instanceDataBuffer->CopyData(visibleInstanceCount++, instance.InstanceData);
 				}
 			}
 			meshComponent->InstanceCount = visibleInstanceCount - meshComponent->StartInstanceLocation;
 		}
     }
 
-	void SyncInstanceIDData()
+	void SyncInstanceIDData(UploadBuffer<InstanceIDData>* instanceIDBuffer)
 	{
 		if (mNumFramesDirty == 0)
 			return;
 
 		--mNumFramesDirty;
-		auto currInstanceCB = DX12_FrameResourceSystem::GetInstance().GetCurrentFrameResource().InstanceIDCB.get();
 		InstanceIDData instanceID;
 		instanceID.BaseInstanceIndex = 0;
 		for (int i = 0; i < mAllRenderItems.size(); ++i)
 		{
 			auto& ri = mAllRenderItems[i];
 			DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle)->StartInstanceLocation = instanceID.BaseInstanceIndex;
-			currInstanceCB->CopyData(i, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
+			instanceIDBuffer->CopyData(i, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
 			instanceID.BaseInstanceIndex += ri.Instances.size();
 		}
 	}
