@@ -3,10 +3,25 @@
 #include "../../ECSCore/LightData.h"
 #include "../../ECSCore/CameraData.h"
 
+#ifndef TEXTURE_DIFFUSE_SIZE
+#define TEXTURE_DIFFUSE_SIZE 1
+#endif
+
 cbuffer cbInstanceID : register(b0) { uint gBaseInstanceIndex; }
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
 StructuredBuffer<CameraData> gCameraData : register(t1, space0);
 StructuredBuffer<LightData> gLightData : register(t2, space0);
+
+Texture2D gTextureDiffuseMap[TEXTURE_DIFFUSE_SIZE] : register(t0, space1);
+
+SamplerState gsamPointWrap : register(s0);
+SamplerState gsamPointClamp : register(s1);
+SamplerState gsamLinearWrap : register(s2);
+SamplerState gsamLinearClamp : register(s3);
+SamplerState gsamAnisotropicWrap : register(s4);
+SamplerState gsamAnisotropicClamp : register(s5);
+SamplerComparisonState gsamShadow : register(s6);
+
 
 struct VertexOut
 {
@@ -75,5 +90,8 @@ float4 PS(GeoOut pin) : SV_Target
 {
     // For now, just return a solid color.
     // Later, you can sample a texture using pin.TexC.
-    return float4(1.0f, 0.0f, 1.0f, 0.5f); // Semi-transparent yellow
+    
+    //gTextureDiffuseMap[0].Sample(gsamLinearWrap, pin.TexC);
+    // return float4(1.0f, 0.0f, 1.0f, 0.5f); // Semi-transparent yellow
+    return gTextureDiffuseMap[0].Sample(gsamLinearWrap, pin.TexC);
 }

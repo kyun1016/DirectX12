@@ -5,10 +5,10 @@
 class DX12_RootSignatureSystem {
 	DEFAULT_SINGLETON(DX12_RootSignatureSystem)
 public:
-	void Initialize(ID3D12Device* device) {
+	void Initialize(ID3D12Device* device, size_t textureSize = 1) {
 		mDevice = device;
 		BuildExampleRootSignature();	// Example
-		BuildSpriteRootSignature();
+		BuildSpriteRootSignature(textureSize);
 		BuildTestRootSignature();
 	}
 
@@ -54,8 +54,17 @@ private:
 		RegisterGraphicsSignature(eRenderLayer::Opaque, param);
 	}
 
-	void BuildSpriteRootSignature()
+	void BuildSpriteRootSignature(size_t textureSize)
 	{
+		D3D12_DESCRIPTOR_RANGE TexDiffTable // register t0[16] (Space1)
+		{
+			/* D3D12_DESCRIPTOR_RANGE_TYPE RangeType	*/.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+			/* UINT NumDescriptors						*/.NumDescriptors = static_cast<UINT>(textureSize),
+			/* UINT BaseShaderRegister					*/.BaseShaderRegister = 0,
+			/* UINT RegisterSpace						*/.RegisterSpace = 1,
+			/* UINT OffsetInDescriptorsFromTableStart	*/.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND
+		};
+
 		std::vector<CD3DX12_ROOT_PARAMETER> param;
 		CD3DX12_ROOT_PARAMETER tmp;
 		tmp.InitAsConstantBufferView(0); param.push_back(tmp);		// CBV, cbInstanceID b1

@@ -69,15 +69,15 @@ private:
 			auto& textures = mTextureSystem->GetTextures();
 			for (auto& texture : textures)
 			{
-				texture.Handle = DX12_RTVHeapRepository::GetInstance().Load(texture.Name);
+				texture.Handle = DX12_RTVHeapRepository::GetInstance().LoadTexture(texture);
 			}
 		}
 		
 		DX12_DSVHeapRepository::GetInstance().Initialize(mDevice);
 		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height);
-		DX12_RootSignatureSystem::GetInstance().Initialize(mDevice);
+		DX12_RootSignatureSystem::GetInstance().Initialize(mDevice, mTextureSystem->Size());
 		DX12_InputLayoutSystem::GetInstance().Initialize();
-		DX12_ShaderCompileSystem::GetInstance().Initialize();
+		DX12_ShaderCompileSystem::GetInstance().Initialize(mTextureSystem->Size());
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
 
