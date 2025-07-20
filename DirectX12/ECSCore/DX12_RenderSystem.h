@@ -19,6 +19,7 @@
 #include "DX12_InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
 #include "CameraSystem.h"
+#include "TextureSystem.h"
 
 class DX12_RenderSystem : public ECS::ISystem {
 public:
@@ -51,6 +52,7 @@ private:
 	ID3D12GraphicsCommandList6* mCommandList;
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
+	std::unique_ptr<TextureSystem> mTextureSystem;
 
 	inline void Initialize() {
 		WindowSystem::GetInstance().Initialize();
@@ -60,7 +62,17 @@ private:
 		mDevice = DX12_DeviceSystem::GetInstance().GetDevice();
 		DX12_CommandSystem::GetInstance().Initialize(mDevice);
 		mCommandList = DX12_CommandSystem::GetInstance().GetCommandList();
-		DX12_RTVHeapRepository::GetInstance().Initialize(mDevice);
+		mTextureSystem = std::make_unique<TextureSystem>(mDevice, mCommandList);
+		mTextureSystem->Initialize();
+		DX12_RTVHeapRepository::GetInstance().Initialize(mDevice, mTextureSystem->Size() + APP_NUM_BACK_BUFFERS);
+		{
+			auto& textures = mTextureSystem->GetTextures();
+			for (auto& texture : textures)
+			{
+				texture.Handle = DX12_RTVHeapRepository::GetInstance().Load(texture.Name);
+			}
+		}
+		
 		DX12_DSVHeapRepository::GetInstance().Initialize(mDevice);
 		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height);
 		DX12_RootSignatureSystem::GetInstance().Initialize(mDevice);

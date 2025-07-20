@@ -14,7 +14,7 @@ public:
 	{
 		mDevice = device;
 
-		mNumDescriptors = size + size % DEFAULT_SIZE;	// 64 배수의 RTV 저장공간을 유지하도록 구현
+		mNumDescriptors = size + (DEFAULT_SIZE - size) % DEFAULT_SIZE;	// 64 배수의 RTV 저장공간을 유지하도록 구현
 
 		InitParameters();
 		CreateHeap(mNumDescriptors);
@@ -31,6 +31,11 @@ public:
 	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandle(ECS::RepoHandle handle)
 	{
 		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + Get(handle)->handle * mDescriptorSize);
+	}
+
+	inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(ECS::RepoHandle handle)
+	{
+		return static_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(mHeap->GetGPUDescriptorHandleForHeapStart().ptr + Get(handle)->handle * mDescriptorSize);
 	}
 protected:
 	constexpr static std::uint32_t DEFAULT_SIZE = 64;
@@ -49,16 +54,15 @@ protected:
 	}
 	inline void CreateHeap(uint32_t num)
 	{
-		mNumDescriptors = num;
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc
 		{
 			/* D3D12_DESCRIPTOR_HEAP_TYPE Type	*/mType,
-			/* UINT NumDescriptors				*/mNumDescriptors,
+			/* UINT NumDescriptors				*/num,
 			/* D3D12_DESCRIPTOR_HEAP_FLAGS Flags*/D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 			/* UINT NodeMask					*/0
 		};
 		ThrowIfFailed(mDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(mHeap.GetAddressOf())));
-		LOG_INFO("DX12 Render Tagert View Descriptor Heap Size: {}", mNumDescriptors);
+		LOG_INFO("DX12 Render Tagert View Descriptor Heap Size: {}", num);
 	}
 
 	virtual bool LoadResourceInternal(DX12_HeapComponent* ptr)

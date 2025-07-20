@@ -100,6 +100,15 @@ private:                                                          \
     SystemClassName(SystemClassName&&) = delete;                  \
     SystemClassName& operator=(SystemClassName&&) = delete;       
 
+#define DEFAULT_CLASS(SystemClassName)                            \
+public:                                                           \
+    SystemClassName() = default;                                  \
+    ~SystemClassName() = default;                                 \
+    SystemClassName(const SystemClassName&) = delete;             \
+    SystemClassName& operator=(const SystemClassName&) = delete;  \
+    SystemClassName(SystemClassName&&) = delete;                  \
+    SystemClassName& operator=(SystemClassName&&) = delete;       
+
 
 enum class eRenderLayer : std::uint64_t
 {

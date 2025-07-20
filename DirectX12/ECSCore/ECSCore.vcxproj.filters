@@ -76,6 +76,9 @@
     <Filter Include="Header Files\Systems\Camera">
       <UniqueIdentifier>{b780c9b1-e6d7-4494-a9b6-4924c99e85c0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Systems\Texture">
+      <UniqueIdentifier>{35c79ea1-0946-475c-a961-e73e315d9c1c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -286,6 +289,12 @@
     </ClInclude>
     <ClInclude Include="CameraComponent.h">
       <Filter>Header Files\Systems\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureSystem.h">
+      <Filter>Header Files\Systems\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureComponent.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
