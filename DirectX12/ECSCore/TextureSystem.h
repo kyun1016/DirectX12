@@ -27,9 +27,11 @@ public:
         if (mTextureRegistry.find(filePath) == std::end(mTextureRegistry))
         {
             mTextureRegistry[filePath] = static_cast<TextureHandle>(mTextures.size());
-            mTextures.emplace_back();
-            mTextures.back().Name = filePath;
-            ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice, mCommandList, StringToWString(filePath).c_str(), mTextures.back().Resource, mTextures.back().UploadHeap));
+
+            auto texture = std::make_unique<Texture>();
+            texture->Name = filePath;
+            ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice, mCommandList, StringToWString(filePath).c_str(), texture->Resource, texture->UploadHeap));
+            mTextures.emplace_back(std::move(texture));
         }
 
         return mTextureRegistry[filePath];
@@ -39,7 +41,7 @@ public:
 	{
 		return mTextures.size();
 	}
-    std::vector<Texture>& GetTextures()
+    std::vector<std::unique_ptr<Texture>>& GetTextures()
     {
         return mTextures;
     }
@@ -62,5 +64,5 @@ private:
     std::unordered_map<std::string, TextureHandle> mTextureRegistry;
 
     // 핸들 -> 실제 텍스처 데이터
-    std::vector<Texture> mTextures;
+    std::vector<std::unique_ptr<Texture>> mTextures;
 };

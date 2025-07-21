@@ -31,7 +31,7 @@ public:
 	}
 	inline D3D12_CPU_DESCRIPTOR_HANDLE GetHandle(ECS::RepoHandle handle)
 	{
-		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + Get(handle)->handle * mDescriptorSize);
+		return static_cast<D3D12_CPU_DESCRIPTOR_HANDLE>(mHeap->GetCPUDescriptorHandleForHeapStart().ptr + (SIZE_T) Get(handle)->handle * (SIZE_T) mDescriptorSize);
 	}
 
 	inline D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(ECS::RepoHandle handle)
@@ -57,26 +57,23 @@ public:
 		return handle;
 	}
 
-	ECS::RepoHandle LoadTexture(Texture& texture) {
-		std::lock_guard<std::mutex> lock(mtx);
-		auto it = mNameToHandle.find(texture.Name);
-		if (it != mNameToHandle.end()) {
-			mResourceStorage[it->second].refCount++;
-			return it->second;
+	ECS::RepoHandle LoadTexture(Texture* texture) {
+		ECS::RepoHandle handle;
+		{
+			std::lock_guard<std::mutex> lock(mtx);
+			auto it = mNameToHandle.find(texture->Name);
+			if (it != mNameToHandle.end()) {
+				mResourceStorage[it->second].refCount++;
+				return it->second;
+			}
+			auto resource = std::make_unique<DX12_HeapComponent>();
+
+			handle = mNextHandle++;
+			texture->Handle = handle;
+			resource->handle = handle - 1; // Handle is 0-based index in the heap
+			mResourceStorage[handle] = { std::move(resource), 1 };
+			mNameToHandle[texture->Name] = handle;
 		}
-
-		auto resource = std::make_unique<DX12_HeapComponent>();
-		//if (!LoadResourceInternal(texture.Name, resource.get()))
-		//{
-		//	LOG_ERROR("Failed to load resource from name: {}", name);
-		//	return 0; // Return an invalid handle if loading fails
-		//}
-
-		ECS::RepoHandle handle = mNextHandle++;
-		texture.Handle = handle;
-		resource->handle = handle - 1; // Handle is 0-based index in the heap
-		mResourceStorage[handle] = { std::move(resource), 1 };
-		mNameToHandle[texture.Name] = handle;
 
 		BuildTexture2DSrv(texture);
 		return handle;
@@ -109,11 +106,11 @@ protected:
 		LOG_INFO("DX12 Render Tagert View Descriptor Heap Size: {}", num);
 	}
 
-	void BuildTexture2DSrv(Texture& texture)
+	void BuildTexture2DSrv(Texture* texture)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc
 		{
-			/* DXGI_FORMAT Format															*/.Format = texture.Resource->GetDesc().Format,
+			/* DXGI_FORMAT Format															*/.Format = texture->Resource->GetDesc().Format,
 			/* D3D12_SRV_DIMENSION ViewDimension											*/.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
 			/* UINT Shader4ComponentMapping													*/.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 			/* union {																		*/
@@ -122,7 +119,7 @@ protected:
 			/* 	D3D12_TEX1D_ARRAY_SRV Texture1DArray										*/
 			/* 	D3D12_TEX2D_SRV Texture2D{													*/.Texture2D{
 			/*		UINT MostDetailedMip													*/	.MostDetailedMip = 0,
-			/*		UINT MipLevels															*/	.MipLevels = texture.Resource->GetDesc().MipLevels,
+			/*		UINT MipLevels															*/	.MipLevels = texture->Resource->GetDesc().MipLevels,
 			/*		UINT PlaneSlice															*/	.PlaneSlice = 0,
 			/*		FLOAT ResourceMinLODClamp												*/	.ResourceMinLODClamp = 0.0f,
 			/*	}																			*/}
@@ -135,8 +132,7 @@ protected:
 			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 			/* }																			*/
 		};
-
-		mDevice->CreateShaderResourceView(texture.Resource.Get(), &srvDesc, GetHandle(texture.Handle));
+		mDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, GetHandle(texture->Handle));
 	}
 
 	virtual bool LoadResourceInternal(DX12_HeapComponent* ptr)

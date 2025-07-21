@@ -62,16 +62,11 @@ private:
 		mDevice = DX12_DeviceSystem::GetInstance().GetDevice();
 		DX12_CommandSystem::GetInstance().Initialize(mDevice);
 		mCommandList = DX12_CommandSystem::GetInstance().GetCommandList();
+		DX12_CommandSystem::GetInstance().BeginCommandList();
 		mTextureSystem = std::make_unique<TextureSystem>(mDevice, mCommandList);
 		mTextureSystem->Initialize();
 		DX12_RTVHeapRepository::GetInstance().Initialize(mDevice, mTextureSystem->Size() + APP_NUM_BACK_BUFFERS);
-		{
-			auto& textures = mTextureSystem->GetTextures();
-			for (auto& texture : textures)
-			{
-				texture.Handle = DX12_RTVHeapRepository::GetInstance().LoadTexture(texture);
-			}
-		}
+		
 		
 		DX12_DSVHeapRepository::GetInstance().Initialize(mDevice);
 		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height);
@@ -81,11 +76,18 @@ private:
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
 
-		DX12_CommandSystem::GetInstance().BeginCommandList();
 		DX12_MeshSystem::GetInstance().Initialize();
 		DX12_SceneSystem::GetInstance().Initialize();
 		CameraSystem::GetInstance().Initialize();
 		ImGuiSystem::GetInstance().Initialize(wc.hwnd, mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), mCommandList);
+
+		{
+			auto& textures = mTextureSystem->GetTextures();
+			for (auto& texture : textures)
+			{
+				texture->Handle = DX12_RTVHeapRepository::GetInstance().LoadTexture(texture.get());
+			}
+		}
 
 		DX12_CommandSystem::GetInstance().ExecuteCommandList();
 		DX12_CommandSystem::GetInstance().FlushCommandQueue();
