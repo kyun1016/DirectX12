@@ -18,6 +18,7 @@
 #include "ImGuiSystem.h"
 #include "DX12_InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
+#include "DX12_HeapRepository.h"
 #include "CameraSystem.h"
 #include "TextureSystem.h"
 
@@ -53,11 +54,13 @@ private:
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 	std::unique_ptr<TextureSystem> mTextureSystem;
+	std::unique_ptr<DX12_HeapRepository> mSRVHeapRepository;
+	std::unique_ptr<DX12_HeapRepository> mRTVHeapRepository;
+	std::unique_ptr<DX12_HeapRepository> mDSVHeapRepository;
 
 	inline void Initialize() {
 		WindowSystem::GetInstance().Initialize();
 		WindowComponent& wc = WindowSystem::GetInstance().GetWindowComponent();
-
 		DX12_DeviceSystem::GetInstance().Initialize();
 		mDevice = DX12_DeviceSystem::GetInstance().GetDevice();
 		DX12_CommandSystem::GetInstance().Initialize(mDevice);
@@ -65,11 +68,11 @@ private:
 		DX12_CommandSystem::GetInstance().BeginCommandList();
 		mTextureSystem = std::make_unique<TextureSystem>(mDevice, mCommandList);
 		mTextureSystem->Initialize();
-		DX12_RTVHeapRepository::GetInstance().Initialize(mDevice, mTextureSystem->Size() + APP_NUM_BACK_BUFFERS);
+		mRTVHeapRepository = std::make_unique<DX12_HeapRepository>(mDevice, APP_NUM_BACK_BUFFERS, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+		mDSVHeapRepository = std::make_unique<DX12_HeapRepository>(mDevice, 3, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+		mSRVHeapRepository = std::make_unique<DX12_HeapRepository>(mDevice, mTextureSystem->Size(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		
-		
-		DX12_DSVHeapRepository::GetInstance().Initialize(mDevice);
-		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height);
+		DX12_SwapChainSystem::GetInstance().Initialize(mDevice, DX12_CommandSystem::GetInstance().GetCommandQueue(), DX12_DeviceSystem::GetInstance().GetFactory(), wc.hwnd, wc.width, wc.height, mRTVHeapRepository.get());
 		DX12_RootSignatureSystem::GetInstance().Initialize(mDevice, mTextureSystem->Size());
 		DX12_InputLayoutSystem::GetInstance().Initialize();
 		DX12_ShaderCompileSystem::GetInstance().Initialize(mTextureSystem->Size());
@@ -85,7 +88,7 @@ private:
 			auto& textures = mTextureSystem->GetTextures();
 			for (auto& texture : textures)
 			{
-				texture->Handle = DX12_RTVHeapRepository::GetInstance().LoadTexture(texture.get());
+				texture->Handle = mSRVHeapRepository->LoadTexture(texture.get());
 			}
 		}
 
@@ -121,11 +124,16 @@ private:
 		const D3D12_GPU_VIRTUAL_ADDRESS baseInstanceIDAddress = DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress();
 		const UINT objCBByteSize = CalcConstantBufferByteSize(sizeof(InstanceIDData));
 		// const UINT objCBByteSize = sizeof(InstanceIDData);
-		mCommandList->SetPipelineState(pso);
-		DX12_CommandSystem::GetInstance().SetRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
+		
+		ID3D12DescriptorHeap* descriptorHeaps[] = { mSRVHeapRepository->GetHeap()};
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		mCommandList->SetGraphicsRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
 		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
 		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
+		mCommandList->SetGraphicsRootDescriptorTable(4, mSRVHeapRepository->GetGPUHandle(0));
 
+		mCommandList->SetPipelineState(pso);
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
 		size_t totalMeshIdx = 0;
 		for (size_t i = 0; i < allRenderItems.size(); ++i)

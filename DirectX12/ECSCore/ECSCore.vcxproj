@@ -158,6 +158,7 @@
     <ClInclude Include="DX12_DeviceSystem.h" />
     <ClInclude Include="DX12_FrameResourceSystem.h" />
     <ClInclude Include="DX12_InputLayoutSystem.h" />
+    <ClInclude Include="DX12_HeapRepository.h" />
     <ClInclude Include="LightData.h" />
     <ClInclude Include="MaterialData.h" />
     <ClInclude Include="DX12_MeshComponent.h" />

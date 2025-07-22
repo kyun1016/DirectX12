@@ -19,6 +19,8 @@ public:
 		mTextures.clear();
 
         LoadTexture("../Data/Textures/bricks.dds");
+        LoadTexture("../Data/Textures/bricks2.dds");
+        LoadTexture("../Data/Textures/bricks3.dds");
 	}
 
     // 텍스처를 로드(또는 캐시에서 가져옴)하고 핸들을 반환합니다.

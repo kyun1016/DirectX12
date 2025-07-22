@@ -81,7 +81,7 @@ public:
 protected:
 	constexpr static std::uint32_t DEFAULT_SIZE = 64;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_TYPE mType = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	std::uint32_t mDescriptorSize = 0;
 	std::uint32_t mNumDescriptors = 64;
@@ -132,7 +132,15 @@ protected:
 			/* 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV RaytracingAccelerationStructure	*/
 			/* }																			*/
 		};
-		mDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, GetHandle(texture->Handle));
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mHeap->GetCPUDescriptorHandleForHeapStart(), (int) Get(texture->Handle)->handle, (int) mDescriptorSize);
+
+		LOG_INFO("Texture Address: {}", (int) mHeap->GetCPUDescriptorHandleForHeapStart().ptr);
+		LOG_INFO("Texture Handle: {}", (int) hDescriptor.ptr);
+		LOG_INFO("Texture Offest: {}", (int)mDescriptorSize);
+		LOG_INFO("Texture Handle Index: {}", (int)Get(texture->Handle)->handle);
+
+		// mDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, GetHandle(texture->Handle));
+		mDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, hDescriptor);
 	}
 
 	virtual bool LoadResourceInternal(DX12_HeapComponent* ptr)

@@ -1,13 +1,13 @@
 #pragma once
 #include "ECSConfig.h"
 #include "DX12_Config.h"
-#include "DX12_RTVHeapRepository.h"
+#include "DX12_HeapRepository.h"
 #include "DX12_CommandSystem.h"
 
 class DX12_SwapChainSystem {
 DEFAULT_SINGLETON(DX12_SwapChainSystem)
 public:
-    void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, const HWND& hwnd, UINT width, UINT height)
+    void Initialize(ID3D12Device* device, ID3D12CommandQueue* commandQueue, IDXGIFactory4* factory, const HWND& hwnd, UINT width, UINT height, DX12_HeapRepository* heap)
     {
 		mDevice = device;
 		mWidth = width;
@@ -18,7 +18,7 @@ public:
 		mDescritorHandles.resize(APP_NUM_BACK_BUFFERS);
 
 		for (UINT i = 0; i < APP_NUM_BACK_BUFFERS; i++)
-			mDescritorHandles[i] = DX12_RTVHeapRepository::GetInstance().AllocateHandle();
+			mDescritorHandles[i] = heap->AllocateHandle();
 
 		CreateSwapChain(factory, commandQueue, hwnd);
     }

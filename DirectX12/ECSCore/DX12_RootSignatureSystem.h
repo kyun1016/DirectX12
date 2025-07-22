@@ -71,6 +71,7 @@ private:
 		tmp.InitAsShaderResourceView(0, 0); param.push_back(tmp);	// SRV, InstanceData t0 (Space0)
 		tmp.InitAsShaderResourceView(1, 0); param.push_back(tmp);	// SRV, CameraData t1 (Space0)
 		tmp.InitAsShaderResourceView(2, 0); param.push_back(tmp);	// SRV, LightData t2 (Space0)
+		tmp.InitAsDescriptorTable(1, &TexDiffTable, D3D12_SHADER_VISIBILITY_PIXEL); param.push_back(tmp);
 
 		RegisterGraphicsSignature(eRenderLayer::Sprite, param);
 	}
