@@ -22,7 +22,6 @@
 #include "MeshSystem.h"
 #include "LightSystem.h"
 
-#include "PhysicsSystem.h"
 #include "DX12_BoundingSystem.h"
 #include "DX12_RenderSystem.h"
 

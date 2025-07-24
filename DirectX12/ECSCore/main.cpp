@@ -22,20 +22,6 @@ void InitPhysicsExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
 
-    // 1. Register Components
-    coordinator.RegisterComponent<TransformComponent>();
-    coordinator.RegisterComponent<RigidBodyComponent>();
-    coordinator.RegisterComponent<GravityComponent>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<PhysicsSystem>();
-
-    ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<TransformComponent>());
-    signature.set(coordinator.GetComponentType<RigidBodyComponent>());
-    signature.set(coordinator.GetComponentType<GravityComponent>());
-    coordinator.SetSystemSignature<PhysicsSystem>(signature);
-
     // 3. Create Entity
     ECS::Entity ball = coordinator.CreateEntity();
     coordinator.AddComponent(ball, TransformComponent{});
@@ -51,16 +37,6 @@ void InitPhysicsExample()
 void InitSoundExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
-
-    // 1. Register Components
-    coordinator.RegisterComponent<FMODAudioComponent>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<FMODAudioSystem>();
-
-    ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<FMODAudioComponent>());
-    coordinator.SetSystemSignature<FMODAudioSystem>(signature);
 
     // 3. Create Entity
     ECS::Entity sound1 = coordinator.CreateEntity();
@@ -108,16 +84,6 @@ void InitLightExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
 
-    // 1. Register Components
-    coordinator.RegisterComponent<LightComponent>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<LightSystem>();
-
-    ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<LightComponent>());
-    coordinator.SetSystemSignature<LightSystem>(signature);
-
     // 3. Create Entity
     ECS::Entity light1 = coordinator.CreateEntity();
     ECS::Entity light2 = coordinator.CreateEntity();
@@ -131,24 +97,6 @@ void InitLightExample()
 void InitDX12_TransformExample()
 {
     auto& coordinator = ECS::Coordinator::GetInstance();
-
-    // 1. Register Components
-    coordinator.RegisterComponent<TransformComponent>();
-    coordinator.RegisterComponent<DX12_BoundingComponent>();
-    coordinator.RegisterComponent<DX12_MeshComponent>();
-    coordinator.RegisterComponent<InstanceData>();
-
-    // 2. Register System
-    coordinator.RegisterSystem<PhysicsSystem>();
-    coordinator.RegisterSystem<DX12_BoundingSystem>();
-
-    ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<TransformComponent>());
-    coordinator.SetSystemSignature<PhysicsSystem>(signature);
-
-    signature.set(coordinator.GetComponentType<DX12_MeshComponent>());
-    signature.set(coordinator.GetComponentType<DX12_BoundingComponent>());
-    coordinator.SetSystemSignature<DX12_BoundingSystem>(signature);
 
     // 3. Create Entity
     ECS::Entity entity1 = coordinator.CreateEntity();

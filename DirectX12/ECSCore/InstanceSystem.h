@@ -1,4 +1,5 @@
 #pragma once
+#include "ECSCoordinator.h"
 #include "InstanceComponent.h"
 
 class InstanceSystem : public ECS::ISystem {

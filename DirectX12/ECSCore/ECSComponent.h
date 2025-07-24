@@ -30,10 +30,9 @@ namespace ECS
 		{
 			assert(mEntityToIndexMap.find(entity) == mEntityToIndexMap.end() && "Component added to same entity more than once.");
 
-			size_t newIndex = mSize;
-			mEntityToIndexMap[entity] = newIndex;
-			mIndexToEntityMap[newIndex] = entity;
-			mComponentArray[newIndex] = component;
+			mEntityToIndexMap[entity] = mSize;
+			mIndexToEntityMap[mSize] = entity;
+			mComponentArray[mSize] = component;
 			++mSize;
 		}
 
@@ -42,19 +41,17 @@ namespace ECS
 			assert(mEntityToIndexMap.find(entity) != mEntityToIndexMap.end() && "Removing non-existent component.");
 
 			// Copy element at end into deleted element's place to maintain density
-			size_t indexOfRemovedEntity = mEntityToIndexMap[entity];
-			size_t indexOfLastElement = mSize - 1;
-			mComponentArray[indexOfRemovedEntity] = mComponentArray[indexOfLastElement];
+			--mSize;
+			size_t& indexOfRemovedEntity = mEntityToIndexMap[entity];
+			mComponentArray[indexOfRemovedEntity] = mComponentArray[mSize];
 
 			// Update map to point to moved spot
-			Entity entityOfLastElement = mIndexToEntityMap[indexOfLastElement];
+			Entity& entityOfLastElement = mIndexToEntityMap[mSize];
 			mEntityToIndexMap[entityOfLastElement] = indexOfRemovedEntity;
 			mIndexToEntityMap[indexOfRemovedEntity] = entityOfLastElement;
 
 			mEntityToIndexMap.erase(entity);
-			mIndexToEntityMap.erase(indexOfLastElement);
-
-			--mSize;
+			mIndexToEntityMap.erase(mSize);
 		}
 
 		T& GetData(Entity entity)
@@ -79,6 +76,16 @@ namespace ECS
 	{
 	public:
 		template<typename T>
+		ComponentArray<T>* GetComponentArray()
+		{
+			std::type_index type = std::type_index(typeid(T));
+
+			assert(mComponentTypes.find(type) != mComponentTypes.end() && "Component not registered before use.");
+
+			return static_cast<ComponentArray<T>*>(mComponentArrays[type].get());
+		}
+
+		template<typename T>
 		void RegisterComponent()
 		{
 			std::type_index type = std::type_index(typeid(T));
@@ -86,7 +93,7 @@ namespace ECS
 			assert(mComponentTypes.find(type) == mComponentTypes.end() && "Registering component type more than once.");
 
 			mComponentTypes.insert({ type, mNextComponentType });
-			mComponentArrays.insert({ type, std::make_shared<ComponentArray<T>>() });
+			mComponentArrays.insert({ type, std::make_unique<ComponentArray<T>>() });
 			++mNextComponentType;
 		}
 
@@ -161,19 +168,9 @@ namespace ECS
 
 	private:
 		std::unordered_map<std::type_index, ComponentType> mComponentTypes{};
-		std::unordered_map<std::type_index, std::shared_ptr<IComponentArray>> mComponentArrays{};
+		std::unordered_map<std::type_index, std::unique_ptr<IComponentArray>> mComponentArrays{};
 		std::unordered_map<std::type_index, std::unique_ptr<ISingletonComponent>> mSingletonComponents;
 
 		ComponentType mNextComponentType{};
-
-		template<typename T>
-		std::shared_ptr<ComponentArray<T>> GetComponentArray()
-		{
-			std::type_index type = std::type_index(typeid(T));
-
-			assert(mComponentTypes.find(type) != mComponentTypes.end() && "Component not registered before use.");
-
-			return std::static_pointer_cast<ComponentArray<T>>(mComponentArrays[type]);
-		}
 	};
 }

@@ -6,6 +6,7 @@
 #include "ECSSystem.h"
 #include "WindowSystem.h"
 #include "ImGuiSystem.h"
+#include "BoundingVolumeUpdateSystem.h"
 
 namespace ECS
 {
@@ -15,6 +16,58 @@ namespace ECS
 		mComponentManager = std::make_unique<ComponentManager>();
 		mEntityManager = std::make_unique<EntityManager>();
 		mSystemManager = std::make_unique<SystemManager>();
+
+		RegisterComponent<DX12_BoundingComponent>();
+		RegisterComponent<DX12_MeshComponent>();
+		RegisterComponent<InstanceData>();
+		RegisterComponent<LightComponent>();
+		RegisterComponent<FMODAudioComponent>();
+		RegisterComponent<TransformComponent>();
+		RegisterComponent<RigidBodyComponent>();
+		RegisterComponent<GravityComponent>();
+		RegisterComponent<BoundingVolumnComponent>();
+
+		{
+			RegisterSystem<FMODAudioSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<FMODAudioComponent>());
+			SetSystemSignature<FMODAudioSystem>(signature);
+		}
+
+		{
+			RegisterSystem<PhysicsSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<RigidBodyComponent>());
+			signature.set(GetComponentType<GravityComponent>());
+			SetSystemSignature<PhysicsSystem>(signature);
+		}
+
+		{
+			RegisterSystem<LightSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<LightComponent>());
+			SetSystemSignature<LightSystem>(signature);
+		}
+
+		{
+			RegisterSystem<DX12_BoundingSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<DX12_MeshComponent>());
+			signature.set(GetComponentType<DX12_BoundingComponent>());
+			SetSystemSignature<DX12_BoundingSystem>(signature);
+		}
+		{
+			RegisterSystem<BoundingVolumeUpdateSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<DX12_MeshComponent>());
+			signature.set(GetComponentType<BoundingVolumnComponent>());
+			SetSystemSignature<BoundingVolumeUpdateSystem>(signature);
+		}
+		
+		
 	}
 	Entity Coordinator::CreateEntity()
 	{

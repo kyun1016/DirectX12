@@ -4,6 +4,8 @@
 
 namespace ECS
 {
+	class Coordinator;
+
 	class ISystem
 	{
 	public:
