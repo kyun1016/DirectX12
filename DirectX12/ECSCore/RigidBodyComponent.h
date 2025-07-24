@@ -3,6 +3,7 @@
 
 struct RigidBodyComponent {
 	float Mass;
+	float3 DiffPosition;
 	float3 Velocity;
 	float3 AngularVelocity;
 	float3 Force;

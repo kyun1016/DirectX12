@@ -182,6 +182,7 @@
     <ClInclude Include="DX12_SwapChainSystem.h" />
     <ClInclude Include="DX12_ShaderCompileSystem.h" />
     <ClInclude Include="InstanceComponent.h" />
+    <ClInclude Include="RenderDataSyncSystem.h" />
     <ClInclude Include="RigidBodyComponent.h" />
     <ClInclude Include="TransformComponent.h" />
     <ClInclude Include="ECSRepository.h" />

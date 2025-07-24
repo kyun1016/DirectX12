@@ -19,27 +19,6 @@
     <Filter Include="Header Files\Systems">
       <UniqueIdentifier>{8e389dbe-c8e4-4fb0-b6a9-1bdfc1db8400}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\Light">
-      <UniqueIdentifier>{be60cb14-c6a3-4b0a-918a-2e6b1dc51049}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Mesh">
-      <UniqueIdentifier>{7f33e4e0-2fe1-4d54-89e9-ca58dba55c2b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Material">
-      <UniqueIdentifier>{2ab7f502-8be7-485a-a564-a2322ccd4eec}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Time">
-      <UniqueIdentifier>{214e8847-ede7-477d-804f-5e823bde06f7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Window">
-      <UniqueIdentifier>{7f59900f-ce42-47ad-bce4-742c6cd034d4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Physics">
-      <UniqueIdentifier>{9f8e90e5-3105-4b7f-b021-b9e9e0e5b378}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Audio">
-      <UniqueIdentifier>{1dfbbc52-c3bc-4ac3-a177-99ba0c4112af}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\LogCore">
       <UniqueIdentifier>{b2e9ea41-351a-41af-a6a1-07cc12b917dc}</UniqueIdentifier>
     </Filter>
@@ -55,35 +34,26 @@
     <Filter Include="Header Files\DX12_Core\ECS Systems">
       <UniqueIdentifier>{12dfc8df-6568-4335-a013-41e24f052dd1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\GameObject">
-      <UniqueIdentifier>{4a708b01-d716-4baa-82c5-f3e50faf5d11}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\ImGui">
-      <UniqueIdentifier>{7e7b2181-e41a-453a-a694-c03fac90c70c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\HLSL_Shaders">
       <UniqueIdentifier>{af4cc31f-e036-4a0c-952e-a4ff24edf2d9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\DX12_Core\Struct">
       <UniqueIdentifier>{9652965d-ba29-40ae-ade3-61d77cb7d5d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\Input">
-      <UniqueIdentifier>{685a9bf4-0e89-44f5-adfd-e17513fd6ea1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Player">
-      <UniqueIdentifier>{d5e7b6a2-527c-4caa-907e-824fdfb53990}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Camera">
-      <UniqueIdentifier>{b780c9b1-e6d7-4494-a9b6-4924c99e85c0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Systems\Texture">
-      <UniqueIdentifier>{35c79ea1-0946-475c-a961-e73e315d9c1c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\UnityLike">
       <UniqueIdentifier>{99af67da-7f9c-4145-8d4e-835201d8f590}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Systems\Instance">
-      <UniqueIdentifier>{bfdcb9bc-c5e6-4783-b95a-57f2e7deeb39}</UniqueIdentifier>
+    <Filter Include="Header Files\Component">
+      <UniqueIdentifier>{04701a83-2817-4cef-82a8-81eb7a185cc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Repository">
+      <UniqueIdentifier>{2e608969-35ab-4aee-a856-5193dc97e823}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UnityLike\GameObject">
+      <UniqueIdentifier>{4a708b01-d716-4baa-82c5-f3e50faf5d11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Factory">
+      <UniqueIdentifier>{dc08869f-249e-4853-a75f-0579145b2695}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -113,62 +83,14 @@
     <ClInclude Include="ECSSystem.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
-    <ClInclude Include="FMODAudioComponent.h">
-      <Filter>Header Files\Systems\Audio</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ECSCorePch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FMODAudioSystem.h">
-      <Filter>Header Files\Systems\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="LightSystem.h">
-      <Filter>Header Files\Systems\Light</Filter>
-    </ClInclude>
-    <ClInclude Include="LightComponent.h">
-      <Filter>Header Files\Systems\Light</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshRepository.h">
-      <Filter>Header Files\Systems\Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshComponent.h">
-      <Filter>Header Files\Systems\Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshSystem.h">
-      <Filter>Header Files\Systems\Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="FMODAudioRepository.h">
-      <Filter>Header Files\Systems\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="MaterialComponent.h">
-      <Filter>Header Files\Systems\Material</Filter>
-    </ClInclude>
-    <ClInclude Include="MaterialSystem.h">
-      <Filter>Header Files\Systems\Material</Filter>
-    </ClInclude>
-    <ClInclude Include="TimeComponent.h">
-      <Filter>Header Files\Systems\Time</Filter>
-    </ClInclude>
-    <ClInclude Include="TimeSystem.h">
-      <Filter>Header Files\Systems\Time</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowComponent.h">
-      <Filter>Header Files\Systems\Window</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowSystem.h">
-      <Filter>Header Files\Systems\Window</Filter>
-    </ClInclude>
     <ClInclude Include="LogCore.h">
       <Filter>Header Files\LogCore</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGuiComponent.h">
-      <Filter>Header Files\Systems\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGuiSystem.h">
-      <Filter>Header Files\Systems\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="DX12_Component.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
@@ -234,7 +156,7 @@
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectFactory.h">
-      <Filter>Header Files\Systems\GameObject</Filter>
+      <Filter>Header Files\UnityLike\GameObject</Filter>
     </ClInclude>
     <ClInclude Include="MaterialData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
@@ -244,18 +166,6 @@
     </ClInclude>
     <ClInclude Include="MeshData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
-    </ClInclude>
-    <ClInclude Include="InputComponent.h">
-      <Filter>Header Files\Systems\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="InputSystem.h">
-      <Filter>Header Files\Systems\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="PlayerControlComponent.h">
-      <Filter>Header Files\Systems\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="PlayerControlSystem.h">
-      <Filter>Header Files\Systems\Player</Filter>
     </ClInclude>
     <ClInclude Include="LightData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
@@ -275,50 +185,113 @@
     <ClInclude Include="CameraData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
     </ClInclude>
-    <ClInclude Include="CameraSystem.h">
-      <Filter>Header Files\Systems\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraComponent.h">
-      <Filter>Header Files\Systems\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureSystem.h">
-      <Filter>Header Files\Systems\Texture</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_HeapRepository.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Component.h">
-      <Filter>Header Files\Systems\GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="GameObject.h">
-      <Filter>Header Files\Systems\GameObject</Filter>
+      <Filter>Header Files\UnityLike\GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="TextureComponent.h">
-      <Filter>Header Files\Systems\Texture</Filter>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="InputComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="LightComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshComponent.h">
+      <Filter>Header Files\Component</Filter>
     </ClInclude>
     <ClInclude Include="InstanceComponent.h">
-      <Filter>Header Files\Systems\Instance</Filter>
-    </ClInclude>
-    <ClInclude Include="InstanceSystem.h">
-      <Filter>Header Files\Systems\Instance</Filter>
-    </ClInclude>
-    <ClInclude Include="PhysicsSystem.h">
-      <Filter>Header Files\Systems\Physics</Filter>
+      <Filter>Header Files\Component</Filter>
     </ClInclude>
     <ClInclude Include="RigidBodyComponent.h">
-      <Filter>Header Files\Systems\Physics</Filter>
+      <Filter>Header Files\Component</Filter>
     </ClInclude>
     <ClInclude Include="TransformComponent.h">
-      <Filter>Header Files\Systems\Physics</Filter>
+      <Filter>Header Files\Component</Filter>
     </ClInclude>
     <ClInclude Include="GravityComponent.h">
-      <Filter>Header Files\Systems\Physics</Filter>
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerControlComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="LightSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshSystem.h">
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="BoundingVolumeUpdateSystem.h">
-      <Filter>Header Files\Systems\Instance</Filter>
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="InstanceSystem.h">
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="WorldMatrixUpdateSystem.h">
-      <Filter>Header Files\Systems\Instance</Filter>
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerControlSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="FMODAudioComponent.h">
+      <Filter>Header Files\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="FMODAudioSystem.h">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Header Files\UnityLike</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRepository.h">
+      <Filter>Header Files\Repository</Filter>
+    </ClInclude>
+    <ClInclude Include="FMODAudioRepository.h">
+      <Filter>Header Files\Repository</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderDataSyncSystem.h">
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

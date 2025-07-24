@@ -21,6 +21,10 @@ enum class eCFGInstanceComponent : std::uint32_t
 };
 ENUM_OPERATORS_32(eCFGInstanceComponent)
 
+struct TextureScaleComponent
+{
+	float3 TextureScale;
+};
 struct InstanceComponent
 {
 	InstanceComponent()

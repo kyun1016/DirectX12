@@ -4,7 +4,7 @@
 #include "RigidBodyComponent.h"
 #include "GravityComponent.h"
 
-class PhysicsSystem : public ECS::ISystem {
+class RenderDataSyncSystem : public ECS::ISystem {
 public:
 	void Update() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
@@ -40,7 +40,7 @@ public:
 				continue;
 
 			auto& transform = coordinator.GetComponent<TransformComponent>(entity);
-			
+
 			transform.Position.x += rigidBody.Velocity.x * time.deltaTime;
 			transform.Position.y += rigidBody.Velocity.y * time.deltaTime;
 			transform.Position.z += rigidBody.Velocity.z * time.deltaTime;

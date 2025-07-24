@@ -7,6 +7,8 @@
 #include "WindowSystem.h"
 #include "ImGuiSystem.h"
 #include "BoundingVolumeUpdateSystem.h"
+#include "PlayerControlSystem.h"
+#include "RenderDataSyncSystem.h"
 
 namespace ECS
 {
@@ -26,6 +28,8 @@ namespace ECS
 		RegisterComponent<RigidBodyComponent>();
 		RegisterComponent<GravityComponent>();
 		RegisterComponent<BoundingVolumnComponent>();
+		RegisterComponent<eCFGInstanceComponent>();
+		RegisterComponent<PlayerControlComponent>();
 
 		{
 			RegisterSystem<FMODAudioSystem>();
@@ -65,6 +69,22 @@ namespace ECS
 			signature.set(GetComponentType<DX12_MeshComponent>());
 			signature.set(GetComponentType<BoundingVolumnComponent>());
 			SetSystemSignature<BoundingVolumeUpdateSystem>(signature);
+		}
+		{
+			RegisterSystem<PlayerControlSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<RigidBodyComponent>());
+			signature.set(GetComponentType<PlayerControlComponent>());
+			SetSystemSignature<PlayerControlSystem>(signature);
+		}
+		{
+			RegisterSystem<RenderDataSyncSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<RigidBodyComponent>());
+			signature.set(GetComponentType<PlayerControlComponent>());
+			SetSystemSignature<RenderDataSyncSystem>(signature);
 		}
 		
 		
