@@ -2,7 +2,7 @@
 #include "DX12_Config.h"
 #include "InstanceData.h"
 #include "DX12_MeshSystem.h"
-#include "DX12_TransformComponent.h"
+#include "TransformComponent.h"
 
 // #ifndef SKINNEDDATA_H
 // #define SKINNEDDATA_H
@@ -102,9 +102,9 @@ struct InstanceComponent
 {
 	InstanceComponent()
 	{
-		Transform.w_Position = {};
-		Transform.w_Scale = { 1.0f, 1.0f, 1.0f };
-		Transform.w_RotationQuat = { 0.0f, 0.0f, 0.0f, 1.0f };
+		Transform.Position = {};
+		Transform.Scale = { 1.0f, 1.0f, 1.0f };
+		Transform.RotationQuat = { 0.0f, 0.0f, 0.0f, 1.0f };
 		UpdateTransform();
 	};
 
@@ -113,43 +113,37 @@ struct InstanceComponent
 		if (!Transform.Dirty)
 			return false;
 
-		Transform.Dirty = false;
-		Transform.r_Position = Transform.w_Position;
-		Transform.r_Scale = Transform.w_Scale;
-		Transform.r_RotationEuler = Transform.w_RotationEuler;
-		Transform.r_RotationQuat = Transform.w_RotationQuat;
-
 		if (MeshHandle.GeometryHandle != 0)
 		{
 			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingBox;
-			BoundingBox.Center.x *= Transform.r_Scale.x;
-			BoundingBox.Center.y *= Transform.r_Scale.y;
-			BoundingBox.Center.z *= Transform.r_Scale.z;
-			BoundingBox.Center.x += Transform.r_Position.x;
-			BoundingBox.Center.y += Transform.r_Position.y;
-			BoundingBox.Center.z += Transform.r_Position.z;
+			BoundingBox.Center.x *= Transform.Scale.x;
+			BoundingBox.Center.y *= Transform.Scale.y;
+			BoundingBox.Center.z *= Transform.Scale.z;
+			BoundingBox.Center.x += Transform.Position.x;
+			BoundingBox.Center.y += Transform.Position.y;
+			BoundingBox.Center.z += Transform.Position.z;
 
-			BoundingBox.Extents.x *= Transform.r_Scale.x;
-			BoundingBox.Extents.y *= Transform.r_Scale.y;
-			BoundingBox.Extents.z *= Transform.r_Scale.z;
+			BoundingBox.Extents.x *= Transform.Scale.x;
+			BoundingBox.Extents.y *= Transform.Scale.y;
+			BoundingBox.Extents.z *= Transform.Scale.z;
 		}
 		if (MeshHandle.GeometryHandle != 0)
 		{
 			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingSphere;
-			BoundingSphere.Center.x *= Transform.r_Scale.x;
-			BoundingSphere.Center.y *= Transform.r_Scale.y;
-			BoundingSphere.Center.z *= Transform.r_Scale.z;
-			BoundingSphere.Center.x += Transform.r_Position.x;
-			BoundingSphere.Center.y += Transform.r_Position.y;
-			BoundingSphere.Center.z += Transform.r_Position.z;
+			BoundingSphere.Center.x *= Transform.Scale.x;
+			BoundingSphere.Center.y *= Transform.Scale.y;
+			BoundingSphere.Center.z *= Transform.Scale.z;
+			BoundingSphere.Center.x += Transform.Position.x;
+			BoundingSphere.Center.y += Transform.Position.y;
+			BoundingSphere.Center.z += Transform.Position.z;
 
-			BoundingSphere.Radius *= Transform.r_Scale.Length();
+			BoundingSphere.Radius *= Transform.Scale.Length();
 		}
 
-		float rx = DirectX::XMConvertToRadians(Transform.r_RotationEuler.x);
-		float ry = DirectX::XMConvertToRadians(Transform.r_RotationEuler.y);
-		float rz = DirectX::XMConvertToRadians(Transform.r_RotationEuler.z);
-		Transform.r_RotationQuat = DirectX::XMQuaternionRotationRollPitchYaw(rx, ry, rz);
+		float rx = DirectX::XMConvertToRadians(Transform.Rotation.x);
+		float ry = DirectX::XMConvertToRadians(Transform.Rotation.y);
+		float rz = DirectX::XMConvertToRadians(Transform.Rotation.z);
+		Transform.RotationQuat = DirectX::XMQuaternionRotationRollPitchYaw(rx, ry, rz);
 
 		DirectX::XMMATRIX rotX = DirectX::XMMatrixRotationX(rx);
 		DirectX::XMMATRIX rotY = DirectX::XMMatrixRotationY(ry);
@@ -157,12 +151,12 @@ struct InstanceComponent
 
 		DirectX::XMMATRIX rot = rotX * rotY * rotZ;
 		if (Option & eCFGInstanceComponent::UseQuat)
-			rot = DirectX::XMMatrixRotationQuaternion(Transform.r_RotationQuat);
+			rot = DirectX::XMMatrixRotationQuaternion(Transform.RotationQuat);
 
 		DirectX::XMMATRIX world
-			= DirectX::XMMatrixScaling(Transform.r_Scale.x, Transform.r_Scale.y, Transform.r_Scale.z)
+			= DirectX::XMMatrixScaling(Transform.Scale.x, Transform.Scale.y, Transform.Scale.z)
 			* rot
-			* DirectX::XMMatrixTranslation(Transform.r_Position.x, Transform.r_Position.y, Transform.r_Position.z);
+			* DirectX::XMMatrixTranslation(Transform.Position.x, Transform.Position.y, Transform.Position.z);
 		DirectX::XMMATRIX texTransform = DirectX::XMMatrixScaling(TexScale.x, TexScale.y, TexScale.z);
 		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(world);
 
@@ -177,7 +171,7 @@ struct InstanceComponent
 	DX12_MeshHandle MeshHandle;
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
-	DX12_TransformComponent Transform;
+	TransformComponent Transform;
 	float3 TexScale;
 	// Metarial 속성 추가
 	eCFGInstanceComponent Option = eCFGInstanceComponent::UseCulling;

@@ -1,6 +1,6 @@
 #pragma once
 #include "DX12_Config.h"
-#include "DX12_InstanceComponent.h"
+#include "InstanceComponent.h"
 #include "DX12_MeshSystem.h"
 #include "DX12_PSOSystem.h"
 

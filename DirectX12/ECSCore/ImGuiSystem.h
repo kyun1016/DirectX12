@@ -3,6 +3,7 @@
 #include "../ImGuiCore/imgui.h"
 #include "../ImGuiCore/imgui_impl_win32.h"
 #include "../ImGuiCore/imgui_impl_dx12.h"
+#include "PhysicsSystem.h"
 #include "DX12_Config.h"
 #include "DX12_SwapChainSystem.h"
 #include "DX12_SceneSystem.h"
@@ -241,10 +242,10 @@ private:
 		flag = 0;
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
 		if (ImGui::TreeNode("Transform")) {
-			instance.Transform.Dirty |= ImGui::DragFloat3("position", &instance.Transform.w_Position.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
-			instance.Transform.Dirty |= ImGui::DragFloat3("scale", &instance.Transform.w_Scale.x, 0.01f, 0.001f, 10.0f);
-			instance.Transform.Dirty |= ImGui::DragFloat3("rotation (Euler)", &instance.Transform.w_RotationEuler.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
-			instance.Transform.Dirty |= ImGui::DragFloat4("rotation (Quat)", &instance.Transform.w_RotationQuat.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			instance.Transform.Dirty |= ImGui::DragFloat3("position", &instance.Transform.Position.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			instance.Transform.Dirty |= ImGui::DragFloat3("scale", &instance.Transform.Scale.x, 0.01f, 0.001f, 10.0f);
+			instance.Transform.Dirty |= ImGui::DragFloat3("rotation (Euler)", &instance.Transform.Rotation.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
+			instance.Transform.Dirty |= ImGui::DragFloat4("rotation (Quat)", &instance.Transform.RotationQuat.x, 0.1f, -FLT_MAX / 2, FLT_MAX / 2);
 
 			ImGui::TreePop();
 		}

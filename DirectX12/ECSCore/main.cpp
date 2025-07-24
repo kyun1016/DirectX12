@@ -133,18 +133,18 @@ void InitDX12_TransformExample()
     auto& coordinator = ECS::Coordinator::GetInstance();
 
     // 1. Register Components
-    coordinator.RegisterComponent<DX12_TransformComponent>();
+    coordinator.RegisterComponent<TransformComponent>();
     coordinator.RegisterComponent<DX12_BoundingComponent>();
     coordinator.RegisterComponent<DX12_MeshComponent>();
     coordinator.RegisterComponent<InstanceData>();
 
     // 2. Register System
-    coordinator.RegisterSystem<DX12_TransformSystem>();
+    coordinator.RegisterSystem<PhysicsSystem>();
     coordinator.RegisterSystem<DX12_BoundingSystem>();
 
     ECS::Signature signature;
-    signature.set(coordinator.GetComponentType<DX12_TransformComponent>());
-    coordinator.SetSystemSignature<DX12_TransformSystem>(signature);
+    signature.set(coordinator.GetComponentType<TransformComponent>());
+    coordinator.SetSystemSignature<PhysicsSystem>(signature);
 
     signature.set(coordinator.GetComponentType<DX12_MeshComponent>());
     signature.set(coordinator.GetComponentType<DX12_BoundingComponent>());
@@ -155,13 +155,13 @@ void InitDX12_TransformExample()
     ECS::Entity entity2 = coordinator.CreateEntity();
     ECS::Entity entity3 = coordinator.CreateEntity();
 
-    coordinator.AddComponent(entity1, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity1, TransformComponent{ });
     coordinator.AddComponent(entity1, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity1, DX12_MeshComponent{ });
-    coordinator.AddComponent(entity2, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity2, TransformComponent{ });
     coordinator.AddComponent(entity2, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity2, DX12_MeshComponent{ });
-    coordinator.AddComponent(entity3, DX12_TransformComponent{ });
+    coordinator.AddComponent(entity3, TransformComponent{ });
     coordinator.AddComponent(entity3, DX12_BoundingComponent{ });
     coordinator.AddComponent(entity3, DX12_MeshComponent{ });
 }
@@ -171,8 +171,8 @@ void LoadScene() {
     auto ball1 = GameObjectFactory::GetInstance().CreateGameObject("BouncingBall");
     auto ball2 = GameObjectFactory::GetInstance().CreateGameObject("BouncingBall");
 
-    auto& ball1Transform = ECS::Coordinator::GetInstance().GetComponent<DX12_TransformComponent>(ball1);
-    ball1Transform.w_Position = { -5.f, 10.f, 0.f };
+    auto& ball1Transform = ECS::Coordinator::GetInstance().GetComponent<TransformComponent>(ball1);
+    ball1Transform.Position = { -5.f, 10.f, 0.f };
 }
 
 void RunExample()

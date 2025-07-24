@@ -147,8 +147,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoundingVolumeUpdateSystem.h" />
     <ClInclude Include="CameraSystem.h" />
     <ClInclude Include="CameraComponent.h" />
+    <ClInclude Include="Component.h" />
     <ClInclude Include="DX12_BoundingSystem.h" />
     <ClInclude Include="CameraData.h" />
     <ClInclude Include="DX12_DSVHeapRepository.h" />
@@ -159,6 +161,9 @@
     <ClInclude Include="DX12_FrameResourceSystem.h" />
     <ClInclude Include="DX12_InputLayoutSystem.h" />
     <ClInclude Include="DX12_HeapRepository.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GravityComponent.h" />
+    <ClInclude Include="InstanceSystem.h" />
     <ClInclude Include="LightData.h" />
     <ClInclude Include="MaterialData.h" />
     <ClInclude Include="DX12_MeshComponent.h" />
@@ -176,8 +181,9 @@
     <ClInclude Include="DX12_SceneSystem.h" />
     <ClInclude Include="DX12_SwapChainSystem.h" />
     <ClInclude Include="DX12_ShaderCompileSystem.h" />
-    <ClInclude Include="DX12_InstanceComponent.h" />
-    <ClInclude Include="DX12_TransformComponent.h" />
+    <ClInclude Include="InstanceComponent.h" />
+    <ClInclude Include="RigidBodyComponent.h" />
+    <ClInclude Include="TransformComponent.h" />
     <ClInclude Include="ECSRepository.h" />
     <ClInclude Include="FMODAudioComponent.h" />
     <ClInclude Include="FMODAudioRepository.h" />
@@ -188,7 +194,7 @@
     <ClInclude Include="ECSCorePch.h" />
     <ClInclude Include="ECSEntity.h" />
     <ClInclude Include="ECSSystem.h" />
-    <ClInclude Include="DX12_TransformSystem.h" />
+    <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="DX12_BoundingComponent.h" />
     <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="ImGuiComponent.h" />
@@ -204,9 +210,7 @@
     <ClInclude Include="MeshComponent.h" />
     <ClInclude Include="MeshRepository.h" />
     <ClInclude Include="MeshSystem.h" />
-    <ClInclude Include="PhysicsComponent.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="DX12_RenderSystem.h" />
     <ClInclude Include="PlayerControlComponent.h" />
     <ClInclude Include="PlayerControlSystem.h" />
@@ -216,6 +220,7 @@
     <ClInclude Include="TimeSystem.h" />
     <ClInclude Include="WindowComponent.h" />
     <ClInclude Include="WindowSystem.h" />
+    <ClInclude Include="WorldMatrixUpdateSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">

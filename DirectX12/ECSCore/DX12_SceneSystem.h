@@ -1,7 +1,8 @@
 #pragma once
 #include "ECSCoordinator.h"
 #include "DX12_PSOSystem.h"
-#include "DX12_TransformSystem.h"
+#include "PhysicsSystem.h"
+#include "InstanceSystem.h"
 #include "DX12_MeshSystem.h"
 #include "DX12_SceneComponent.h"
 #include "DX12_FrameResourceSystem.h"
@@ -119,8 +120,8 @@ public:
 
 		if(moveDir.x != 0.0f || moveDir.y != 0.0f || moveDir.z != 0.0f){
 			transform.Dirty = true;
-			transform.w_Position += moveDir * 0.01f;
-			LOG_INFO("{}, {}, {}", transform.w_Position.x, transform.w_Position.y, transform.w_Position.z);
+			transform.Position += moveDir * 0.01f;
+			LOG_INFO("{}, {}, {}", transform.Position.x, transform.Position.y, transform.Position.z);
 		}
 			
 		

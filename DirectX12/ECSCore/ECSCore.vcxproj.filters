@@ -79,6 +79,12 @@
     <Filter Include="Header Files\Systems\Texture">
       <UniqueIdentifier>{35c79ea1-0946-475c-a961-e73e315d9c1c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\UnityLike">
+      <UniqueIdentifier>{99af67da-7f9c-4145-8d4e-835201d8f590}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Instance">
+      <UniqueIdentifier>{bfdcb9bc-c5e6-4783-b95a-57f2e7deeb39}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -107,9 +113,6 @@
     <ClInclude Include="ECSSystem.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicsSystem.h">
-      <Filter>Header Files\Systems\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="FMODAudioComponent.h">
       <Filter>Header Files\Systems\Audio</Filter>
     </ClInclude>
@@ -118,9 +121,6 @@
     </ClInclude>
     <ClInclude Include="ECSCorePch.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PhysicsComponent.h">
-      <Filter>Header Files\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="FMODAudioSystem.h">
       <Filter>Header Files\Systems\Audio</Filter>
@@ -224,13 +224,7 @@
     <ClInclude Include="DX12_MeshSystem.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_TransformComponent.h">
-      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_RenderSystem.h">
-      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_TransformSystem.h">
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_BoundingSystem.h">
@@ -275,9 +269,6 @@
     <ClInclude Include="DX12_SceneSystem.h">
       <Filter>Header Files\DX12_Core\ECS Systems</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_InstanceComponent.h">
-      <Filter>Header Files\DX12_Core\ECS Systems</Filter>
-    </ClInclude>
     <ClInclude Include="PassData.h">
       <Filter>Header Files\DX12_Core\Struct</Filter>
     </ClInclude>
@@ -293,11 +284,41 @@
     <ClInclude Include="TextureSystem.h">
       <Filter>Header Files\Systems\Texture</Filter>
     </ClInclude>
-    <ClInclude Include="TextureComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_HeapRepository.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Header Files\Systems\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Header Files\Systems\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureComponent.h">
+      <Filter>Header Files\Systems\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="InstanceComponent.h">
+      <Filter>Header Files\Systems\Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="InstanceSystem.h">
+      <Filter>Header Files\Systems\Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.h">
+      <Filter>Header Files\Systems\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBodyComponent.h">
+      <Filter>Header Files\Systems\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformComponent.h">
+      <Filter>Header Files\Systems\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="GravityComponent.h">
+      <Filter>Header Files\Systems\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundingVolumeUpdateSystem.h">
+      <Filter>Header Files\Systems\Instance</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldMatrixUpdateSystem.h">
+      <Filter>Header Files\Systems\Instance</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

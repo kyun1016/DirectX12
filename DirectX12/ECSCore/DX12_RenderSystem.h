@@ -16,7 +16,7 @@
 #include "WindowSystem.h"
 #include "TimeSystem.h"
 #include "ImGuiSystem.h"
-#include "DX12_InstanceComponent.h" // Required for InstanceData access
+#include "InstanceComponent.h" // Required for InstanceData access
 #include "DX12_SceneSystem.h"
 #include "DX12_HeapRepository.h"
 #include "CameraSystem.h"

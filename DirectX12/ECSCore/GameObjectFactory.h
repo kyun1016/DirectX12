@@ -1,8 +1,10 @@
 #pragma once
 #include "ECSCoordinator.h"
-#include "DX12_TransformComponent.h"
+#include "TransformComponent.h"
 #include "DX12_MeshSystem.h"
-#include "PhysicsComponent.h"
+#include "TransformComponent.h"
+#include "RigidBodyComponent.h"
+#include "GravityComponent.h"
 
 class GameObjectFactory {
 DEFAULT_SINGLETON(GameObjectFactory)
@@ -33,7 +35,7 @@ private:
         ECS::Entity ball = coordinator.CreateEntity();
 
         // 2. 필요한 컴포넌트들을 조합하여 추가
-        coordinator.AddComponent(ball, DX12_TransformComponent{}); // 위치, 회전, 크기 데이터
+        coordinator.AddComponent(ball, TransformComponent{}); // 위치, 회전, 크기 데이터
         coordinator.AddComponent(ball, RigidBodyComponent{});      // 물리 속도 데이터
         coordinator.AddComponent(ball, GravityComponent{});      // 중력 데이터
 

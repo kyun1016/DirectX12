@@ -2,7 +2,7 @@
 #include "ECSCoordinator.h"
 #include "InputSystem.h"
 #include "TimeComponent.h"
-#include "DX12_TransformComponent.h"
+#include "TransformComponent.h"
 #include "PlayerControlComponent.h"
 #include <WinUser.h> // For VK_... virtual key codes
 
@@ -14,7 +14,7 @@ public:
         const auto& time = coordinator.GetSingletonComponent<TimeComponent>();
 
         for (auto const& entity : mEntities) {
-            auto& transform = coordinator.GetComponent<DX12_TransformComponent>(entity);
+            auto& transform = coordinator.GetComponent<TransformComponent>(entity);
             auto& control = coordinator.GetComponent<PlayerControlComponent>(entity);
 
             float3 moveDir = { 0.0f, 0.0f, 0.0f };
