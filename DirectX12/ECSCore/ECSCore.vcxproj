@@ -161,6 +161,7 @@
     <ClInclude Include="DX12_FrameResourceSystem.h" />
     <ClInclude Include="DX12_InputLayoutSystem.h" />
     <ClInclude Include="DX12_HeapRepository.h" />
+    <ClInclude Include="ECSArchetype.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GravityComponent.h" />
     <ClInclude Include="InstanceSystem.h" />

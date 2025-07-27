@@ -293,6 +293,9 @@
     <ClInclude Include="RenderDataSyncSystem.h">
       <Filter>Header Files\Systems</Filter>
     </ClInclude>
+    <ClInclude Include="ECSArchetype.h">
+      <Filter>Header Files\ECSCore</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">
