@@ -38,12 +38,6 @@ struct DX12_MeshComponent
 	DirectX::BoundingSphere BoundingSphere;
 };
 
-struct DX12_MeshHandle
-{
-	ECS::RepoHandle GeometryHandle = 0;
-	size_t MeshHandle = 0;
-};
-
 struct DX12_MeshGeometry
 {
 	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;

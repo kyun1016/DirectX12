@@ -40,9 +40,8 @@ struct InstanceComponent
 		if (!Transform.Dirty)
 			return false;
 
-		if (MeshHandle.GeometryHandle != 0)
-		{
-			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingBox;
+		if (GeometryHandle != 0 && MeshHandle != 0) {
+			BoundingBox = DX12_MeshSystem::GetInstance().GetMeshComponent(GeometryHandle, MeshHandle)->BoundingBox;
 			BoundingBox.Center.x *= Transform.Scale.x;
 			BoundingBox.Center.y *= Transform.Scale.y;
 			BoundingBox.Center.z *= Transform.Scale.z;
@@ -53,10 +52,8 @@ struct InstanceComponent
 			BoundingBox.Extents.x *= Transform.Scale.x;
 			BoundingBox.Extents.y *= Transform.Scale.y;
 			BoundingBox.Extents.z *= Transform.Scale.z;
-		}
-		if (MeshHandle.GeometryHandle != 0)
-		{
-			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(MeshHandle)->BoundingSphere;
+
+			BoundingSphere = DX12_MeshSystem::GetInstance().GetMeshComponent(GeometryHandle, MeshHandle)->BoundingSphere;
 			BoundingSphere.Center.x *= Transform.Scale.x;
 			BoundingSphere.Center.y *= Transform.Scale.y;
 			BoundingSphere.Center.z *= Transform.Scale.z;
@@ -95,7 +92,9 @@ struct InstanceComponent
 	}
 
 	InstanceData InstanceData; // GPU 전송 전용 데이터
-	DX12_MeshHandle MeshHandle;
+	// DX12_MeshHandle MeshHandle;
+	ECS::RepoHandle GeometryHandle = 0; // Geometry Handle
+	ECS::RepoHandle MeshHandle = 0;
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 	TransformComponent Transform;

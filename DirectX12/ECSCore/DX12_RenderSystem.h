@@ -142,8 +142,8 @@ private:
 			if (!(ri.TargetLayer & flag))
 				continue;
 					
-			DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(ri.MeshHandle));
-			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle);
+			DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(ri.GeometryHandle));
+			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.GeometryHandle, ri.MeshHandle);
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + i * objCBByteSize;
 			mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 			mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);

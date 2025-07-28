@@ -296,6 +296,9 @@
     <ClInclude Include="ECSArchetype.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
+    <ClInclude Include="ECSSharedComponents.h">
+      <Filter>Header Files\ECSCore</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">

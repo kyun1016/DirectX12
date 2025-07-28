@@ -275,7 +275,7 @@ private:
 		}
 
 		ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(renderItems[mSelectInstance.RenderItemIndex].MeshHandle);
+		auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(renderItems[mSelectInstance.RenderItemIndex].GeometryHandle, renderItems[mSelectInstance.RenderItemIndex].MeshHandle);
 		if (ImGui::TreeNode("Mesh")) {
 			ImGui::Text("Start Index Location: %d", meshComponent->StartIndexLocation);
 			ImGui::Text("Index Count: %d", meshComponent->IndexCount);

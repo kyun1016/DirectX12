@@ -45,13 +45,10 @@ public:
 	inline DX12_MeshGeometry* GetGeometry(ECS::RepoHandle handle) const {
 		return DX12_MeshRepository::GetInstance().Get(handle);
 	}
-	inline DX12_MeshGeometry* GetGeometry(DX12_MeshHandle handle) const {
-		return GetGeometry(handle.GeometryHandle);
-	}
-	inline DX12_MeshComponent* GetMeshComponent(DX12_MeshHandle handle) const {
-		auto* geo = GetGeometry(handle);
-		if (geo->DrawArgs.size() > handle.MeshHandle)
-			return &geo->DrawArgs[handle.MeshHandle];
+	inline DX12_MeshComponent* GetMeshComponent(ECS::RepoHandle geoHandle, ECS::RepoHandle meshHandle) const {
+		auto* geo = GetGeometry(geoHandle);
+		if (geo->DrawArgs.size() > meshHandle)
+			return &geo->DrawArgs[meshHandle];
 		return nullptr;
 	}
 

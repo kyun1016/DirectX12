@@ -24,40 +24,42 @@ public:
 
 		RenderItem ri;
 		ri.TargetLayer = eRenderLayer::Opaque;
-		ri.MeshHandle = { 2, 0 };
+		ri.GeometryHandle = 2;
+		ri.MeshHandle = 0;
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 
 		ri.TargetLayer = eRenderLayer::Sprite;
-		ri.MeshHandle = { 1, 0 };
+		ri.GeometryHandle = 1;
+		ri.MeshHandle = 0;
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 
-		ri.MeshHandle = { 1, 1 };
+		ri.MeshHandle = 1;
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 
-		ri.MeshHandle = { 1, 2 };
-		Push(ri);
-		Push(mAllRenderItems.size() - 1, InstanceComponent());
-		Push(mAllRenderItems.size() - 1, InstanceComponent());
-		Push(mAllRenderItems.size() - 1, InstanceComponent());
-
-		ri.MeshHandle = { 1, 3 };
-		Push(ri);
-		Push(mAllRenderItems.size() - 1, InstanceComponent());
-		Push(mAllRenderItems.size() - 1, InstanceComponent());
-
-		ri.MeshHandle = { 1, 4 };
+		ri.MeshHandle = 2;
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 
-		ri.MeshHandle = { 1, 5 };
+		ri.MeshHandle = 3;
+		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+
+		ri.MeshHandle = 4;
+		Push(ri);
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+		Push(mAllRenderItems.size() - 1, InstanceComponent());
+
+		ri.MeshHandle = 5;
 		Push(ri);
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
 		Push(mAllRenderItems.size() - 1, InstanceComponent());
@@ -73,6 +75,7 @@ public:
 		mNumFramesDirty = APP_NUM_BACK_BUFFERS;
 		auto& ri = mAllRenderItems[idx];
 		ri.Instances.emplace_back(data);
+		ri.Instances.back().GeometryHandle = ri.GeometryHandle;
 		ri.Instances.back().MeshHandle = ri.MeshHandle;
 	}
 
@@ -137,7 +140,7 @@ private:
 				continue;
 			--ri.NumFramesDirty;
 			
-			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle);
+			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.GeometryHandle, ri.MeshHandle);
 			visibleInstanceCount = meshComponent->StartInstanceLocation;
 			for (const auto& instance : ri.Instances)
 			{
@@ -163,7 +166,7 @@ private:
 		for (int i = 0; i < mAllRenderItems.size(); ++i)
 		{
 			auto& ri = mAllRenderItems[i];
-			DX12_MeshSystem::GetInstance().GetMeshComponent(ri.MeshHandle)->StartInstanceLocation = instanceID.BaseInstanceIndex;
+			DX12_MeshSystem::GetInstance().GetMeshComponent(ri.GeometryHandle, ri.MeshHandle)->StartInstanceLocation = instanceID.BaseInstanceIndex;
 			instanceIDBuffer->CopyData(i, instanceID);	// 해당 구문의 이유는 Draw Call 간 Base InstanceIndex 전달에 버그가 존재하기 때문
 			instanceID.BaseInstanceIndex += ri.Instances.size();
 		}
