@@ -2,7 +2,7 @@
 #include "pch.h"
 
 #include "ECSEntity.h"
-#include "ECSComponent.h"
+#include "ECSArchetype.h"
 #include "ECSSystem.h"
 #include "WindowSystem.h"
 #include "ImGuiSystem.h"
@@ -15,7 +15,8 @@ namespace ECS
 	void Coordinator::Init()
 	{
 		// Create pointers to each manager
-		mComponentManager = std::make_unique<ComponentManager>();
+		mArchetypeManager = std::make_unique<ArchetypeManager>();
+		mSingletonComponentManager = std::make_unique<SingletonComponentManager>();
 		mEntityManager = std::make_unique<EntityManager>();
 		mSystemManager = std::make_unique<SystemManager>();
 
@@ -97,7 +98,7 @@ namespace ECS
 	{
 		std::lock_guard<std::mutex> lock(mtx);
 		mEntityManager->DestroyEntity(entity);
-		mComponentManager->EntityDestroyed(entity);
+		mArchetypeManager->EntityDestroyed(entity);
 		mSystemManager->EntityDestroyed(entity);
 	}
 	void Coordinator::Run()

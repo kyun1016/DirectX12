@@ -1,7 +1,6 @@
 #pragma once
 #include "ECSEntity.h"
-#include "ECSComponent.h"
-// #include "ECSArchetype.h"
+#include "ECSArchetype.h"
 #include "ECSSystem.h"
 
 namespace ECS
@@ -30,22 +29,22 @@ namespace ECS
 		void RegisterComponent()
 		{
 			std::lock_guard<std::mutex> lock(mtx);
-			mComponentManager->RegisterComponent<T>();
+			mArchetypeManager->RegisterComponent<T>();
 		}
 		template<typename T>
 		void RegisterSingletonComponent()
 		{
 			std::lock_guard<std::mutex> lock(mtx);
-			mComponentManager->RegisterSingletonComponent<T>();
+			mSingletonComponentManager->RegisterComponent<T>();
 		}
 		template<typename T>
 		void AddComponent(Entity entity, T component)
 		{
 			std::lock_guard<std::mutex> lock(mtx);
-			mComponentManager->AddComponent<T>(entity, component);
-
 			auto signature = mEntityManager->GetSignature(entity);
-			signature.set(mComponentManager->GetComponentType<T>(), true);
+			mArchetypeManager->AddComponent<T>(entity, component, signature);
+
+			signature.set(mArchetypeManager->GetComponentType<T>(), true);
 			mEntityManager->SetSignature(entity, signature);
 
 			mSystemManager->EntitySignatureChanged(entity, signature);
@@ -55,10 +54,10 @@ namespace ECS
 		void RemoveComponent(Entity entity)
 		{
 			std::lock_guard<std::mutex> lock(mtx);
-			mComponentManager->RemoveComponent<T>(entity);
+			mArchetypeManager->RemoveComponent<T>(entity);
 
 			auto signature = mEntityManager->GetSignature(entity);
-			signature.set(mComponentManager->GetComponentType<T>(), false);
+			signature.set(mArchetypeManager->GetComponentType<T>(), false);
 			mEntityManager->SetSignature(entity, signature);
 
 			mSystemManager->EntitySignatureChanged(entity, signature);
@@ -67,31 +66,31 @@ namespace ECS
 		template<typename T>
 		T& GetComponent(Entity entity)
 		{
-			return mComponentManager->GetComponent<T>(entity);
+			return mArchetypeManager->GetComponent<T>(entity);
 		}
 
 		template<typename T>
 		const T& GetComponent(Entity entity) const
 		{
-			return mComponentManager->GetComponent<T>(entity);
+			return mArchetypeManager->GetComponent<T>(entity);
 		}
 
 		template<typename T>
 		T& GetSingletonComponent()
 		{
-			return mComponentManager->GetSingletonComponent<T>();
+			return mSingletonComponentManager->GetComponent<T>();
 		}
 
 		template<typename T>
 		const T& GetSingletonComponent() const
 		{
-			return mComponentManager->GetSingletonComponent<T>();
+			return mSingletonComponentManager->GetComponent<T>();
 		}
 
 		template<typename T>
 		ComponentType GetComponentType()
 		{
-			return mComponentManager->GetComponentType<T>();
+			return mArchetypeManager->GetComponentType<T>();
 		}
 
 		// System methods
@@ -110,7 +109,8 @@ namespace ECS
 		Coordinator() = default;
 		std::mutex mtx;
 		std::unique_ptr<EntityManager> mEntityManager;
-		std::unique_ptr<ComponentManager> mComponentManager;
+		std::unique_ptr<ArchetypeManager> mArchetypeManager;
+		std::unique_ptr<SingletonComponentManager> mSingletonComponentManager;
 		std::unique_ptr<SystemManager> mSystemManager;
 	};
 }

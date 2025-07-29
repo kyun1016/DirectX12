@@ -52,6 +52,8 @@ namespace ECS {
 }
 
 namespace ECS {
+    class ArchetypeManager; // 전방 선언
+
     // 아키타입: 동일한 컴포넌트 조합을 가진 엔티티들의 집합
     class Archetype {
     private:
@@ -63,11 +65,10 @@ namespace ECS {
         std::vector<Entity> mEntities;
         // Entity ID -> 배열 인덱스 맵
         std::unordered_map<Entity, size_t> mEntityToIndexMap;
+        ArchetypeManager* mManager;
 
     public:
-        Archetype(Signature signature, size_t sharedId)
-            : mSignature(signature)
-            , mSharedComponentId(sharedId) {}
+        Archetype(Signature signature, size_t sharedId, ArchetypeManager* manager);
 
         const Signature& GetSignature() const { return mSignature; }
 		size_t GetSharedComponentId() const { return mSharedComponentId; }
@@ -99,10 +100,12 @@ namespace ECS {
             mEntities.pop_back();
 
             // 맵 업데이트
+            mEntityToIndexMap.erase(entity);
+            if (indexOfLast == indexOfRemoved)
+                return 0;
+
             Entity movedEntity = mEntities[indexOfRemoved];
             mEntityToIndexMap[movedEntity] = indexOfRemoved;
-            mEntityToIndexMap.erase(entity);
-
             return movedEntity;
         }
 
@@ -117,13 +120,7 @@ namespace ECS {
         }
 
         template<typename T>
-        ComponentArray<T>* GetComponentArray() {
-            ComponentType type = GetComponentType<T>(); // 전역 함수 또는 Coordinator를 통해 가져와야 함
-            if (mComponentArrays.find(type) == mComponentArrays.end()) {
-                mComponentArrays[type] = std::make_unique<ComponentArray<T>>();
-            }
-            return static_cast<ComponentArray<T>*>(mComponentArrays[type].get());
-        }
+        ComponentArray<T>* GetComponentArray();
 
         IComponentArray* GetComponentArray(ComponentType type) {
             assert(mComponentArrays.count(type));
@@ -147,6 +144,7 @@ namespace ECS {
         std::unordered_map<Entity, EntityLocation> mEntityLocations;
         // 컴포넌트 타입 등록 정보
         std::unordered_map<std::type_index, ComponentType> mComponentTypes;
+        std::unordered_map<ComponentType, std::function<std::unique_ptr<IComponentArray>()>> mComponentFactories;
         ComponentType mNextComponentType = 0;
 
     public:
@@ -157,11 +155,20 @@ namespace ECS {
             // mSharedComponentManager->RegisterSharedComponent<SharedPhysicsProperties, ...>(); // 다른 타입도 등록 가능
         }
 
+        std::unique_ptr<IComponentArray> CreateComponentArray(ComponentType type) {
+            assert(mComponentFactories.count(type) > 0 && "Component factory not registered for this type.");
+            // 등록된 팩토리 함수를 호출하여 컴포넌트 배열 생성
+            return mComponentFactories.at(type)();
+        }
+
         template<typename T>
         void RegisterComponent() {
             std::type_index type = std::type_index(typeid(T));
             assert(mComponentTypes.find(type) == mComponentTypes.end());
-            mComponentTypes[type] = mNextComponentType++;
+            mComponentTypes[type] = mNextComponentType;
+            mComponentFactories[mNextComponentType] = []() { return std::make_unique<ComponentArray<T>>(); };
+
+            mNextComponentType++;
         }
 
         template<typename T>
@@ -173,33 +180,78 @@ namespace ECS {
 
         template<typename T>
         void AddComponent(Entity entity, T component, Signature oldSignature) {
-            // 1. 새로운 시그니처 계산
+            // 1. 엔티티의 현재 위치와 시그니처를 가져온다.
+            //    신규 엔티티라면, 기본값(nullptr, 0)과 빈 시그니처를 사용한다.
+            EntityLocation oldLocation = { nullptr, 0 };
+            if (mEntityLocations.count(entity)) {
+                oldLocation = mEntityLocations[entity];
+            }
+
+            // 2. 새로운 시그니처를 계산한다.
             Signature newSignature = oldSignature;
             newSignature.set(GetComponentType<T>());
 
-            // 2. 기존 위치와 새 아키타입 찾기
-            EntityLocation& oldLocation = mEntityLocations[entity];
+            // 3. 공유 컴포넌트 ID는 그대로 유지한다. (신규 엔티티는 기본값 0 사용)
+            size_t sharedId = oldLocation.archetype ? oldLocation.archetype->GetSharedComponentId() : 0;
+
+            // 4. 이사 갈 목적지 아키타입을 찾거나 생성한다.
+            Archetype* newArchetype = FindOrCreateArchetype(newSignature, sharedId);
             Archetype* oldArchetype = oldLocation.archetype;
-            Archetype* newArchetype = FindOrCreateArchetype(newSignature);
 
-            // 3. 새 아키타입에 엔티티를 위한 공간 할당 및 데이터 이동
-            size_t newIndex = newArchetype->AddEntity(entity);
-            // 모든 기존 컴포넌트 데이터를 새 아키타입으로 복사
-            for (ComponentType i = 0; i < MAX_COMPONENTS; ++i) {
-                if (oldSignature.test(i)) {
-                    // ... (데이터 이동 로직 구현 필요) ...
-                }
+            // 5. 신규 엔티티가 아니라면, 기존 아키타입에서 새 아키타입으로 데이터를 옮긴다.
+            if (oldArchetype && oldArchetype != newArchetype) {
+                MoveEntityBetweenArchetypes(entity, oldArchetype, newArchetype);
             }
-            // 새 컴포넌트 데이터 추가
-            newArchetype->AddComponentData(component);
+            // 신규 엔티티라면, 새 아키타입에 바로 추가한다.
+            else {
+                size_t newIndex = newArchetype->AddEntity(entity);
+                mEntityLocations[entity] = { newArchetype, newIndex };
+            }
 
-            // 4. 기존 아키타입에서 엔티티 제거
-            Entity movedEntity = oldArchetype->RemoveEntity(entity);
+            // 6. 마지막으로, 새로 추가된 컴포넌트의 데이터를 삽입한다.
+            newArchetype->AddComponentData<T>(component);
+        }
 
-            // 5. 위치 정보 업데이트
-            mEntityLocations[entity] = { newArchetype, newIndex };
-            if (oldArchetype->GetEntityCount() > 0) { // 이동된 엔티티가 있다면
-                mEntityLocations[movedEntity].index = oldLocation.index;
+        template<typename T>
+        void RemoveComponent(Entity entity)
+        {
+            // 1. 엔티티의 현재 위치(아키타입, 인덱스)를 찾는다.
+            assert(mEntityLocations.count(entity));
+            EntityLocation& oldLocation = mEntityLocations[entity];
+            Archetype* sourceArchetype = oldLocation.archetype;
+
+            // 2. 현재 시그니처에서 T 컴포넌트 비트를 끈 새로운 시그니처를 계산한다.
+            Signature newSignature = sourceArchetype->GetSignature();
+            newSignature.reset(GetComponentType<T>());
+
+            // 3. 공유 컴포넌트 ID는 그대로 유지하면서, 이사 갈 목적지 아키타입을 찾는다.
+            size_t sharedId = sourceArchetype->GetSharedComponentId();
+            Archetype* destinationArchetype = FindOrCreateArchetype(newSignature, sharedId);
+
+            // 4. 엔티티를 기존 아키타입에서 새 아키타입으로 이동시킨다.
+            // 이 함수는 데이터 복사, 기존 위치에서 제거, 위치 정보 업데이트를 모두 처리합니다.
+            MoveEntityBetweenArchetypes(entity, sourceArchetype, destinationArchetype);
+        }
+
+        void EntityDestroyed(Entity entity)
+        {
+            // 1. 파괴할 엔티티가 어디에 있는지 찾는다.
+            assert(mEntityLocations.count(entity));
+            EntityLocation& location = mEntityLocations[entity];
+            Archetype* archetype = location.archetype;
+            size_t indexOfRemoved = location.index;
+
+            // 2. 해당 아키타입에서 엔티티를 제거한다.
+            // 이 과정에서 마지막 요소에 있던 다른 엔티티가 빈자리로 이동(swap)된다.
+            Entity movedEntity = archetype->RemoveEntity(entity);
+
+            // 3. mEntityLocations 맵에서 파괴된 엔티티 정보를 완전히 삭제한다.
+            mEntityLocations.erase(entity);
+
+            // 4. 만약 swap으로 인해 다른 엔티티의 위치가 변경되었다면,
+            //    그 엔티티의 위치 정보(인덱스)를 업데이트해준다.
+            if (archetype->GetEntityCount() > 0 && movedEntity != entity) {
+                mEntityLocations[movedEntity].index = indexOfRemoved;
             }
         }
 
@@ -217,6 +269,13 @@ namespace ECS {
 
             // ... (엔티티를 새 아키타입으로 이동시키는 로직은 동일) ...
             // MoveEntityToNewArchetype(...);
+        }
+
+        Archetype* FindOrCreateArchetype(const Signature& signature, size_t sharedId) {
+            if (mArchetypes[signature].find(sharedId) == mArchetypes[signature].end()) {
+                mArchetypes[signature][sharedId] = std::make_unique<Archetype>(signature, sharedId, this);
+            }
+            return mArchetypes[signature][sharedId].get();
         }
 
     private:
@@ -246,12 +305,68 @@ namespace ECS {
                 mEntityLocations[movedEntity].index = oldIndex;
             }
         }
+    };
 
-        Archetype* FindOrCreateArchetype(const Signature& signature, size_t sharedId) {
-            if (mArchetypes[signature].find(sharedId) == mArchetypes[signature].end()) {
-                mArchetypes[signature][sharedId] = std::make_unique<Archetype>(signature, sharedId);
+
+    inline Archetype::Archetype(Signature signature, size_t sharedId, ArchetypeManager* manager)
+        : mSignature(signature)
+        , mSharedComponentId(sharedId)
+        , mManager(manager)
+    {
+        for (ComponentType i = 0; i < MAX_COMPONENTS; ++i) {
+            if (mSignature.test(i)) {
+                // Manager를 통해 ComponentType에 맞는 배열을 생성하는 팩토리 함수 호출
+                mComponentArrays[i] = mManager->CreateComponentArray(i);
             }
-            return mArchetypes[signature][sharedId].get();
         }
+    }
+
+    template<typename T>
+    inline ComponentArray<T>* Archetype::GetComponentArray() {
+        ComponentType type = mManager->GetComponentType<T>();
+        assert(mComponentArrays.count(type) > 0 && "Archetype should have this component array.");
+        return static_cast<ComponentArray<T>*>(mComponentArrays.at(type).get());
+    }
+}
+
+namespace ECS {
+    class ISingletonComponent {
+    public:
+        virtual ~ISingletonComponent() = default;
+    };
+    template<typename T>
+    class SingletonComponentWrapper : public ISingletonComponent {
+    public:
+        T data;
+    };
+    class SingletonComponentManager {
+    public:
+        template<typename T>
+        void RegisterComponent()
+        {
+            std::type_index type = std::type_index(typeid(T));
+
+            assert(mSingletonComponents.find(type) == mSingletonComponents.end() && "Singleton already registered.");
+
+            mSingletonComponents[type] = std::make_unique<SingletonComponentWrapper<T>>();
+        }
+
+        template<typename T>
+        T& GetComponent() {
+            std::type_index type = typeid(T);
+            assert(mSingletonComponents.find(type) != mSingletonComponents.end());
+            return static_cast<SingletonComponentWrapper<T>*>(mSingletonComponents[type].get())->data;
+        }
+
+        template<typename T>
+        const T& GetComponent() const
+        {
+            std::type_index type = typeid(T);
+            assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
+            return *static_cast<const SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get())->data;
+        }
+
+    private:
+        std::unordered_map<std::type_index, std::unique_ptr<ISingletonComponent>> mSingletonComponents;
     };
 }
