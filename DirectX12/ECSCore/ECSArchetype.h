@@ -1,5 +1,6 @@
 #pragma once
 #include "ECSConfig.h"
+#include "ECSSharedComponents.h" 
 
 namespace ECS {
 
@@ -55,6 +56,7 @@ namespace ECS {
     class Archetype {
     private:
         Signature mSignature;
+        size_t mSharedComponentId;
         // 이 아키타입이 소유한 컴포넌트 배열들
         std::unordered_map<ComponentType, std::unique_ptr<IComponentArray>> mComponentArrays;
         // 이 아키타입에 속한 엔티티 목록
@@ -63,9 +65,12 @@ namespace ECS {
         std::unordered_map<Entity, size_t> mEntityToIndexMap;
 
     public:
-        Archetype(Signature signature) : mSignature(signature) {}
+        Archetype(Signature signature, size_t sharedId)
+            : mSignature(signature)
+            , mSharedComponentId(sharedId) {}
 
         const Signature& GetSignature() const { return mSignature; }
+		size_t GetSharedComponentId() const { return mSharedComponentId; }
         size_t GetEntityCount() const { return mEntities.size(); }
 
         // 엔티티를 이 아키타입에 추가 (데이터는 별도로 추가됨)
@@ -119,6 +124,11 @@ namespace ECS {
             }
             return static_cast<ComponentArray<T>*>(mComponentArrays[type].get());
         }
+
+        IComponentArray* GetComponentArray(ComponentType type) {
+            assert(mComponentArrays.count(type));
+            return mComponentArrays[type].get();
+        }
     };
 
     // 엔티티의 위치를 나타내는 구조체
@@ -130,15 +140,23 @@ namespace ECS {
     // ArchetypeManager: 아키타입을 생성하고 관리
     class ArchetypeManager {
     private:
+        std::unique_ptr<SharedComponentManager> mSharedComponentManager;
+        // { Signature -> { SharedComponentId -> Archetype* } }
+        std::unordered_map<Signature, std::unordered_map<size_t, std::unique_ptr<Archetype>>> mArchetypes;
         // 엔티티의 위치 정보
         std::unordered_map<Entity, EntityLocation> mEntityLocations;
-        // 시그니처 -> 아키타입 맵
-        std::unordered_map<Signature, std::unique_ptr<Archetype>> mArchetypes;
         // 컴포넌트 타입 등록 정보
         std::unordered_map<std::type_index, ComponentType> mComponentTypes;
         ComponentType mNextComponentType = 0;
 
     public:
+        ArchetypeManager() {
+            mSharedComponentManager = std::make_unique<SharedComponentManager>();
+            // 사용할 모든 공유 컴포넌트 타입을 미리 등록합니다.
+            mSharedComponentManager->RegisterSharedComponent<SharedRenderProperties, SharedRenderPropertiesHasher>();
+            // mSharedComponentManager->RegisterSharedComponent<SharedPhysicsProperties, ...>(); // 다른 타입도 등록 가능
+        }
+
         template<typename T>
         void RegisterComponent() {
             std::type_index type = std::type_index(typeid(T));
@@ -192,12 +210,48 @@ namespace ECS {
             return location.archetype->GetComponentData<T>(location.index);
         }
 
+        template<typename T, typename Hasher = std::hash<T>>
+        void SetSharedComponent(Entity entity, const T& props) {
+            // 1. 범용 관리자로부터 새로운 공유 컴포넌트 ID를 얻습니다.
+            size_t newSharedId = mSharedComponentManager->GetId<T, Hasher>(props);
+
+            // ... (엔티티를 새 아키타입으로 이동시키는 로직은 동일) ...
+            // MoveEntityToNewArchetype(...);
+        }
+
     private:
-        Archetype* FindOrCreateArchetype(const Signature& signature) {
-            if (mArchetypes.find(signature) == mArchetypes.end()) {
-                mArchetypes[signature] = std::make_unique<Archetype>(signature);
+        void MoveEntityBetweenArchetypes(Entity entity, Archetype* source, Archetype* destination) {
+            if (source == destination) return; // 같은 아키타입이면 이동 불필요
+
+            size_t oldIndex = mEntityLocations[entity].index;
+            size_t newIndex = destination->AddEntity(entity);
+
+            // 1. 모든 기존 컴포넌트 데이터를 새 아키타입으로 복사
+            const auto& sourceSignature = source->GetSignature();
+            for (ComponentType i = 0; i < MAX_COMPONENTS; ++i) {
+                if (sourceSignature.test(i)) {
+                    IComponentArray* sourceArray = source->GetComponentArray(i);
+                    IComponentArray* destArray = destination->GetComponentArray(i); // 필요 시 생성
+                    sourceArray->MoveData(oldIndex, destArray);
+                }
             }
-            return mArchetypes[signature].get();
+
+            // 2. 기존 아키타입에서 엔티티 제거 (이때 다른 엔티티가 이동됨)
+            Entity movedEntity = source->RemoveEntity(entity);
+
+            // 3. 위치 정보(Location) 업데이트
+            mEntityLocations[entity] = { destination, newIndex };
+            if (source->GetEntityCount() > 0 && movedEntity != entity) {
+                // 기존 아키타입에서 빈자리로 이동해 온 엔티티의 인덱스 업데이트
+                mEntityLocations[movedEntity].index = oldIndex;
+            }
+        }
+
+        Archetype* FindOrCreateArchetype(const Signature& signature, size_t sharedId) {
+            if (mArchetypes[signature].find(sharedId) == mArchetypes[signature].end()) {
+                mArchetypes[signature][sharedId] = std::make_unique<Archetype>(signature, sharedId);
+            }
+            return mArchetypes[signature][sharedId].get();
         }
     };
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "ECSEntity.h"
 #include "ECSComponent.h"
+// #include "ECSArchetype.h"
 #include "ECSSystem.h"
 
 namespace ECS

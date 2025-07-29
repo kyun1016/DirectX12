@@ -80,6 +80,11 @@ namespace ECS
     };
 }
 
+struct ISharedProperties {
+    virtual bool operator==(const ISharedProperties& other) const = 0;
+    virtual std::size_t operator()(const ISharedProperties& props) const = 0;
+};
+
 struct SharedRenderProperties {
     eRenderLayer TargetLayer = eRenderLayer::Opaque;
     ECS::RepoHandle MeshHandle = 0;
