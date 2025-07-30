@@ -166,6 +166,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GravityComponent.h" />
     <ClInclude Include="InstanceSystem.h" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="LightData.h" />
     <ClInclude Include="MaterialData.h" />
     <ClInclude Include="DX12_MeshComponent.h" />
@@ -241,6 +242,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="world.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -24,6 +24,9 @@ namespace ECS
 		void DestroyEntity(Entity entity);
 		void Run();
 
+		void SaveWorldToFile(const std::string& filePath);
+		void LoadWorldFromFile(const std::string& filePath);
+
 		// Component methods
 		template<typename T>
 		void RegisterComponent()
@@ -43,8 +46,8 @@ namespace ECS
 			std::lock_guard<std::mutex> lock(mtx);
 			auto signature = mEntityManager->GetSignature(entity);
 			mArchetypeManager->AddComponent<T>(entity, component, signature);
-
 			signature.set(mArchetypeManager->GetComponentType<T>(), true);
+			
 			mEntityManager->SetSignature(entity, signature);
 
 			mSystemManager->EntitySignatureChanged(entity, signature);
@@ -73,6 +76,10 @@ namespace ECS
 		const T& GetComponent(Entity entity) const
 		{
 			return mArchetypeManager->GetComponent<T>(entity);
+		}
+		
+		std::vector<Archetype*> GetAllArchetypes() {
+			return mArchetypeManager->GetAllArchetypes();
 		}
 
 		template<typename T>

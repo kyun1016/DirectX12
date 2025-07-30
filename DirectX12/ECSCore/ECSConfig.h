@@ -16,6 +16,7 @@
 #include <typeindex>
 #include <typeinfo>
 #include "LogCore.h"
+#include "json.hpp"
 
 // DX12
 #include "DX12_Config.h"
@@ -24,11 +25,13 @@
 // Vulkan
 // TODO #include "Vulkan_Config.h"
 
+using json = nlohmann::json;
 
 namespace ECS
 {
 	// namespace Entity
 	using Entity = std::uint32_t;
+	static constexpr Entity INVALID_ENTITY = std::numeric_limits<Entity>::max();
 	static constexpr Entity MAX_ENTITIES = 5000;
 	using ComponentType = std::uint8_t;
 	static constexpr ComponentType MAX_COMPONENTS = 32;

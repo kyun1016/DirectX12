@@ -102,7 +102,7 @@ namespace ECS {
             // 맵 업데이트
             mEntityToIndexMap.erase(entity);
             if (indexOfLast == indexOfRemoved)
-                return 0;
+                return INVALID_ENTITY;
 
             Entity movedEntity = mEntities[indexOfRemoved];
             mEntityToIndexMap[movedEntity] = indexOfRemoved;
@@ -178,8 +178,18 @@ namespace ECS {
             return mComponentTypes[type];
         }
 
+        std::vector<Archetype*> GetAllArchetypes() {
+            std::vector<Archetype*> archetypes;
+            for (auto const& [signature, sharedMap] : mArchetypes) {
+                for (auto const& [sharedId, archetypePtr] : sharedMap) {
+                    archetypes.push_back(archetypePtr.get());
+                }
+            }
+            return archetypes;
+        }
+
         template<typename T>
-        void AddComponent(Entity entity, T component, Signature oldSignature) {
+        void AddComponent(Entity entity, const T& component, const Signature& oldSignature) {
             // 1. 엔티티의 현재 위치와 시그니처를 가져온다.
             //    신규 엔티티라면, 기본값(nullptr, 0)과 빈 시그니처를 사용한다.
             EntityLocation oldLocation = { nullptr, 0 };
@@ -250,7 +260,7 @@ namespace ECS {
 
             // 4. 만약 swap으로 인해 다른 엔티티의 위치가 변경되었다면,
             //    그 엔티티의 위치 정보(인덱스)를 업데이트해준다.
-            if (archetype->GetEntityCount() > 0 && movedEntity != entity) {
+            if (movedEntity != INVALID_ENTITY) {
                 mEntityLocations[movedEntity].index = indexOfRemoved;
             }
         }
@@ -280,7 +290,7 @@ namespace ECS {
 
     private:
         void MoveEntityBetweenArchetypes(Entity entity, Archetype* source, Archetype* destination) {
-            if (source == destination) return; // 같은 아키타입이면 이동 불필요
+            assert(source != destination);
 
             size_t oldIndex = mEntityLocations[entity].index;
             size_t newIndex = destination->AddEntity(entity);

@@ -55,6 +55,9 @@
     <Filter Include="Header Files\Factory">
       <UniqueIdentifier>{dc08869f-249e-4853-a75f-0579145b2695}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\DX12_Core\Component">
+      <UniqueIdentifier>{cc557e5d-4bbb-4e62-825f-77210a46bb88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -92,9 +95,6 @@
     <ClInclude Include="LogCore.h">
       <Filter>Header Files\LogCore</Filter>
     </ClInclude>
-    <ClInclude Include="DX12_Component.h">
-      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
-    </ClInclude>
     <ClInclude Include="DX12_RootSignatureSystem.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
@@ -129,12 +129,6 @@
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_FrameResourceSystem.h">
-      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_BoundingComponent.h">
-      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="DX12_MeshComponent.h">
       <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
     </ClInclude>
     <ClInclude Include="DX12_MeshGenerator.h">
@@ -299,6 +293,18 @@
     <ClInclude Include="ECSSharedComponents.h">
       <Filter>Header Files\ECSCore</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_Component.h">
+      <Filter>Header Files\DX12_Core\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_BoundingComponent.h">
+      <Filter>Header Files\DX12_Core\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12_MeshComponent.h">
+      <Filter>Header Files\DX12_Core\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">
@@ -313,5 +319,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="world.json">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
