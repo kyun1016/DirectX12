@@ -28,6 +28,7 @@ private:
 
 struct DX12_MeshComponent
 {
+	static const char* GetName() { return "DX12_MeshComponent"; }
 	UINT StartIndexLocation = 0;
 	UINT IndexCount = 0;
 	UINT StartInstanceLocation = 0;
@@ -90,3 +91,31 @@ struct DX12_MeshGeometry
 struct MaterialComponent {
 	uint32_t MaterialID;
 };
+
+inline void to_json(json& j, const DX12_MeshComponent& p) {
+	j = json{
+		{ "StartIndexLocation",		p.StartIndexLocation },
+		{ "IndexCount",				p.IndexCount },
+		{ "StartInstanceLocation",	p.StartInstanceLocation },
+		{ "InstanceCount",			p.InstanceCount },
+		{ "BaseVertexLocation",		p.BaseVertexLocation },
+		{ "BoundingBox", {p.BoundingBox.Center.x, p.BoundingBox.Center.y, p.BoundingBox.Center.z,
+						 p.BoundingBox.Extents.x, p.BoundingBox.Extents.y, p.BoundingBox.Extents.z} },
+		{ "BoundingSphere", {p.BoundingSphere.Center.x, p.BoundingSphere.Center.y, p.BoundingSphere.Center.z,
+							p.BoundingSphere.Radius}}
+	};
+}
+
+inline void from_json(const json& j, DX12_MeshComponent& p) {
+	j.at("StartIndexLocation").get_to(p.StartIndexLocation);
+	j.at("IndexCount").get_to(p.IndexCount);
+	j.at("StartInstanceLocation").get_to(p.StartInstanceLocation);
+	j.at("InstanceCount").get_to(p.InstanceCount);
+	j.at("BaseVertexLocation").get_to(p.BaseVertexLocation);
+	auto boundingBox = j.at("BoundingBox");
+	p.BoundingBox.Center = { boundingBox[0], boundingBox[1], boundingBox[2] };
+	p.BoundingBox.Extents = { boundingBox[3], boundingBox[4], boundingBox[5] };
+	auto boundingSphere = j.at("BoundingSphere");
+	p.BoundingSphere.Center = { boundingSphere[0], boundingSphere[1], boundingSphere[2] };
+	p.BoundingSphere.Radius = boundingSphere[3];
+}

@@ -2,6 +2,7 @@
 #include "ECSConfig.h"
 
 struct TransformComponent {
+    static const char* GetName() { return "TransformComponent"; }
 	float3 Position;
 	float3 Scale;
 	float3 Rotation;

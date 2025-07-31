@@ -6,6 +6,7 @@
 
 struct BoundingVolumnComponent
 {
+	static const char* GetName() { return "BoundingVolumnComponent"; }
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 };
@@ -19,6 +20,39 @@ enum class eCFGInstanceComponent : std::uint32_t
 	Pickable = 1 << 2,
 	UseQuat = 1 << 3
 };
+struct CFGInstanceComponent
+{
+	static const char* GetName() { return "CFGInstanceComponent"; }
+	eCFGInstanceComponent Option = eCFGInstanceComponent::None;
+};
+
+inline void to_json(json& j, const BoundingVolumnComponent& p)
+{
+	j = json{
+		{"BoundingBox", {p.BoundingBox.Center.x, p.BoundingBox.Center.y, p.BoundingBox.Center.z,
+						 p.BoundingBox.Extents.x, p.BoundingBox.Extents.y, p.BoundingBox.Extents.z}},
+		{"BoundingSphere", {p.BoundingSphere.Center.x, p.BoundingSphere.Center.y, p.BoundingSphere.Center.z,
+							p.BoundingSphere.Radius}}
+	};
+}
+inline void from_json(const json& j, BoundingVolumnComponent& p)
+{
+	auto boundingBox = j.at("BoundingBox");
+	p.BoundingBox.Center = { boundingBox[0], boundingBox[1], boundingBox[2] };
+	p.BoundingBox.Extents = { boundingBox[3], boundingBox[4], boundingBox[5] };
+	auto boundingSphere = j.at("BoundingSphere");
+	p.BoundingSphere.Center = { boundingSphere[0], boundingSphere[1], boundingSphere[2] };
+	p.BoundingSphere.Radius = boundingSphere[3];
+}
+
+inline void to_json(json& j, const CFGInstanceComponent& p)
+{
+	j = static_cast<std::uint32_t>(p.Option);
+}
+inline void from_json(const json& j, CFGInstanceComponent& p)
+{
+	p.Option = static_cast<eCFGInstanceComponent>(j.get<std::uint32_t>());
+}
 ENUM_OPERATORS_32(eCFGInstanceComponent)
 
 struct TextureScaleComponent
@@ -27,6 +61,7 @@ struct TextureScaleComponent
 };
 struct InstanceComponent
 {
+	static const char* GetName() { return "InstanceComponent"; }
 	InstanceComponent()
 	{
 		Transform.Position = {};
@@ -102,3 +137,12 @@ struct InstanceComponent
 	// Metarial 속성 추가
 	eCFGInstanceComponent Option = eCFGInstanceComponent::UseCulling;
 };
+
+inline void to_json(json& j, const InstanceComponent& p)
+{
+
+}
+inline void from_json(const json& j, InstanceComponent& p)
+{
+
+}

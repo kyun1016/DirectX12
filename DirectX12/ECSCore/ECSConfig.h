@@ -15,6 +15,7 @@
 #include <cassert>
 #include <typeindex>
 #include <typeinfo>
+#include <limits>
 #include "LogCore.h"
 #include "json.hpp"
 

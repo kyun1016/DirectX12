@@ -1,6 +1,636 @@
 {
+    "Entities": [
+        {
+            "Components": {
+                "LightComponent": {
+                    "Direction": [
+                        0.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "FalloffEnd": 10.0,
+                    "FalloffStart": 1.0,
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "SpotPower": 64.0,
+                    "Strength": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ],
+                    "haloRadius": 1.0,
+                    "haloStrength": 1.0,
+                    "radius": 1.0,
+                    "type": 1
+                }
+            },
+            "ID": 5
+        },
+        {
+            "Components": {
+                "LightComponent": {
+                    "Direction": [
+                        0.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "FalloffEnd": 10.0,
+                    "FalloffStart": 1.0,
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "SpotPower": 64.0,
+                    "Strength": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ],
+                    "haloRadius": 1.0,
+                    "haloStrength": 1.0,
+                    "radius": 1.0,
+                    "type": 1
+                }
+            },
+            "ID": 6
+        },
+        {
+            "Components": {
+                "LightComponent": {
+                    "Direction": [
+                        0.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "FalloffEnd": 10.0,
+                    "FalloffStart": 1.0,
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "SpotPower": 64.0,
+                    "Strength": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ],
+                    "haloRadius": 1.0,
+                    "haloStrength": 1.0,
+                    "radius": 1.0,
+                    "type": 1
+                }
+            },
+            "ID": 7
+        },
+        {
+            "Components": {
+                "FMODAudioComponent": {
+                    "handle": 1,
+                    "loop": true,
+                    "volume": 0.5
+                }
+            },
+            "ID": 2
+        },
+        {
+            "Components": {
+                "FMODAudioComponent": {
+                    "handle": 2,
+                    "loop": true,
+                    "volume": 0.5
+                }
+            },
+            "ID": 3
+        },
+        {
+            "Components": {
+                "FMODAudioComponent": {
+                    "handle": 3,
+                    "loop": true,
+                    "volume": 0.5
+                }
+            },
+            "ID": 4
+        },
+        {
+            "Components": {
+                "GravityComponent": {
+                    "Force": [
+                        0.0,
+                        -9.8100004196167,
+                        0.0
+                    ]
+                },
+                "RigidBodyComponent": {
+                    "Acceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularAcceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularVelocity": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "DiffPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Force": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "IsKinematic": false,
+                    "Mass": 0.0,
+                    "Torque": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "UseGravity": true,
+                    "Velocity": [
+                        0.0,
+                        -233.218994140625,
+                        0.0
+                    ]
+                },
+                "TransformComponent": {
+                    "Position": [
+                        0.0,
+                        -2778.735595703125,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 0
+        },
+        {
+            "Components": {
+                "GravityComponent": {
+                    "Force": [
+                        1.0,
+                        0.0,
+                        1.0
+                    ]
+                },
+                "RigidBodyComponent": {
+                    "Acceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularAcceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularVelocity": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "DiffPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Force": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "IsKinematic": false,
+                    "Mass": 0.0,
+                    "Torque": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "UseGravity": true,
+                    "Velocity": [
+                        23.773635864257813,
+                        0.0,
+                        23.773635864257813
+                    ]
+                },
+                "TransformComponent": {
+                    "Position": [
+                        283.2554016113281,
+                        0.0,
+                        283.2554016113281
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 1
+        },
+        {
+            "Components": {
+                "DX12_BoundingComponent": {
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "BoundingSphere": [
+                        0.0
+                    ],
+                    "FrustumCullingEnable": [
+                        false
+                    ],
+                    "ShowBoundingBox": [
+                        false
+                    ],
+                    "ShowBoundingSphere": [
+                        false
+                    ]
+                },
+                "DX12_MeshComponent": {
+                    "BaseVertexLocation": 0,
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "BoundingSphere": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "IndexCount": 0,
+                    "InstanceCount": 0,
+                    "StartIndexLocation": 0,
+                    "StartInstanceLocation": 0
+                },
+                "TransformComponent": {
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 8
+        },
+        {
+            "Components": {
+                "DX12_BoundingComponent": {
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "BoundingSphere": [
+                        0.0
+                    ],
+                    "FrustumCullingEnable": [
+                        false
+                    ],
+                    "ShowBoundingBox": [
+                        false
+                    ],
+                    "ShowBoundingSphere": [
+                        false
+                    ]
+                },
+                "DX12_MeshComponent": {
+                    "BaseVertexLocation": 0,
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "BoundingSphere": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "IndexCount": 0,
+                    "InstanceCount": 0,
+                    "StartIndexLocation": 0,
+                    "StartInstanceLocation": 0
+                },
+                "TransformComponent": {
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 9
+        },
+        {
+            "Components": {
+                "DX12_BoundingComponent": {
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "BoundingSphere": [
+                        0.0
+                    ],
+                    "FrustumCullingEnable": [
+                        false
+                    ],
+                    "ShowBoundingBox": [
+                        false
+                    ],
+                    "ShowBoundingSphere": [
+                        false
+                    ]
+                },
+                "DX12_MeshComponent": {
+                    "BaseVertexLocation": 0,
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "BoundingSphere": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "IndexCount": 0,
+                    "InstanceCount": 0,
+                    "StartIndexLocation": 0,
+                    "StartInstanceLocation": 0
+                },
+                "TransformComponent": {
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 10
+        },
+        {
+            "Components": {
+                "DX12_MeshComponent": {
+                    "BaseVertexLocation": 0,
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "BoundingSphere": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "IndexCount": 0,
+                    "InstanceCount": 0,
+                    "StartIndexLocation": 3,
+                    "StartInstanceLocation": 0
+                },
+                "GravityComponent": {
+                    "Force": [
+                        0.0,
+                        -9.8100004196167,
+                        0.0
+                    ]
+                },
+                "RigidBodyComponent": {
+                    "Acceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularAcceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularVelocity": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "DiffPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Force": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "IsKinematic": false,
+                    "Mass": 0.0,
+                    "Torque": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "UseGravity": true,
+                    "Velocity": [
+                        0.0,
+                        -233.218994140625,
+                        0.0
+                    ]
+                },
+                "TransformComponent": {
+                    "Position": [
+                        -5.0,
+                        -2768.735107421875,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 11
+        },
+        {
+            "Components": {
+                "DX12_MeshComponent": {
+                    "BaseVertexLocation": 0,
+                    "BoundingBox": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "BoundingSphere": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "IndexCount": 0,
+                    "InstanceCount": 0,
+                    "StartIndexLocation": 3,
+                    "StartInstanceLocation": 0
+                },
+                "GravityComponent": {
+                    "Force": [
+                        0.0,
+                        -9.8100004196167,
+                        0.0
+                    ]
+                },
+                "RigidBodyComponent": {
+                    "Acceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularAcceleration": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "AngularVelocity": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "DiffPosition": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Force": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "IsKinematic": false,
+                    "Mass": 0.0,
+                    "Torque": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "UseGravity": true,
+                    "Velocity": [
+                        0.0,
+                        -233.218994140625,
+                        0.0
+                    ]
+                },
+                "TransformComponent": {
+                    "Position": [
+                        0.0,
+                        -2778.735595703125,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            },
+            "ID": 12
+        }
+    ],
     "time": [
-        0.07747430354356766,
-        4.553038120269775
+        0.09901180118322372,
+        23.773635864257813
     ]
 }

@@ -8,10 +8,9 @@ namespace ECS {
     class IComponentArray {
     public:
         virtual ~IComponentArray() = default;
-        // 한 아키타입에서 다른 아키타입으로 엔티티가 이동할 때 호출됩니다.
         virtual void MoveData(size_t sourceIndex, IComponentArray* destinationArray) = 0;
-        // 아키타입에서 엔티티가 제거될 때 호출됩니다.
         virtual void RemoveData(size_t index) = 0;
+        virtual void AddComponentToJson(size_t index, json& jsonObject) const = 0;
     };
 
     // ComponentArray는 이제 각 아키타입 내에서 실제 데이터를 저장하는 역할을 합니다.
@@ -48,6 +47,17 @@ namespace ECS {
             // 마지막 요소 제거
             mComponentArray.pop_back();
         }
+
+        void AddComponentToJson(size_t index, json& jsonObject) const override {
+            assert(index < mComponentArray.size());
+            // 이 배열이 다루는 T 타입의 데이터를 가져와서
+            const T& component = mComponentArray[index];
+
+            // nlohmann/json 라이브러리가 T 타입에 대해 정의된 to_json 함수를
+            // 자동으로 찾아 호출하여 JSON으로 변환해줍니다.
+            // 컴포넌트의 타입 이름을 키로 사용합니다.
+            jsonObject[T::GetName()] = component;
+        }
     };
 }
 
@@ -73,6 +83,10 @@ namespace ECS {
         const Signature& GetSignature() const { return mSignature; }
 		size_t GetSharedComponentId() const { return mSharedComponentId; }
         size_t GetEntityCount() const { return mEntities.size(); }
+		Entity GetEntity(size_t index) const {
+			assert(index < mEntities.size() && "Index out of bounds.");
+			return mEntities[index];
+		}
 
         // 엔티티를 이 아키타입에 추가 (데이터는 별도로 추가됨)
         size_t AddEntity(Entity entity) {

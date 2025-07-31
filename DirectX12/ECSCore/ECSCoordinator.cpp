@@ -29,7 +29,7 @@ namespace ECS
 		RegisterComponent<RigidBodyComponent>();
 		RegisterComponent<GravityComponent>();
 		RegisterComponent<BoundingVolumnComponent>();
-		RegisterComponent<eCFGInstanceComponent>();
+		RegisterComponent<CFGInstanceComponent>();
 		RegisterComponent<PlayerControlComponent>();
 
 		{
@@ -151,29 +151,36 @@ namespace ECS
 		//	const auto& sharedProps = GetSharedComponentValue(sharedId);
 		//	json sharedJson = sharedProps;
 
-		//	// 3-2. 아키타입 내 모든 엔티티 순회
-		//	for (size_t i = 0; i < archetype->GetEntityCount(); ++i) {
-		//		Entity entity = archetype->GetEntity(i); // 가상의 함수
-		//		json entityJson;
-		//		entityJson["ID"] = entity;
-		//		entityJson["SharedComponentID"] = sharedId; // 어떤 공유 데이터를 쓰는지 저장
+		// 1. 모든 아키타입 순회
+		json entitiesJson = json::array();
+		for (Archetype* archetype : GetAllArchetypes()) {
 
-		//		// 3-3. 엔티티의 모든 일반 컴포넌트 저장
-		//		json componentsJson;
-		//		const auto& signature = archetype->GetSignature();
-		//		for (ComponentType typeId = 0; typeId < MAX_COMPONENTS; ++typeId) {
-		//			if (signature.test(typeId)) {
-		//				// 타입 ID를 컴포넌트 이름으로 변환하고, 해당 컴포넌트 데이터를 JSON으로 변환
-		//				// 이 과정은 리플렉션이 없으므로, 각 타입에 대한 저장 로직을 등록하는 방식이 필요
-		//				// 예: mSaveFunctions[typeId](entity, componentsJson);
-		//			}
-		//		}
-		//		entityJson["Components"] = componentsJson;
-		//		entitiesJson.push_back(entityJson);
-		//	}
-		//}
-		//worldJson["Entities"] = entitiesJson;
+			// ... (공유 컴포넌트 저장 로직은 동일) ...
 
+			// 2. 아키타입 내 모든 엔티티 순회
+			for (size_t i = 0; i < archetype->GetEntityCount(); ++i) {
+				Entity entity = archetype->GetEntity(i);
+				json entityJson;
+				entityJson["ID"] = entity;
+				// ...
+
+				// 3. 엔티티의 모든 일반 컴포넌트 저장 (개선된 부분)
+				json componentsJson;
+				const auto& signature = archetype->GetSignature();
+				for (ComponentType typeId = 0; typeId < MAX_COMPONENTS; ++typeId) {
+					if (signature.test(typeId)) {
+						// 3-1. 아키타입에서 해당 타입의 ComponentArray를 가져온다.
+						IComponentArray* componentArray = archetype->GetComponentArray(typeId);
+
+						// 3-2. 배열에게 "i번째 데이터를 이 JSON 객체에 추가해줘" 라고 명령한다.
+						componentArray->AddComponentToJson(i, componentsJson);
+					}
+				}
+				entityJson["Components"] = componentsJson;
+				entitiesJson.push_back(entityJson);
+			}
+		}
+		worldJson["Entities"] = entitiesJson;
 		// 4. 최종 JSON을 파일에 쓰기
 		std::ofstream file(filePath);
 		file << worldJson.dump(4); // 4는 들여쓰기 옵션
