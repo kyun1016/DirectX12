@@ -87,8 +87,6 @@ namespace ECS
 			signature.set(GetComponentType<PlayerControlComponent>());
 			SetSystemSignature<RenderDataSyncSystem>(signature);
 		}
-		
-		
 	}
 	Entity Coordinator::CreateEntity()
 	{

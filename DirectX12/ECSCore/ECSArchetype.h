@@ -22,6 +22,19 @@ namespace ECS {
         std::vector<T> mComponentArray;
 
     public:
+        // 생성자에서 기본 용량을 예약합니다
+        ComponentArray() {
+            mComponentArray.reserve(64); // 기본 64개 요소 예약
+        }
+
+        // 용량을 미리 예약하는 메서드
+        void Reserve(size_t capacity) {
+            mComponentArray.reserve(capacity);
+        }
+
+        // 현재 크기와 용량 정보를 제공
+        size_t Size() const { return mComponentArray.size(); }
+        size_t Capacity() const { return mComponentArray.capacity(); }
         // 새로운 데이터를 배열 끝에 추가합니다.
         void InsertData(T component) {
             mComponentArray.push_back(component);
@@ -29,7 +42,18 @@ namespace ECS {
 
         // 특정 인덱스의 데이터를 가져옵니다.
         T& GetData(size_t index) {
-            assert(index < mComponentArray.size() && "Index out of bounds.");
+            if (index >= mComponentArray.size()) {
+                throw std::out_of_range("Component array index out of bounds: " + std::to_string(index) 
+                                      + " >= " + std::to_string(mComponentArray.size()));
+            }
+            return mComponentArray[index];
+        }
+
+        const T& GetData(size_t index) const {
+            if (index >= mComponentArray.size()) {
+                throw std::out_of_range("Component array index out of bounds: " + std::to_string(index) 
+                                      + " >= " + std::to_string(mComponentArray.size()));
+            }
             return mComponentArray[index];
         }
 
@@ -41,9 +65,16 @@ namespace ECS {
 
         // 'swap-and-pop' 기법으로 데이터를 제거하여 밀집도를 유지합니다.
         void RemoveData(size_t index) override {
-            assert(index < mComponentArray.size() && "Index out of bounds.");
+            if (index >= mComponentArray.size()) {
+                throw std::out_of_range("Cannot remove component at index " + std::to_string(index) 
+                                      + ", array size is " + std::to_string(mComponentArray.size()));
+            }
+            if (mComponentArray.empty()) {
+                throw std::runtime_error("Cannot remove from empty component array");
+            }
+            
             // 제거할 요소와 마지막 요소를 교환
-            mComponentArray[index] = mComponentArray.back();
+            mComponentArray[index] = std::move(mComponentArray.back());
             // 마지막 요소 제거
             mComponentArray.pop_back();
         }
@@ -387,7 +418,7 @@ namespace ECS {
         {
             std::type_index type = typeid(T);
             assert(mSingletonComponents.find(type) != mSingletonComponents.end() && "Singleton not registered.");
-            return *static_cast<const SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get())->data;
+            return static_cast<const SingletonComponentWrapper<T>*>(mSingletonComponents.at(type).get())->data;
         }
 
     private:
