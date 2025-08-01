@@ -34,7 +34,6 @@ struct DX12_MeshComponent
 	UINT StartInstanceLocation = 0;
 	UINT InstanceCount = 0;
 	INT BaseVertexLocation = 0;
-
 	DirectX::BoundingBox BoundingBox;
 	DirectX::BoundingSphere BoundingSphere;
 };

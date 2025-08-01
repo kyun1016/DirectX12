@@ -22,15 +22,15 @@ namespace ECS
 	template<typename T>
 	class ComponentArray : public IComponentArray {
 		std::array<T, MAX_ENTITIES> mComponentArray;
-		std::unordered_map<Entity, size_t> mEntityToIndexMap;
+		std::unordered_map<Entity, size_t> mEntityToComponentMap;
 		std::unordered_map<size_t, Entity> mIndexToEntityMap;
 		size_t mSize = 0;
 	public:
-		void InsertData(Entity entity, T component)
+		void AddData(Entity entity, T component)
 		{
-			assert(mEntityToIndexMap.find(entity) == mEntityToIndexMap.end() && "Component added to same entity more than once.");
+			assert(mEntityToComponentMap.find(entity) == mEntityToComponentMap.end() && "Component added to same entity more than once.");
 
-			mEntityToIndexMap[entity] = mSize;
+			mEntityToComponentMap[entity] = mSize;
 			mIndexToEntityMap[mSize] = entity;
 			mComponentArray[mSize] = component;
 			++mSize;
@@ -38,33 +38,33 @@ namespace ECS
 
 		void RemoveData(Entity entity)
 		{
-			assert(mEntityToIndexMap.find(entity) != mEntityToIndexMap.end() && "Removing non-existent component.");
+			assert(mEntityToComponentMap.find(entity) != mEntityToComponentMap.end() && "Removing non-existent component.");
 
 			// Copy element at end into deleted element's place to maintain density
 			--mSize;
-			size_t& indexOfRemovedEntity = mEntityToIndexMap[entity];
+			size_t& indexOfRemovedEntity = mEntityToComponentMap[entity];
 			mComponentArray[indexOfRemovedEntity] = mComponentArray[mSize];
 
 			// Update map to point to moved spot
 			Entity& entityOfLastElement = mIndexToEntityMap[mSize];
-			mEntityToIndexMap[entityOfLastElement] = indexOfRemovedEntity;
+			mEntityToComponentMap[entityOfLastElement] = indexOfRemovedEntity;
 			mIndexToEntityMap[indexOfRemovedEntity] = entityOfLastElement;
 
-			mEntityToIndexMap.erase(entity);
+			mEntityToComponentMap.erase(entity);
 			mIndexToEntityMap.erase(mSize);
 		}
 
 		T& GetData(Entity entity)
 		{
-			assert(mEntityToIndexMap.find(entity) != mEntityToIndexMap.end() && "Retrieving non-existent component.");
+			assert(mEntityToComponentMap.find(entity) != mEntityToComponentMap.end() && "Retrieving non-existent component.");
 
 			// Return a reference to the entity's component
-			return mComponentArray[mEntityToIndexMap[entity]];
+			return mComponentArray[mEntityToComponentMap[entity]];
 		}
 
 		void EntityDestroyed(Entity entity) override
 		{
-			if (mEntityToIndexMap.find(entity) != mEntityToIndexMap.end())
+			if (mEntityToComponentMap.find(entity) != mEntityToComponentMap.end())
 			{
 				// Remove the entity's component if it existed
 				RemoveData(entity);
@@ -120,7 +120,7 @@ namespace ECS
 		template<typename T>
 		void AddComponent(Entity entity, T component)
 		{
-			GetComponentArray<T>()->InsertData(entity, component);
+			GetComponentArray<T>()->AddData(entity, component);
 		}
 
 		template<typename T>

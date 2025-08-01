@@ -2,7 +2,7 @@
 #include "ECSCoordinator.h"
 #include "InstanceComponent.h"
 
-class BoundingVolumeUpdateSystem : public ECS::ISystem {
+class WorldMatrixUpdateSystem : public ECS::ISystem {
 public:
 	void Update() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
@@ -13,7 +13,7 @@ public:
 
 			auto& boundingVolumn = coordinator.GetComponent<BoundingVolumnComponent>(entity);
 			auto& mesh = coordinator.GetComponent<DX12_MeshComponent>(entity);
-			auto& cfg = coordinator.GetComponent<eCFGInstanceComponent>(entity);
+			auto& cfg = coordinator.GetComponent<CFGInstanceComponent>(entity);
 			auto& textureScale = coordinator.GetComponent<TextureScaleComponent>(entity);
 			auto& instanceData = coordinator.GetComponent<InstanceData>(entity);
 
@@ -27,7 +27,7 @@ public:
 			DirectX::XMMATRIX rotZ = DirectX::XMMatrixRotationZ(rz);
 
 			DirectX::XMMATRIX rot = rotX * rotY * rotZ;
-			if (cfg & eCFGInstanceComponent::UseQuat)
+			if (cfg.Option & eCFGInstanceComponent::UseQuat)
 				rot = DirectX::XMMatrixRotationQuaternion(transform.RotationQuat);
 
 			DirectX::XMMATRIX world
@@ -42,6 +42,4 @@ public:
 			instanceData.WorldInvTranspose = DirectX::XMMatrixInverse(&det, world);
 		}
 	}
-
-private:
 };

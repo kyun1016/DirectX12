@@ -34,9 +34,15 @@ namespace ECS
 	using Entity = std::uint32_t;
 	static constexpr Entity INVALID_ENTITY = std::numeric_limits<Entity>::max();
 	static constexpr Entity MAX_ENTITIES = 5000;
+	using EntityHandle = std::size_t;
+
 	using ComponentType = std::uint8_t;
 	static constexpr ComponentType MAX_COMPONENTS = 32;
+	using ComponentHandle = std::size_t;
+
 	using Signature = std::bitset<MAX_COMPONENTS>;
+
+	using SharedComponentID = std::size_t;
 	using RepoHandle = std::uint32_t;
     using Handle = std::size_t;
 }

@@ -112,10 +112,6 @@ public:
 		if (input.IsKeyDown('q')) moveDir.y -= 1.0f;
 		if (input.IsKeyDown('E')) moveDir.y += 1.0f;
 		if (input.IsKeyDown('e')) moveDir.y += 1.0f;
-		// if (input.IsKeyDown('W')) moveDir.z += 1.0f;
-		// if (input.IsKeyDown('w')) moveDir.z += 1.0f;
-		// if (input.IsKeyDown('S')) moveDir.z -= 1.0f;
-		// if (input.IsKeyDown('s')) moveDir.z -= 1.0f;
 		if (input.IsKeyDown('W')) moveDir.y += 1.0f;
 		if (input.IsKeyDown('w')) moveDir.y += 1.0f;
 		if (input.IsKeyDown('S')) moveDir.y -= 1.0f;

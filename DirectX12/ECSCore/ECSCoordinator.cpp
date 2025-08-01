@@ -9,6 +9,7 @@
 #include "BoundingVolumeUpdateSystem.h"
 #include "PlayerControlSystem.h"
 #include "RenderDataSyncSystem.h"
+#include "WorldMatrixUpdateSystem.h"
 
 namespace ECS
 {
@@ -31,6 +32,7 @@ namespace ECS
 		RegisterComponent<BoundingVolumnComponent>();
 		RegisterComponent<CFGInstanceComponent>();
 		RegisterComponent<PlayerControlComponent>();
+		RegisterComponent<TextureScaleComponent>();
 
 		{
 			RegisterSystem<FMODAudioSystem>();
@@ -54,7 +56,6 @@ namespace ECS
 			signature.set(GetComponentType<LightComponent>());
 			SetSystemSignature<LightSystem>(signature);
 		}
-
 		{
 			RegisterSystem<DX12_BoundingSystem>();
 			ECS::Signature signature;
@@ -86,6 +87,15 @@ namespace ECS
 			signature.set(GetComponentType<RigidBodyComponent>());
 			signature.set(GetComponentType<PlayerControlComponent>());
 			SetSystemSignature<RenderDataSyncSystem>(signature);
+		}
+		{
+			RegisterSystem<WorldMatrixUpdateSystem>();
+			ECS::Signature signature;
+			signature.set(GetComponentType<TransformComponent>());
+			signature.set(GetComponentType<DX12_MeshComponent>());
+			signature.set(GetComponentType<CFGInstanceComponent>());
+			signature.set(GetComponentType<TextureScaleComponent>());
+			SetSystemSignature<WorldMatrixUpdateSystem>(signature);
 		}
 	}
 	Entity Coordinator::CreateEntity()

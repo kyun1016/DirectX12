@@ -44,7 +44,6 @@ inline void from_json(const json& j, BoundingVolumnComponent& p)
 	p.BoundingSphere.Center = { boundingSphere[0], boundingSphere[1], boundingSphere[2] };
 	p.BoundingSphere.Radius = boundingSphere[3];
 }
-
 inline void to_json(json& j, const CFGInstanceComponent& p)
 {
 	j = static_cast<std::uint32_t>(p.Option);
@@ -57,8 +56,20 @@ ENUM_OPERATORS_32(eCFGInstanceComponent)
 
 struct TextureScaleComponent
 {
+	static const char* GetName() { return "TextureScaleComponent"; }
 	float3 TextureScale;
 };
+inline void to_json(json& j, const TextureScaleComponent& p)
+{
+	j = json{
+		{"TextureScale", {p.TextureScale.x, p.TextureScale.y, p.TextureScale.z}}
+	};
+}
+inline void from_json(const json& j, TextureScaleComponent& p)
+{
+	auto textureScale = j.at("TextureScale");
+	p.TextureScale = { textureScale[0], textureScale[1], textureScale[2] };
+}
 struct InstanceComponent
 {
 	static const char* GetName() { return "InstanceComponent"; }
