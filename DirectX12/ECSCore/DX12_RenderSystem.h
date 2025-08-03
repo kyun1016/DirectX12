@@ -21,6 +21,7 @@
 #include "DX12_HeapRepository.h"
 #include "CameraSystem.h"
 #include "TextureSystem.h"
+#include "DX12_PipelineManager.h"
 
 class DX12_RenderSystem : public ECS::ISystem {
 public:
@@ -77,6 +78,7 @@ private:
 		DX12_InputLayoutSystem::GetInstance().Initialize();
 		DX12_ShaderCompileSystem::GetInstance().Initialize(mTextureSystem->Size());
 		DX12_PSOSystem::GetInstance().Initialize(mDevice);
+		DX12_PipelineManager::GetInstance().Initialize(mDevice);
 		DX12_FrameResourceSystem::GetInstance().Initialize(mDevice);
 
 		DX12_MeshSystem::GetInstance().Initialize();
@@ -114,26 +116,29 @@ private:
 
 	inline void DrawRenderItems(const eRenderLayer flag)
 	{
-		ID3D12PipelineState* pso = DX12_PSOSystem::GetInstance().Get(flag);
-		if (!pso)
+		// 자동화된 파이프라인 바인딩
+		ID3D12PipelineState* pso = DX12_PipelineManager::GetInstance().GetPipelineState(flag);
+		ID3D12RootSignature* rootSig = DX12_PipelineManager::GetInstance().GetRootSignature(flag);
+		
+		if (!pso || !rootSig)
 		{
-			LOG_ERROR("Pipeline State Object not found for layer: {}", static_cast<int>(flag));
+			LOG_ERROR("Pipeline or Root Signature not found for layer: {}", static_cast<int>(flag));
 			return;
 		}
 
 		const D3D12_GPU_VIRTUAL_ADDRESS baseInstanceIDAddress = DX12_FrameResourceSystem::GetInstance().GetInstanceIDDataGPUVirtualAddress();
 		const UINT objCBByteSize = CalcConstantBufferByteSize(sizeof(InstanceIDData));
-		// const UINT objCBByteSize = sizeof(InstanceIDData);
 		
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSRVHeapRepository->GetHeap()};
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-		mCommandList->SetGraphicsRootSignature(DX12_RootSignatureSystem::GetInstance().GetGraphicsSignature(flag));
-		mCommandList->SetGraphicsRootShaderResourceView(1, DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
-		mCommandList->SetGraphicsRootShaderResourceView(2, DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
-		mCommandList->SetGraphicsRootDescriptorTable(4, mSRVHeapRepository->GetGPUHandle(0));
-
+		// 자동화된 Root Signature 설정
+		mCommandList->SetGraphicsRootSignature(rootSig);
 		mCommandList->SetPipelineState(pso);
+
+		// 자동 바인딩: 레지스터 기반으로 리소스 바인딩
+		AutoBindResources(flag);
+
 		auto& allRenderItems = DX12_SceneSystem::GetInstance().GetRenderItems();
 		size_t totalMeshIdx = 0;
 		for (size_t i = 0; i < allRenderItems.size(); ++i)
@@ -144,8 +149,15 @@ private:
 					
 			DX12_CommandSystem::GetInstance().SetMesh(DX12_MeshSystem::GetInstance().GetGeometry(ri.GeometryHandle));
 			auto* meshComponent = DX12_MeshSystem::GetInstance().GetMeshComponent(ri.GeometryHandle, ri.MeshHandle);
+			
+			// 자동 바인딩: Instance ID CBV (예: cbuffer ObjectConstants : register(b0))
 			D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = baseInstanceIDAddress + i * objCBByteSize;
-			mCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+			auto instanceIdIndex = DX12_PipelineManager::GetInstance().GetRootParameterIndexByResourceName(
+				flag, "ObjectConstants"); // 실제 셰이더의 cbuffer 이름
+			if (instanceIdIndex.has_value()) {
+				mCommandList->SetGraphicsRootConstantBufferView(instanceIdIndex.value(), objCBAddress);
+			}
+			
 			mCommandList->DrawIndexedInstanced(meshComponent->IndexCount, meshComponent->InstanceCount, meshComponent->StartIndexLocation, meshComponent->BaseVertexLocation, meshComponent->StartInstanceLocation);
 		}
 	}
@@ -154,5 +166,50 @@ private:
 		D3D12_RESOURCE_BARRIER RenderBarrier = CD3DX12_RESOURCE_BARRIER::Transition(DX12_SwapChainSystem::GetInstance().GetBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		mCommandList->ResourceBarrier(1, &RenderBarrier);
 		LOG_VERBOSE("Render Pass Ended");
+	}
+
+	// 자동 리소스 바인딩 함수 (리소스 이름 기반)
+	inline void AutoBindResources(eRenderLayer flag) {
+		auto& pipelineManager = DX12_PipelineManager::GetInstance();
+		
+		// 실제 셰이더에서 사용하는 리소스 이름으로 바인딩
+		// 예: StructuredBuffer<InstanceData> gInstanceData : register(t0, space0);
+		auto instanceDataIndex = pipelineManager.GetRootParameterIndexByResourceName(flag, "gInstanceData");
+		if (instanceDataIndex.has_value()) {
+			mCommandList->SetGraphicsRootShaderResourceView(
+				instanceDataIndex.value(), 
+				DX12_FrameResourceSystem::GetInstance().GetInstanceDataGPUVirtualAddress());
+		}
+
+		// 예: StructuredBuffer<CameraData> gCameraData : register(t1, space0);
+		auto cameraDataIndex = pipelineManager.GetRootParameterIndexByResourceName(flag, "gCameraData");
+		if (cameraDataIndex.has_value()) {
+			mCommandList->SetGraphicsRootShaderResourceView(
+				cameraDataIndex.value(), 
+				DX12_FrameResourceSystem::GetInstance().GetCameraDataGPUVirtualAddress());
+		}
+
+		// 예: StructuredBuffer<LightData> gLightData : register(t2, space0);
+		auto lightDataIndex = pipelineManager.GetRootParameterIndexByResourceName(flag, "gLightData");
+		if (lightDataIndex.has_value()) {
+			// LightData가 구현되어 있다면 바인딩
+			// mCommandList->SetGraphicsRootShaderResourceView(lightDataIndex.value(), lightDataAddress);
+		}
+
+		// 예: Texture2D gTextures[16] : register(t0, space1);
+		auto textureTableIndex = pipelineManager.GetRootParameterIndexByResourceName(flag, "gTextures");
+		if (textureTableIndex.has_value()) {
+			mCommandList->SetGraphicsRootDescriptorTable(
+				textureTableIndex.value(), 
+				mSRVHeapRepository->GetGPUHandle(0));
+		}
+
+		// 예: cbuffer ObjectConstants : register(b0) - 이건 per-object이므로 여기서 바인딩하지 않음
+		// 예: cbuffer PassConstants : register(b1)
+		auto passConstantsIndex = pipelineManager.GetRootParameterIndexByResourceName(flag, "PassConstants");
+		if (passConstantsIndex.has_value()) {
+			// Pass-level constants 바인딩
+			// mCommandList->SetGraphicsRootConstantBufferView(passConstantsIndex.value(), passConstantsAddress);
+		}
 	}
 };

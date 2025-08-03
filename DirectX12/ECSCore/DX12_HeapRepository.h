@@ -56,14 +56,12 @@ public:
 		return static_cast<D3D12_GPU_DESCRIPTOR_HANDLE>(mHeap->GetGPUDescriptorHandleForHeapStart().ptr + index * mDescriptorSize);
 	}
 protected:
+	ID3D12Device* const mDevice;
 	constexpr static std::uint32_t DEFAULT_SIZE = 64;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
 	const D3D12_DESCRIPTOR_HEAP_TYPE mType;
 	const std::uint32_t mDescriptorSize;
 	const std::uint32_t mNumDescriptors;
-	ID3D12Device* mDevice;
-
-	mutable std::mutex mtx;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mHeap;
 	size_t mSize;
 
 protected:

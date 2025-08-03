@@ -305,6 +305,9 @@
     <ClInclude Include="json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DX12_PipelineManager.h">
+      <Filter>Header Files\DX12_Core\Singleton Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Data\Shaders\Main.hlsl">

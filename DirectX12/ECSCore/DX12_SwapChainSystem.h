@@ -115,21 +115,18 @@ public:
 
 
 private:
+	ID3D12Device* mDevice;
+	std::uint32_t mWidth = 0;
+	std::uint32_t mHeight = 0;
 	D3D12_VIEWPORT mScreenViewport = D3D12_VIEWPORT{};
 	D3D12_RECT mScissorRect = D3D12_RECT{};
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
-	ID3D12Device* mDevice;
-
-	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 	DXGI_FORMAT mSwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	std::uint32_t mWidth = 0;
-	std::uint32_t mHeight = 0;
-	std::uint32_t mBackBufferIndex = 0;
-
 	std::uint32_t m4xMsaaQuality = 0;
 	bool mEnable4xMsaa = false;
-	
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> mBackBuffers;
+	std::uint32_t mBackBufferIndex = 0;
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> mDescritorHandles;
 
 	void CreateSwapChain(IDXGIFactory4* factory, ID3D12CommandQueue* commandQueue, const HWND& hwnd)
 	{

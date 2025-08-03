@@ -157,11 +157,11 @@ private:
 
 	
 private:
+	ID3D12Device* mDevice = nullptr;
 	DX12_RootSignatureSystem& mRootSystem;
 	DX12_ShaderCompileSystem& mShaderSystem;
 	DX12_InputLayoutSystem& mInputSystem;
 	DX12_SwapChainSystem& mSwapChainSystem;
 	std::unordered_map<eRenderLayer, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 	std::vector<PSODescriptor> mDescriptors;
-	ID3D12Device* mDevice = nullptr;
 };

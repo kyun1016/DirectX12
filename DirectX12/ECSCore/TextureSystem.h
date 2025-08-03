@@ -60,8 +60,8 @@ public:
 	}
 
 private:
-    ID3D12Device* mDevice = nullptr;
-    ID3D12GraphicsCommandList6* mCommandList = nullptr;
+    ID3D12Device* const mDevice;
+    ID3D12GraphicsCommandList6* const mCommandList;
     // 파일 경로 -> 핸들
     std::unordered_map<std::string, TextureHandle> mTextureRegistry;
 
