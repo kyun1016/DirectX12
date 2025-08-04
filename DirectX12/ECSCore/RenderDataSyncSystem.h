@@ -6,6 +6,19 @@
 
 class RenderDataSyncSystem : public ECS::ISystem {
 public:
+	void RegisterComponent() override {
+		ECS::Coordinator::GetInstance().RegisterComponent<TransformComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<RigidBodyComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<PlayerControlComponent>();
+	}
+	void RegisterSignature() override {
+		ECS::Signature signature;
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<TransformComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<RigidBodyComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<PlayerControlComponent>());
+		ECS::Coordinator::GetInstance().SetSystemSignature<RenderDataSyncSystem>(signature);
+	}
+
 	void Update() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
 		const auto& time = coordinator.GetSingletonComponent<TimeComponent>();

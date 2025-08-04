@@ -8,7 +8,6 @@
 #include "LogCore.h"
 #include <d3d12shader.h>  // ID3D12ShaderReflection을 위해 추가
 
-// 파일: DX12_PipelineManager.h
 class DX12_PipelineManager {
 	DEFAULT_SINGLETON(DX12_PipelineManager)
 public:

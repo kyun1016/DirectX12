@@ -29,6 +29,20 @@ public:
 	{
 		Initialize();
 	}
+	void RegisterComponent() override {
+		// ECS::Coordinator::GetInstance().RegisterComponent<TransformComponent>();
+		// ECS::Coordinator::GetInstance().RegisterComponent<DX12_MeshComponent>();
+		// ECS::Coordinator::GetInstance().RegisterComponent<CFGInstanceComponent>();
+		// ECS::Coordinator::GetInstance().RegisterComponent<TextureScaleComponent>();
+	}
+	void RegisterSignature() override {
+		// ECS::Signature signature;
+		// signature.set(ECS::Coordinator::GetInstance().GetComponentType<TransformComponent>());
+		// signature.set(ECS::Coordinator::GetInstance().GetComponentType<DX12_MeshComponent>());
+		// signature.set(ECS::Coordinator::GetInstance().GetComponentType<CFGInstanceComponent>());
+		// signature.set(ECS::Coordinator::GetInstance().GetComponentType<TextureScaleComponent>());
+		// ECS::Coordinator::GetInstance().SetSystemSignature<WorldMatrixUpdateSystem>(signature);
+	}
 
 	virtual void Sync() override
 	{

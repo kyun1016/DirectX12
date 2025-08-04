@@ -21,81 +21,32 @@ namespace ECS
 		mEntityManager = std::make_unique<EntityManager>();
 		mSystemManager = std::make_unique<SystemManager>();
 
-		RegisterComponent<DX12_BoundingComponent>();
-		RegisterComponent<DX12_MeshComponent>();
-		RegisterComponent<InstanceData>();
-		RegisterComponent<LightComponent>();
-		RegisterComponent<FMODAudioComponent>();
-		RegisterComponent<TransformComponent>();
-		RegisterComponent<RigidBodyComponent>();
-		RegisterComponent<GravityComponent>();
-		RegisterComponent<BoundingVolumnComponent>();
-		RegisterComponent<CFGInstanceComponent>();
-		RegisterComponent<PlayerControlComponent>();
-		RegisterComponent<TextureScaleComponent>();
+		{
+			RegisterComponent<DX12_BoundingComponent>();
+			RegisterComponent<DX12_MeshComponent>();
+			RegisterComponent<InstanceData>();
+			RegisterComponent<LightComponent>();
+			RegisterComponent<FMODAudioComponent>();
+			RegisterComponent<TransformComponent>();
+			RegisterComponent<RigidBodyComponent>();
+			RegisterComponent<GravityComponent>();
+			RegisterComponent<BoundingVolumnComponent>();
+			RegisterComponent<CFGInstanceComponent>();
+			RegisterComponent<PlayerControlComponent>();
+			RegisterComponent<TextureScaleComponent>();
+		}
 
 		{
 			RegisterSystem<FMODAudioSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<FMODAudioComponent>());
-			SetSystemSignature<FMODAudioSystem>(signature);
-		}
-
-		{
 			RegisterSystem<PhysicsSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<RigidBodyComponent>());
-			signature.set(GetComponentType<GravityComponent>());
-			SetSystemSignature<PhysicsSystem>(signature);
-		}
-
-		{
 			RegisterSystem<LightSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<LightComponent>());
-			SetSystemSignature<LightSystem>(signature);
-		}
-		{
 			RegisterSystem<DX12_BoundingSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<DX12_MeshComponent>());
-			signature.set(GetComponentType<DX12_BoundingComponent>());
-			SetSystemSignature<DX12_BoundingSystem>(signature);
-		}
-		{
 			RegisterSystem<BoundingVolumeUpdateSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<DX12_MeshComponent>());
-			signature.set(GetComponentType<BoundingVolumnComponent>());
-			SetSystemSignature<BoundingVolumeUpdateSystem>(signature);
-		}
-		{
 			RegisterSystem<PlayerControlSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<RigidBodyComponent>());
-			signature.set(GetComponentType<PlayerControlComponent>());
-			SetSystemSignature<PlayerControlSystem>(signature);
-		}
-		{
 			RegisterSystem<RenderDataSyncSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<RigidBodyComponent>());
-			signature.set(GetComponentType<PlayerControlComponent>());
-			SetSystemSignature<RenderDataSyncSystem>(signature);
-		}
-		{
 			RegisterSystem<WorldMatrixUpdateSystem>();
-			ECS::Signature signature;
-			signature.set(GetComponentType<TransformComponent>());
-			signature.set(GetComponentType<DX12_MeshComponent>());
-			signature.set(GetComponentType<CFGInstanceComponent>());
-			signature.set(GetComponentType<TextureScaleComponent>());
-			SetSystemSignature<WorldMatrixUpdateSystem>(signature);
+			RegisterSystem<TimeSystem>();
+			RegisterSystem<DX12_RenderSystem>();
 		}
 	}
 	Entity Coordinator::CreateEntity()

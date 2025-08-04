@@ -4,6 +4,15 @@
 
 class LightSystem : public ECS::ISystem {
 public:
+    void RegisterComponent() override {
+        ECS::Coordinator::GetInstance().RegisterComponent<LightComponent>();
+    }
+    void RegisterSignature() override {
+        ECS::Signature signature;
+        signature.set(ECS::Coordinator::GetInstance().GetComponentType<LightComponent>());
+        ECS::Coordinator::GetInstance().SetSystemSignature<LightSystem>(signature);
+    }
+
     void Update() override {
         auto& coordinator = ECS::Coordinator::GetInstance();
         for (ECS::Entity entity : mEntities) {

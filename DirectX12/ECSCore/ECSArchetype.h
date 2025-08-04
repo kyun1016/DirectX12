@@ -106,17 +106,19 @@ namespace ECS {
     // ArchetypeManager: 아키타입을 생성하고 관리
     class ArchetypeManager {
     private:
-        std::unique_ptr<SharedComponentManager> mSharedComponentManager;
         std::unordered_map<Signature, std::unordered_map<SharedComponentID, std::unique_ptr<Archetype>>> mArchetypes;
         std::unordered_map<Entity, EntityLocation> mEntityLocations;
         std::unordered_map<std::type_index, ComponentType> mComponentTypes;
         std::unordered_map<ComponentType, std::function<std::unique_ptr<IComponentArray>()>> mComponentFactories;
         ComponentType mNextComponentType = 0;
     public:
-        ArchetypeManager() {
-            mSharedComponentManager = std::make_unique<SharedComponentManager>();
-            mSharedComponentManager->RegisterSharedComponent<SharedRenderProperties, SharedRenderPropertiesHasher>();
-        }
+        ArchetypeManager() = default;
+        ~ArchetypeManager() = default;
+        ArchetypeManager(const ArchetypeManager&) = delete;
+        ArchetypeManager& operator=(const ArchetypeManager&) = delete;
+        ArchetypeManager(ArchetypeManager&&) = delete;
+        ArchetypeManager& operator=(ArchetypeManager&&) = delete;
+
         std::unique_ptr<IComponentArray> CreateComponentArray(ComponentType type) {
             assert(mComponentFactories.count(type) > 0 && "Component factory not registered for this type.");
             return mComponentFactories.at(type)();
@@ -124,7 +126,10 @@ namespace ECS {
         template<typename T>
         void RegisterComponent() {
             std::type_index type = std::type_index(typeid(T));
-            assert(mComponentTypes.find(type) == mComponentTypes.end());
+            if (mComponentTypes.find(type) != mComponentTypes.end()) {
+				LOG_INFO("Component type {} already registered.", type.name());
+                return;
+            }
             mComponentTypes[type] = mNextComponentType;
             mComponentFactories[mNextComponentType] = []() { return std::make_unique<ComponentArray<T>>(); };
             mNextComponentType++;
@@ -214,14 +219,14 @@ namespace ECS {
             return location.Archetype->GetComponentData<T>(location.Handle);
         }
 
-        template<typename T, typename Hasher = std::hash<T>>
-        void SetSharedComponent(Entity entity, const T& props) {
-            // 1. 범용 관리자로부터 새로운 공유 컴포넌트 ID를 얻습니다.
-            size_t newSharedId = mSharedComponentManager->GetId<T, Hasher>(props);
+        // template<typename T, typename Hasher = std::hash<T>>
+        // void SetSharedComponent(Entity entity, const T& props) {
+        //     // 1. 범용 관리자로부터 새로운 공유 컴포넌트 ID를 얻습니다.
+        //     size_t newSharedId = mSharedComponentManager->GetId<T, Hasher>(props);
 
-            // ... (엔티티를 새 아키타입으로 이동시키는 로직은 동일) ...
-            // MoveEntityToNewArchetype(...);
-        }
+        //     // ... (엔티티를 새 아키타입으로 이동시키는 로직은 동일) ...
+        //     // MoveEntityToNewArchetype(...);
+        // }
 
         Archetype* FindOrCreateArchetype(const Signature& signature, size_t sharedId) {
             if (mArchetypes[signature].find(sharedId) == mArchetypes[signature].end()) {

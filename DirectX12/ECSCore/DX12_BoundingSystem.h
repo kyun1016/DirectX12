@@ -6,6 +6,19 @@
 
 class DX12_BoundingSystem : public ECS::ISystem {
 public:
+	void RegisterComponent() override {
+		ECS::Coordinator::GetInstance().RegisterComponent<TransformComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<DX12_BoundingComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<DX12_MeshComponent>();
+	}
+	void RegisterSignature() override {
+		ECS::Signature signature;
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<TransformComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<DX12_BoundingComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<DX12_MeshComponent>());
+		ECS::Coordinator::GetInstance().SetSystemSignature<DX12_BoundingSystem>(signature);
+	}
+
 	void Update() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
 		for (ECS::Entity entity : mEntities) {

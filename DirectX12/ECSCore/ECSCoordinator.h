@@ -102,7 +102,7 @@ namespace ECS
 
 		// System methods
 		template<typename T>
-		std::shared_ptr<T> RegisterSystem()
+		ISystem* RegisterSystem()
 		{
 			return mSystemManager->RegisterSystem<T>();
 		}

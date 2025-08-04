@@ -132,7 +132,7 @@ private:
 		uint32_t visibleInstanceCount = 0;
 		for (auto& ri : mAllRenderItems)
 		{
-			if (!(ri.Option & eCFGRenderItem::FrustumCullingEnabled) && ri.NumFramesDirty == 0)	// 현재 for문 내부에서 Frame Dirty를 바탕으로 Render Item 별로 업데이트를 관리하는데, 어떤 방식이 CPU 성능에 적합할지는 고민해보고 개선할 여지가 있다.
+			if (ri.NumFramesDirty == 0)	// 현재 for문 내부에서 Frame Dirty를 바탕으로 Render Item 별로 업데이트를 관리하는데, 어떤 방식이 CPU 성능에 적합할지는 고민해보고 개선할 여지가 있다.
 				continue;
 			--ri.NumFramesDirty;
 			
@@ -172,7 +172,7 @@ private:
 	{
 		for (auto& ri : mAllRenderItems)
 			for (auto& instance : ri.Instances)
-				if(instance.UpdateTransform())
+				if(instance.UpdateTransform() || (ri.Option & eCFGRenderItem::FrustumCullingEnabled))
 					ri.NumFramesDirty = APP_NUM_BACK_BUFFERS;
 	}
 private:

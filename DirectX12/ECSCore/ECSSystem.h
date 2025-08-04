@@ -10,6 +10,11 @@ namespace ECS
 	{
 	public:
 		std::set<Entity> mEntities;
+	public:
+		virtual ~ISystem() = default;
+
+		virtual void RegisterComponent() = 0;
+		virtual void RegisterSignature() = 0;
 		virtual void BeginPlay() {}
 		virtual void EndPlay() {}
 
@@ -19,34 +24,31 @@ namespace ECS
 		virtual void LateUpdate() {}
 		virtual void FixedUpdate() {}
 		virtual void FinalUpdate() {}
-		
-		virtual ~ISystem() = default;
 	};
 
 	class SystemManager
 	{
 	public:
 		template<typename T>
-		std::shared_ptr<T> RegisterSystem()
+		ISystem* RegisterSystem()
 		{
 			std::type_index type = std::type_index(typeid(T));
 
 			assert(mSystems.find(type) == mSystems.end() && "Registering system more than once.");
+			mSystems.insert({ type, std::make_unique<T>() });
+			ISystem* systemRef = mSystems[type].get();
+			systemRef->RegisterComponent();
+			systemRef->RegisterSignature();
+			mSystemBeginPlayTasks[type] = [systemRef]() { systemRef->BeginPlay(); };
+			mSystemEndPlayTasks[type] = [systemRef]() { systemRef->EndPlay(); };
+			mSystemSyncTasks[type] = [systemRef]() { systemRef->Sync(); };
+			mSystemPreUpdateTasks[type] = [systemRef]() { systemRef->PreUpdate(); };
+			mSystemUpdateTasks[type] = [systemRef]() { systemRef->Update(); };
+			mSystemLateUpdateTasks[type] = [systemRef]() { systemRef->LateUpdate(); };
+			mSystemFixedUpdateTasks[type] = [systemRef]() { systemRef->FixedUpdate(); };
+			mSystemFinalUpdateTasks[type] = [systemRef]() { systemRef->FinalUpdate(); };
 
-			// Create a pointer to the system and return it so it can be used externally
-			auto system = std::make_shared<T>();
-			mSystems.insert({ type, system });
-			mSystemBeginPlayTasks[type] = [system]() { system->BeginPlay(); };
-			mSystemEndPlayTasks[type] = [system]() { system->EndPlay(); };
-
-			mSystemSyncTasks[type] = [system]() { system->Sync(); };
-			mSystemPreUpdateTasks[type] = [system]() { system->PreUpdate(); };
-			mSystemUpdateTasks[type] = [system]() { system->Update(); };
-			mSystemLateUpdateTasks[type] = [system]() { system->LateUpdate(); };
-			mSystemFixedUpdateTasks[type] = [system]() { system->FixedUpdate(); };
-			mSystemFinalUpdateTasks[type] = [system]() { system->FinalUpdate(); };
-
-			return system;
+			return systemRef;
 		}
 
 		template<typename T>
@@ -165,7 +167,7 @@ namespace ECS
 
 	private:
 		std::unordered_map<std::type_index, Signature> mSignatures{};
-		std::unordered_map<std::type_index, std::shared_ptr<ISystem>> mSystems{};
+		std::unordered_map<std::type_index, std::unique_ptr<ISystem>> mSystems{};
 
 		std::unordered_map<std::type_index, std::function<void()>> mSystemBeginPlayTasks;
 		std::unordered_map<std::type_index, std::function<void()>> mSystemSyncTasks;

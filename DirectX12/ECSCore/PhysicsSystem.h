@@ -6,6 +6,19 @@
 
 class PhysicsSystem : public ECS::ISystem {
 public:
+	void RegisterComponent() override {
+		ECS::Coordinator::GetInstance().RegisterComponent<TransformComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<RigidBodyComponent>();
+		ECS::Coordinator::GetInstance().RegisterComponent<GravityComponent>();
+	}
+	void RegisterSignature() override {
+		ECS::Signature signature;
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<TransformComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<RigidBodyComponent>());
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<GravityComponent>());
+		ECS::Coordinator::GetInstance().SetSystemSignature<PhysicsSystem>(signature);
+	}
+
 	void Update() override {
 		auto& coordinator = ECS::Coordinator::GetInstance();
 		const auto& time = coordinator.GetSingletonComponent<TimeComponent>();

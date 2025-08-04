@@ -26,6 +26,14 @@ public:
 		FMODAudioRepository::Shutdown();
 		sSystem->release();
     }
+	void RegisterComponent() override {
+		ECS::Coordinator::GetInstance().RegisterComponent<FMODAudioComponent>();
+	}
+	void RegisterSignature() override {
+		ECS::Signature signature;
+		signature.set(ECS::Coordinator::GetInstance().GetComponentType<FMODAudioComponent>());
+		ECS::Coordinator::GetInstance().SetSystemSignature<FMODAudioSystem>(signature);
+	}
     
     void Update() override {
         auto& coordinator = ECS::Coordinator::GetInstance();

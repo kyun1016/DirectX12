@@ -13,8 +13,8 @@ public:
 	void BuildSquereMeshes()
 	{
 		std::vector<MeshData> meshes;
-		meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
-		meshes.push_back(DX12_MeshGenerator::CreateSquare(2000.0f));
+		meshes.emplace_back(DX12_MeshGenerator::CreateSquare(100.0f));
+		meshes.emplace_back(DX12_MeshGenerator::CreateSquare(2000.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Square", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
 		mGeoCount.emplace_back(meshes.size());
 	}
@@ -22,8 +22,8 @@ public:
 	void BuildBoxMeshes()
 	{
 		std::vector<MeshData> meshes;
-		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
-		meshes.push_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
+		meshes.emplace_back(DX12_MeshGenerator::CreateBox(1.0f, 1.0f, 1.0f, 3));
+		meshes.emplace_back(DX12_MeshGenerator::CreateBox(1.0f, 2.0f, 1.0f, 3));
 		DX12_MeshRepository::GetInstance().LoadMesh("Box", meshes, DX12_MeshRepository::eMeshType::STANDARD, false);
 		mGeoCount.emplace_back(meshes.size());
 	}
@@ -31,12 +31,12 @@ public:
 	void BuildSpriteMesh()
 	{
 		std::vector<MeshData> meshes;
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(1.0f, 1.0f)); // 1, 0
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.8f, 0.8f)); // 1, 1
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.6f, 0.6f)); // 1, 1
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.4f, 0.4f)); // 1, 1
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.2f, 0.2f)); // 1, 1
-		meshes.push_back(DX12_MeshGenerator::CreateSprite(0.1f, 0.1f)); // 1, 2
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(1.0f, 1.0f)); // 1, 0
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(0.8f, 0.8f)); // 1, 1
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(0.6f, 0.6f)); // 1, 1
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(0.4f, 0.4f)); // 1, 1
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(0.2f, 0.2f)); // 1, 1
+		meshes.emplace_back(DX12_MeshGenerator::CreateSprite(0.1f, 0.1f)); // 1, 2
 		// meshes.push_back(DX12_MeshGenerator::CreateSquare(100.0f));
 		DX12_MeshRepository::GetInstance().LoadMesh("Sprite", meshes, DX12_MeshRepository::eMeshType::SPRITE, false);
 		mGeoCount.emplace_back(meshes.size());
