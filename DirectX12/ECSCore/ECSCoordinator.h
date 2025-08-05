@@ -45,6 +45,7 @@ namespace ECS
 		{
 			std::lock_guard<std::mutex> lock(mtx);
 			auto signature = mEntityManager->GetSignature(entity);
+			assert(!signature.test(mArchetypeManager->GetComponentType<T>()) && "Component already exists for this entity.");
 			mArchetypeManager->AddComponent<T>(entity, component, signature);
 			signature.set(mArchetypeManager->GetComponentType<T>(), true);
 			
